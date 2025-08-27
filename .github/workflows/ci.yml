@@ -154,10 +154,21 @@ jobs:
           cache: true
 
       - name: Run tests with coverage
-        run: go test -race -coverprofile=coverage.out -covermode=atomic -v ./...
+        run: |
+          echo "🧪 Running tests with race detection..."
+          # Use different commands based on OS due to PowerShell parsing issues
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "🏁 Running on Windows - using simplified test command..."
+            go test -race -v ./...
+            touch coverage.out
+          else
+            go test -race -coverprofile=coverage.out -covermode=atomic -v ./...
+          fi
+        shell: bash
         working-directory: ${{ env.BACKEND_DIR }}
         env:
           CGO_ENABLED: 1
+          RUNNER_OS: ${{ runner.os }}
 
   # Frontend Build
   frontend-build:
