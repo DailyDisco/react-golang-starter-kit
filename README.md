@@ -27,111 +27,6 @@ This project serves as a robust and modern starter kit for building full-stack a
 - **✅ API Testing:**
   - Integrated tools for efficient API testing to ensure robustness.
 
-## 🔄 CI/CD Pipeline
-
-This project includes comprehensive CI/CD workflows that follow industry best practices for both React and Go development.
-
-### 🚀 Available Workflows
-
-#### Complete CI (`ci.yml`)
-
-The main workflow that runs all checks for both frontend and backend:
-
-- **Frontend Security**: npm audit for vulnerability scanning
-- **Frontend Quality**: Prettier formatting and TypeScript checking
-- **Frontend Tests**: Unit and integration tests with coverage
-- **Backend Lint**: golangci-lint for comprehensive Go code analysis
-- **Backend Security**: govulncheck for Go vulnerability scanning
-- **Backend Tests**: Unit tests with race detection and coverage
-- **Builds**: Production builds for both frontend and backend
-- **Integration**: Artifact verification (on PRs)
-
-#### React CI (`react-ci.yml`)
-
-Specialized workflow for frontend changes with:
-
-- **Security Audit**: Automated npm vulnerability scanning
-- **Lint & Type Check**: Prettier, TypeScript, and ESLint validation
-- **Matrix Testing**: Tests across Node.js 18, 20, and 22
-- **Coverage Reporting**: Codecov integration
-- **Artifact Upload**: Build artifacts for deployment
-
-#### Go CI (`go-ci.yml`)
-
-Specialized workflow for backend changes with:
-
-- **Lint & Format**: golangci-lint and gofmt validation
-- **Security Scan**: govulncheck and gosec integration
-- **Race Detection**: Tests with `-race` flag
-- **Cross-Platform Builds**: Linux, Windows, and macOS binaries
-- **Coverage Reporting**: HTML and Codecov integration
-
-### 🛠️ CI Features
-
-#### Performance Optimizations
-
-- **Caching**: npm and Go module caching for faster builds
-- **Concurrency Control**: Cancels redundant runs on the same branch
-- **Parallel Execution**: Independent jobs run simultaneously
-
-#### Quality Assurance
-
-- **Security Scanning**: Automated vulnerability detection
-- **Code Quality**: Linting, formatting, and type checking
-- **Test Coverage**: Comprehensive test suites with coverage reporting
-- **Race Detection**: Go-specific concurrency testing
-
-#### Cross-Platform Support
-
-- **Multi-Node Testing**: React tests across different Node.js versions
-- **Multi-Platform Builds**: Go binaries for Linux, Windows, and macOS
-- **Matrix Strategies**: Systematic testing across environments
-
-#### Artifact Management
-
-- **Build Artifacts**: Upload build outputs for deployment
-- **Coverage Reports**: Detailed coverage analysis
-- **Retention Policies**: Automatic cleanup of old artifacts
-
-### 🎯 Best Practices Implemented
-
-- **Fail Fast**: Security and quality checks run before expensive operations
-- **Dependency Management**: Proper caching and lockfile validation
-- **Error Handling**: Graceful handling of failures with informative messages
-- **Documentation**: Clear job names and step descriptions
-- **Integration Testing**: End-to-end verification of build artifacts
-
-### 📊 Coverage & Reporting
-
-- **Codecov Integration**: Centralized coverage reporting
-- **HTML Reports**: Detailed coverage visualization
-- **PR Comments**: Automated coverage summaries on pull requests
-- **Quality Gates**: Configurable coverage thresholds
-
-### 🚦 Workflow Triggers
-
-All workflows trigger on:
-
-- **Push to master**: Full CI pipeline
-- **Pull Requests**: Comprehensive testing and validation
-- **Manual Dispatch**: On-demand execution via GitHub UI
-
-### 🔧 Customization
-
-To modify the CI configuration:
-
-1. **Environment Variables**: Update versions in workflow files
-2. **Test Commands**: Modify test scripts in `package.json` or Go test commands
-3. **Coverage Thresholds**: Adjust Codecov settings
-4. **Security Rules**: Configure linting and security scanning rules
-
-### 📈 Monitoring & Maintenance
-
-- **Workflow Status**: Monitor via GitHub Actions tab
-- **Failure Analysis**: Detailed logs for debugging
-- **Performance Tracking**: Cache hit rates and build times
-- **Security Updates**: Automated dependency vulnerability alerts
-
 ## 🏁 Getting Started
 
 Follow these steps to get your development environment up and running.
@@ -369,6 +264,32 @@ Critical environment variables are managed through `.env` files. A `.env.example
 - `JWT_SECRET`: Secret key for JWT authentication. **(Highly recommended to change in production!)**
 - `API_PORT`: Port on which the Golang backend API will run.
 - `VITE_API_URL`: Frontend URL to access the backend API.
+
+## 🔄 CI/CD Pipeline
+
+This project includes comprehensive CI/CD workflows following industry best practices for React and Go development.
+
+### Available Workflows
+
+- **Complete CI** (`ci.yml`): Full pipeline with security scanning, linting, testing, and builds for both frontend and backend
+- **React CI** (`react-ci.yml`): Frontend-focused workflow with Node.js matrix testing and coverage reporting
+- **Go CI** (`go-ci.yml`): Backend-focused workflow with cross-platform builds and race detection
+
+### Key Features
+
+- **Security**: Automated vulnerability scanning for both npm and Go dependencies
+- **Quality**: Linting, formatting, and type checking with Prettier, TypeScript, and golangci-lint
+- **Testing**: Comprehensive test suites with coverage reporting via Codecov
+- **Performance**: Caching, parallel execution, and artifact management
+- **Cross-Platform**: Multi-Node.js testing and multi-platform Go builds
+
+### Triggers
+
+Workflows run on push to master, pull requests, and manual dispatch.
+
+### Customization
+
+Modify workflow files to adjust test commands, coverage thresholds, or security rules.
 
 ## 🤝 Contributing
 
