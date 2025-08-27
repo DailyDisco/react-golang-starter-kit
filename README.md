@@ -15,6 +15,7 @@ This project serves as a robust and modern starter kit for building full-stack a
   - Powered by the [Fiber Web Framework](https://gofiber.io/) for a fast and flexible API.
   - [Air](https://github.com/cosmtrek/air) for live reloading during development.
   - [GORM](https://gorm.io/) for elegant Object-Relational Mapping (ORM) with PostgreSQL.
+  - **Swagger/OpenAPI documentation** with interactive UI for API exploration and testing.
   - Structured project layout for maintainability and scalability.
   - Includes basic CRUD operations and authentication scaffolding.
 - **🐳 Docker Support:**
