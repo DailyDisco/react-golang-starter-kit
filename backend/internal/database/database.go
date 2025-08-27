@@ -5,7 +5,6 @@ import (
     "log"
     "os"
     "react-golang-starter/internal/models"
-    
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
 )
