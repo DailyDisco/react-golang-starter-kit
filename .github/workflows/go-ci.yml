@@ -1,0 +1,48 @@
+name: Go CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  fmt:
+    name: Check gofmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22" # Or your specific Go version
+
+      - name: Check gofmt
+        run: |
+          go version
+          diff -u <(echo -n) <(gofmt -d -e .)
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22" # Or your specific Go version
+
+      - name: Build backend
+        run: go build -v -o backend ./backend/cmd/main.go
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22" # Or your specific Go version
+
+      - name: Run Go tests
+        run: go test -v ./backend/...
