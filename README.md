@@ -9,6 +9,7 @@ This project serves as a robust and modern starter kit for building full-stack a
     -   [React Router](https://reactrouter.com/en/main) for declarative navigation.
     -   [TailwindCSS](https://tailwindcss.com/) for utility-first styling.
     -   [ShadCN UI](https://ui.shadcn.com/) components for a beautiful and accessible user interface.
+    -   **[Vitest](https://vitest.dev/)** for fast unit and component testing.
     -   Optimized for performance and developer experience.
 -   **⚙️ Golang Backend:**
     -   Powered by the [Gin Web Framework](https://gin-gonic.com/docs/) for a fast and flexible API.
@@ -81,6 +82,19 @@ Ensure you have the following installed on your system:
     ```
 
 Your application should now be running!
+
+## 🧪 Testing
+
+### Frontend (React with Vitest)
+
+To run the frontend tests, navigate to the `frontend` directory and use the following command:
+
+```bash
+cd frontend
+npm test
+```
+
+This will execute all tests defined using Vitest.
 
 ## 📂 Project Structure
 
