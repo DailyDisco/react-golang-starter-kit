@@ -16,7 +16,10 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 		"status":  "ok",
 		"message": "Server is running",
 	}
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +27,10 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	database.DB.Find(&users)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	if err := json.NewEncoder(w).Encode(users); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +48,10 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +68,10 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +104,10 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	if err := json.NewEncoder(w).Encode(user); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
