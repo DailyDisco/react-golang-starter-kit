@@ -116,10 +116,11 @@ jobs:
         run: |
           if npm run test:coverage --silent 2>/dev/null; then
             npm run test:coverage
-          elif npm run test --silent 2>/dev/null && command -v nyc >/dev/null 2>&1; then
-            nyc npm run test
+          elif npm run test --silent 2>/dev/null; then
+            npm run test -- --coverage --run
           else
-            npm run test
+            echo "No test script found"
+            exit 1
           fi
         working-directory: ${{ env.WORKING_DIR }}
 

@@ -91,7 +91,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
 
       - name: Run tests
-        run: npm run test -- --coverage --watchAll=false
+        run: npm run test:coverage
         working-directory: ${{ env.FRONTEND_DIR }}
 
   # Backend Linting and Formatting
@@ -154,8 +154,10 @@ jobs:
           cache: true
 
       - name: Run tests with coverage
-        run: go test -race -coverprofile=coverage.out -covermode=atomic -v ./...
+        run: CGO_ENABLED=1 go test -race -coverprofile=coverage.out -covermode=atomic -v ./...
         working-directory: ${{ env.BACKEND_DIR }}
+        env:
+          CGO_ENABLED: 1
 
   # Frontend Build
   frontend-build:
