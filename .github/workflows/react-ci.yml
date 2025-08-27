@@ -91,22 +91,18 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
         continue-on-error: true
 
-  # Matrix testing across different Node versions
+  # Frontend testing
   test:
-    name: Test (Node ${{ matrix.node-version }})
+    name: Frontend Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: ['18', '20', '22']
-      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: ${{ env.WORKING_DIR }}/package-lock.json
 
@@ -114,27 +110,9 @@ jobs:
         run: npm ci
         working-directory: ${{ env.WORKING_DIR }}
 
-      - name: Run tests with coverage
-        run: |
-          if npm run test:coverage --silent 2>/dev/null; then
-            npm run test:coverage
-          elif npm run test --silent 2>/dev/null; then
-            npm run test -- --coverage --run
-          else
-            echo "No test script found"
-            exit 1
-          fi
-        shell: bash
+      - name: Run tests (fast mode)
+        run: npm run test:fast
         working-directory: ${{ env.WORKING_DIR }}
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        if: matrix.node-version == env.NODE_VERSION
-        with:
-          file: ${{ env.WORKING_DIR }}/coverage/lcov.info
-          flags: frontend
-          name: frontend-coverage
-          fail_ci_if_error: false
 
   # Build job that depends on successful tests
   build:

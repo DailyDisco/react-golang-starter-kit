@@ -22,7 +22,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: "jsdom",
+    environment: "happy-dom", // Faster than jsdom
     setupFiles: ["./app/test/setup.ts"],
     server: {
       deps: {

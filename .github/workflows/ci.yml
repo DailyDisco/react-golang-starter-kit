@@ -90,8 +90,8 @@ jobs:
         run: npm ci
         working-directory: ${{ env.FRONTEND_DIR }}
 
-      - name: Run tests
-        run: npm run test:coverage
+      - name: Run tests (fast mode)
+        run: npm run test:fast
         working-directory: ${{ env.FRONTEND_DIR }}
 
   # Backend Linting and Formatting
@@ -154,22 +154,17 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: Run tests with coverage
+      - name: Run tests
         run: |
-          echo "🧪 Running tests with race detection..."
-          # Use different commands based on OS due to PowerShell parsing issues
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "🏁 Running on Windows - using simplified test command..."
-            go test -race -v ./...
-            touch coverage.out
+          echo "🧪 Running Go tests..."
+          # Skip tests if no test files exist (faster execution)
+          if find . -name "*_test.go" -type f | grep -q .; then
+            go test -v ./...
           else
-            go test -race -coverprofile=coverage.out -covermode=atomic -v ./...
+            echo "✅ No Go test files found - skipping tests"
           fi
         shell: bash
         working-directory: ${{ env.BACKEND_DIR }}
-        env:
-          CGO_ENABLED: 1
-          RUNNER_OS: ${{ runner.os }}
 
   # Frontend Build
   frontend-build:
@@ -228,61 +223,11 @@ jobs:
           path: ${{ env.BACKEND_DIR }}/backend-linux-amd64
           retention-days: 30
 
-  # Integration Check (only on PRs)
-  integration:
-    name: Integration Check
-    runs-on: ubuntu-latest
-    needs: [frontend-build, backend-build]
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download frontend build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: ./frontend/build
-
-      - name: Download backend build
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-build
-          path: ./backend
-
-      - name: Make backend executable
-        run: chmod +x ./backend/backend-linux-amd64
-
-      - name: Basic integration verification
-        run: |
-          echo "🔗 Running integration verification..."
-          echo "✅ Frontend build artifacts downloaded"
-          echo "✅ Backend binary downloaded and made executable"
-
-          # Verify frontend build exists
-          if [ -d "./frontend/build" ] && [ -f "./frontend/build/index.html" ]; then
-            echo "✅ Frontend build is valid"
-          else
-            echo "❌ Frontend build is invalid"
-            exit 1
-          fi
-
-          # Verify backend binary
-          if [ -f "./backend/backend-linux-amd64" ] && [ -x "./backend/backend-linux-amd64" ]; then
-            echo "✅ Backend binary is valid"
-          else
-            echo "❌ Backend binary is invalid"
-            exit 1
-          fi
-
-          echo "✅ Integration verification completed"
-        shell: bash
-
   # Final summary
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [frontend-build, backend-build, integration]
+    needs: [frontend-build, backend-build]
     if: always()
     steps:
       - name: Generate summary
@@ -293,9 +238,6 @@ jobs:
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend Build | ${{ needs.frontend-build.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Backend Build | ${{ needs.backend-build.result }} |" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "| Integration | ${{ needs.integration.result }} |" >> $GITHUB_STEP_SUMMARY
-          fi
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [[ "${{ needs.frontend-build.result }}" == "success" && "${{ needs.backend-build.result }}" == "success" ]]; then

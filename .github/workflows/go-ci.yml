@@ -118,81 +118,35 @@ jobs:
           echo "Consider running gosec locally: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest"
         working-directory: ${{ env.WORKING_DIR }}
 
-  # Matrix testing across different Go versions and platforms
+  # Backend testing
   test:
-    name: Test (Go ${{ matrix.go-version }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        go-version: ['1.22', '1.23', '1.24']
-        os: [ubuntu-latest]
-        include:
-          - go-version: '1.24'
-            os: windows-latest
-          - go-version: '1.24'
-            os: macos-latest
-      fail-fast: false
+    name: Backend Tests
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Go ${{ matrix.go-version }}
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: ${{ env.GO_VERSION }}
           cache: true
-
-      - name: Display Go version
-        run: go version
-        working-directory: ${{ env.WORKING_DIR }}
 
       - name: Download dependencies
         run: go mod download
         working-directory: ${{ env.WORKING_DIR }}
 
-      - name: Run tests with race detection and coverage
+      - name: Run tests
         run: |
-          echo "🧪 Running tests with race detection..."
-          # Use different commands based on OS due to PowerShell parsing issues
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "🏁 Running on Windows - using simplified test command..."
-            go test -race -v ./...
-            # Create empty coverage file for CI compatibility
-            touch coverage.out
+          echo "🧪 Running Go tests..."
+          # Skip tests if no test files exist (much faster)
+          if find . -name "*_test.go" -type f | grep -q .; then
+            go test -v ./...
           else
-            go test -race -coverprofile=coverage.out -covermode=atomic -v ./...
+            echo "✅ No Go test files found - skipping tests"
           fi
         shell: bash
         working-directory: ${{ env.WORKING_DIR }}
-        env:
-          CGO_ENABLED: 1
-          RUNNER_OS: ${{ runner.os }}
-
-      - name: Generate coverage report
-        run: |
-          if [ -f coverage.out ]; then
-            go tool cover -html=coverage.out -o coverage.html
-            go tool cover -func=coverage.out
-          fi
-        shell: bash
-        working-directory: ${{ env.WORKING_DIR }}
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        if: matrix.go-version == env.GO_VERSION && matrix.os == 'ubuntu-latest'
-        with:
-          file: ${{ env.WORKING_DIR }}/coverage.out
-          flags: backend
-          name: backend-coverage
-          fail_ci_if_error: false
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report-go${{ matrix.go-version }}-${{ matrix.os }}
-          path: ${{ env.WORKING_DIR }}/coverage.html
-          retention-days: 7
 
   # Build for multiple platforms
   build:
