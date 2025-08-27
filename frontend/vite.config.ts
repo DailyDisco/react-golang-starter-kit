@@ -20,4 +20,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./app"),
     },
   },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: ["./app/test/setup.ts"],
+    server: {
+      deps: {
+        inline: ["@react-router/node"],
+      },
+    },
+  },
 });
