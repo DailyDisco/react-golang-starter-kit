@@ -259,10 +259,13 @@ If you're deploying this monorepo structure where the entire repository is conne
    - Go to [Railway.app](https://railway.app) and create account
    - Connect your GitHub repo (create a separate project for the backend)
    - Add PostgreSQL database (free tier available) OR connect to existing Railway database
-   - Set environment variables:
-     - `DB_HOST` (get from your Railway database)
-     - `DB_PASSWORD` (get from your Railway database)
-     - `JWT_SECRET` (generate a secure random string)
+   - Set environment variables (Railway provides these automatically):
+     - `PGHOST` - Database host (Railway provides this)
+     - `PGPORT` - Database port (Railway provides this)
+     - `PGUSER` - Database user (Railway provides this)
+     - `PGPASSWORD` - Database password (Railway provides this)
+     - `PGDATABASE` - Database name (Railway provides this)
+     - `JWT_SECRET` - Generate a secure random string
      - `API_PORT=8080`
    - Railway will auto-detect it's a Go app and deploy it
    - Get your backend URL from Railway dashboard
@@ -274,11 +277,27 @@ If you're deploying this monorepo structure where the entire repository is conne
 
 **Cost:** Both offer generous free tiers, total ~$0-10/month for small apps
 
+### Railway Environment Variables
+
+**PostgreSQL Database Connection:**
+Railway provides PostgreSQL environment variables automatically. The backend is configured to use these standard PostgreSQL variable names:
+
+| Railway Variable | Maps to | Description |
+|-----------------|---------|-------------|
+| `PGHOST` | Database Host | The database server address |
+| `PGPORT` | Database Port | Usually `5432` |
+| `PGUSER` | Database User | Your database username |
+| `PGPASSWORD` | Database Password | Your database password |
+| `PGDATABASE` | Database Name | The name of your database |
+
+**You don't need to set these manually** - Railway provides them automatically when you link your database to your backend service.
+
 ### Railway URL Configuration
 
 **When to use PUBLIC vs PRIVATE URLs:**
 
 - **PUBLIC URL** (`https://your-app.up.railway.app`): 🌐
+
   - Use this for your Vercel frontend
   - Accessible from anywhere on the internet
   - Required when frontend and backend are on different platforms

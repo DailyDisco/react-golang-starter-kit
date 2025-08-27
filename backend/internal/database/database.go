@@ -16,13 +16,13 @@ var DB *gorm.DB
 func ConnectDB() {
 	var err error
 
-	// Database configuration - matches Docker container
-	host := getEnv("DB_HOST", "localhost")
-	port := getEnv("DB_PORT", "5432")
-	user := getEnv("DB_USER", "devuser")
-	password := getEnv("DB_PASSWORD", "devpass")
-	dbname := getEnv("DB_NAME", "devdb")
-	sslmode := getEnv("DB_SSLMODE", "disable")
+	// Database configuration - supports both Railway and local development
+	host := getEnv("PGHOST", getEnv("DB_HOST", "localhost"))
+	port := getEnv("PGPORT", getEnv("DB_PORT", "5432"))
+	user := getEnv("PGUSER", getEnv("DB_USER", "devuser"))
+	password := getEnv("PGPASSWORD", getEnv("DB_PASSWORD", "devpass"))
+	dbname := getEnv("PGDATABASE", getEnv("DB_NAME", "devdb"))
+	sslmode := getEnv("DB_SSLMODE", "require") // Railway uses SSL by default
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		host, port, user, password, dbname, sslmode)
