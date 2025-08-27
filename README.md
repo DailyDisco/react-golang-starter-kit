@@ -374,28 +374,85 @@ export PATH=$PATH:$(go env GOPATH)/bin
 ```bash
 react_golang_starter_kit/
 ├── backend/                  # 🚀 Golang Backend
-│   ├── cmd/                  # Application entry point
-│   ├── internal/             # Internal packages (handlers, models, database)
-│   ├── pkg/                  # Reusable packages (if any)
+│   ├── cmd/
+│   │   └── main.go           # Application entry point
+│   ├── docs/                 # API documentation
+│   │   ├── docs.go
+│   │   ├── index.html
+│   │   ├── swagger.json
+│   │   └── swagger.yaml
+│   ├── internal/             # Internal packages
+│   │   ├── database/
+│   │   │   └── database.go   # Database connection and configuration
+│   │   ├── handlers/
+│   │   │   └── handlers.go   # HTTP request handlers
+│   │   └── models/
+│   │       └── models.go     # Data models and GORM structs
 │   ├── Dockerfile            # Dockerfile for backend
 │   ├── go.mod                # Go module definition
-│   └── ...
+│   ├── go.sum                # Go dependencies checksum
+│   ├── Makefile              # Build automation
+│   ├── README.md             # Backend documentation
+│   └── server                # Compiled server binary
 ├── frontend/                 # 🌐 React Frontend
-│   ├── public/               # Static assets
 │   ├── app/                  # Main application source code
 │   │   ├── components/       # Reusable React components
+│   │   │   ├── demo/
+│   │   │   │   └── demo.tsx
+│   │   │   ├── forms/
+│   │   │   │   └── UserForm.tsx
+│   │   │   └── ui/           # ShadCN UI components
+│   │   ├── constants/        # Application constants
+│   │   │   ├── icons.ts
+│   │   │   ├── labels.ts
+│   │   │   └── mockData.ts
 │   │   ├── hooks/            # Custom React hooks
-│   │   ├── lib/              # Utility functions
+│   │   │   ├── use-mobile.ts
+│   │   │   └── use-users.ts
+│   │   ├── layouts/          # Layout components
+│   │   ├── lib/              # Utility functions and API client
+│   │   │   ├── api.ts
+│   │   │   ├── utils.test.ts
+│   │   │   ├── utils.ts
+│   │   │   └── zod/          # Zod schemas
+│   │   ├── providers/        # React context providers
+│   │   │   └── theme-provider.tsx
+│   │   ├── root.tsx          # Root component
 │   │   ├── routes/           # React Router routes
-│   │   └── types/            # TypeScript type definitions
+│   │   │   ├── 404.tsx
+│   │   │   ├── custom-layout-demo.tsx
+│   │   │   ├── demo.tsx
+│   │   │   ├── home.tsx
+│   │   │   └── users.tsx
+│   │   ├── routes.ts         # Route definitions
+│   │   ├── test/
+│   │   │   └── setup.ts      # Test configuration
+│   │   └── types/
+│   │       └── shared.ts     # Shared TypeScript types
+│   ├── build/                # Production build output
+│   │   ├── client/
+│   │   │   ├── assets/       # Built assets
+│   │   │   └── favicon.ico
+│   │   └── server/
+│   │       └── index.js      # Server-side rendering
+│   ├── public/               # Static assets
+│   │   ├── favicon.ico
+│   │   ├── logo-dark.svg
+│   │   └── logo-light.svg
+│   ├── components.json       # ShadCN configuration
 │   ├── Dockerfile            # Dockerfile for frontend
 │   ├── package.json          # Node.js package configuration
-│   └── ...
+│   ├── package-lock.json     # Lockfile for dependencies
+│   ├── react-router.config.ts # React Router configuration
+│   ├── tailwind.config.ts    # TailwindCSS configuration
+│   ├── tsconfig.json         # TypeScript configuration
+│   ├── vite.config.ts        # Vite configuration
+│   └── node_modules/         # Installed dependencies
+├── docker-compose.frontend.Dockerfile # Frontend Docker configuration
 ├── docker-compose.yml        # 🐳 Docker Compose configuration
-├── .env.example              # Environment variables template
-├── documentations/           # 📚 Project Documentation
-│   └── starter_kit/          # Specific documentation for this starter kit
-│   └── third_party/          # Documentation for third-party tools/libraries
+├── node_modules/             # Root level dependencies
+├── package.json              # Root package configuration
+├── package-lock.json         # Root lockfile
 └── README.md                 # 📄 Project Overview and Setup Instructions
 ```
 
@@ -450,9 +507,3 @@ Please ensure your code adheres to the existing style and conventions.
 ## 📄 License
 
 This project is licensed under the MIT License - see the `LICENSE` file for details.
-
-# Test comment
-
-# Another test
-
-// Test comment
