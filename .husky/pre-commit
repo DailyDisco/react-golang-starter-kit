@@ -1,0 +1,2 @@
+npm run test:frontend
+npm run lint

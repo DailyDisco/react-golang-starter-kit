@@ -1,0 +1,14 @@
+{
+  "name": "react-golang-starter-kit",
+  "private": true,
+  "devDependencies": {
+    "husky": "^9.1.7"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "test": "cd frontend && npm run test:fast",
+    "test:frontend": "cd frontend && npm run test:fast",
+    "lint": "cd frontend && npm run prettier:check",
+    "format": "cd frontend && npm run prettier:fix"
+  }
+}
