@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
-import { API_BASE_URL } from "../lib/api";
+import { API_BASE_URL } from "../../lib/api";
 
 interface User {
   id: number;
