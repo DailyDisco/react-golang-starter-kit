@@ -8,6 +8,7 @@
 # Build artifacts
 /backend/tmp/
 /backend/main
+/backend/server
 /frontend/dist/
 /frontend/build/
 /frontend/coverage/
@@ -23,6 +24,9 @@
 *.out
 /backend/bin/
 /backend/dist/
+
+# Generated documentation
+/backend/docs/
 
 # Node specific
 npm-debug.log*
@@ -45,12 +49,6 @@ lerna-debug.log*
 *.log
 *.backup
 logs/
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Runtime data
 pids/
 *.pid
 *.seed

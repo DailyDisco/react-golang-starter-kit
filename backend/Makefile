@@ -1,4 +1,4 @@
-.PHONY: db-up db-down db-reset db-logs db-shell dev clean
+.PHONY: db-up db-down db-reset db-logs db-shell dev clean swagger
 
 # Database configuration
 DB_NAME=devdb
@@ -43,6 +43,13 @@ dev: db-up
 	@echo "Starting development server..."
 	@sleep 3
 	@air
+
+# Generate Swagger documentation
+swagger:
+	@echo "Generating Swagger documentation..."
+	@swag init -g cmd/main.go -o docs
+	@sed -i '/LeftDelim:/d; /RightDelim:/d' docs/docs.go
+	@echo "Swagger documentation generated in docs/"
 
 # Clean up everything
 clean: db-down

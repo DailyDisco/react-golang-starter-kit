@@ -173,7 +173,7 @@ docker-compose ps
 2. **Create production docker-compose.yml:**
 
    ```yaml
-   version: '3.8'
+   version: "3.8"
    services:
      postgres:
        image: postgres:15-alpine
@@ -191,14 +191,14 @@ docker-compose ps
          - DB_PASSWORD=${DB_PASSWORD}
          - JWT_SECRET=${JWT_SECRET}
        ports:
-         - '8080:8080'
+         - "8080:8080"
        depends_on:
          - postgres
 
      frontend:
        image: myapp-frontend:latest
        ports:
-         - '80:80'
+         - "80:80"
 
    volumes:
      postgres_data:
@@ -245,9 +245,32 @@ Once both services are running:
 
 - **Frontend**: Open [http://localhost:5173](http://localhost:5173) in your browser
 - **Backend API**: Available at [http://localhost:8080](http://localhost:8080)
-- **API Documentation**: Visit `/swagger` endpoint if available
+- **API Documentation**: Interactive Swagger UI available at [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
 
 The application provides a user management interface where you can create, read, update, and delete users.
+
+### 📚 API Documentation
+
+The backend provides comprehensive API documentation through an interactive Swagger UI:
+
+- **Swagger UI**: [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
+- **Direct JSON**: [http://localhost:8080/swagger/doc.json](http://localhost:8080/swagger/doc.json)
+
+**Available Endpoints:**
+
+- `GET /api/health` - Check server health status
+- `GET /api/users` - Retrieve all users
+- `POST /api/users` - Create a new user
+- `GET /api/users/{id}` - Get a specific user by ID
+- `PUT /api/users/{id}` - Update an existing user
+- `DELETE /api/users/{id}` - Delete a user
+
+The Swagger UI allows you to:
+
+- View detailed endpoint documentation
+- Test API endpoints directly from your browser
+- See request/response examples and schemas
+- Explore the complete API structure
 
 ## 🧪 Testing
 
