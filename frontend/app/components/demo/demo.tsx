@@ -175,19 +175,19 @@ export function Demo() {
 
   // Add loading toast when initially fetching users
   useEffect(() => {
-    if (usersLoading && users.length === 0) {
+    if (usersLoading) {
       toast.loading("Loading users...", {
         id: "fetch-users",
       });
     } else {
       toast.dismiss("fetch-users");
-      if (!usersLoading && users.length > 0) {
+      if (users.length > 0) {
         toast.success("Users loaded successfully!", {
           description: `Found ${users.length} user${users.length !== 1 ? "s" : ""}`,
         });
       }
     }
-  }, [usersLoading, users]);
+  }, [usersLoading]);
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
