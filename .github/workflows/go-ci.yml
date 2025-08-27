@@ -150,7 +150,7 @@ jobs:
       - name: Run tests with race detection and coverage
         run: |
           echo "🧪 Running tests with race detection..."
-          CGO_ENABLED=1 go test -race -coverprofile=coverage.out -covermode=atomic -v ./...
+          go test -race -coverprofile=coverage.out -covermode=atomic -v ./...
         working-directory: ${{ env.WORKING_DIR }}
         env:
           CGO_ENABLED: 1
