@@ -22,6 +22,12 @@
 *.dylib
 *.test
 *.out
+debug
+*.prof
+*.trace
+*.cover
+*.coverprofile
+*.sum.bak
 /backend/bin/
 /backend/dist/
 
@@ -37,6 +43,10 @@ lerna-debug.log*
 *.tsbuildinfo
 .vite/
 
+# React Router
+/.react-router/
+/frontend/.react-router/
+
 # Environment variables
 .env
 .env.local
@@ -44,6 +54,13 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.*.local
+/backend/.env
+/backend/.env.*
+/frontend/.env
+/frontend/.env.*
+
+# Note: .env.example is NOT ignored and will be tracked by git.
+# This is intentional so that example environment files are available for reference.
 
 # Logs
 *.log
