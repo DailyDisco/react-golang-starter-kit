@@ -1,0 +1,290 @@
+name: Complete CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same workflow and branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  GO_VERSION: "1.22"
+  FRONTEND_DIR: ./frontend
+  BACKEND_DIR: ./backend
+
+jobs:
+  # Frontend Security Check
+  frontend-security:
+    name: Frontend Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+  # Frontend Quality Checks
+  frontend-quality:
+    name: Frontend Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Check formatting
+        run: npm run prettier:check
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Run type checking
+        run: npm run typecheck
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+  # Frontend Testing
+  frontend-test:
+    name: Frontend Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Run tests
+        run: npm run test -- --coverage --watchAll=false
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+  # Backend Linting and Formatting
+  backend-lint:
+    name: Backend Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: ${{ env.BACKEND_DIR }}
+          args: --timeout=5m
+
+  # Backend Security
+  backend-security:
+    name: Backend Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Run govulncheck
+        run: |
+          if command -v govulncheck >/dev/null 2>&1; then
+            govulncheck ./...
+          else
+            go install golang.org/x/vuln/cmd/govulncheck@latest
+            govulncheck ./...
+          fi
+        working-directory: ${{ env.BACKEND_DIR }}
+
+  # Backend Testing
+  backend-test:
+    name: Backend Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Run tests with coverage
+        run: go test -race -coverprofile=coverage.out -covermode=atomic -v ./...
+        working-directory: ${{ env.BACKEND_DIR }}
+
+  # Frontend Build
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    needs: [frontend-security, frontend-quality, frontend-test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: ${{ env.FRONTEND_DIR }}/build/
+          retention-days: 30
+
+  # Backend Build
+  backend-build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    needs: [backend-lint, backend-security, backend-test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Build backend
+        run: go build -ldflags="-s -w" -o backend-linux-amd64 ./cmd/main.go
+        working-directory: ${{ env.BACKEND_DIR }}
+
+      - name: Upload backend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: ${{ env.BACKEND_DIR }}/backend-linux-amd64
+          retention-days: 30
+
+  # Integration Check (only on PRs)
+  integration:
+    name: Integration Check
+    runs-on: ubuntu-latest
+    needs: [frontend-build, backend-build]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./frontend/build
+
+      - name: Download backend build
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: ./backend
+
+      - name: Make backend executable
+        run: chmod +x ./backend/backend-linux-amd64
+
+      - name: Basic integration verification
+        run: |
+          echo "🔗 Running integration verification..."
+          echo "✅ Frontend build artifacts downloaded"
+          echo "✅ Backend binary downloaded and made executable"
+
+          # Verify frontend build exists
+          if [ -d "./frontend/build" ] && [ -f "./frontend/build/index.html" ]; then
+            echo "✅ Frontend build is valid"
+          else
+            echo "❌ Frontend build is invalid"
+            exit 1
+          fi
+
+          # Verify backend binary
+          if [ -f "./backend/backend-linux-amd64" ] && [ -x "./backend/backend-linux-amd64" ]; then
+            echo "✅ Backend binary is valid"
+          else
+            echo "❌ Backend binary is invalid"
+            exit 1
+          fi
+
+          echo "✅ Integration verification completed"
+
+  # Final summary
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [frontend-build, backend-build, integration]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🚀 CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Build | ${{ needs.frontend-build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Build | ${{ needs.backend-build.result }} |" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "| Integration | ${{ needs.integration.result }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.frontend-build.result }}" == "success" && "${{ needs.backend-build.result }}" == "success" ]]; then
+            echo "🎉 **All CI checks passed!**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Some CI checks failed. Please review the failed jobs.**" >> $GITHUB_STEP_SUMMARY
+          fi
