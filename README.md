@@ -257,20 +257,68 @@ If you're deploying this monorepo structure where the entire repository is conne
 2. **Backend on Railway:**
 
    - Go to [Railway.app](https://railway.app) and create account
-   - Connect your GitHub repo
-   - Add PostgreSQL database (free tier available)
+   - Connect your GitHub repo (create a separate project for the backend)
+   - Add PostgreSQL database (free tier available) OR connect to existing Railway database
    - Set environment variables:
-     - `DB_HOST`
-     - `DB_PASSWORD`
-     - `JWT_SECRET`
+     - `DB_HOST` (get from your Railway database)
+     - `DB_PASSWORD` (get from your Railway database)
+     - `JWT_SECRET` (generate a secure random string)
      - `API_PORT=8080`
-   - Deploy automatically
+   - Railway will auto-detect it's a Go app and deploy it
+   - Get your backend URL from Railway dashboard
 
 3. **Update frontend API URL:**
-   - Copy Railway backend URL
-   - Update Vercel's `VITE_API_URL` environment variable
+   - Copy the **PUBLIC URL** from Railway backend dashboard (e.g., `https://your-app.up.railway.app`)
+   - Update Vercel's `VITE_API_URL` environment variable with this public URL
+   - **Important**: Use the public URL, not the private/internal Railway URL
 
 **Cost:** Both offer generous free tiers, total ~$0-10/month for small apps
+
+### Railway URL Configuration
+
+**When to use PUBLIC vs PRIVATE URLs:**
+
+- **PUBLIC URL** (`https://your-app.up.railway.app`): 🌐
+  - Use this for your Vercel frontend
+  - Accessible from anywhere on the internet
+  - Required when frontend and backend are on different platforms
+
+- **PRIVATE URL** (`your-app.railway.internal`): 🔒
+  - Only accessible within Railway's internal network
+  - Use when both services are on Railway (e.g., backend and another Railway service)
+  - Faster and more secure for internal communication
+  - Cannot be accessed from Vercel
+
+### Alternative Backend Deployment Options
+
+**Option A: Railway (Recommended)**
+
+- ✅ Same platform as your database
+- ✅ Easy networking between services
+- ✅ Go-native deployment
+- ✅ Free tier available
+- ✅ Simple scaling
+
+**Option B: Vercel Serverless Functions**
+
+- ✅ Same platform as frontend
+- ✅ Simplified CORS handling
+- ✅ Automatic scaling
+- ❌ Cold starts can be slow
+- ❌ Limited execution time (10s for free tier)
+
+**Option C: Other Cloud Platforms**
+
+- **AWS (EC2/Lambda)**: Full control, complex setup
+- **Google Cloud Run**: Containerized, good performance
+- **DigitalOcean App Platform**: Simple deployment, good for Go
+- **Fly.io**: Great for Go apps, global deployment
+
+**Option D: VPS/Cloud Server**
+
+- **DigitalOcean Droplet**: Full control, manual setup
+- **AWS EC2**: Scalable, but more complex
+- **Linode**: Cost-effective, good performance
 
 #### Troubleshooting Vercel Deployment
 
