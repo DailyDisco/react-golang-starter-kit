@@ -1,11 +1,11 @@
 // Debug: Log the API URL being used
-console.log('🔗 API_BASE_URL:', import.meta.env.VITE_API_URL);
+console.log("🔗 API_BASE_URL:", import.meta.env.VITE_API_URL);
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 // Debug: Log the final API URL
-console.log('🚀 Final API_BASE_URL:', API_BASE_URL);
+console.log("🚀 Final API_BASE_URL:", API_BASE_URL);
 
 export interface User {
   id: number;
