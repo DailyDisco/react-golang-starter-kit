@@ -141,7 +141,7 @@ Ensure you have the following installed on your system:
 
 - **Git:** For version control.
 - **Node.js (LTS) & npm/yarn:** For frontend development.
-- **Go (1.20+):** For backend development.
+- **Go (1.24+):** For backend development.
 - **Docker & Docker Compose (Optional):** Highly recommended for isolated development environments and deployment.
 - **PostgreSQL:** Database server.
 

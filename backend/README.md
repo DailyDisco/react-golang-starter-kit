@@ -41,9 +41,11 @@ backend/
 ### Directory Structure Reasoning
 
 #### `/cmd`
+
 Contains application entry points. This is a Go convention where `main.go` files live. Separating this from business logic makes the codebase more maintainable and testable.
 
 #### `/internal`
+
 Private application code that cannot be imported by external applications. This enforces boundaries and prevents external packages from importing internal business logic.
 
 - **`/internal/database`**: Database connection logic, migrations, and database-related utilities
@@ -58,11 +60,11 @@ This structure follows Go's [Standard Project Layout](https://github.com/golang-
 
 - **[Go](https://golang.org/)** - High-performance backend language
 - **[Chi Router](https://github.com/go-chi/chi)** - Lightweight, idiomatic HTTP router
-  - *Why Chi?* Fast, follows standard `net/http` patterns, composable middleware, excellent for RESTful APIs
+  - _Why Chi?_ Fast, follows standard `net/http` patterns, composable middleware, excellent for RESTful APIs
 - **[GORM](https://gorm.io/)** - Go ORM library
-  - *Why GORM?* Developer-friendly, auto-migration, relationship handling, works with multiple databases
+  - _Why GORM?_ Developer-friendly, auto-migration, relationship handling, works with multiple databases
 - **[PostgreSQL](https://postgresql.org/)** - Production-ready relational database
-  - *Why PostgreSQL?* ACID compliance, JSON support, excellent performance, widely adopted
+  - _Why PostgreSQL?_ ACID compliance, JSON support, excellent performance, widely adopted
 
 ### Development Tools
 
@@ -74,24 +76,27 @@ This structure follows Go's [Standard Project Layout](https://github.com/golang-
 
 ### Prerequisites
 
-- Go 1.21 or higher
+- Go 1.24 or higher
 - Docker and Docker Compose
 - Make (usually pre-installed on Linux/macOS)
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <your-repo>
    cd backend
    ```
 
 2. **Install Go dependencies**
+
    ```bash
    go mod tidy
    ```
 
 3. **Install Air for hot reload**
+
    ```bash
    go install github.com/air-verse/air@latest
    ```
@@ -109,7 +114,7 @@ This structure follows Go's [Standard Project Layout](https://github.com/golang-
 # Start PostgreSQL container
 make db-up
 
-# Stop PostgreSQL container  
+# Stop PostgreSQL container
 make db-down
 
 # Reset database (fresh start with latest schema)
@@ -148,7 +153,7 @@ The application uses these default credentials (defined in `Makefile` and `.env`
 - **Host:** localhost
 - **Port:** 5433 (to avoid conflicts with system PostgreSQL)
 - **Database:** devdb
-- **Username:** devuser  
+- **Username:** devuser
 - **Password:** devpass
 
 You can override these by setting environment variables or modifying the `.env` file.
@@ -156,11 +161,13 @@ You can override these by setting environment variables or modifying the `.env` 
 ## 🌐 API Endpoints
 
 ### Health Check
+
 ```
 GET /api/health
 ```
 
 ### Users (CRUD Operations)
+
 ```
 GET    /api/users     # Get all users
 POST   /api/users     # Create new user
@@ -251,7 +258,7 @@ r.Route("/products", func(r chi.Router) {
 func GetProducts(w http.ResponseWriter, r *http.Request) {
     var products []models.Product
     database.DB.Find(&products)
-    
+
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(products)
 }
@@ -275,7 +282,7 @@ go test ./internal/handlers
 GORM handles migrations automatically via `AutoMigrate()`. When you:
 
 1. Add new fields to models
-2. Create new models  
+2. Create new models
 3. Modify existing field types
 
 Simply restart the application or run `make db-reset` for a fresh database.
@@ -287,15 +294,18 @@ For production, consider using proper migration tools like [golang-migrate](http
 ### Common Issues
 
 1. **Port 5432 already in use**
+
    - The Makefile uses port 5433 to avoid conflicts
    - Check if system PostgreSQL is running: `sudo systemctl status postgresql`
 
 2. **Database connection failed**
+
    - Ensure Docker container is running: `docker ps`
    - Check container logs: `make db-logs`
    - Verify credentials in `.env` match `Makefile`
 
 3. **Module import errors**
+
    - Ensure `go.mod` module name matches import paths
    - Run `go mod tidy` to clean up dependencies
 
