@@ -35,13 +35,13 @@ export default function CustomLayoutDemo() {
       <div className="flex gap-4 justify-center">
         <Link
           to="/"
-          className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          className="bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
         >
           Back to Home
         </Link>
         <Link
           to="/demo"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
         >
           View Demo
         </Link>

@@ -2,6 +2,16 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { API_BASE_URL } from "../../lib/api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 interface User {
   id: number;
@@ -26,6 +36,12 @@ export function Demo() {
 
   const [newUser, setNewUser] = useState({ name: "", email: "" });
   const [createLoading, setCreateLoading] = useState(false);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   const API_BASE = `${API_BASE_URL}/api`;
 
@@ -117,17 +133,18 @@ export function Demo() {
     }
   };
 
+  // Open delete confirmation dialog
+  const openDeleteDialog = (userId: number, userName: string) => {
+    setUserToDelete({ id: userId, name: userName });
+    setDeleteDialogOpen(true);
+  };
+
   // Delete a user
-  const deleteUser = async (
-    userId: number,
-    userName: string,
-  ): Promise<void> => {
-    if (!confirm(`Are you sure you want to delete user "${userName}"?`)) {
-      return;
-    }
+  const deleteUser = async (): Promise<void> => {
+    if (!userToDelete) return;
 
     try {
-      const response = await fetch(`${API_BASE}/users/${userId}`, {
+      const response = await fetch(`${API_BASE}/users/${userToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -136,10 +153,12 @@ export function Demo() {
       }
 
       toast.success("User deleted successfully!", {
-        description: `${userName} has been removed from the system.`,
+        description: `${userToDelete.name} has been removed from the system.`,
       });
       // Refresh the users list
       fetchUsers();
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
@@ -192,7 +211,7 @@ export function Demo() {
             <button
               onClick={testHealthCheck}
               disabled={healthLoading}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-300 dark:disabled:bg-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
               {healthLoading ? "Testing..." : "Test Health Check"}
             </button>
@@ -259,7 +278,7 @@ export function Demo() {
             <button
               type="submit"
               disabled={createLoading}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 disabled:bg-green-300 dark:disabled:bg-green-800 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
               {createLoading ? "Creating..." : "Create User"}
             </button>
@@ -280,7 +299,7 @@ export function Demo() {
                 }
               }}
               disabled={usersLoading}
-              className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-300 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
               {usersLoading ? "Loading..." : "Refresh"}
             </button>
@@ -353,8 +372,8 @@ export function Demo() {
                         </td>
                         <td className="py-2 px-4">
                           <button
-                            onClick={() => deleteUser(user.id, user.name)}
-                            className="bg-red-600 hover:bg-red-700 text-white font-medium py-1 px-3 rounded text-sm transition-colors"
+                            onClick={() => openDeleteDialog(user.id, user.name)}
+                            className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white font-medium py-1 px-3 rounded text-sm transition-colors"
                           >
                             Delete
                           </button>
@@ -401,6 +420,30 @@ export function Demo() {
           </div>
         </section>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete user "{userToDelete?.name}"? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteUser}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

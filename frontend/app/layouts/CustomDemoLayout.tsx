@@ -4,12 +4,12 @@ import { Footer } from "@/layouts";
 
 export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       {/* Custom Layout Header */}
-      <div className="bg-slate-800 text-white p-4 text-center">
+      <div className="bg-card text-card-foreground p-4 text-center border-b">
         <div className="text-lg font-medium">Custom Demo Layout</div>
-        <div className="text-sm text-slate-300 mt-1">
+        <div className="text-sm text-muted-foreground mt-1">
           This page uses a different layout structure, for example you can
           scroll down and see the footer is not present.
         </div>
@@ -17,7 +17,7 @@ export default function Layout() {
 
       <main className="flex-1 p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
+          <div className="bg-card rounded-lg shadow-sm border p-8">
             <Outlet />
           </div>
         </div>
