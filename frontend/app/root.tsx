@@ -24,6 +24,7 @@ export const links: Route.LinksFunction = () => [
 ];
 
 import { Toaster } from "sonner";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -35,8 +36,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        <Toaster />
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Toaster />
+          {children}
+        </ThemeProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

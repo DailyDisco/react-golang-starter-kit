@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function meta() {
   return [
@@ -16,23 +17,38 @@ const HomePage = () => {
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <header className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            About This Project
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300">
-            A modern full-stack starter kit
-          </p>
+        <header className="mb-12">
+          <div className="flex justify-between items-start mb-6">
+            <div className="text-center flex-1">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                About This Project
+              </h1>
+              <p className="text-xl text-gray-600 dark:text-gray-300">
+                A modern full-stack starter kit
+              </p>
+            </div>
+            <div className="ml-4">
+              <ThemeToggle />
+            </div>
+          </div>
         </header>
 
-        {/* Demo Button */}
-        <div className="text-center mb-12">
+        {/* Action Buttons */}
+        <div className="text-center mb-12 space-y-4 md:space-y-0 md:space-x-4 md:flex md:justify-center md:items-center">
           <Link
             to="/demo"
             className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             🚀 Try the Demo
           </Link>
+          <a
+            href="http://localhost:8080/swagger/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            📚 API Docs
+          </a>
         </div>
 
         {/* Main Content */}
