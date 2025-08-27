@@ -2,7 +2,7 @@ export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 export interface User {
-  ID: number;
+  id: number;
   name: string;
   email: string;
 }
@@ -34,7 +34,7 @@ export const createUser = async (
 };
 
 export const updateUser = async (user: User): Promise<User> => {
-  const response = await fetch(`${API_BASE_URL}/users/${user.ID}`, {
+  const response = await fetch(`${API_BASE_URL}/users/${user.id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(user),

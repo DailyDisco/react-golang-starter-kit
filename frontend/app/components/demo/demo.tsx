@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 
 interface User {
-  ID: number;
+  id: number;
   CreatedAt?: string;
   UpdatedAt?: string;
   DeletedAt?: string | null;
@@ -316,30 +317,50 @@ export function Demo() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
-                    <tr
-                      key={user.ID}
-                      className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      <td className="py-2 px-4 text-gray-700 dark:text-gray-300">
-                        {user.ID}
-                      </td>
-                      <td className="py-2 px-4 text-gray-900 dark:text-white font-medium">
-                        {user.name}
-                      </td>
-                      <td className="py-2 px-4 text-gray-700 dark:text-gray-300">
-                        {user.email}
-                      </td>
-                      <td className="py-2 px-4">
-                        <button
-                          onClick={() => deleteUser(user.ID, user.name)}
-                          className="bg-red-600 hover:bg-red-700 text-white font-medium py-1 px-3 rounded text-sm transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {users.map((user) => {
+                    const userUrl = `/users/${user.id}`;
+                    console.log("Demo - User data:", {
+                      id: user.id,
+                      name: user.name,
+                      email: user.email,
+                      generatedUrl: userUrl,
+                    });
+
+                    return (
+                      <tr
+                        key={user.id}
+                        className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        <td className="py-2 px-4 text-gray-700 dark:text-gray-300">
+                          {user.id}
+                        </td>
+                        <td className="py-2 px-4">
+                          <Link
+                            to={userUrl}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-medium"
+                          >
+                            {user.name}
+                          </Link>
+                        </td>
+                        <td className="py-2 px-4">
+                          <Link
+                            to={userUrl}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                          >
+                            {user.email}
+                          </Link>
+                        </td>
+                        <td className="py-2 px-4">
+                          <button
+                            onClick={() => deleteUser(user.id, user.name)}
+                            className="bg-red-600 hover:bg-red-700 text-white font-medium py-1 px-3 rounded text-sm transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

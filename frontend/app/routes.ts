@@ -10,6 +10,7 @@ export default [
   layout("./layouts/StandardLayout.tsx", [
     index("./routes/home.tsx"),
     route("demo", "./routes/demo.tsx"),
+    route("users/:userId", "./routes/users.tsx"),
   ]),
 
   // Custom layout routes - completely separate layout system

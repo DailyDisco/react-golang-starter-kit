@@ -62,7 +62,7 @@ export const useUsers = (): UseUsersResult => {
     try {
       const updatedUser = await updateUser(user);
       setUsers((prevUsers) =>
-        prevUsers.map((u) => (u.ID === updatedUser.ID ? updatedUser : u)),
+        prevUsers.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
       );
     } catch (err) {
       const message =
@@ -78,7 +78,7 @@ export const useUsers = (): UseUsersResult => {
     setError(null);
     try {
       await deleteUser(id);
-      setUsers((prevUsers) => prevUsers.filter((user) => user.ID !== id));
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== id));
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An unknown error occurred";
