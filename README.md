@@ -19,6 +19,7 @@ This project serves as a robust and modern starter kit for building full-stack a
   - Includes basic CRUD operations and authentication scaffolding.
 - **🐳 Docker Support:**
   - `Dockerfiles` for both frontend and backend for easy containerization.
+  - `docker-compose.yml` for orchestrating all services (PostgreSQL, backend, frontend).
   - Simplified deployment and consistent development environments.
 - **💾 Database Integration:**
   - Pre-configured for PostgreSQL, allowing quick setup and integration.
@@ -196,11 +197,75 @@ Ensure you have the following installed on your system:
 
 Your application should now be running!
 
+## 🐳 Docker Setup (Recommended)
+
+For the easiest setup with isolated environments, use Docker Compose. This will run PostgreSQL, the Go backend, and React frontend in separate containers.
+
+### Quick Start with Docker
+
+1. **Prerequisites:**
+
+   - Docker & Docker Compose installed
+
+2. **Start all services:**
+
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **View logs:**
+
+   ```bash
+   docker-compose logs -f
+   ```
+
+4. **Stop services:**
+   ```bash
+   docker-compose down
+   ```
+
+### Docker Services
+
+- **PostgreSQL**: Database server on port 5432
+- **Backend (Go)**: API server on port 8080
+- **Frontend (React)**: Web app on port 5173
+
+### Docker Development Workflow
+
+```bash
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Stop services
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up --build -d
+```
+
+### Docker Commands
+
+```bash
+# Start specific service
+docker-compose up postgres
+docker-compose up backend
+
+# Remove volumes (WARNING: deletes database data)
+docker-compose down -v
+
+# View running containers
+docker-compose ps
+```
+
 ## 🚀 Usage
 
 Once both services are running:
 
-- **Frontend**: Open [http://localhost:3000](http://localhost:3000) in your browser
+- **Frontend**: Open [http://localhost:5173](http://localhost:5173) in your browser
 - **Backend API**: Available at [http://localhost:8080](http://localhost:8080)
 - **API Documentation**: Visit `/swagger` endpoint if available
 
@@ -288,6 +353,8 @@ react_golang_starter_kit/
 │   ├── Dockerfile            # Dockerfile for frontend
 │   ├── package.json          # Node.js package configuration
 │   └── ...
+├── docker-compose.yml        # 🐳 Docker Compose configuration
+├── .env.example              # Environment variables template
 ├── documentations/           # 📚 Project Documentation
 │   └── starter_kit/          # Specific documentation for this starter kit
 │   └── third_party/          # Documentation for third-party tools/libraries
