@@ -170,14 +170,35 @@ The application provides a user management interface where you can create, read,
 
 ### Frontend (React with Vitest)
 
-To run the frontend tests, navigate to the `frontend` directory and use the following command:
+The frontend uses **Vitest** with **Happy DOM** for fast, reliable testing. Happy DOM is a lightweight alternative to jsdom that provides better performance.
+
+#### Quick Test Commands
 
 ```bash
 cd frontend
+
+# Run tests once (CI mode)
+npm run test:fast
+
+# Run tests in watch mode (development)
 npm test
+# or
+npm run test:dev
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests with web UI (opens browser)
+npm run test:ui
 ```
 
-This will execute all tests defined using Vitest.
+#### Test Environment Features
+
+- ✅ **Happy DOM** - Fast, lightweight DOM implementation
+- ✅ **Global test functions** - No need to import describe/it/expect
+- ✅ **Hot reload** - Tests rerun automatically on file changes
+- ✅ **Coverage reporting** - Built-in coverage with HTML reports
+- ✅ **Web UI** - Visual test runner with detailed results
 
 ## 📜 Available Scripts
 
@@ -188,8 +209,17 @@ cd frontend
 npm run dev          # Start development server
 npm run build        # Build for production
 npm run preview      # Preview production build
-npm test             # Run tests
-npm run lint         # Run linter
+npm run typecheck    # Run TypeScript type checking
+
+# Testing Scripts
+npm test             # Run tests in watch mode
+npm run test:fast    # Run tests once with basic output
+npm run test:dev     # Run tests in watch mode (alias for npm test)
+npm run test:coverage # Run tests with coverage report
+npm run test:ui      # Run tests with web UI (opens browser)
+
+npm run prettier:check # Check code formatting
+npm run prettier:fix   # Fix code formatting
 ```
 
 ### Backend Scripts
