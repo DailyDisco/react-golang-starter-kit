@@ -2,6 +2,8 @@
 
 This project serves as a robust and modern starter kit for building full-stack applications, seamlessly integrating a React frontend with a high-performance Golang backend. Designed for rapid development and scalability, it provides a solid foundation with best practices already in place.
 
+🌐 **Live Demo:** [https://react-golang-starter-kit.vercel.app/](https://react-golang-starter-kit.vercel.app/)
+
 ## 🚀 Features
 
 - **⚛️ React Frontend:**
@@ -235,6 +237,7 @@ If you're deploying this monorepo structure where the entire repository is conne
    - **Install Command:** `npm install`
 
 2. **Environment Variables:**
+
    - Set `VITE_API_URL=https://your-backend-url.vercel.app`
 
 3. **Important Notes:**
@@ -273,6 +276,7 @@ If you're deploying this monorepo structure where the entire repository is conne
 
 **404 NOT_FOUND Error:**
 If you get a 404 error when accessing your deployed site:
+
 - **Solution:** The app has been configured for SPA mode with proper routing
 - **Cause:** Previous deployment used SSR which isn't compatible with Vercel's serverless environment
 - **Fix:** The latest changes disable SSR and add `vercel.json` for proper routing
@@ -296,6 +300,7 @@ If you get a 404 error when accessing your deployed site:
 Once both services are running:
 
 - **Frontend**: Open [http://localhost:5173](http://localhost:5173) in your browser
+- **Live Demo**: [https://react-golang-starter-kit.vercel.app/](https://react-golang-starter-kit.vercel.app/)
 - **Backend API**: Available at [http://localhost:8080](http://localhost:8080)
 - **API Documentation**: Interactive Swagger UI available at [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
 
