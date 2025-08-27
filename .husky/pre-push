@@ -1,2 +1,37 @@
-npm run test:frontend
-npm run test:backend
+#!/bin/bash
+
+echo "🚀 Running pre-push safety checks..."
+
+# Function to run command in background and track PID
+run_async() {
+  local cmd="$1"
+  local desc="$2"
+  echo "🔄 Starting: $desc"
+  eval "$cmd" &
+  echo $!
+}
+
+# Run comprehensive tests in parallel before push
+pids=()
+
+pid=$(run_async "npm run test:frontend" "Frontend test suite")
+pids+=("$pid")
+
+pid=$(run_async "npm run test:backend" "Backend test suite")
+pids+=("$pid")
+
+# Wait for all tests to complete
+echo "⏳ Waiting for test results..."
+failed=0
+for pid in "${pids[@]}"; do
+  if ! wait "$pid"; then
+    failed=1
+  fi
+done
+
+if [ $failed -eq 1 ]; then
+  echo "❌ Pre-push checks failed! Push blocked."
+  exit 1
+else
+  echo "✅ All pre-push checks passed! Safe to push."
+fi

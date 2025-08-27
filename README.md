@@ -26,6 +26,13 @@ This project serves as a robust and modern starter kit for building full-stack a
   - Scalable and reliable data storage solution.
 - **✅ API Testing:**
   - Integrated tools for efficient API testing to ensure robustness.
+- **🔧 Husky Git Hooks:**
+  - Automated code quality checks on commit and push.
+  - Conventional commit message validation (feat, fix, docs, refactor, etc.).
+  - Pre-commit hooks run targeted tests, linting, and type checking based on changed files.
+  - Pre-push hooks run full test suites to prevent broken code from reaching repository.
+  - Intelligent caching (5-minute validity) for better performance.
+  - Hooks auto-install during `npm install` for immediate protection.
 
 ## 🏁 Getting Started
 
@@ -443,6 +450,9 @@ Please ensure your code adheres to the existing style and conventions.
 ## 📄 License
 
 This project is licensed under the MIT License - see the `LICENSE` file for details.
+
 # Test comment
+
 # Another test
+
 // Test comment
