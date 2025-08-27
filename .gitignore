@@ -144,6 +144,9 @@ Thumbs.db
 /backend/*.db
 /frontend/*.db
 
+# Go backup files
+main.go.backup
+
 # Docker
 .dockerignore
 
