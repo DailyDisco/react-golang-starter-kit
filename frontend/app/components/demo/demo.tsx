@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import { API_BASE_URL } from "../lib/api";
 
 interface User {
   id: number;
@@ -26,7 +27,7 @@ export function Demo() {
   const [newUser, setNewUser] = useState({ name: "", email: "" });
   const [createLoading, setCreateLoading] = useState(false);
 
-  const API_BASE = "http://localhost:8080/api";
+  const API_BASE = `${API_BASE_URL}/api`;
 
   // Test health check
   const testHealthCheck = async () => {
@@ -391,7 +392,7 @@ export function Demo() {
                 Server Details
               </h3>
               <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                <li>Base URL: http://localhost:8080</li>
+                <li>Base URL: {API_BASE_URL}</li>
                 <li>Database: PostgreSQL</li>
                 <li>Framework: Go + Chi Router</li>
                 <li>CORS: Enabled for React dev server</li>

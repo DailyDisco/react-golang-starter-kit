@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { API_BASE_URL } from "../lib/api";
 
 export function meta() {
   return [
@@ -36,7 +37,7 @@ const HomePage = () => {
             🚀 Try the Demo
           </Link>
           <a
-            href="http://localhost:8080/swagger/"
+            href={`${API_BASE_URL}/swagger/`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"

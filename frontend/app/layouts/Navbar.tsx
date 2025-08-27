@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import { useState } from "react";
+import { API_BASE_URL } from "../lib/api";
 
 export function Navbar() {
   const location = useLocation();
@@ -15,7 +16,7 @@ export function Navbar() {
     { name: "Layout Demo", href: "/layout-demo" },
     {
       name: "API Docs",
-      href: "http://localhost:8080/swagger/",
+      href: `${API_BASE_URL}/swagger/`,
       external: true,
     },
   ];
