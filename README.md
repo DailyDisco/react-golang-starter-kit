@@ -12,7 +12,8 @@ This project serves as a robust and modern starter kit for building full-stack a
   - **[Vitest](https://vitest.dev/)** for fast unit and component testing.
   - Optimized for performance and developer experience.
 - **⚙️ Golang Backend:**
-  - Powered by the [Gin Web Framework](https://gin-gonic.com/docs/) for a fast and flexible API.
+  - Powered by the [Fiber Web Framework](https://gofiber.io/) for a fast and flexible API.
+  - [Air](https://github.com/cosmtrek/air) for live reloading during development.
   - [GORM](https://gorm.io/) for elegant Object-Relational Mapping (ORM) with PostgreSQL.
   - Structured project layout for maintainability and scalability.
   - Includes basic CRUD operations and authentication scaffolding.
@@ -51,7 +52,7 @@ Ensure you have the following installed on your system:
 2.  **Set up Environment Variables:**
     Create a `.env` file in the project root based on `.env.example`.
 
-    ```
+    ```bash
     # Backend Environment Variables
     DB_HOST=localhost
     DB_PORT=5432
@@ -70,6 +71,13 @@ Ensure you have the following installed on your system:
     ```bash
     cd backend
     go mod tidy          # Download dependencies
+    go install github.com/cosmtrek/air@latest  # Install Air for live reloading
+    air                  # Start the backend server with live reloading
+    ```
+
+    Alternatively, you can run without Air:
+
+    ```bash
     go run cmd/main.go   # Start the backend server
     ```
 
