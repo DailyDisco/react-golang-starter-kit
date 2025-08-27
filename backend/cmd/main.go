@@ -3,8 +3,10 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/handlers"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -31,7 +33,7 @@ func main() {
 
 	// CORS middleware for React frontend
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:5173", "http://localhost:8080"}, // React dev server + backend
+		AllowedOrigins:   getAllowedOrigins(),
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -79,4 +81,21 @@ func setupRoutes(r chi.Router) {
 	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "docs/swagger.json")
 	})
+}
+
+// getAllowedOrigins returns the allowed CORS origins from environment variables
+// Falls back to common development origins if not set
+func getAllowedOrigins() []string {
+	originsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if originsEnv != "" {
+		return strings.Split(originsEnv, ",")
+	}
+
+	// Default development origins
+	return []string{
+		"http://localhost:3000",
+		"http://localhost:5173",
+		"http://localhost:8080",
+		"*", // Allow all for development
+	}
 }

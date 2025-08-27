@@ -74,7 +74,7 @@ Ensure you have the following installed on your system:
     API_PORT=8080
 
     # Frontend Environment Variables
-    VITE_API_URL=http://localhost:8080/api
+    VITE_API_URL=http://localhost:8080
     ```
 
 3.  **Backend Setup:**
@@ -282,13 +282,13 @@ If you're deploying this monorepo structure where the entire repository is conne
 **PostgreSQL Database Connection:**
 Railway provides PostgreSQL environment variables automatically. The backend is configured to use these standard PostgreSQL variable names:
 
-| Railway Variable | Maps to | Description |
-|-----------------|---------|-------------|
-| `PGHOST` | Database Host | The database server address |
-| `PGPORT` | Database Port | Usually `5432` |
-| `PGUSER` | Database User | Your database username |
-| `PGPASSWORD` | Database Password | Your database password |
-| `PGDATABASE` | Database Name | The name of your database |
+| Railway Variable | Maps to           | Description                 |
+| ---------------- | ----------------- | --------------------------- |
+| `PGHOST`         | Database Host     | The database server address |
+| `PGPORT`         | Database Port     | Usually `5432`              |
+| `PGUSER`         | Database User     | Your database username      |
+| `PGPASSWORD`     | Database Password | Your database password      |
+| `PGDATABASE`     | Database Name     | The name of your database   |
 
 **You don't need to set these manually** - Railway provides them automatically when you link your database to your backend service.
 
