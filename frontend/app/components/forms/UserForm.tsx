@@ -29,7 +29,7 @@ export const UserForm: React.FC<UserFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(name, email, initialData?.ID);
+    onSubmit(name, email, initialData?.id);
     if (!initialData) {
       // Clear form only for new user creation
       setName("");
