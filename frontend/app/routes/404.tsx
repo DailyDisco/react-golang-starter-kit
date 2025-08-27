@@ -13,8 +13,8 @@ export function meta() {
 
 const NotFoundPage = () => {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 dark:from-slate-950 dark:via-gray-950 dark:to-zinc-950">
-      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <main className="flex-1 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 dark:from-slate-950 dark:via-gray-950 dark:to-zinc-950">
+      <div className="flex items-center justify-center px-4 py-12 min-h-[60vh]">
         <div className="w-full max-w-lg mx-auto text-center">
           {/* Icon and 404 Number */}
           <div className="mb-8">

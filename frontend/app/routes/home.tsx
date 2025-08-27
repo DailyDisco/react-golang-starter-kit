@@ -1,5 +1,4 @@
 import { Link } from "react-router";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function meta() {
   return [
@@ -14,22 +13,17 @@ export function meta() {
 
 const HomePage = () => {
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
+    <main className="bg-gray-50 dark:bg-gray-900 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <header className="mb-12">
-          <div className="flex justify-between items-start mb-6">
-            <div className="text-center flex-1">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                About This Project
-              </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300">
-                A modern full-stack starter kit
-              </p>
-            </div>
-            <div className="ml-4">
-              <ThemeToggle />
-            </div>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              About This Project
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300">
+              A modern full-stack starter kit
+            </p>
           </div>
         </header>
 
@@ -181,13 +175,6 @@ const HomePage = () => {
               </div>
             </div>
           </section>
-
-          {/* Footer */}
-          <footer className="text-center pt-8 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-gray-600 dark:text-gray-400">
-              Built with ❤️ using React & Go
-            </p>
-          </footer>
         </div>
       </div>
     </main>
