@@ -61,6 +61,7 @@ jobs:
           else
             echo "✅ All Go files are properly formatted"
           fi
+        shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
       - name: Check goimports
@@ -79,6 +80,7 @@ jobs:
           else
             echo "⚠️  goimports not available, skipping import check"
           fi
+        shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
   security:
@@ -104,6 +106,7 @@ jobs:
             go install golang.org/x/vuln/cmd/govulncheck@latest
             govulncheck ./...
           fi
+        shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
       - name: Run gosec (Go Security Checker)
@@ -171,6 +174,7 @@ jobs:
             go tool cover -html=coverage.out -o coverage.html
             go tool cover -func=coverage.out
           fi
+        shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
       - name: Upload coverage to Codecov
@@ -229,6 +233,7 @@ jobs:
           export GOARCH=${{ matrix.arch }}
           echo "🔨 Building for $GOOS/$GOARCH..."
           go build -ldflags="-s -w" -o backend-${{ matrix.name }} ./cmd/main.go
+        shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
       - name: Upload build artifacts

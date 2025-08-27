@@ -51,6 +51,7 @@ jobs:
             echo "⚠️  Security vulnerabilities detected. Consider running 'npm audit fix'"
             npm audit --audit-level=moderate || true
           fi
+        shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
   lint:
@@ -86,6 +87,7 @@ jobs:
           else
             echo "ℹ️  No lint script configured"
           fi
+        shell: bash
         working-directory: ${{ env.WORKING_DIR }}
         continue-on-error: true
 
@@ -122,6 +124,7 @@ jobs:
             echo "No test script found"
             exit 1
           fi
+        shell: bash
         working-directory: ${{ env.WORKING_DIR }}
 
       - name: Upload coverage to Codecov

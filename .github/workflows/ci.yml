@@ -137,6 +137,7 @@ jobs:
             go install golang.org/x/vuln/cmd/govulncheck@latest
             govulncheck ./...
           fi
+        shell: bash
         working-directory: ${{ env.BACKEND_DIR }}
 
   # Backend Testing
@@ -275,6 +276,7 @@ jobs:
           fi
 
           echo "✅ Integration verification completed"
+        shell: bash
 
   # Final summary
   summary:
@@ -301,3 +303,4 @@ jobs:
           else
             echo "❌ **Some CI checks failed. Please review the failed jobs.**" >> $GITHUB_STEP_SUMMARY
           fi
+        shell: bash
