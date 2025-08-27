@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Input } from "../components/ui/input";
-import { Button } from "../components/ui/button";
-import type { User } from "../lib/api";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import type { User } from "@/lib/api";
 
 interface UserFormProps {
   onSubmit: (name: string, email: string, id?: number) => void;
