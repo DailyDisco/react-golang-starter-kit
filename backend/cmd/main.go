@@ -12,7 +12,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-
 func main() {
 	// Load environment variables from .env file
 	err := godotenv.Load()
@@ -65,10 +64,10 @@ func setupRoutes(r chi.Router) {
 
 		// User routes
 		r.Route("/users", func(r chi.Router) {
-			r.Get("/", handlers.GetUsers)       // GET /api/users
-			r.Post("/", handlers.CreateUser)     // POST /api/users
-			r.Get("/{id}", handlers.GetUser)     // GET /api/users/{id}
-			r.Put("/{id}", handlers.UpdateUser)  // PUT /api/users/{id}
+			r.Get("/", handlers.GetUsers)          // GET /api/users
+			r.Post("/", handlers.CreateUser)       // POST /api/users
+			r.Get("/{id}", handlers.GetUser)       // GET /api/users/{id}
+			r.Put("/{id}", handlers.UpdateUser)    // PUT /api/users/{id}
 			r.Delete("/{id}", handlers.DeleteUser) // DELETE /api/users/{id}
 		})
 	})
