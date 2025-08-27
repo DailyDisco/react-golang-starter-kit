@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"react-golang-starter/internal/models"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -28,21 +29,34 @@ func ConnectDB() {
 
 	log.Printf("Connecting to database: host=%s port=%s user=%s dbname=%s", host, port, user, dbname)
 
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// Retry connection with exponential backoff
+	maxRetries := 10
+	for i := 0; i < maxRetries; i++ {
+		DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
-	if err != nil {
-		log.Fatal("Failed to connect to PostgreSQL database:", err)
+		if err == nil {
+			log.Println("PostgreSQL database connected successfully")
+
+			// Auto-migrate your models
+			err = DB.AutoMigrate(&models.User{})
+			if err != nil {
+				log.Printf("Failed to migrate database: %v", err)
+				continue
+			}
+
+			log.Println("Database migration completed")
+			return
+		}
+
+		if i < maxRetries-1 {
+			waitTime := time.Duration(i+1) * 2 * time.Second
+			log.Printf("Failed to connect to PostgreSQL database (attempt %d/%d): %v", i+1, maxRetries, err)
+			log.Printf("Retrying in %v...", waitTime)
+			time.Sleep(waitTime)
+		}
 	}
 
-	log.Println("PostgreSQL database connected successfully")
-
-	// Auto-migrate your models
-	err = DB.AutoMigrate(&models.User{})
-	if err != nil {
-		log.Fatal("Failed to migrate database:", err)
-	}
-
-	log.Println("Database migration completed")
+	log.Fatal("Failed to connect to PostgreSQL database after", maxRetries, "attempts:", err)
 }
 
 func getEnv(key, fallback string) string {

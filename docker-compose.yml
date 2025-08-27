@@ -11,6 +11,13 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U devuser -d devdb']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
 
   backend:
     image: golang:1.24-alpine
@@ -36,7 +43,8 @@ services:
         go run -tags=dev cmd/main.go
       "
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -56,7 +64,7 @@ services:
     command: >
       sh -c "
         npm install --no-audit --no-fund &&
-        npm run dev -- --host 0.0.0.0 --no-open
+        npm run dev -- --host 0.0.0.0
       "
     depends_on:
       - backend

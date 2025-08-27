@@ -156,6 +156,89 @@ docker-compose down -v
 docker-compose ps
 ```
 
+## 🚀 Deployment Options
+
+### Option 1: Docker + VPS (Simple & Cost-Effective)
+
+**Best for:** Full control, single server deployment
+
+1. **Build production images:**
+
+   ```bash
+   # Build optimized images
+   docker build -t myapp-backend:latest ./backend
+   docker build -t myapp-frontend:latest ./frontend
+   ```
+
+2. **Create production docker-compose.yml:**
+
+   ```yaml
+   version: '3.8'
+   services:
+     postgres:
+       image: postgres:15-alpine
+       environment:
+         POSTGRES_DB: prod_db
+         POSTGRES_USER: prod_user
+         POSTGRES_PASSWORD: ${DB_PASSWORD}
+       volumes:
+         - postgres_data:/var/lib/postgresql/data
+
+     backend:
+       image: myapp-backend:latest
+       environment:
+         - DB_HOST=postgres
+         - DB_PASSWORD=${DB_PASSWORD}
+         - JWT_SECRET=${JWT_SECRET}
+       ports:
+         - '8080:8080'
+       depends_on:
+         - postgres
+
+     frontend:
+       image: myapp-frontend:latest
+       ports:
+         - '80:80'
+
+   volumes:
+     postgres_data:
+   ```
+
+3. **Deploy on your VPS:**
+
+   ```bash
+   docker-compose up -d
+   ```
+
+### Option 2: Vercel + Railway (Developer-Friendly)
+
+**Best for:** Quick deployment, modern workflow, generous free tiers
+
+1. **Frontend on Vercel:**
+
+   - Connect your GitHub repo to [Vercel](https://vercel.com)
+   - Vercel will auto-detect your React app
+   - Set environment variable: `VITE_API_URL=https://your-backend-url.vercel.app`
+   - Deploy automatically on git push
+
+2. **Backend on Railway:**
+
+   - Go to [Railway.app](https://railway.app) and create account
+   - Connect your GitHub repo
+   - Add PostgreSQL database (free tier available)
+   - Set environment variables:
+     - `DB_HOST`
+     - `DB_PASSWORD`
+     - `JWT_SECRET`
+     - `API_PORT=8080`
+   - Deploy automatically
+
+3. **Update frontend API URL:**
+   - Copy Railway backend URL
+   - Update Vercel's `VITE_API_URL` environment variable
+
+**Cost:** Both offer generous free tiers, total ~$0-10/month for small apps
+
 ## 🚀 Usage
 
 Once both services are running:
@@ -325,12 +408,12 @@ Modify workflow files to adjust test commands, coverage thresholds, or security 
 
 We welcome contributions! Please follow these steps:
 
-1.  Fork the repository.
-2.  Create a new branch (`git checkout -b feature/your-feature-name`).
-3.  Make your changes.
-4.  Commit your changes (`git commit -m 'feat: Add new feature'`).
-5.  Push to the branch (`git push origin feature/your-feature-name`).
-6.  Open a Pull Request.
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/your-feature-name`).
+3. Make your changes.
+4. Commit your changes (`git commit -m 'feat: Add new feature'`).
+5. Push to the branch (`git push origin feature/your-feature-name`).
+6. Open a Pull Request.
 
 Please ensure your code adheres to the existing style and conventions.
 
