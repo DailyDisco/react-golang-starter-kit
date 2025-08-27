@@ -41,7 +41,8 @@ export function Demo() {
         description: `Status: ${data.status} - ${data.message}`,
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast.error("Health check failed", {
         description: errorMessage,
       });
@@ -61,7 +62,8 @@ export function Demo() {
       const data: User[] = await response.json();
       setUsers(data);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast.error("Failed to fetch users", {
         description: errorMessage,
       });
@@ -103,7 +105,8 @@ export function Demo() {
       // Refresh the users list
       fetchUsers();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast.error("Failed to create user", {
         description: errorMessage,
       });
@@ -113,7 +116,10 @@ export function Demo() {
   };
 
   // Delete a user
-  const deleteUser = async (userId: number, userName: string): Promise<void> => {
+  const deleteUser = async (
+    userId: number,
+    userName: string,
+  ): Promise<void> => {
     if (!confirm(`Are you sure you want to delete user "${userName}"?`)) {
       return;
     }
@@ -133,7 +139,8 @@ export function Demo() {
       // Refresh the users list
       fetchUsers();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast.error("Failed to delete user", {
         description: errorMessage,
       });
@@ -155,7 +162,7 @@ export function Demo() {
       toast.dismiss("fetch-users");
       if (!usersLoading && users.length > 0) {
         toast.success("Users loaded successfully!", {
-          description: `Found ${users.length} user${users.length !== 1 ? 's' : ''}`,
+          description: `Found ${users.length} user${users.length !== 1 ? "s" : ""}`,
         });
       }
     }
@@ -209,28 +216,38 @@ export function Demo() {
           <form onSubmit={createUser} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Name
                 </label>
                 <input
                   type="text"
                   id="name"
                   value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, name: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   placeholder="Enter user name"
                   disabled={createLoading}
                 />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
                   Email
                 </label>
                 <input
                   type="email"
                   id="email"
                   value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, email: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   placeholder="Enter email address"
                   disabled={createLoading}
@@ -269,29 +286,50 @@ export function Demo() {
 
           {usersLoading ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 dark:text-gray-300">Loading users...</p>
+              <p className="text-gray-600 dark:text-gray-300">
+                Loading users...
+              </p>
             </div>
           ) : users.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">No users found. Create one above!</p>
+              <p className="text-gray-500 dark:text-gray-400">
+                No users found. Create one above!
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-600">
-                    <th className="text-left py-2 px-4 text-gray-900 dark:text-white font-medium">ID</th>
-                    <th className="text-left py-2 px-4 text-gray-900 dark:text-white font-medium">Name</th>
-                    <th className="text-left py-2 px-4 text-gray-900 dark:text-white font-medium">Email</th>
-                    <th className="text-left py-2 px-4 text-gray-900 dark:text-white font-medium">Actions</th>
+                    <th className="text-left py-2 px-4 text-gray-900 dark:text-white font-medium">
+                      ID
+                    </th>
+                    <th className="text-left py-2 px-4 text-gray-900 dark:text-white font-medium">
+                      Name
+                    </th>
+                    <th className="text-left py-2 px-4 text-gray-900 dark:text-white font-medium">
+                      Email
+                    </th>
+                    <th className="text-left py-2 px-4 text-gray-900 dark:text-white font-medium">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => (
-                    <tr key={user.ID} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="py-2 px-4 text-gray-700 dark:text-gray-300">{user.ID}</td>
-                      <td className="py-2 px-4 text-gray-900 dark:text-white font-medium">{user.name}</td>
-                      <td className="py-2 px-4 text-gray-700 dark:text-gray-300">{user.email}</td>
+                    <tr
+                      key={user.ID}
+                      className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      <td className="py-2 px-4 text-gray-700 dark:text-gray-300">
+                        {user.ID}
+                      </td>
+                      <td className="py-2 px-4 text-gray-900 dark:text-white font-medium">
+                        {user.name}
+                      </td>
+                      <td className="py-2 px-4 text-gray-700 dark:text-gray-300">
+                        {user.email}
+                      </td>
                       <td className="py-2 px-4">
                         <button
                           onClick={() => deleteUser(user.ID, user.name)}
@@ -315,7 +353,9 @@ export function Demo() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-              <h3 className="font-medium text-gray-900 dark:text-white mb-2">API Endpoints</h3>
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">
+                API Endpoints
+              </h3>
               <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                 <li>GET /api/health - Health check</li>
                 <li>GET /api/users - List all users</li>
@@ -326,7 +366,9 @@ export function Demo() {
               </ul>
             </div>
             <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-              <h3 className="font-medium text-gray-900 dark:text-white mb-2">Server Details</h3>
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">
+                Server Details
+              </h3>
               <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                 <li>Base URL: http://localhost:8080</li>
                 <li>Database: PostgreSQL</li>

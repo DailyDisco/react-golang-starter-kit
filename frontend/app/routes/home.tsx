@@ -3,7 +3,11 @@ import { Link } from "react-router";
 export function meta() {
   return [
     { title: "About - React + Go Starter Kit" },
-    { name: "description", content: "Learn more about this full-stack starter kit built with React and Go" },
+    {
+      name: "description",
+      content:
+        "Learn more about this full-stack starter kit built with React and Go",
+    },
   ];
 }
 
@@ -39,13 +43,15 @@ const HomePage = () => {
               🚀 What is this?
             </h2>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-              This is a production-ready starter kit that combines the power of React on the frontend
-              with Go on the backend. It's designed to help developers quickly bootstrap modern
-              web applications with best practices built-in.
+              This is a production-ready starter kit that combines the power of
+              React on the frontend with Go on the backend. It's designed to
+              help developers quickly bootstrap modern web applications with
+              best practices built-in.
             </p>
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-              Whether you're building a SaaS product, API service, or full-stack web app,
-              this starter kit provides a solid foundation to build upon.
+              Whether you're building a SaaS product, API service, or full-stack
+              web app, this starter kit provides a solid foundation to build
+              upon.
             </p>
           </section>
 
@@ -91,29 +97,41 @@ const HomePage = () => {
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <span className="text-green-500">✓</span>
-                  <span className="text-gray-700 dark:text-gray-300">Hot reload development</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Hot reload development
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-green-500">✓</span>
-                  <span className="text-gray-700 dark:text-gray-300">Database migrations</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Database migrations
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-green-500">✓</span>
-                  <span className="text-gray-700 dark:text-gray-300">CORS configured</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    CORS configured
+                  </span>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <span className="text-green-500">✓</span>
-                  <span className="text-gray-700 dark:text-gray-300">Docker support</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Docker support
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-green-500">✓</span>
-                  <span className="text-gray-700 dark:text-gray-300">TypeScript ready</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    TypeScript ready
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-green-500">✓</span>
-                  <span className="text-gray-700 dark:text-gray-300">Dark mode support</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Dark mode support
+                  </span>
                 </div>
               </div>
             </div>
@@ -129,10 +147,21 @@ const HomePage = () => {
                 Ready to start building? Here's how to get up and running:
               </p>
               <div className="space-y-2 text-sm">
-                <p className="font-medium text-gray-900 dark:text-white">1. Clone the repository</p>
-                <p className="font-medium text-gray-900 dark:text-white">2. Set up your environment variables</p>
-                <p className="font-medium text-gray-900 dark:text-white">3. Run <code className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded">docker-compose up</code></p>
-                <p className="font-medium text-gray-900 dark:text-white">4. Start developing!</p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  1. Clone the repository
+                </p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  2. Set up your environment variables
+                </p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  3. Run{" "}
+                  <code className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded">
+                    docker-compose up
+                  </code>
+                </p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  4. Start developing!
+                </p>
               </div>
             </div>
           </section>
@@ -147,7 +176,7 @@ const HomePage = () => {
       </div>
     </main>
   );
-}
+};
 
 export default function Home() {
   return <HomePage />;
