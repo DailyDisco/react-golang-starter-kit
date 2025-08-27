@@ -107,10 +107,17 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
 
       - name: Run gosec (Go Security Checker)
-        uses: securecodewarrior/github-action-gosec@master
-        with:
-          args: './...'
-          workdir: ${{ env.WORKING_DIR }}
+        run: |
+          echo "🔍 Running gosec security scanner..."
+          export PATH=$PATH:$(go env GOPATH)/bin
+          if command -v gosec >/dev/null 2>&1; then
+            gosec ./...
+          else
+            echo "⚠️  gosec not available, installing..."
+            go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+            gosec ./...
+          fi
+        working-directory: ${{ env.WORKING_DIR }}
 
   # Matrix testing across different Go versions and platforms
   test:
