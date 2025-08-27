@@ -229,12 +229,14 @@ docker-compose ps
 Deploy this monorepo with separate services for optimal performance:
 
 **🗄️ Step 1: Database on Railway**
+
 1. Create account at [Railway.app](https://railway.app)
 2. Create new project
 3. Add PostgreSQL database (free tier available)
 4. Note your database credentials (Railway provides these automatically)
 
 **⚙️ Step 2: Backend on Railway**
+
 1. Create new Railway project for your backend
 2. Connect your GitHub repo
 3. Set deployment settings:
@@ -248,6 +250,7 @@ Deploy this monorepo with separate services for optimal performance:
 6. Deploy and note your backend URL: `https://your-app-name.up.railway.app`
 
 **🌐 Step 3: Frontend on Vercel**
+
 1. Connect your GitHub repo to [Vercel](https://vercel.com)
 2. Configure build settings:
    - **Root Directory:** `frontend`
@@ -260,10 +263,12 @@ Deploy this monorepo with separate services for optimal performance:
 4. Deploy frontend
 
 **🎯 Step 4: Connect Services**
+
 - Your frontend will automatically connect to your Railway backend
 - Test API endpoints like `/api/health` and `/api/users`
 
 **📋 Important Notes:**
+
 - App uses SPA mode (SSR disabled) for optimal Vercel performance
 - `vercel.json` handles client-side routing to prevent 404 errors
 - All hardcoded localhost URLs have been replaced with environment variables
@@ -336,55 +341,66 @@ Railway provides PostgreSQL environment variables automatically. The backend is 
 #### Common Deployment Issues & Solutions
 
 **❌ ERR_BLOCKED_BY_CLIENT / Connection Refused:**
+
 - **Cause:** Frontend trying to connect to localhost or wrong backend URL
 - **Solution:** Set correct `VITE_API_URL` in Vercel environment variables
 - **Format:** `https://your-railway-backend.up.railway.app` (base URL only, no `/api/*`)
 - **Debug:** Check browser console for API_BASE_URL logs
 
 **❌ 404 NOT_FOUND on API Calls (Double /api):**
+
 - **Cause:** VITE_API_URL includes `/api/*` causing URLs like `/api/*/api/users`
 - **Solution:** Use base URL only in VITE_API_URL
 - **Example:** `VITE_API_URL=https://your-app.up.railway.app`
 
 **❌ Build Error: "Could not resolve import path":**
+
 - **Cause:** Incorrect relative import paths in components
 - **Solution:** Use correct relative paths (e.g., `../../lib/api` from components/demo/)
 - **Fix:** Check and correct import statements in affected files
 
 **❌ Railway Database Connection Failed:**
+
 - **Cause:** Backend service not linked to PostgreSQL database in Railway
 - **Solution:** In Railway dashboard, link your PostgreSQL to your backend service
 - **Result:** Railway automatically injects PGHOST, PGPASSWORD, etc.
 
 **❌ CORS Errors:**
+
 - **Cause:** Backend not configured to allow Vercel frontend origin
 - **Solution:** Set `CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app` in Railway backend
 
 **❌ Vercel Build Command Failed:**
+
 - **Cause:** Wrong root directory or build settings
 - **Solution:** Ensure Root Directory is set to `frontend` in Vercel project settings
 
 **❌ Error: `sh: line 1: cd: frontend: No such file or directory`:**
+
 - **Solution:** Set Root Directory to `frontend` in Vercel project settings
 - **Alternative:** Use repository root with `cd frontend &&` commands
 
 #### Deployment Verification Checklist
 
 **✅ Database Setup:**
+
 - [ ] Railway PostgreSQL database created and linked to backend
 - [ ] Backend can connect (check Railway logs for successful DB connection)
 
 **✅ Backend Deployment:**
+
 - [ ] Railway backend deployed successfully
 - [ ] Public URL accessible: `https://your-app.up.railway.app/api/health`
 - [ ] CORS configured for Vercel frontend
 
 **✅ Frontend Deployment:**
+
 - [ ] Vercel frontend deployed successfully
 - [ ] VITE_API_URL set to correct Railway backend URL (base URL only)
 - [ ] No hardcoded localhost URLs remain
 
 **✅ Testing:**
+
 - [ ] Frontend loads without console errors
 - [ ] API calls work (`/api/health`, `/api/users`)
 - [ ] Browser shows correct API_BASE_URL in console
@@ -393,16 +409,19 @@ Railway provides PostgreSQL environment variables automatically. The backend is 
 ## 🚀 Usage
 
 ### Development (Local)
+
 - **Frontend**: `npm run dev` → [http://localhost:5173](http://localhost:5173)
 - **Backend**: `go run cmd/main.go` → [http://localhost:8080](http://localhost:8080)
 - **API Documentation**: [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
 
 ### Production (Deployed)
+
 - **Live Demo**: [https://react-golang-starter-kit.vercel.app/](https://react-golang-starter-kit.vercel.app/)
 - **Backend API**: Your Railway backend URL
 - **API Documentation**: `https://your-railway-backend.up.railway.app/swagger/`
 
 ### Testing API Endpoints
+
 - **Health Check**: `/api/health`
 - **Users API**: `/api/users`
 - **User by ID**: `/api/users/{id}`
