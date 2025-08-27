@@ -4,26 +4,26 @@ This project serves as a robust and modern starter kit for building full-stack a
 
 ## 🚀 Features
 
--   **⚛️ React Frontend:**
-    -   Built with [Vite](https://vitejs.dev/) for blazing-fast development.
-    -   [React Router](https://reactrouter.com/en/main) for declarative navigation.
-    -   [TailwindCSS](https://tailwindcss.com/) for utility-first styling.
-    -   [ShadCN UI](https://ui.shadcn.com/) components for a beautiful and accessible user interface.
-    -   **[Vitest](https://vitest.dev/)** for fast unit and component testing.
-    -   Optimized for performance and developer experience.
--   **⚙️ Golang Backend:**
-    -   Powered by the [Gin Web Framework](https://gin-gonic.com/docs/) for a fast and flexible API.
-    -   [GORM](https://gorm.io/) for elegant Object-Relational Mapping (ORM) with PostgreSQL.
-    -   Structured project layout for maintainability and scalability.
-    -   Includes basic CRUD operations and authentication scaffolding.
--   **🐳 Docker Support:**
-    -   `Dockerfiles` for both frontend and backend for easy containerization.
-    -   Simplified deployment and consistent development environments.
--   **💾 Database Integration:**
-    -   Pre-configured for PostgreSQL, allowing quick setup and integration.
-    -   Scalable and reliable data storage solution.
--   **✅ API Testing:**
-    -   Integrated tools for efficient API testing to ensure robustness.
+- **⚛️ React Frontend:**
+  - Built with [Vite](https://vitejs.dev/) for blazing-fast development.
+  - [React Router](https://reactrouter.com/en/main) for declarative navigation.
+  - [TailwindCSS](https://tailwindcss.com/) for utility-first styling.
+  - [ShadCN UI](https://ui.shadcn.com/) components for a beautiful and accessible user interface.
+  - **[Vitest](https://vitest.dev/)** for fast unit and component testing.
+  - Optimized for performance and developer experience.
+- **⚙️ Golang Backend:**
+  - Powered by the [Gin Web Framework](https://gin-gonic.com/docs/) for a fast and flexible API.
+  - [GORM](https://gorm.io/) for elegant Object-Relational Mapping (ORM) with PostgreSQL.
+  - Structured project layout for maintainability and scalability.
+  - Includes basic CRUD operations and authentication scaffolding.
+- **🐳 Docker Support:**
+  - `Dockerfiles` for both frontend and backend for easy containerization.
+  - Simplified deployment and consistent development environments.
+- **💾 Database Integration:**
+  - Pre-configured for PostgreSQL, allowing quick setup and integration.
+  - Scalable and reliable data storage solution.
+- **✅ API Testing:**
+  - Integrated tools for efficient API testing to ensure robustness.
 
 ## 🏁 Getting Started
 
@@ -33,11 +33,11 @@ Follow these steps to get your development environment up and running.
 
 Ensure you have the following installed on your system:
 
--   **Git:** For version control.
--   **Node.js (LTS) & npm/yarn:** For frontend development.
--   **Go (1.20+):** For backend development.
--   **Docker & Docker Compose (Optional):** Highly recommended for isolated development environments and deployment.
--   **PostgreSQL:** Database server.
+- **Git:** For version control.
+- **Node.js (LTS) & npm/yarn:** For frontend development.
+- **Go (1.20+):** For backend development.
+- **Docker & Docker Compose (Optional):** Highly recommended for isolated development environments and deployment.
+- **PostgreSQL:** Database server.
 
 ### Installation
 
@@ -128,10 +128,10 @@ react_golang_starter_kit/
 
 Critical environment variables are managed through `.env` files. A `.env.example` is provided for reference. It is crucial to set these values correctly for the application to function.
 
--   `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`: PostgreSQL database connection details.
--   `JWT_SECRET`: Secret key for JWT authentication. **(Highly recommended to change in production!)**
--   `API_PORT`: Port on which the Golang backend API will run.
--   `VITE_API_URL`: Frontend URL to access the backend API.
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`: PostgreSQL database connection details.
+- `JWT_SECRET`: Secret key for JWT authentication. **(Highly recommended to change in production!)**
+- `API_PORT`: Port on which the Golang backend API will run.
+- `VITE_API_URL`: Frontend URL to access the backend API.
 
 ## 🤝 Contributing
 
