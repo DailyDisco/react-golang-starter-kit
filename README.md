@@ -222,6 +222,28 @@ docker-compose ps
 
 **Best for:** Quick deployment, modern workflow, generous free tiers
 
+#### Option 2A: Monorepo Frontend Deployment (Recommended for this project)
+
+If you're deploying this monorepo structure where the entire repository is connected to Vercel:
+
+1. **Connect Repository to Vercel:**
+
+   - Connect your GitHub repo to [Vercel](https://vercel.com)
+   - **Root Directory:** `frontend` (treat frontend folder as project root)
+   - **Build Command:** `react-router build`
+   - **Output Directory:** `build/client`
+   - **Install Command:** `npm install`
+
+2. **Environment Variables:**
+   - Set `VITE_API_URL=https://your-backend-url.vercel.app`
+
+3. **Important Notes:**
+   - The app is configured for SPA mode (SSR disabled) for optimal Vercel performance
+   - A `vercel.json` file is included in the frontend directory to handle routing properly
+   - This prevents 404 errors when users navigate directly to routes or refresh pages
+
+#### Option 2B: Separate Services Deployment
+
 1. **Frontend on Vercel:**
 
    - Connect your GitHub repo to [Vercel](https://vercel.com)
@@ -246,6 +268,28 @@ docker-compose ps
    - Update Vercel's `VITE_API_URL` environment variable
 
 **Cost:** Both offer generous free tiers, total ~$0-10/month for small apps
+
+#### Troubleshooting Vercel Deployment
+
+**404 NOT_FOUND Error:**
+If you get a 404 error when accessing your deployed site:
+- **Solution:** The app has been configured for SPA mode with proper routing
+- **Cause:** Previous deployment used SSR which isn't compatible with Vercel's serverless environment
+- **Fix:** The latest changes disable SSR and add `vercel.json` for proper routing
+- **Action:** Redeploy your project - the 404 errors should be resolved
+
+**Error: `sh: line 1: cd: frontend: No such file or directory`:**
+
+- **Solution:** Set the **Root Directory** to `frontend` in Vercel project settings
+- This tells Vercel to treat the `frontend` folder as the project root
+- Commands will then run relative to the `frontend` directory
+
+**Alternative:** If you prefer deploying from repository root:
+
+- **Root Directory:** (leave empty)
+- **Build Command:** `cd frontend && react-router build`
+- **Output Directory:** `frontend/build/client`
+- **Install Command:** `cd frontend && npm install`
 
 ## 🚀 Usage
 
