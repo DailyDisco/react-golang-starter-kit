@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react';
 import {
   type User,
   fetchUsers,
   createUser,
   updateUser,
   deleteUser,
-} from "../lib/api";
-import { toast } from "sonner";
+} from '../lib/api';
+import { toast } from 'sonner';
 
 interface UseUsersResult {
   users: User[];
@@ -31,7 +31,7 @@ export const useUsers = (): UseUsersResult => {
       setUsers(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "An unknown error occurred",
+        err instanceof Error ? err.message : 'An unknown error occurred'
       );
     }
     setLoading(false);
@@ -46,10 +46,10 @@ export const useUsers = (): UseUsersResult => {
     setError(null);
     try {
       const newUser = await createUser(name, email);
-      setUsers((prevUsers) => [...prevUsers, newUser]);
+      setUsers(prevUsers => [...prevUsers, newUser]);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "An unknown error occurred";
+        err instanceof Error ? err.message : 'An unknown error occurred';
       setError(message);
       toast.error(message);
     }
@@ -61,12 +61,12 @@ export const useUsers = (): UseUsersResult => {
     setError(null);
     try {
       const updatedUser = await updateUser(user);
-      setUsers((prevUsers) =>
-        prevUsers.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
+      setUsers(prevUsers =>
+        prevUsers.map(u => (u.id === updatedUser.id ? updatedUser : u))
       );
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "An unknown error occurred";
+        err instanceof Error ? err.message : 'An unknown error occurred';
       setError(message);
       toast.error(message);
     }
@@ -78,10 +78,10 @@ export const useUsers = (): UseUsersResult => {
     setError(null);
     try {
       await deleteUser(id);
-      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== id));
+      setUsers(prevUsers => prevUsers.filter(user => user.id !== id));
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "An unknown error occurred";
+        err instanceof Error ? err.message : 'An unknown error occurred';
       setError(message);
       toast.error(message);
     }

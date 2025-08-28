@@ -1,11 +1,11 @@
-import { Demo } from "../components/demo/demo";
+import { Demo } from '../components/demo/demo';
 
 export function meta() {
   return [
-    { title: "React + Go Starter Kit" },
+    { title: 'React + Go Starter Kit' },
     {
-      name: "description",
-      content: "Welcome to your React + Go full-stack application",
+      name: 'description',
+      content: 'Welcome to your React + Go full-stack application',
     },
   ];
 }

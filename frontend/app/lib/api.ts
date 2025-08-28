@@ -1,11 +1,11 @@
 // Debug: Log the API URL being used
-console.log("🔗 API_BASE_URL:", import.meta.env.VITE_API_URL);
+console.log('🔗 API_BASE_URL:', import.meta.env.VITE_API_URL);
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8080";
+  import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // Debug: Log the final API URL
-console.log("🚀 Final API_BASE_URL:", API_BASE_URL);
+console.log('🚀 Final API_BASE_URL:', API_BASE_URL);
 
 export interface User {
   id: number;
@@ -23,17 +23,17 @@ export const fetchUsers = async (): Promise<User[]> => {
 
 export const createUser = async (
   name: string,
-  email: string,
+  email: string
 ): Promise<User> => {
   const response = await fetch(`${API_BASE_URL}/users`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, email }),
   });
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(
-      errorData.error || `Failed to create user: ${response.statusText}`,
+      errorData.error || `Failed to create user: ${response.statusText}`
     );
   }
   return response.json();
@@ -41,14 +41,14 @@ export const createUser = async (
 
 export const updateUser = async (user: User): Promise<User> => {
   const response = await fetch(`${API_BASE_URL}/users/${user.id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(user),
   });
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(
-      errorData.error || `Failed to update user: ${response.statusText}`,
+      errorData.error || `Failed to update user: ${response.statusText}`
     );
   }
   return response.json();
@@ -56,13 +56,13 @@ export const updateUser = async (user: User): Promise<User> => {
 
 export const deleteUser = async (id: number): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/users/${id}`, {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
   });
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(
-      errorData.error || `Failed to delete user: ${response.statusText}`,
+      errorData.error || `Failed to delete user: ${response.statusText}`
     );
   }
 };

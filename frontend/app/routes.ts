@@ -3,21 +3,21 @@ import {
   index,
   layout,
   route,
-} from "@react-router/dev/routes";
+} from '@react-router/dev/routes';
 
 export default [
   // Regular routes with standard navbar/footer layout
-  layout("./layouts/StandardLayout.tsx", [
-    index("./routes/home.tsx"),
-    route("demo", "./routes/demo.tsx"),
-    route("users/:userId", "./routes/users.tsx"),
+  layout('./layouts/StandardLayout.tsx', [
+    index('./routes/home.tsx'),
+    route('demo', './routes/demo.tsx'),
+    route('users/:userId', './routes/users.tsx'),
   ]),
 
   // Custom layout routes - completely separate layout system
-  layout("./layouts/CustomDemoLayout.tsx", [
-    route("layout-demo", "./routes/custom-layout-demo.tsx"),
+  layout('./layouts/CustomDemoLayout.tsx', [
+    route('layout-demo', './routes/custom-layout-demo.tsx'),
   ]),
 
   // Catch-all route
-  route("*", "./routes/404.tsx"),
+  route('*', './routes/404.tsx'),
 ] satisfies RouteConfig;

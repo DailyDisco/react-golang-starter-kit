@@ -7,6 +7,8 @@
 node_modules/
 package-lock.json
 
+todo.md
+
 # Build artifacts
 /backend/tmp/
 /backend/main
