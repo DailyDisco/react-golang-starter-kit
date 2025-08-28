@@ -20,28 +20,42 @@ interface AuthProviderProps {
     children: React.ReactNode;
 }
 
+// Client-side only hook for localStorage
+function useClientSideOnly() {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    return isClient;
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const isClient = useClientSideOnly();
 
     // Load user and token from localStorage on mount
     useEffect(() => {
+        if (!isClient) return;
+
         const loadAuthState = async () => {
             try {
                 const storedToken = localStorage.getItem('auth_token');
                 const storedUser = localStorage.getItem('auth_user');
 
                 if (storedToken && storedUser) {
-                    const parsedUser = JSON.parse(storedUser);
-                    setToken(storedToken);
-                    setUser(parsedUser);
-
-                    // Verify token is still valid by fetching current user
                     try {
+                        const parsedUser = JSON.parse(storedUser);
+                        setToken(storedToken);
+                        setUser(parsedUser);
+
+                        // Verify token is still valid
                         await refreshUser();
                     } catch (error) {
-                        // Token is invalid, clear auth state
+                        console.error('Auth state invalid:', error);
                         logout();
                     }
                 }
@@ -54,7 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         };
 
         loadAuthState();
-    }, []);
+    }, [isClient]);
 
     const login = async (credentials: LoginRequest): Promise<void> => {
         setIsLoading(true);
@@ -93,7 +107,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const logout = () => {
         setUser(null);
         setToken(null);
-        AuthService.logout();
+        // Only call logout if we're on client side
+        if (typeof window !== 'undefined') {
+            AuthService.logout();
+        }
     };
 
     const updateUser = async (userData: Partial<User>): Promise<void> => {
@@ -104,7 +121,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             const updatedUser = await AuthService.updateUser(user.id, userData);
             setUser(updatedUser);
-            localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+            if (isClient) {
+                localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+            }
         } catch (error) {
             throw error;
         }
@@ -114,7 +133,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             const currentUser = await AuthService.getCurrentUser();
             setUser(currentUser);
-            localStorage.setItem('auth_user', JSON.stringify(currentUser));
+            if (isClient) {
+                localStorage.setItem('auth_user', JSON.stringify(currentUser));
+            }
         } catch (error) {
             throw error;
         }
@@ -141,8 +162,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 export function useAuth(): AuthContextType {
     const context = useContext(AuthContext);
+
     if (context === undefined) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
+
     return context;
 }

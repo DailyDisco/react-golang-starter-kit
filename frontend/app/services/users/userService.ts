@@ -1,4 +1,8 @@
-import { API_BASE_URL, authenticatedFetch } from '../api/client';
+import {
+  API_BASE_URL,
+  authenticatedFetch,
+  parseErrorResponse,
+} from '../api/client';
 import type { User } from '../types';
 
 export class UserService {
@@ -6,11 +10,17 @@ export class UserService {
    * Fetch all users
    */
   static async fetchUsers(): Promise<User[]> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/users`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/users`);
     if (!response.ok) {
       throw new Error(`Failed to fetch users: ${response.statusText}`);
     }
-    return response.json();
+
+    try {
+      return await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse users response:', parseError);
+      throw new Error('Invalid response format from server');
+    }
   }
 
   /**
@@ -23,19 +33,25 @@ export class UserService {
   ): Promise<User> {
     const userData = password ? { name, email, password } : { name, email };
 
-    const response = await authenticatedFetch(`${API_BASE_URL}/users`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/users`, {
       method: 'POST',
       body: JSON.stringify(userData),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || `Failed to create user: ${response.statusText}`
+      const errorMessage = await parseErrorResponse(
+        response,
+        'Failed to create user'
       );
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    try {
+      return await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse create user response:', parseError);
+      throw new Error('Invalid response format from server');
+    }
   }
 
   /**
@@ -43,7 +59,7 @@ export class UserService {
    */
   static async updateUser(user: User): Promise<User> {
     const response = await authenticatedFetch(
-      `${API_BASE_URL}/users/${user.id}`,
+      `${API_BASE_URL}/api/users/${user.id}`,
       {
         method: 'PUT',
         body: JSON.stringify(user),
@@ -51,28 +67,38 @@ export class UserService {
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || `Failed to update user: ${response.statusText}`
+      const errorMessage = await parseErrorResponse(
+        response,
+        'Failed to update user'
       );
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    try {
+      return await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse update user response:', parseError);
+      throw new Error('Invalid response format from server');
+    }
   }
 
   /**
    * Delete a user
    */
   static async deleteUser(id: number): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/users/${id}`, {
-      method: 'DELETE',
-    });
+    const response = await authenticatedFetch(
+      `${API_BASE_URL}/api/users/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || `Failed to delete user: ${response.statusText}`
+      const errorMessage = await parseErrorResponse(
+        response,
+        'Failed to delete user'
       );
+      throw new Error(errorMessage);
     }
   }
 
@@ -80,10 +106,18 @@ export class UserService {
    * Get a specific user by ID
    */
   static async getUserById(id: number): Promise<User> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/users/${id}`);
+    const response = await authenticatedFetch(
+      `${API_BASE_URL}/api/users/${id}`
+    );
     if (!response.ok) {
       throw new Error(`Failed to fetch user: ${response.statusText}`);
     }
-    return response.json();
+
+    try {
+      return await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse user response:', parseError);
+      throw new Error('Invalid response format from server');
+    }
   }
 }
