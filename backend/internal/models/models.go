@@ -110,8 +110,8 @@ type ErrorResponse struct {
 // SuccessResponse represents a success response
 // swagger:model SuccessResponse
 type SuccessResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
