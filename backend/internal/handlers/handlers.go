@@ -67,7 +67,7 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 }
@@ -91,7 +91,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -119,7 +119,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 }
@@ -149,7 +149,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -163,7 +163,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusUnauthorized,
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -176,7 +176,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusNotFound,
 		}
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -190,7 +190,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusForbidden,
 		}
 		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -208,7 +208,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 }
@@ -240,7 +240,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -253,7 +253,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -266,7 +266,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -280,7 +280,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusConflict,
 		}
 		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -294,7 +294,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -308,7 +308,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -333,7 +333,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -351,7 +351,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 }
@@ -382,7 +382,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -396,7 +396,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusUnauthorized,
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -409,7 +409,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusNotFound,
 		}
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -423,7 +423,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusForbidden,
 		}
 		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -440,7 +440,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -453,9 +453,9 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 				Message: err.Error(),
 				Code:    http.StatusBadRequest,
 			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response)
-			return
+					w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+		return
 		}
 
 		// Check if email is already taken by another user
@@ -468,7 +468,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 				Code:    http.StatusConflict,
 			}
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(response)
+			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 			return
 		}
 
@@ -489,7 +489,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -506,7 +506,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 }
@@ -536,7 +536,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -550,7 +550,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusUnauthorized,
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -564,7 +564,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusNotFound,
 		}
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -578,7 +578,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusForbidden,
 		}
 		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 
@@ -590,7 +590,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
 		return
 	}
 

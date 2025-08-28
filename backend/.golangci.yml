@@ -1,0 +1,10 @@
+linters:
+  enable:
+    - errcheck
+
+linters-settings:
+  errcheck:
+    # List of functions to exclude from checking
+    # These are intentionally ignored as we're already in an error state
+    exclude-functions:
+      - (*encoding/json.Encoder).Encode
