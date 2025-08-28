@@ -4,8 +4,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/handlers"
+	"react-golang-starter/internal/ratelimit"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -21,15 +23,26 @@ func main() {
 		log.Println("No .env file found, using system environment variables")
 	}
 
+	// Load rate limiting configuration
+	rateLimitConfig := ratelimit.LoadConfig()
+	if rateLimitConfig.Enabled {
+		log.Println("Rate limiting is enabled")
+	} else {
+		log.Println("Rate limiting is disabled")
+	}
+
 	// Initialize database
 	database.ConnectDB()
 
 	// Create Chi router
 	r := chi.NewRouter()
 
-	// Middleware
+	// Global middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	// Apply IP-based rate limiting globally
+	r.Use(ratelimit.NewIPRateLimitMiddleware(rateLimitConfig))
 
 	// CORS middleware for React frontend
 	r.Use(cors.Handler(cors.Options{
@@ -42,13 +55,13 @@ func main() {
 	}))
 
 	// Routes
-	setupRoutes(r)
+	setupRoutes(r, rateLimitConfig)
 
 	log.Println("Server starting on :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
-func setupRoutes(r chi.Router) {
+func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config) {
 	// Simple test route at root level
 	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("Test route working!")); err != nil {
@@ -64,13 +77,38 @@ func setupRoutes(r chi.Router) {
 		})
 		r.Get("/health", handlers.HealthCheck)
 
-		// User routes
+		// Authentication routes - combined public and protected
+		r.Route("/auth", func(r chi.Router) {
+			// Public authentication routes - stricter rate limiting
+			r.Use(ratelimit.NewAuthRateLimitMiddleware(rateLimitConfig))
+			r.Post("/register", auth.RegisterUser)           // POST /api/auth/register
+			r.Post("/login", auth.LoginUser)                 // POST /api/auth/login
+			r.Get("/verify-email", auth.VerifyEmail)         // GET /api/auth/verify-email
+			r.Post("/reset-password", auth.RequestPasswordReset) // POST /api/auth/reset-password
+			r.Post("/reset-password/confirm", auth.ResetPassword) // POST /api/auth/reset-password/confirm
+
+			// Protected authentication routes - require authentication
+			r.Route("/me", func(r chi.Router) {
+				r.Use(auth.AuthMiddleware)
+				r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
+				r.Get("/", auth.GetCurrentUser) // GET /api/auth/me
+			})
+		})
+
+		// User routes - API rate limiting
 		r.Route("/users", func(r chi.Router) {
-			r.Get("/", handlers.GetUsers)          // GET /api/users
-			r.Post("/", handlers.CreateUser)       // POST /api/users
-			r.Get("/{id}", handlers.GetUser)       // GET /api/users/{id}
-			r.Put("/{id}", handlers.UpdateUser)    // PUT /api/users/{id}
-			r.Delete("/{id}", handlers.DeleteUser) // DELETE /api/users/{id}
+			r.Use(ratelimit.NewAPIRateLimitMiddleware(rateLimitConfig))
+			r.Get("/", handlers.GetUsers)          // GET /api/users (public for now)
+			r.Post("/", handlers.CreateUser)       // POST /api/users (public for now)
+
+			// Protected user routes
+			r.Route("/{id}", func(r chi.Router) {
+				r.Use(auth.AuthMiddleware)
+				r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
+				r.Get("/", handlers.GetUser)       // GET /api/users/{id}
+				r.Put("/", handlers.UpdateUser)    // PUT /api/users/{id}
+				r.Delete("/", handlers.DeleteUser) // DELETE /api/users/{id}
+			})
 		})
 	})
 

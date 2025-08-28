@@ -25,6 +25,7 @@ export const links: Route.LinksFunction = () => [
 
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/providers/theme-provider';
+import { AuthProvider } from './contexts/AuthContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -42,8 +43,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           enableSystem
           disableTransitionOnChange
         >
-          <Toaster />
-          {children}
+          <AuthProvider>
+            <Toaster />
+            {children}
+          </AuthProvider>
         </ThemeProvider>
         <ScrollRestoration />
         <Scripts />

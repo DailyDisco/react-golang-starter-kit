@@ -6,11 +6,16 @@ import {
 } from '@react-router/dev/routes';
 
 export default [
+  // Authentication routes (no layout)
+  route('login', './routes/login.tsx'),
+  route('register', './routes/register.tsx'),
+
   // Regular routes with standard navbar/footer layout
   layout('./layouts/StandardLayout.tsx', [
     index('./routes/home.tsx'),
     route('demo', './routes/demo.tsx'),
     route('users/:userId', './routes/users.tsx'),
+    route('profile', './routes/profile.tsx'),
   ]),
 
   // Custom layout routes - completely separate layout system
