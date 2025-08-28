@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Menu, User, LogOut, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/auth/useAuth';
-import { API_BASE_URL } from '../lib/api';
+import { API_BASE_URL } from '../services';
 
 export function Navbar() {
   const location = useLocation();
@@ -62,8 +62,8 @@ export function Navbar() {
                   target={item.external ? '_blank' : undefined}
                   rel={item.external ? 'noopener noreferrer' : undefined}
                   className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive(item.href)
-                      ? 'border-blue-500 text-gray-900 dark:text-white'
-                      : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-100'
+                    ? 'border-blue-500 text-gray-900 dark:text-white'
+                    : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-100'
                     }`}
                 >
                   {item.name}
@@ -145,8 +145,8 @@ export function Navbar() {
                       rel={item.external ? 'noopener noreferrer' : undefined}
                       onClick={() => setIsOpen(false)}
                       className={`inline-flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive(item.href)
-                          ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                         }`}
                     >
                       {item.name}
