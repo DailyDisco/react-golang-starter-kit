@@ -189,141 +189,61 @@ Retry-After: 60
 Rate limit exceeded. Too many requests from this IP address.
 ```
 
-### Environment Variables
-
-#### Required Variables
-
-```bash
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_NAME=your_database_name
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-
-# CORS Configuration
-CORS_ALLOWED_ORIGINS=http://localhost:5173,https://yourdomain.com
-
-# Optional: JWT Expiration (hours)
-JWT_EXPIRATION_HOURS=24
-```
-
-#### Rate Limiting Variables (Optional)
-
-```bash
-RATE_LIMIT_ENABLED=true
-RATE_LIMIT_IP_PER_MINUTE=60
-RATE_LIMIT_IP_PER_HOUR=1000
-RATE_LIMIT_USER_PER_MINUTE=120
-RATE_LIMIT_USER_PER_HOUR=2000
-RATE_LIMIT_AUTH_PER_MINUTE=5
-RATE_LIMIT_API_PER_MINUTE=100
-```
-
 ## 🏁 Getting Started
 
 ### Prerequisites
-
-Before you begin, ensure you have these installed:
 
 - **Git** - Version control
 - **Node.js (LTS)** & **npm** - Frontend development
 - **Go (1.24+)** - Backend development
 - **Docker & Docker Compose** _(Recommended)_ - Isolated development environments
-- **PostgreSQL** - Database server
+- **PostgreSQL** - Database server (if not using Docker)
 
-### Local Development Setup
+### Setup Options
+
+#### Option 1: Docker (Recommended)
+
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd react-golang-starter-kit
+docker-compose up -d
+```
+
+**Services:**
+
+- **Frontend:** [http://localhost:5173](http://localhost:5173)
+- **Backend API:** [http://localhost:8080](http://localhost:8080)
+- **API Docs:** [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
+
+**Useful Docker Commands:**
+
+```bash
+docker-compose logs -f          # View logs
+docker-compose down             # Stop services
+docker-compose up --build -d    # Rebuild after changes
+```
+
+#### Option 2: Local Development
 
 1. **Clone and setup:**
 
    ```bash
    git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
    cd react-golang-starter-kit
-   cp .env.example .env  # Copy environment template
+   cp .env.example .env
    ```
 
-2. **Configure environment:**
-   Edit `.env` with your database credentials and other settings.
+2. **Configure environment:** Edit `.env` with your database credentials
 
-3. **Start the backend:**
+3. **Start services:**
 
    ```bash
-   cd backend
-   go mod tidy
-   go install github.com/cosmtrek/air@latest  # For live reloading
-   air  # Or: go run cmd/main.go
+   # Backend (with live reloading)
+   cd backend && go mod tidy && air
+
+   # Frontend (new terminal)
+   cd ../frontend && npm install && npm run dev
    ```
-
-4. **Start the frontend:**
-   ```bash
-   cd ../frontend
-   npm install
-   npm run dev
-   ```
-
-Your app will be running at:
-
-- **Frontend:** [http://localhost:5173](http://localhost:5173)
-- **Backend API:** [http://localhost:8080](http://localhost:8080)
-- **API Docs:** [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
-
-## 🐳 Docker Setup (Recommended)
-
-Docker provides the easiest way to get started with isolated development environments. Everything runs in separate containers with zero configuration.
-
-### Quick Docker Start
-
-```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-cd react-golang-starter-kit
-
-# Start all services (PostgreSQL + Backend + Frontend)
-docker-compose up -d
-
-# View logs (optional)
-docker-compose logs -f
-```
-
-Your application will be running at:
-
-- **Frontend:** [http://localhost:5173](http://localhost:5173)
-- **Backend API:** [http://localhost:8080](http://localhost:8080)
-- **API Docs:** [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
-
-### Docker Services
-
-| Service              | Port   | Description     |
-| -------------------- | ------ | --------------- |
-| **PostgreSQL**       | `5432` | Database server |
-| **Backend (Go)**     | `8080` | REST API server |
-| **Frontend (React)** | `5173` | Web application |
-
-### Useful Docker Commands
-
-```bash
-# Stop all services
-docker-compose down
-
-# Rebuild and restart after code changes
-docker-compose up --build -d
-
-# View logs for specific service
-docker-compose logs -f backend
-docker-compose logs -f frontend
-
-# Start only specific services
-docker-compose up postgres backend
-
-# Remove volumes (⚠️ deletes database data)
-docker-compose down -v
-
-# View running containers
-docker-compose ps
-```
 
 ## 🚀 Deployment
 
@@ -447,27 +367,6 @@ docker-compose up -d
 
 # Setup SSL (optional)
 # docker run -it --rm --name certbot certbot certonly --webroot --webroot-path /var/www/html -d yourdomain.com
-```
-
-### Environment Variables for Production
-
-#### Required Variables
-
-```bash
-# Database (Railway provides these automatically)
-DB_HOST=your-db-host
-DB_PORT=5432
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
-DB_NAME=your-db-name
-
-# Security
-JWT_SECRET=your-super-secret-jwt-key-minimum-32-chars
-CORS_ALLOWED_ORIGINS=https://yourdomain.com
-
-# Optional
-JWT_EXPIRATION_HOURS=24
-RATE_LIMIT_ENABLED=true
 ```
 
 ### Troubleshooting Common Issues
