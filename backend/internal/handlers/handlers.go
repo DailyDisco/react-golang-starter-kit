@@ -47,16 +47,23 @@ import (
 // @Tags health
 // @Accept json
 // @Produce json
-// @Success 200 {object} map[string]string "status: ok, message: Server is running"
+// @Success 200 {object} models.HealthResponse
 // @Router /health [get]
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	response := map[string]string{
-		"status":  "ok",
-		"message": "Server is running",
+	response := models.HealthResponse{
+		Status:  "ok",
+		Message: "Server is running",
 	}
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to encode response",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 }
@@ -67,12 +74,20 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Success 200 {array} models.UserResponse
+// @Success 200 {object} models.UsersResponse
+// @Failure 500 {object} models.ErrorResponse
 // @Router /users [get]
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
 	if err := database.DB.Find(&users).Error; err != nil {
-		http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to fetch users",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -82,9 +97,21 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		userResponses = append(userResponses, user.ToUserResponse())
 	}
 
+	response := models.UsersResponse{
+		Users: userResponses,
+		Count: len(userResponses),
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(userResponses); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to encode response",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 }
@@ -97,42 +124,78 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path int true "User ID"
 // @Success 200 {object} models.UserResponse
-// @Failure 400 {string} string "Invalid user ID"
-// @Failure 401 {string} string "Unauthorized"
-// @Failure 403 {string} string "Forbidden"
-// @Failure 404 {string} string "User not found"
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
 // @Router /users/{id} [get]
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	userID, err := strconv.Atoi(id)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "Invalid user ID",
+			Code:    http.StatusBadRequest,
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// Get the authenticated user from context
 	currentUser, ok := auth.GetUserFromContext(r.Context())
 	if !ok {
-		http.Error(w, "User not found in context", http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Unauthorized",
+			Message: "User not found in context",
+			Code:    http.StatusUnauthorized,
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	var user models.User
 	if err := database.DB.First(&user, userID).Error; err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Not Found",
+			Message: "User not found",
+			Code:    http.StatusNotFound,
+		}
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// Users can only view their own profile unless they're admins
 	if currentUser.ID != uint(userID) {
 		// TODO: Add role checking for admin users
-		http.Error(w, "Forbidden: You can only view your own profile", http.StatusForbidden)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Forbidden",
+			Message: "You can only view your own profile",
+			Code:    http.StatusForbidden,
+		}
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(user.ToUserResponse()); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to encode response",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 }

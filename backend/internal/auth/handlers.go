@@ -16,47 +16,89 @@ import (
 // @Produce json
 // @Param user body models.RegisterRequest true "User registration data"
 // @Success 201 {object} models.AuthResponse
-// @Failure 400 {string} string "Invalid JSON or validation error"
-// @Failure 409 {string} string "User already exists"
-// @Failure 500 {string} string "Failed to create user"
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 409 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
 // @Router /auth/register [post]
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "Invalid JSON",
+			Code:    http.StatusBadRequest,
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// Validate email format
 	if err := ValidateEmail(req.Email); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Bad Request",
+			Message: err.Error(),
+			Code:    http.StatusBadRequest,
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// Validate password strength
 	if err := ValidatePassword(req.Password); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Bad Request",
+			Message: err.Error(),
+			Code:    http.StatusBadRequest,
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// Check if user already exists
 	var existingUser models.User
 	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
-		http.Error(w, "User with this email already exists", http.StatusConflict)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Conflict",
+			Message: "User with this email already exists",
+			Code:    http.StatusConflict,
+		}
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// Hash password
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
-		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to hash password",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// Generate verification token
 	verificationToken, err := GenerateVerificationToken()
 	if err != nil {
-		http.Error(w, "Failed to generate verification token", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to generate verification token",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -74,14 +116,28 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := database.DB.Create(&user).Error; err != nil {
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to create user",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// Generate JWT token
 	token, err := GenerateJWT(&user)
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to generate token",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -94,7 +150,13 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to encode response",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 }

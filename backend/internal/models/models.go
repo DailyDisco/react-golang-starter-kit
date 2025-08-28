@@ -98,3 +98,33 @@ type PasswordResetConfirm struct {
 	Token    string `json:"token" binding:"required"`
 	Password string `json:"password" binding:"required,min=8"`
 }
+
+// ErrorResponse represents an error response
+// swagger:model ErrorResponse
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message,omitempty"`
+	Code    int    `json:"code,omitempty"`
+}
+
+// SuccessResponse represents a success response
+// swagger:model SuccessResponse
+type SuccessResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
+// HealthResponse represents the health check response
+// swagger:model HealthResponse
+type HealthResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+// UsersResponse represents a list of users response
+// swagger:model UsersResponse
+type UsersResponse struct {
+	Users []UserResponse `json:"users"`
+	Count int            `json:"count"`
+}
