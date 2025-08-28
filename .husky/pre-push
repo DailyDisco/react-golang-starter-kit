@@ -16,8 +16,9 @@ run_cmd() {
   fi
 }
 
-# Run comprehensive tests in parallel before push
+# Run comprehensive tests and formatting checks in parallel before push
 echo "🧪 Running frontend and backend tests in parallel..."
+echo "🎨 Running code formatting checks..."
 
 failed=0
 
@@ -29,11 +30,16 @@ pid1=$!
 (run_cmd "npm run test:backend" "Backend test suite") &
 pid2=$!
 
-# Wait for both tests to complete
-echo "⏳ Waiting for test results..."
+# Run prettier formatting check
+(run_cmd "npm run lint" "Prettier formatting check") &
+pid3=$!
+
+# Wait for all checks to complete
+echo "⏳ Waiting for test and formatting results..."
 
 if ! wait "$pid1"; then failed=1; fi
 if ! wait "$pid2"; then failed=1; fi
+if ! wait "$pid3"; then failed=1; fi
 
 if [ $failed -eq 1 ]; then
   echo "❌ Pre-push checks failed! Push blocked."
