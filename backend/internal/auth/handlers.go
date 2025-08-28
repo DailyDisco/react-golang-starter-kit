@@ -30,7 +30,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -43,7 +45,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -56,7 +60,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -70,7 +76,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusConflict,
 		}
 		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -84,7 +92,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -98,7 +108,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -123,7 +135,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -137,7 +151,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -156,7 +172,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 }
@@ -183,7 +201,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -197,7 +217,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusUnauthorized,
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -210,7 +232,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusUnauthorized,
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -223,7 +247,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusUnauthorized,
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -237,7 +263,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -256,7 +284,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 }
@@ -282,7 +312,9 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusUnauthorized,
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -300,7 +332,9 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 }
@@ -326,7 +360,9 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -339,7 +375,9 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -354,7 +392,9 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 				Code:    http.StatusBadRequest,
 			}
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 			return
 		}
 	}
@@ -373,7 +413,9 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -390,7 +432,9 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 }
@@ -416,7 +460,9 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -429,7 +475,9 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 			Message: "If the email exists, a password reset link has been sent",
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -443,7 +491,9 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -460,7 +510,9 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -480,7 +532,9 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 }
@@ -507,7 +561,9 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -520,7 +576,9 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -533,7 +591,9 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusUnauthorized,
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -548,7 +608,9 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 				Code:    http.StatusUnauthorized,
 			}
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 			return
 		}
 	}
@@ -563,7 +625,9 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -581,7 +645,9 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -598,7 +664,9 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 }

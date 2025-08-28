@@ -7,6 +7,15 @@ import (
 	"react-golang-starter/internal/models"
 )
 
+// ContextKey defines a custom type for context keys to avoid collisions
+type ContextKey string
+
+const (
+	UserContextKey     ContextKey = "user"
+	UserIDContextKey   ContextKey = "user_id"
+	UserEmailContextKey ContextKey = "user_email"
+)
+
 // AuthMiddleware validates JWT tokens and adds user context to requests
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -41,9 +50,9 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Add user context to request
-		ctx := context.WithValue(r.Context(), "user", &user)
-		ctx = context.WithValue(ctx, "user_id", user.ID)
-		ctx = context.WithValue(ctx, "user_email", user.Email)
+		ctx := context.WithValue(r.Context(), UserContextKey, &user)
+		ctx = context.WithValue(ctx, UserIDContextKey, user.ID)
+		ctx = context.WithValue(ctx, UserEmailContextKey, user.Email)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -62,9 +71,9 @@ func OptionalAuthMiddleware(next http.Handler) http.Handler {
 					var user models.User
 					if err := database.DB.First(&user, claims.UserID).Error; err == nil && user.IsActive {
 						// Add user context to request
-						ctx := context.WithValue(r.Context(), "user", &user)
-						ctx = context.WithValue(ctx, "user_id", user.ID)
-						ctx = context.WithValue(ctx, "user_email", user.Email)
+						ctx := context.WithValue(r.Context(), UserContextKey, &user)
+						ctx = context.WithValue(ctx, UserIDContextKey, user.ID)
+						ctx = context.WithValue(ctx, UserEmailContextKey, user.Email)
 						next.ServeHTTP(w, r.WithContext(ctx))
 						return
 					}
@@ -79,19 +88,19 @@ func OptionalAuthMiddleware(next http.Handler) http.Handler {
 
 // GetUserFromContext retrieves the user from the request context
 func GetUserFromContext(ctx context.Context) (*models.User, bool) {
-	user, ok := ctx.Value("user").(*models.User)
+	user, ok := ctx.Value(UserContextKey).(*models.User)
 	return user, ok
 }
 
 // GetUserIDFromContext retrieves the user ID from the request context
 func GetUserIDFromContext(ctx context.Context) (uint, bool) {
-	userID, ok := ctx.Value("user_id").(uint)
+	userID, ok := ctx.Value(UserIDContextKey).(uint)
 	return userID, ok
 }
 
 // GetUserEmailFromContext retrieves the user email from the request context
 func GetUserEmailFromContext(ctx context.Context) (string, bool) {
-	email, ok := ctx.Value("user_email").(string)
+	email, ok := ctx.Value(UserEmailContextKey).(string)
 	return email, ok
 }
 

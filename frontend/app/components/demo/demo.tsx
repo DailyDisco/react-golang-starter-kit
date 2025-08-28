@@ -404,7 +404,14 @@ export function Demo() {
                 </thead>
                 <tbody>
                   {(() => {
-                    console.log('Demo - Users array before map:', users, 'Type:', typeof users, 'Is array:', Array.isArray(users));
+                    console.log(
+                      'Demo - Users array before map:',
+                      users,
+                      'Type:',
+                      typeof users,
+                      'Is array:',
+                      Array.isArray(users)
+                    );
                     return users.map(user => {
                       const userUrl = `/users/${user.id}`;
                       console.log('Demo - User data:', {
@@ -440,7 +447,9 @@ export function Demo() {
                           </td>
                           <td className='py-2 px-4'>
                             <button
-                              onClick={() => openDeleteDialog(user.id, user.name)}
+                              onClick={() =>
+                                openDeleteDialog(user.id, user.name)
+                              }
                               className='bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white font-medium py-1 px-3 rounded text-sm transition-colors'
                             >
                               Delete

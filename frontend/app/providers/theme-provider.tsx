@@ -10,8 +10,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       {...props}
       enableSystem
       disableTransitionOnChange
-      storageKey="theme"
-      attribute="class"
+      storageKey='theme'
+      attribute='class'
     >
       {children}
     </NextThemesProvider>
