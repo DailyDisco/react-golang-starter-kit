@@ -1,11 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  type User,
-  fetchUsers,
-  createUser,
-  updateUser,
-  deleteUser,
-} from '../lib/api';
+import { UserService } from '../services';
+import type { User } from '../services';
 import { toast } from 'sonner';
 
 interface UseUsersResult {
@@ -27,7 +22,7 @@ export const useUsers = (): UseUsersResult => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchUsers();
+      const data = await UserService.fetchUsers();
       setUsers(data);
     } catch (err) {
       setError(
@@ -45,7 +40,7 @@ export const useUsers = (): UseUsersResult => {
     setLoading(true);
     setError(null);
     try {
-      const newUser = await createUser(name, email);
+      const newUser = await UserService.createUser(name, email);
       setUsers(prevUsers => [...prevUsers, newUser]);
     } catch (err) {
       const message =
@@ -60,7 +55,7 @@ export const useUsers = (): UseUsersResult => {
     setLoading(true);
     setError(null);
     try {
-      const updatedUser = await updateUser(user);
+      const updatedUser = await UserService.updateUser(user);
       setUsers(prevUsers =>
         prevUsers.map(u => (u.id === updatedUser.id ? updatedUser : u))
       );
@@ -77,7 +72,7 @@ export const useUsers = (): UseUsersResult => {
     setLoading(true);
     setError(null);
     try {
-      await deleteUser(id);
+      await UserService.deleteUser(id);
       setUsers(prevUsers => prevUsers.filter(user => user.id !== id));
     } catch (err) {
       const message =

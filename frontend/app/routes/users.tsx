@@ -1,7 +1,8 @@
 import { useParams, Link, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { useUsers } from '../hooks/use-users';
-import { type User, updateUser } from '../lib/api';
+import { UserService } from '../services';
+import type { User } from '../services';
 import {
   Card,
   CardContent,
@@ -57,7 +58,7 @@ const UserDetailPage = () => {
 
     setSaving(true);
     try {
-      const updatedUser = await updateUser({
+      const updatedUser = await UserService.updateUser({
         ...user,
         name: formData.name.trim(),
         email: formData.email.trim(),
