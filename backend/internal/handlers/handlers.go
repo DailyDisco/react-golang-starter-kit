@@ -453,9 +453,9 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 				Message: err.Error(),
 				Code:    http.StatusBadRequest,
 			}
-					w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
-		return
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			return
 		}
 
 		// Check if email is already taken by another user
