@@ -25,7 +25,7 @@ export const links: Route.LinksFunction = () => [
 
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/providers/theme-provider';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './providers/AuthContext';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (

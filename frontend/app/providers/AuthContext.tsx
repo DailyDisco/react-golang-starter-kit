@@ -1,30 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-
-export interface User {
-    id: number;
-    name: string;
-    email: string;
-    email_verified: boolean;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-}
-
-export interface AuthResponse {
-    user: User;
-    token: string;
-}
-
-export interface LoginRequest {
-    email: string;
-    password: string;
-}
-
-export interface RegisterRequest {
-    name: string;
-    email: string;
-    password: string;
-}
+import { AuthService } from '../services';
+import type { User, LoginRequest, RegisterRequest } from '../services';
 
 interface AuthContextType {
     user: User | null;
@@ -83,27 +59,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const login = async (credentials: LoginRequest): Promise<void> => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(credentials),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Login failed');
-            }
-
-            const authData: AuthResponse = await response.json();
+            const authData = await AuthService.login(credentials);
 
             setUser(authData.user);
             setToken(authData.token);
 
             // Store in localStorage
-            localStorage.setItem('auth_token', authData.token);
-            localStorage.setItem('auth_user', JSON.stringify(authData.user));
+            AuthService.storeAuthData(authData);
         } catch (error) {
             throw error;
         } finally {
@@ -114,27 +76,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const register = async (userData: RegisterRequest): Promise<void> => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userData),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Registration failed');
-            }
-
-            const authData: AuthResponse = await response.json();
+            const authData = await AuthService.register(userData);
 
             setUser(authData.user);
             setToken(authData.token);
 
             // Store in localStorage
-            localStorage.setItem('auth_token', authData.token);
-            localStorage.setItem('auth_user', JSON.stringify(authData.user));
+            AuthService.storeAuthData(authData);
         } catch (error) {
             throw error;
         } finally {
@@ -145,31 +93,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const logout = () => {
         setUser(null);
         setToken(null);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
+        AuthService.logout();
     };
 
     const updateUser = async (userData: Partial<User>): Promise<void> => {
-        if (!user || !token) {
+        if (!user) {
             throw new Error('Not authenticated');
         }
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/users/${user.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(userData),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Update failed');
-            }
-
-            const updatedUser: User = await response.json();
+            const updatedUser = await AuthService.updateUser(user.id, userData);
             setUser(updatedUser);
             localStorage.setItem('auth_user', JSON.stringify(updatedUser));
         } catch (error) {
@@ -178,23 +111,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     const refreshUser = async (): Promise<void> => {
-        if (!token) {
-            throw new Error('No token available');
-        }
-
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to refresh user data');
-            }
-
-            const currentUser: User = await response.json();
+            const currentUser = await AuthService.getCurrentUser();
             setUser(currentUser);
             localStorage.setItem('auth_user', JSON.stringify(currentUser));
         } catch (error) {
