@@ -74,7 +74,3 @@ export const apiResponseSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type UpdateUserFormData = z.infer<typeof updateUserSchema>;
-export type ApiError = z.infer<typeof apiErrorSchema>;
-export type ApiResponse<T = any> = z.infer<typeof apiResponseSchema> & {
-  data?: T;
-};

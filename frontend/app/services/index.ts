@@ -8,13 +8,13 @@ export * from './users/userService';
 // Validation
 export * from './validation/schemas';
 
-// Types
-export * from './types';
-
-// Re-export commonly used types for convenience
+// Types - explicit exports to avoid conflicts
 export type {
   User,
   AuthResponse,
   LoginRequest,
   RegisterRequest,
+  ApiError,
+  ApiResponse,
+  ExampleData,
 } from './types';
