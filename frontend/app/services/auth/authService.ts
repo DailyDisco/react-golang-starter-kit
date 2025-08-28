@@ -3,6 +3,8 @@ import {
   apiFetch,
   authenticatedFetch,
   parseErrorResponse,
+  authenticatedFetchWithParsing,
+  apiFetchWithParsing,
   createHeaders,
 } from '../api/client';
 import type {
@@ -76,17 +78,7 @@ export class AuthService {
    * Get current authenticated user information
    */
   static async getCurrentUser(): Promise<User> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/auth/me`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch current user');
-    }
-
-    try {
-      return await response.json();
-    } catch (parseError) {
-      console.error('Failed to parse user data response:', parseError);
-      throw new Error('Invalid response format from server');
-    }
+    return authenticatedFetchWithParsing<User>(`${API_BASE_URL}/api/auth/me`);
   }
 
   /**
@@ -96,25 +88,13 @@ export class AuthService {
     userId: number,
     userData: Partial<User>
   ): Promise<User> {
-    const response = await authenticatedFetch(
+    return authenticatedFetchWithParsing<User>(
       `${API_BASE_URL}/api/users/${userId}`,
       {
         method: 'PUT',
         body: JSON.stringify(userData),
       }
     );
-
-    if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, 'Update failed');
-      throw new Error(errorMessage);
-    }
-
-    try {
-      return await response.json();
-    } catch (parseError) {
-      console.error('Failed to parse update response:', parseError);
-      throw new Error('Invalid response format from server');
-    }
   }
 
   /**

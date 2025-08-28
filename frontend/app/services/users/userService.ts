@@ -2,6 +2,7 @@ import {
   API_BASE_URL,
   authenticatedFetch,
   parseErrorResponse,
+  authenticatedFetchWithParsing,
 } from '../api/client';
 import type { User } from '../types';
 
@@ -12,11 +13,21 @@ export class UserService {
   static async fetchUsers(): Promise<User[]> {
     const response = await authenticatedFetch(`${API_BASE_URL}/api/users`);
     if (!response.ok) {
-      throw new Error(`Failed to fetch users: ${response.statusText}`);
+      const errorMessage = await parseErrorResponse(
+        response,
+        'Failed to fetch users'
+      );
+      throw new Error(errorMessage);
     }
 
     try {
-      return await response.json();
+      const responseData = await response.json();
+      // Handle new success response format
+      if (responseData.success === true && responseData.data) {
+        return responseData.data.users || [];
+      }
+      // Fallback for old format (if still in use)
+      return responseData.users || responseData;
     } catch (parseError) {
       console.error('Failed to parse users response:', parseError);
       throw new Error('Invalid response format from server');
@@ -47,7 +58,13 @@ export class UserService {
     }
 
     try {
-      return await response.json();
+      const responseData = await response.json();
+      // Handle new success response format
+      if (responseData.success === true && responseData.data) {
+        return responseData.data;
+      }
+      // Fallback for old format
+      return responseData;
     } catch (parseError) {
       console.error('Failed to parse create user response:', parseError);
       throw new Error('Invalid response format from server');
@@ -58,28 +75,13 @@ export class UserService {
    * Update an existing user
    */
   static async updateUser(user: User): Promise<User> {
-    const response = await authenticatedFetch(
+    return authenticatedFetchWithParsing<User>(
       `${API_BASE_URL}/api/users/${user.id}`,
       {
         method: 'PUT',
         body: JSON.stringify(user),
       }
     );
-
-    if (!response.ok) {
-      const errorMessage = await parseErrorResponse(
-        response,
-        'Failed to update user'
-      );
-      throw new Error(errorMessage);
-    }
-
-    try {
-      return await response.json();
-    } catch (parseError) {
-      console.error('Failed to parse update user response:', parseError);
-      throw new Error('Invalid response format from server');
-    }
   }
 
   /**
@@ -106,18 +108,8 @@ export class UserService {
    * Get a specific user by ID
    */
   static async getUserById(id: number): Promise<User> {
-    const response = await authenticatedFetch(
+    return authenticatedFetchWithParsing<User>(
       `${API_BASE_URL}/api/users/${id}`
     );
-    if (!response.ok) {
-      throw new Error(`Failed to fetch user: ${response.statusText}`);
-    }
-
-    try {
-      return await response.json();
-    } catch (parseError) {
-      console.error('Failed to parse user response:', parseError);
-      throw new Error('Invalid response format from server');
-    }
   }
 }

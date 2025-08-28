@@ -86,6 +86,21 @@ export const apiFetch = async (
   });
 };
 
+// Types for API responses
+export interface ApiSuccessResponse<T = any> {
+  success: true;
+  message: string;
+  data?: T;
+}
+
+export interface ApiErrorResponse {
+  error: string;
+  message: string;
+  code: number;
+}
+
+export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
+
 /**
  * Safely parse error response from server
  */
@@ -102,7 +117,7 @@ export const parseErrorResponse = async (
       responseText.trim().startsWith('{') ||
       responseText.trim().startsWith('[')
     ) {
-      const errorData = JSON.parse(responseText);
+      const errorData = JSON.parse(responseText) as ApiErrorResponse;
       return errorData.error || errorData.message || defaultMessage;
     } else {
       // Not JSON, use the text directly
@@ -113,4 +128,56 @@ export const parseErrorResponse = async (
     console.error('Failed to parse error response:', parseError);
     return `${defaultMessage} with status ${response.status}`;
   }
+};
+
+/**
+ * Parse API response and extract data from success responses
+ */
+export const parseApiResponse = async <T = any>(
+  response: Response
+): Promise<T> => {
+  try {
+    const responseData = (await response.json()) as ApiResponse<T>;
+
+    if (!response.ok) {
+      // Handle error responses
+      if ('error' in responseData) {
+        throw new Error(responseData.message || responseData.error);
+      }
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    // Handle success responses
+    if ('success' in responseData && responseData.success === true) {
+      return responseData.data as T;
+    }
+
+    // If it's already the expected data format (for auth endpoints that return AuthResponse directly)
+    return responseData as T;
+  } catch (parseError) {
+    console.error('Failed to parse API response:', parseError);
+    throw new Error('Invalid response format from server');
+  }
+};
+
+/**
+ * Enhanced fetch with proper response parsing
+ */
+export const authenticatedFetchWithParsing = async <T = any>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> => {
+  const response = await authenticatedFetch(url, options);
+  return parseApiResponse<T>(response);
+};
+
+/**
+ * Enhanced fetch without auth with proper response parsing
+ */
+export const apiFetchWithParsing = async <T = any>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> => {
+  const response = await apiFetch(url, options);
+  return parseApiResponse<T>(response);
 };

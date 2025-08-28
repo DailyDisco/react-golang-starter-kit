@@ -51,12 +51,33 @@ export function Demo() {
     try {
       const response = await fetch(`${API_BASE}/health`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        let errorMessage = `HTTP error! status: ${response.status}`;
+
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+
+        throw new Error(errorMessage);
       }
-      const data: HealthResponse = await response.json();
-      setHealthStatus(data);
+
+      const responseData = await response.json();
+
+      // Handle new success response format
+      let healthData: HealthResponse;
+      if (responseData.success === true && responseData.data) {
+        healthData = responseData.data;
+      } else {
+        // Fallback for old format
+        healthData = responseData;
+      }
+
+      setHealthStatus(healthData);
       toast.success('Health check successful!', {
-        description: `Status: ${data.status} - ${data.message}`,
+        description: `Status: ${healthData.status} - ${healthData.message}`,
       });
     } catch (error) {
       const errorMessage =
@@ -75,10 +96,35 @@ export function Demo() {
     try {
       const response = await fetch(`${API_BASE}/users`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        let errorMessage = `HTTP error! status: ${response.status}`;
+
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If error response is not JSON, use the raw text
+          errorMessage = errorText || errorMessage;
+        }
+
+        throw new Error(errorMessage);
       }
-      const data: User[] = await response.json();
-      setUsers(data);
+
+      const responseData = await response.json();
+
+      console.log('Demo - Raw API response:', responseData);
+
+      // Handle new success response format
+      if (responseData.success === true && responseData.data) {
+        const usersArray = responseData.data.users || [];
+        console.log('Demo - Setting users from success response:', usersArray);
+        setUsers(usersArray);
+      } else {
+        // Fallback for old format or unexpected structure
+        const usersArray = Array.isArray(responseData) ? responseData : [];
+        console.log('Demo - Setting users from fallback:', usersArray);
+        setUsers(usersArray);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
@@ -112,10 +158,30 @@ export function Demo() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        let errorMessage = `HTTP error! status: ${response.status}`;
+
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+
+        throw new Error(errorMessage);
       }
 
-      const createdUser: User = await response.json();
+      const responseData = await response.json();
+
+      // Handle new success response format
+      let createdUser: User;
+      if (responseData.success === true && responseData.data) {
+        createdUser = responseData.data;
+      } else {
+        // Fallback for old format
+        createdUser = responseData;
+      }
+
       toast.success('User created successfully!', {
         description: `Welcome ${createdUser.name}!`,
       });
@@ -337,50 +403,53 @@ export function Demo() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(user => {
-                    const userUrl = `/users/${user.id}`;
-                    console.log('Demo - User data:', {
-                      id: user.id,
-                      name: user.name,
-                      email: user.email,
-                      generatedUrl: userUrl,
-                    });
+                  {(() => {
+                    console.log('Demo - Users array before map:', users, 'Type:', typeof users, 'Is array:', Array.isArray(users));
+                    return users.map(user => {
+                      const userUrl = `/users/${user.id}`;
+                      console.log('Demo - User data:', {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        generatedUrl: userUrl,
+                      });
 
-                    return (
-                      <tr
-                        key={user.id}
-                        className='border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                      >
-                        <td className='py-2 px-4 text-gray-700 dark:text-gray-300'>
-                          {user.id}
-                        </td>
-                        <td className='py-2 px-4'>
-                          <Link
-                            to={userUrl}
-                            className='text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-medium'
-                          >
-                            {user.name}
-                          </Link>
-                        </td>
-                        <td className='py-2 px-4'>
-                          <Link
-                            to={userUrl}
-                            className='text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline'
-                          >
-                            {user.email}
-                          </Link>
-                        </td>
-                        <td className='py-2 px-4'>
-                          <button
-                            onClick={() => openDeleteDialog(user.id, user.name)}
-                            className='bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white font-medium py-1 px-3 rounded text-sm transition-colors'
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                      return (
+                        <tr
+                          key={user.id}
+                          className='border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        >
+                          <td className='py-2 px-4 text-gray-700 dark:text-gray-300'>
+                            {user.id}
+                          </td>
+                          <td className='py-2 px-4'>
+                            <Link
+                              to={userUrl}
+                              className='text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-medium'
+                            >
+                              {user.name}
+                            </Link>
+                          </td>
+                          <td className='py-2 px-4'>
+                            <Link
+                              to={userUrl}
+                              className='text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline'
+                            >
+                              {user.email}
+                            </Link>
+                          </td>
+                          <td className='py-2 px-4'>
+                            <button
+                              onClick={() => openDeleteDialog(user.id, user.name)}
+                              className='bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white font-medium py-1 px-3 rounded text-sm transition-colors'
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>

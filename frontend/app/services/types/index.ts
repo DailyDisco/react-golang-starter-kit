@@ -26,19 +26,26 @@ export interface RegisterRequest {
   password: string;
 }
 
-// API Error types
+// API Response types (matching backend)
+export interface ApiSuccessResponse<T = any> {
+  success: true;
+  message: string;
+  data?: T;
+}
+
+export interface ApiErrorResponse {
+  error: string;
+  message: string;
+  code: number;
+}
+
+export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+// Legacy API Error type (keeping for backward compatibility)
 export interface ApiError {
   error: string;
   message?: string;
   statusCode?: number;
-}
-
-// Generic API response wrapper
-export interface ApiResponse<T = any> {
-  data?: T;
-  error?: string;
-  message?: string;
-  success: boolean;
 }
 
 // Example/demo types (consider removing in production)
