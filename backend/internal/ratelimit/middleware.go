@@ -116,5 +116,3 @@ func RateLimitByUser(requests int, window time.Duration) func(http.Handler) http
 		}),
 	)
 }
-
-

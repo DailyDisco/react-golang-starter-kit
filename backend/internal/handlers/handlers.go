@@ -183,15 +183,15 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Create user
 	user := models.User{
-		Name:              req.Name,
-		Email:             req.Email,
-		Password:          hashedPassword,
-		VerificationToken: verificationToken,
+		Name:                req.Name,
+		Email:               req.Email,
+		Password:            hashedPassword,
+		VerificationToken:   verificationToken,
 		VerificationExpires: time.Now().Add(24 * time.Hour).Format(time.RFC3339),
-		EmailVerified:     true, // Admin-created users are pre-verified
-		IsActive:          true,
-		CreatedAt:         time.Now().Format(time.RFC3339),
-		UpdatedAt:         time.Now().Format(time.RFC3339),
+		EmailVerified:       true, // Admin-created users are pre-verified
+		IsActive:            true,
+		CreatedAt:           time.Now().Format(time.RFC3339),
+		UpdatedAt:           time.Now().Format(time.RFC3339),
 	}
 
 	if err := database.DB.Create(&user).Error; err != nil {

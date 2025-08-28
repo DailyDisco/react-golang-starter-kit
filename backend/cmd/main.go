@@ -81,10 +81,10 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config) {
 		r.Route("/auth", func(r chi.Router) {
 			// Public authentication routes - stricter rate limiting
 			r.Use(ratelimit.NewAuthRateLimitMiddleware(rateLimitConfig))
-			r.Post("/register", auth.RegisterUser)           // POST /api/auth/register
-			r.Post("/login", auth.LoginUser)                 // POST /api/auth/login
-			r.Get("/verify-email", auth.VerifyEmail)         // GET /api/auth/verify-email
-			r.Post("/reset-password", auth.RequestPasswordReset) // POST /api/auth/reset-password
+			r.Post("/register", auth.RegisterUser)                // POST /api/auth/register
+			r.Post("/login", auth.LoginUser)                      // POST /api/auth/login
+			r.Get("/verify-email", auth.VerifyEmail)              // GET /api/auth/verify-email
+			r.Post("/reset-password", auth.RequestPasswordReset)  // POST /api/auth/reset-password
 			r.Post("/reset-password/confirm", auth.ResetPassword) // POST /api/auth/reset-password/confirm
 
 			// Protected authentication routes - require authentication
@@ -98,8 +98,8 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config) {
 		// User routes - API rate limiting
 		r.Route("/users", func(r chi.Router) {
 			r.Use(ratelimit.NewAPIRateLimitMiddleware(rateLimitConfig))
-			r.Get("/", handlers.GetUsers)          // GET /api/users (public for now)
-			r.Post("/", handlers.CreateUser)       // POST /api/users (public for now)
+			r.Get("/", handlers.GetUsers)    // GET /api/users (public for now)
+			r.Post("/", handlers.CreateUser) // POST /api/users (public for now)
 
 			// Protected user routes
 			r.Route("/{id}", func(r chi.Router) {
