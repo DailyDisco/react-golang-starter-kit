@@ -4,452 +4,510 @@ This project serves as a robust and modern starter kit for building full-stack a
 
 🌐 **Live Demo:** [https://react-golang-starter-kit.vercel.app/](https://react-golang-starter-kit.vercel.app/)
 
+## 📋 Table of Contents
+
+- [🚀 Quick Start](#-quick-start)
+- [🚀 Features](#-features)
+- [🏁 Getting Started](#-getting-started)
+- [🔐 Authentication & Security](#-authentication--security)
+- [🐳 Docker Setup](#-docker-setup)
+- [🚀 Deployment](#-deployment)
+- [📚 API Documentation](#-api-documentation)
+- [🧪 Testing](#-testing)
+- [📂 Project Structure](#-project-structure)
+- [🔧 Configuration](#-configuration)
+- [🔄 CI/CD Pipeline](#-ci/cd-pipeline)
+- [🤝 Contributing](#-contributing)
+
+## 🚀 Quick Start
+
+> **New to the project?** Start here for the fastest setup!
+
+### Option 1: Docker (Recommended)
+
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd react-golang-starter-kit
+docker-compose up -d
+```
+
+Your app will be running at [http://localhost:5173](http://localhost:5173)!
+
+### Option 2: Local Development
+
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd react-golang-starter-kit
+
+# Backend
+cd backend && go mod tidy && go run cmd/main.go
+
+# Frontend (new terminal)
+cd ../frontend && npm install && npm run dev
+```
+
 ## 🚀 Features
 
-- **⚛️ React Frontend:**
-  - Built with [Vite](https://vitejs.dev/) for blazing-fast development.
-  - [React Router](https://reactrouter.com/en/main) for declarative navigation.
-  - [TailwindCSS](https://tailwindcss.com/) for utility-first styling.
-  - [ShadCN UI](https://ui.shadcn.com/) components for a beautiful and accessible user interface.
-  - **[Vitest](https://vitest.dev/)** for fast unit and component testing.
-  - Optimized for performance and developer experience.
-- **⚙️ Golang Backend:**
-  - Powered by the [Fiber Web Framework](https://gofiber.io/) for a fast and flexible API.
-  - [Air](https://github.com/cosmtrek/air) for live reloading during development.
-  - [GORM](https://gorm.io/) for elegant Object-Relational Mapping (ORM) with PostgreSQL.
-  - **Swagger/OpenAPI documentation** with interactive UI for API exploration and testing.
-  - Structured project layout for maintainability and scalability.
-  - Includes basic CRUD operations and authentication scaffolding.
-- **🐳 Docker Support:**
-  - `Dockerfiles` for both frontend and backend for easy containerization.
-  - `docker-compose.yml` for orchestrating all services (PostgreSQL, backend, frontend).
-  - Simplified deployment and consistent development environments.
-- **💾 Database Integration:**
-  - Pre-configured for PostgreSQL, allowing quick setup and integration.
-  - Scalable and reliable data storage solution.
-- **✅ API Testing:**
-  - Integrated tools for efficient API testing to ensure robustness.
-- **🔧 Husky Git Hooks:**
-  - Automated code quality checks on commit and push.
-  - Conventional commit message validation (feat, fix, docs, refactor, etc.).
-  - Pre-commit hooks run targeted tests, linting, and type checking based on changed files.
-  - Pre-push hooks run full test suites to prevent broken code from reaching repository.
-  - Intelligent caching (5-minute validity) for better performance.
-  - Hooks auto-install during `npm install` for immediate protection.
+### ⚛️ React Frontend
+
+- **[Vite](https://vitejs.dev/)** - Blazing-fast development and optimized builds
+- **[React Router](https://reactrouter.com/en/main)** - Declarative navigation and routing
+- **[TailwindCSS](https://tailwindcss.com/)** - Utility-first CSS framework
+- **[ShadCN UI](https://ui.shadcn.com/)** - Beautiful and accessible UI components
+- **[Vitest](https://vitest.dev/)** - Fast unit and component testing
+- **TypeScript** - Type-safe development experience
+
+### ⚙️ Golang Backend
+
+- **[Chi Router](https://go-chi.io/)** - Lightweight and fast HTTP router
+- **[GORM](https://gorm.io/)** - Elegant ORM with PostgreSQL integration
+- **[JWT Authentication](https://jwt.io/)** - Secure token-based authentication
+- **[Rate Limiting](https://github.com/go-chi/httprate)** - API abuse protection
+- **[Swagger/OpenAPI](https://swagger.io/)** - Interactive API documentation
+- **[Air](https://github.com/cosmtrek/air)** - Live reloading during development
+
+### 🛡️ Security & Performance
+
+- **Password Hashing** - Bcrypt encryption for secure password storage
+- **Rate Limiting** - Configurable request throttling by endpoint and user
+- **CORS Protection** - Configurable cross-origin request handling
+- **Input Validation** - Comprehensive request validation and sanitization
+- **Environment-based Config** - Secure configuration management
+
+### 🐳 DevOps & Deployment
+
+- **Docker Support** - Containerized development and deployment
+- **Multi-stage Builds** - Optimized production images
+- **Git Hooks** - Automated code quality checks (Husky)
+- **CI/CD Ready** - GitHub Actions workflows included
+- **Environment Management** - `.env` file support with validation
+
+## 🔐 Authentication & Security
+
+### JWT Authentication
+
+The backend includes a complete JWT (JSON Web Token) authentication system with the following features:
+
+#### 🔑 Authentication Endpoints
+
+| Method | Endpoint                           | Description                  | Auth Required |
+| ------ | ---------------------------------- | ---------------------------- | ------------- |
+| `POST` | `/api/auth/register`               | Register new user account    | ❌            |
+| `POST` | `/api/auth/login`                  | User login with credentials  | ❌            |
+| `GET`  | `/api/auth/me`                     | Get current user information | ✅            |
+| `GET`  | `/api/auth/verify-email`           | Verify user email address    | ❌            |
+| `POST` | `/api/auth/reset-password`         | Request password reset       | ❌            |
+| `POST` | `/api/auth/reset-password/confirm` | Confirm password reset       | ❌            |
+
+#### 🛡️ Security Features
+
+- **Password Security**: Bcrypt hashing with configurable cost factor
+- **JWT Tokens**: 24-hour expiration (configurable via `JWT_EXPIRATION_HOURS`)
+- **Password Validation**: Minimum 8 characters, requires uppercase, lowercase, and digits
+- **Email Verification**: Token-based email verification system
+- **Password Reset**: Secure password reset flow with expiration tokens
+- **Bearer Authentication**: Standard `Authorization: Bearer <token>` header
+
+#### 📝 Example Usage
+
+**Register User:**
+
+```bash
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "SecurePass123"
+  }'
+```
+
+**Login:**
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "password": "SecurePass123"
+  }'
+```
+
+**Access Protected Route:**
+
+```bash
+curl -X GET http://localhost:8080/api/auth/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Rate Limiting
+
+The API includes comprehensive rate limiting to prevent abuse and ensure fair usage across different user types and endpoints.
+
+#### ⚙️ Rate Limiting Configuration
+
+Rate limits are configurable via environment variables and apply different rules based on endpoint types:
+
+| Environment Variable         | Default | Description                                |
+| ---------------------------- | ------- | ------------------------------------------ |
+| `RATE_LIMIT_ENABLED`         | `true`  | Enable/disable rate limiting globally      |
+| `RATE_LIMIT_IP_PER_MINUTE`   | `60`    | Requests per minute per IP                 |
+| `RATE_LIMIT_IP_PER_HOUR`     | `1000`  | Requests per hour per IP                   |
+| `RATE_LIMIT_USER_PER_MINUTE` | `120`   | Requests per minute per authenticated user |
+| `RATE_LIMIT_USER_PER_HOUR`   | `2000`  | Requests per hour per authenticated user   |
+| `RATE_LIMIT_AUTH_PER_MINUTE` | `5`     | Strict limit for auth endpoints            |
+| `RATE_LIMIT_API_PER_MINUTE`  | `100`   | General API endpoint limits                |
+
+#### 🏷️ Rate Limit Headers
+
+When rate limited, the API returns these headers:
+
+```
+X-RateLimit-Limit: 60          # Maximum requests allowed
+X-RateLimit-Remaining: 0       # Remaining requests in current window
+X-RateLimit-Reset: 1693526400  # Unix timestamp when limit resets
+Retry-After: 60                # Seconds to wait before retrying
+```
+
+#### 📊 Rate Limiting by Endpoint Type
+
+- **Authentication Endpoints** (`/api/auth/*`): Strict IP-based limiting (5/minute)
+- **Protected Endpoints**: User-based limiting (120/minute for authenticated users)
+- **Public API Endpoints**: Mixed IP/user-based limiting (100/minute)
+- **Global**: IP-based limiting applied to all requests (60/minute)
+
+#### 🚫 Rate Limit Response
+
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: text/plain; charset=utf-8
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1693526400
+Retry-After: 60
+
+Rate limit exceeded. Too many requests from this IP address.
+```
+
+### Environment Variables
+
+#### Required Variables
+
+```bash
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_NAME=your_database_name
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS=http://localhost:5173,https://yourdomain.com
+
+# Optional: JWT Expiration (hours)
+JWT_EXPIRATION_HOURS=24
+```
+
+#### Rate Limiting Variables (Optional)
+
+```bash
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_IP_PER_MINUTE=60
+RATE_LIMIT_IP_PER_HOUR=1000
+RATE_LIMIT_USER_PER_MINUTE=120
+RATE_LIMIT_USER_PER_HOUR=2000
+RATE_LIMIT_AUTH_PER_MINUTE=5
+RATE_LIMIT_API_PER_MINUTE=100
+```
 
 ## 🏁 Getting Started
 
-Follow these steps to get your development environment up and running.
-
 ### Prerequisites
 
-Ensure you have the following installed on your system:
+Before you begin, ensure you have these installed:
 
-- **Git:** For version control.
-- **Node.js (LTS) & npm/yarn:** For frontend development.
-- **Go (1.24+):** For backend development.
-- **Docker & Docker Compose (Optional):** Highly recommended for isolated development environments and deployment.
-- **PostgreSQL:** Database server.
+- **Git** - Version control
+- **Node.js (LTS)** & **npm** - Frontend development
+- **Go (1.24+)** - Backend development
+- **Docker & Docker Compose** _(Recommended)_ - Isolated development environments
+- **PostgreSQL** - Database server
 
-### Installation
+### Local Development Setup
 
-1.  **Clone the repository:**
+1. **Clone and setup:**
 
-    ```bash
-    git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-    cd react-golang-starter-kit
-    ```
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+   cd react-golang-starter-kit
+   cp .env.example .env  # Copy environment template
+   ```
 
-2.  **Set up Environment Variables:**
-    Create a `.env` file in the project root based on `.env.example`.
+2. **Configure environment:**
+   Edit `.env` with your database credentials and other settings.
 
-    ```bash
-    # Backend Environment Variables
-    DB_HOST=localhost
-    DB_PORT=5432
-    DB_USER=user
-    DB_PASSWORD=password
-    DB_NAME=mydatabase
-    JWT_SECRET=supersecretkey
-    API_PORT=8080
+3. **Start the backend:**
 
-    # Frontend Environment Variables
-    VITE_API_URL=http://localhost:8080
-    ```
+   ```bash
+   cd backend
+   go mod tidy
+   go install github.com/cosmtrek/air@latest  # For live reloading
+   air  # Or: go run cmd/main.go
+   ```
 
-3.  **Backend Setup:**
+4. **Start the frontend:**
+   ```bash
+   cd ../frontend
+   npm install
+   npm run dev
+   ```
 
-    ```bash
-    cd backend
-    go mod tidy          # Download dependencies
-    go install github.com/cosmtrek/air@latest  # Install Air for live reloading
-    air                  # Start the backend server with live reloading
-    ```
+Your app will be running at:
 
-    Alternatively, you can run without Air:
-
-    ```bash
-    go run cmd/main.go   # Start the backend server
-    ```
-
-4.  **Frontend Setup:**
-
-    ```bash
-    cd ../frontend
-    npm install          # Install frontend dependencies
-    npm run dev          # Start the frontend development server
-    ```
-
-Your application should now be running!
+- **Frontend:** [http://localhost:5173](http://localhost:5173)
+- **Backend API:** [http://localhost:8080](http://localhost:8080)
+- **API Docs:** [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
 
 ## 🐳 Docker Setup (Recommended)
 
-For the easiest setup with isolated environments, use Docker Compose. This will run PostgreSQL, the Go backend, and React frontend in separate containers.
+Docker provides the easiest way to get started with isolated development environments. Everything runs in separate containers with zero configuration.
 
-### Quick Start with Docker
+### Quick Docker Start
 
-1. **Prerequisites:**
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd react-golang-starter-kit
 
-   - Docker & Docker Compose installed
+# Start all services (PostgreSQL + Backend + Frontend)
+docker-compose up -d
 
-2. **Start all services:**
+# View logs (optional)
+docker-compose logs -f
+```
 
-   ```bash
-   docker-compose up -d
-   ```
+Your application will be running at:
 
-3. **View logs:**
-
-   ```bash
-   docker-compose logs -f
-   ```
-
-4. **Stop services:**
-   ```bash
-   docker-compose down
-   ```
+- **Frontend:** [http://localhost:5173](http://localhost:5173)
+- **Backend API:** [http://localhost:8080](http://localhost:8080)
+- **API Docs:** [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
 
 ### Docker Services
 
-- **PostgreSQL**: Database server on port 5432
-- **Backend (Go)**: API server on port 8080
-- **Frontend (React)**: Web app on port 5173
+| Service              | Port   | Description     |
+| -------------------- | ------ | --------------- |
+| **PostgreSQL**       | `5432` | Database server |
+| **Backend (Go)**     | `8080` | REST API server |
+| **Frontend (React)** | `5173` | Web application |
 
-### Docker Development Workflow
+### Useful Docker Commands
 
 ```bash
-# Start services
-docker-compose up -d
+# Stop all services
+docker-compose down
 
-# View logs
+# Rebuild and restart after code changes
+docker-compose up --build -d
+
+# View logs for specific service
 docker-compose logs -f backend
 docker-compose logs -f frontend
 
-# Stop services
-docker-compose down
+# Start only specific services
+docker-compose up postgres backend
 
-# Rebuild after code changes
-docker-compose up --build -d
-```
-
-### Docker Commands
-
-```bash
-# Start specific service
-docker-compose up postgres
-docker-compose up backend
-
-# Remove volumes (WARNING: deletes database data)
+# Remove volumes (⚠️ deletes database data)
 docker-compose down -v
 
 # View running containers
 docker-compose ps
 ```
 
-## 🚀 Deployment Options
+## 🚀 Deployment
 
-### Option 1: Docker + VPS (Simple & Cost-Effective)
+### Quick Deployment Guide
 
-**Best for:** Full control, single server deployment
+Choose your preferred deployment method:
 
-1. **Build production images:**
+#### 🚀 Vercel + Railway (Recommended for Beginners)
 
-   ```bash
-   # Build optimized images
-   docker build -t myapp-backend:latest ./backend
-   docker build -t myapp-frontend:latest ./frontend
-   ```
+**Best for:** Quick setup, modern workflow, generous free tiers
 
-2. **Create production docker-compose.yml:**
+1. **Database**: Create PostgreSQL on [Railway.app](https://railway.app) (free tier)
+2. **Backend**: Deploy `backend/` folder to Railway
+3. **Frontend**: Deploy `frontend/` folder to [Vercel](https://vercel.com)
+4. **Connect**: Set `VITE_API_URL` in Vercel to your Railway backend URL
 
-   ```yaml
-   version: "3.8"
-   services:
-     postgres:
-       image: postgres:15-alpine
-       environment:
-         POSTGRES_DB: prod_db
-         POSTGRES_USER: prod_user
-         POSTGRES_PASSWORD: ${DB_PASSWORD}
-       volumes:
-         - postgres_data:/var/lib/postgresql/data
+**Cost:** ~$0-10/month | **Time:** 15-30 minutes
 
-     backend:
-       image: myapp-backend:latest
-       environment:
-         - DB_HOST=postgres
-         - DB_PASSWORD=${DB_PASSWORD}
-         - JWT_SECRET=${JWT_SECRET}
-       ports:
-         - "8080:8080"
-       depends_on:
-         - postgres
+#### 🐳 Docker + VPS
 
-     frontend:
-       image: myapp-frontend:latest
-       ports:
-         - "80:80"
+**Best for:** Full control, cost-effective for production
 
-   volumes:
-     postgres_data:
-   ```
+```bash
+# Build production images
+docker build -t myapp-backend:latest ./backend
+docker build -t myapp-frontend:latest ./frontend
 
-3. **Deploy on your VPS:**
+# Deploy with docker-compose
+docker-compose up -d
+```
 
-   ```bash
-   docker-compose up -d
-   ```
+**Cost:** VPS hosting only (~$5-20/month) | **Time:** 30-60 minutes
 
-### Option 2: Vercel + Railway (Developer-Friendly)
+### Detailed Deployment Guides
 
-**Best for:** Quick deployment, modern workflow, generous free tiers
+#### Option 1: Vercel + Railway (Step-by-Step)
 
-#### Complete Full-Stack Deployment (Recommended)
+**🗄️ Database Setup:**
 
-Deploy this monorepo with separate services for optimal performance:
+1. Sign up at [Railway.app](https://railway.app)
+2. Create new project → Add PostgreSQL
+3. Note the database credentials (auto-provided)
 
-**🗄️ Step 1: Database on Railway**
+**⚙️ Backend Deployment:**
 
-1. Create account at [Railway.app](https://railway.app)
-2. Create new project
-3. Add PostgreSQL database (free tier available)
-4. Note your database credentials (Railway provides these automatically)
-
-**⚙️ Step 2: Backend on Railway**
-
-1. Create new Railway project for your backend
-2. Connect your GitHub repo
-3. Set deployment settings:
+1. Create new Railway project
+2. Connect your GitHub repository
+3. Set build settings:
    - **Root Directory:** `backend`
-   - Railway auto-detects Go applications
-4. Set environment variables:
-   - `CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app`
-   - `JWT_SECRET=your-secret-key` (optional, for authentication)
-5. Railway automatically provides database variables:
-   - `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`
-6. Deploy and note your backend URL: `https://your-app-name.up.railway.app`
+   - **Environment Variables:**
+     ```
+     CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
+     JWT_SECRET=your-secret-key-here
+     ```
+4. Railway auto-detects Go and deploys
+5. Note your backend URL: `https://your-app.up.railway.app`
 
-**🌐 Step 3: Frontend on Vercel**
+**🌐 Frontend Deployment:**
 
-1. Connect your GitHub repo to [Vercel](https://vercel.com)
+1. Connect GitHub repo to [Vercel](https://vercel.com)
 2. Configure build settings:
    - **Root Directory:** `frontend`
-   - **Build Command:** `react-router build`
-   - **Output Directory:** `build/client`
-   - **Install Command:** `npm install`
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
 3. Set environment variables:
-   - `VITE_API_URL=https://your-railway-backend-url.up.railway.app`
-   - **Critical:** Use ONLY the base URL, without `/api/*` or trailing paths
-4. Deploy frontend
+   ```
+   VITE_API_URL=https://your-railway-backend.up.railway.app
+   ```
+4. Deploy!
 
-**🎯 Step 4: Connect Services**
+#### Option 2: Docker VPS Deployment
 
-- Your frontend will automatically connect to your Railway backend
-- Test API endpoints like `/api/health` and `/api/users`
+**Production-Ready Docker Setup:**
 
-**📋 Important Notes:**
+```yaml
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: prod_db
+      POSTGRES_USER: prod_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-- App uses SPA mode (SSR disabled) for optimal Vercel performance
-- `vercel.json` handles client-side routing to prevent 404 errors
-- All hardcoded localhost URLs have been replaced with environment variables
-- Railway provides database credentials automatically when linked
+  backend:
+    image: myapp-backend:latest
+    environment:
+      - DB_HOST=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    ports:
+   - '8080:8080'
+    depends_on:
+      - postgres
 
-**Cost:** Both offer generous free tiers, total ~$0-10/month for small apps
+  frontend:
+    image: myapp-frontend:latest
+    ports:
+   - '80:80'
+ environment:
+   - VITE_API_URL=http://localhost:8080
 
-### Railway Environment Variables
+volumes:
+  postgres_data:
+```
 
-**PostgreSQL Database Connection:**
-Railway provides PostgreSQL environment variables automatically. The backend is configured to use these standard PostgreSQL variable names:
+**Deploy Commands:**
 
-| Railway Variable | Maps to           | Description                 |
-| ---------------- | ----------------- | --------------------------- |
-| `PGHOST`         | Database Host     | The database server address |
-| `PGPORT`         | Database Port     | Usually `5432`              |
-| `PGUSER`         | Database User     | Your database username      |
-| `PGPASSWORD`     | Database Password | Your database password      |
-| `PGDATABASE`     | Database Name     | The name of your database   |
+```bash
+# On your VPS
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd react-golang-starter-kit
 
-**You don't need to set these manually** - Railway provides them automatically when you link your database to your backend service.
+# Build images
+docker-compose build
 
-### Railway URL Configuration
+# Start services
+docker-compose up -d
 
-**When to use PUBLIC vs PRIVATE URLs:**
+# Setup SSL (optional)
+# docker run -it --rm --name certbot certbot certonly --webroot --webroot-path /var/www/html -d yourdomain.com
+```
 
-- **PUBLIC URL** (`https://your-app.up.railway.app`): 🌐
+### Environment Variables for Production
 
-  - Use this for your Vercel frontend
-  - Accessible from anywhere on the internet
-  - Required when frontend and backend are on different platforms
+#### Required Variables
 
-- **PRIVATE URL** (`your-app.railway.internal`): 🔒
-  - Only accessible within Railway's internal network
-  - Use when both services are on Railway (e.g., backend and another Railway service)
-  - Faster and more secure for internal communication
-  - Cannot be accessed from Vercel
+```bash
+# Database (Railway provides these automatically)
+DB_HOST=your-db-host
+DB_PORT=5432
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+DB_NAME=your-db-name
 
-### Alternative Backend Deployment Options
+# Security
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-chars
+CORS_ALLOWED_ORIGINS=https://yourdomain.com
 
-**Option A: Railway (Recommended)**
+# Optional
+JWT_EXPIRATION_HOURS=24
+RATE_LIMIT_ENABLED=true
+```
 
-- ✅ Same platform as your database
-- ✅ Easy networking between services
-- ✅ Go-native deployment
-- ✅ Free tier available
-- ✅ Simple scaling
+### Troubleshooting Common Issues
 
-**Option B: Vercel Serverless Functions**
+#### ❌ CORS Errors
 
-- ✅ Same platform as frontend
-- ✅ Simplified CORS handling
-- ✅ Automatic scaling
-- ❌ Cold starts can be slow
-- ❌ Limited execution time (10s for free tier)
+**Solution:** Set `CORS_ALLOWED_ORIGINS=https://yourdomain.com` in backend environment
 
-**Option C: Other Cloud Platforms**
+#### ❌ Database Connection Failed
 
-- **AWS (EC2/Lambda)**: Full control, complex setup
-- **Google Cloud Run**: Containerized, good performance
-- **DigitalOcean App Platform**: Simple deployment, good for Go
-- **Fly.io**: Great for Go apps, global deployment
+**Solution:** Ensure Railway PostgreSQL is linked to your backend service
 
-**Option D: VPS/Cloud Server**
+#### ❌ API Returns 404
 
-- **DigitalOcean Droplet**: Full control, manual setup
-- **AWS EC2**: Scalable, but more complex
-- **Linode**: Cost-effective, good performance
+**Solution:** Use base URL only in `VITE_API_URL` (no `/api/` suffix)
 
-#### Common Deployment Issues & Solutions
+#### ❌ Vercel Build Fails
 
-**❌ ERR_BLOCKED_BY_CLIENT / Connection Refused:**
+**Solution:** Ensure Root Directory is set to `frontend` in Vercel settings
 
-- **Cause:** Frontend trying to connect to localhost or wrong backend URL
-- **Solution:** Set correct `VITE_API_URL` in Vercel environment variables
-- **Format:** `https://your-railway-backend.up.railway.app` (base URL only, no `/api/*`)
-- **Debug:** Check browser console for API_BASE_URL logs
+### Alternative Deployment Platforms
 
-**❌ 404 NOT_FOUND on API Calls (Double /api):**
+| Platform                  | Backend         | Frontend      | Database     | Cost/Month | Setup Time |
+| ------------------------- | --------------- | ------------- | ------------ | ---------- | ---------- |
+| **Railway + Vercel**      | ✅ Native Go    | ✅ Optimized  | ✅ Built-in  | $0-10      | 15-30 min  |
+| **Docker + DigitalOcean** | ✅ Full control | ✅ Custom     | ✅ Managed   | $5-20      | 30-60 min  |
+| **AWS (ECS/Fargate)**     | ✅ Scalable     | ✅ CloudFront | ✅ RDS       | $20-100+   | 60-120 min |
+| **Google Cloud Run**      | ✅ Serverless   | ✅ Cloud CDN  | ✅ Cloud SQL | $10-50     | 45-90 min  |
+| **Fly.io**                | ✅ Go optimized | ✅ Global CDN | ✅ Built-in  | $5-30      | 20-40 min  |
 
-- **Cause:** VITE_API_URL includes `/api/*` causing URLs like `/api/*/api/users`
-- **Solution:** Use base URL only in VITE_API_URL
-- **Example:** `VITE_API_URL=https://your-app.up.railway.app`
+### Deployment Checklist
 
-**❌ Build Error: "Could not resolve import path":**
-
-- **Cause:** Incorrect relative import paths in components
-- **Solution:** Use correct relative paths (e.g., `../../lib/api` from components/demo/)
-- **Fix:** Check and correct import statements in affected files
-
-**❌ Railway Database Connection Failed:**
-
-- **Cause:** Backend service not linked to PostgreSQL database in Railway
-- **Solution:** In Railway dashboard, link your PostgreSQL to your backend service
-- **Result:** Railway automatically injects PGHOST, PGPASSWORD, etc.
-
-**❌ CORS Errors:**
-
-- **Cause:** Backend not configured to allow Vercel frontend origin
-- **Solution:** Set `CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app` in Railway backend
-
-**❌ Vercel Build Command Failed:**
-
-- **Cause:** Wrong root directory or build settings
-- **Solution:** Ensure Root Directory is set to `frontend` in Vercel project settings
-
-**❌ Error: `sh: line 1: cd: frontend: No such file or directory`:**
-
-- **Solution:** Set Root Directory to `frontend` in Vercel project settings
-- **Alternative:** Use repository root with `cd frontend &&` commands
-
-#### Deployment Verification Checklist
-
-**✅ Database Setup:**
-
-- [ ] Railway PostgreSQL database created and linked to backend
-- [ ] Backend can connect (check Railway logs for successful DB connection)
-
-**✅ Backend Deployment:**
-
-- [ ] Railway backend deployed successfully
-- [ ] Public URL accessible: `https://your-app.up.railway.app/api/health`
-- [ ] CORS configured for Vercel frontend
-
-**✅ Frontend Deployment:**
-
-- [ ] Vercel frontend deployed successfully
-- [ ] VITE_API_URL set to correct Railway backend URL (base URL only)
-- [ ] No hardcoded localhost URLs remain
-
-**✅ Testing:**
-
-- [ ] Frontend loads without console errors
-- [ ] API calls work (`/api/health`, `/api/users`)
-- [ ] Browser shows correct API_BASE_URL in console
-- [ ] Database operations (CRUD) function correctly
-
-## 🚀 Usage
-
-### Development (Local)
-
-- **Frontend**: `npm run dev` → [http://localhost:5173](http://localhost:5173)
-- **Backend**: `go run cmd/main.go` → [http://localhost:8080](http://localhost:8080)
-- **API Documentation**: [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
-
-### Production (Deployed)
-
-- **Live Demo**: [https://react-golang-starter-kit.vercel.app/](https://react-golang-starter-kit.vercel.app/)
-- **Backend API**: Your Railway backend URL
-- **API Documentation**: `https://your-railway-backend.up.railway.app/swagger/`
-
-### Testing API Endpoints
-
-- **Health Check**: `/api/health`
-- **Users API**: `/api/users`
-- **User by ID**: `/api/users/{id}`
-
-The application provides a user management interface where you can create, read, update, and delete users.
-
-### 📚 API Documentation
-
-The backend provides comprehensive API documentation through an interactive Swagger UI:
-
-- **Swagger UI**: [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
-- **Direct JSON**: [http://localhost:8080/swagger/doc.json](http://localhost:8080/swagger/doc.json)
-
-**Available Endpoints:**
-
-- `GET /api/health` - Check server health status
-- `GET /api/users` - Retrieve all users
-- `POST /api/users` - Create a new user
-- `GET /api/users/{id}` - Get a specific user by ID
-- `PUT /api/users/{id}` - Update an existing user
-- `DELETE /api/users/{id}` - Delete a user
-
-The Swagger UI allows you to:
-
-- View detailed endpoint documentation
-- Test API endpoints directly from your browser
-- See request/response examples and schemas
-- Explore the complete API structure
+- [ ] Database created and accessible
+- [ ] Backend deployed and health check passes (`/api/health`)
+- [ ] Frontend deployed and loads without errors
+- [ ] Environment variables configured correctly
+- [ ] CORS settings allow frontend origin
+- [ ] API endpoints respond correctly
+- [ ] Authentication flow works (register/login)
+- [ ] Rate limiting configured appropriately
 
 ## 🧪 Testing
 
@@ -543,99 +601,122 @@ export PATH=$PATH:$(go env GOPATH)/bin
 
 ## 📂 Project Structure
 
-```bash
+### High-Level Overview
+
+```
 react_golang_starter_kit/
-├── backend/                  # 🚀 Golang Backend
-│   ├── cmd/
-│   │   └── main.go           # Application entry point
-│   ├── docs/                 # API documentation
-│   │   ├── docs.go
-│   │   ├── index.html
-│   │   ├── swagger.json
-│   │   └── swagger.yaml
-│   ├── internal/             # Internal packages
-│   │   ├── database/
-│   │   │   └── database.go   # Database connection and configuration
-│   │   ├── handlers/
-│   │   │   └── handlers.go   # HTTP request handlers
-│   │   └── models/
-│   │       └── models.go     # Data models and GORM structs
-│   ├── Dockerfile            # Dockerfile for backend
-│   ├── go.mod                # Go module definition
-│   ├── go.sum                # Go dependencies checksum
-│   ├── Makefile              # Build automation
-│   ├── README.md             # Backend documentation
-│   └── server                # Compiled server binary
-├── frontend/                 # 🌐 React Frontend
-│   ├── app/                  # Main application source code
-│   │   ├── components/       # Reusable React components
-│   │   │   ├── demo/
-│   │   │   │   └── demo.tsx
-│   │   │   ├── forms/
-│   │   │   │   └── UserForm.tsx
-│   │   │   └── ui/           # ShadCN UI components
-│   │   ├── constants/        # Application constants
-│   │   │   ├── icons.ts
-│   │   │   ├── labels.ts
-│   │   │   └── mockData.ts
-│   │   ├── hooks/            # Custom React hooks
-│   │   │   ├── use-mobile.ts
-│   │   │   └── use-users.ts
-│   │   ├── layouts/          # Layout components
-│   │   ├── lib/              # Utility functions and API client
-│   │   │   ├── api.ts
-│   │   │   ├── utils.test.ts
-│   │   │   ├── utils.ts
-│   │   │   └── zod/          # Zod schemas
-│   │   ├── providers/        # React context providers
-│   │   │   └── theme-provider.tsx
-│   │   ├── root.tsx          # Root component
-│   │   ├── routes/           # React Router routes
-│   │   │   ├── 404.tsx
-│   │   │   ├── custom-layout-demo.tsx
-│   │   │   ├── demo.tsx
-│   │   │   ├── home.tsx
-│   │   │   └── users.tsx
-│   │   ├── routes.ts         # Route definitions
-│   │   ├── test/
-│   │   │   └── setup.ts      # Test configuration
-│   │   └── types/
-│   │       └── shared.ts     # Shared TypeScript types
-│   ├── build/                # Production build output
-│   │   ├── client/
-│   │   │   ├── assets/       # Built assets
-│   │   │   └── favicon.ico
-│   │   └── server/
-│   │       └── index.js      # Server-side rendering
-│   ├── public/               # Static assets
-│   │   ├── favicon.ico
-│   │   ├── logo-dark.svg
-│   │   └── logo-light.svg
-│   ├── components.json       # ShadCN configuration
-│   ├── Dockerfile            # Dockerfile for frontend
-│   ├── package.json          # Node.js package configuration
-│   ├── package-lock.json     # Lockfile for dependencies
-│   ├── react-router.config.ts # React Router configuration
-│   ├── tailwind.config.ts    # TailwindCSS configuration
-│   ├── tsconfig.json         # TypeScript configuration
-│   ├── vite.config.ts        # Vite configuration
-│   └── node_modules/         # Installed dependencies
-├── docker-compose.frontend.Dockerfile # Frontend Docker configuration
-├── docker-compose.yml        # 🐳 Docker Compose configuration
-├── node_modules/             # Root level dependencies
-├── package.json              # Root package configuration
-├── package-lock.json         # Root lockfile
-└── README.md                 # 📄 Project Overview and Setup Instructions
+├── backend/                  # 🏗️ Go Backend API
+├── frontend/                 # ⚛️ React Frontend App
+├── docker-compose.yml        # 🐳 Docker orchestration
+└── README.md                # 📖 This documentation
 ```
 
-## 🔒 Environment Variables
+### Backend Structure (`/backend`)
 
-Critical environment variables are managed through `.env` files. A `.env.example` is provided for reference. It is crucial to set these values correctly for the application to function.
+| Directory/File            | Purpose                      |
+| ------------------------- | ---------------------------- |
+| **`cmd/main.go`**         | Application entry point      |
+| **`internal/auth/`**      | JWT authentication system    |
+| **`internal/ratelimit/`** | Rate limiting middleware     |
+| **`internal/database/`**  | Database connection & config |
+| **`internal/handlers/`**  | HTTP request handlers        |
+| **`internal/models/`**    | Data models & GORM structs   |
+| **`docs/`**               | Swagger API documentation    |
+| **`Dockerfile`**          | Backend containerization     |
+| **`go.mod`**              | Go module dependencies       |
 
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`: PostgreSQL database connection details.
-- `JWT_SECRET`: Secret key for JWT authentication. **(Highly recommended to change in production!)**
-- `API_PORT`: Port on which the Golang backend API will run.
-- `VITE_API_URL`: Frontend URL to access the backend API.
+### Frontend Structure (`/frontend`)
+
+| Directory/File        | Purpose                      |
+| --------------------- | ---------------------------- |
+| **`app/`**            | Main application source      |
+| ├── **`components/`** | Reusable React components    |
+| ├── **`routes/`**     | React Router page components |
+| ├── **`lib/`**        | Utilities & API client       |
+| ├── **`hooks/`**      | Custom React hooks           |
+| ├── **`types/`**      | TypeScript type definitions  |
+| **`public/`**         | Static assets                |
+| **`package.json`**    | Node.js dependencies         |
+| **`vite.config.ts`**  | Vite build configuration     |
+
+### Key Files You'll Work With
+
+#### 🔧 Development
+
+- **`backend/cmd/main.go`** - Start here for backend changes
+- **`frontend/app/routes/`** - Add new pages here
+- **`frontend/app/components/`** - Create reusable components here
+- **`frontend/app/lib/api.ts`** - API integration layer
+
+#### ⚙️ Configuration
+
+- **`docker-compose.yml`** - Local development environment
+- **`.env`** - Environment variables (create from `.env.example`)
+- **`backend/internal/auth/`** - Authentication settings
+- **`frontend/tailwind.config.ts`** - Styling configuration
+
+#### 🚀 Deployment
+
+- **`backend/Dockerfile`** - Backend container build
+- **`frontend/Dockerfile`** - Frontend container build
+- **`vercel.json`** - Vercel deployment config (if needed)
+
+### Quick Navigation Tips
+
+- **Adding a new page?** → `frontend/app/routes/`
+- **Creating API endpoint?** → `backend/internal/handlers/`
+- **Database model changes?** → `backend/internal/models/`
+- **Authentication logic?** → `backend/internal/auth/`
+- **Styling updates?** → `frontend/app/components/` or `tailwind.config.ts`
+
+## 🔧 Configuration
+
+### Environment Variables
+
+All configuration is managed through `.env` files. Copy `.env.example` to `.env` and customize the values.
+
+#### Required Variables
+
+```bash
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_NAME=your_database_name
+
+# Security
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:5173,https://yourdomain.com
+```
+
+#### Optional Variables
+
+```bash
+# JWT Configuration
+JWT_EXPIRATION_HOURS=24
+
+# Rate Limiting
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_IP_PER_MINUTE=60
+RATE_LIMIT_USER_PER_MINUTE=120
+
+# API
+API_PORT=8080
+
+# Frontend
+VITE_API_URL=http://localhost:8080
+```
+
+### Configuration Files
+
+- **`.env`** - Environment variables (create from `.env.example`)
+- **`docker-compose.yml`** - Local development environment
+- **`backend/go.mod`** - Go dependencies
+- **`frontend/package.json`** - Node.js dependencies
+- **`frontend/tailwind.config.ts`** - Styling configuration
 
 ## 🔄 CI/CD Pipeline
 
