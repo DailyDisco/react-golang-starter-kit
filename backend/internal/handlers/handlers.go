@@ -1,5 +1,10 @@
 // Package handlers contains HTTP request handlers for the API
 //
+// # React Go Starter Kit API
+//
+// This is the REST API for the React Go Starter Kit application.
+// It provides endpoints for user authentication, user management, and health checks.
+//
 // Terms Of Service: http://swagger.io/terms/
 //
 // Schemes: http, https
@@ -12,6 +17,14 @@
 //
 // Produces:
 // - application/json
+//
+// SecurityDefinitions:
+// BearerAuth:
+//
+//	type: apiKey
+//	name: Authorization
+//	in: header
+//	description: "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
 //
 // swagger:meta
 package handlers
