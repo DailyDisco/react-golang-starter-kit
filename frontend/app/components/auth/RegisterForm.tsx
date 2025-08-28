@@ -53,7 +53,7 @@ export function RegisterForm() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl text-center">Create account</CardTitle>
@@ -165,7 +165,7 @@ export function RegisterForm() {
 
                     <div className="mt-4 text-center text-sm">
                         Already have an account?{' '}
-                        <Link to="/login" className="text-blue-600 hover:underline">
+                        <Link to="/login" className="text-primary hover:underline">
                             Sign in
                         </Link>
                     </div>

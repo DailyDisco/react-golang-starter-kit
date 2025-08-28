@@ -46,7 +46,7 @@ export function LoginForm() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl text-center">Sign in</CardTitle>
@@ -114,7 +114,7 @@ export function LoginForm() {
 
                     <div className="mt-4 text-center text-sm">
                         Don't have an account?{' '}
-                        <Link to="/register" className="text-blue-600 hover:underline">
+                        <Link to="/register" className="text-primary hover:underline">
                             Sign up
                         </Link>
                     </div>
