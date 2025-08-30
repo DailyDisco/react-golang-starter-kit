@@ -67,9 +67,8 @@ WORKDIR /app
 # Copy go mod files
 COPY go.mod go.sum ./
 
-# Download dependencies (cached if go.mod/go.sum unchanged)
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
+# Download dependencies
+RUN go mod download
 
 # Copy source code
 COPY . .
