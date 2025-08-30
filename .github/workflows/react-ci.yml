@@ -27,6 +27,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: List frontend directory contents
+        run: ls -l ${{ env.WORKING_DIR }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -60,6 +63,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: List frontend directory contents
+        run: ls -l ${{ env.WORKING_DIR }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -99,6 +105,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: List frontend directory contents
+        run: ls -l ${{ env.WORKING_DIR }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -122,6 +131,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: List frontend directory contents
+        run: ls -l ${{ env.WORKING_DIR }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
