@@ -42,7 +42,10 @@ export function Demo() {
 
   // Local state for delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<{ id: number; name: string } | null>(null);
+  const [userToDelete, setUserToDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   // Password validation helpers
   const passwordValidation = {
@@ -461,7 +464,8 @@ export function Demo() {
             🎬 Framer Motion Demo
           </h2>
           <p className='text-gray-600 dark:text-gray-300 mb-6'>
-            Experience a unique morphing animation that combines multiple techniques.
+            Experience a unique morphing animation that combines multiple
+            techniques.
           </p>
 
           <div className='bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner'>
@@ -469,7 +473,8 @@ export function Demo() {
               🔄 Shape Morphing with Staggered Particles
             </h3>
             <p className='text-gray-600 dark:text-gray-300 mb-6'>
-              Watch as geometric shapes transform while particles dance around them!
+              Watch as geometric shapes transform while particles dance around
+              them!
             </p>
 
             <div className='flex justify-center mb-8'>
@@ -493,20 +498,20 @@ export function Demo() {
                       animate={{
                         scale: [0, 1.3, 1, 1.1, 1],
                         rotate: [0, 180, 360, 540, 720],
-                        borderRadius: ["0%", "50%", "25%", "75%", "0%"],
+                        borderRadius: ['0%', '50%', '25%', '75%', '0%'],
                         boxShadow: [
-                          "0 0 0px rgba(59, 130, 246, 0)",
-                          "0 0 20px rgba(59, 130, 246, 0.5)",
-                          "0 0 40px rgba(168, 85, 247, 0.8)",
-                          "0 0 60px rgba(236, 72, 153, 1)",
-                          "0 0 80px rgba(59, 130, 246, 0.6)"
-                        ]
+                          '0 0 0px rgba(59, 130, 246, 0)',
+                          '0 0 20px rgba(59, 130, 246, 0.5)',
+                          '0 0 40px rgba(168, 85, 247, 0.8)',
+                          '0 0 60px rgba(236, 72, 153, 1)',
+                          '0 0 80px rgba(59, 130, 246, 0.6)',
+                        ],
                       }}
                       exit={{ scale: 0, rotate: 180, opacity: 0 }}
                       transition={{
                         duration: 3,
-                        ease: "easeInOut",
-                        times: [0, 0.2, 0.5, 0.8, 1]
+                        ease: 'easeInOut',
+                        times: [0, 0.2, 0.5, 0.8, 1],
                       }}
                       className='w-28 h-28 bg-gradient-to-r from-blue-600 via-red-600 via-yellow-400 to-purple-600 absolute z-10'
                       style={{
@@ -516,22 +521,22 @@ export function Demo() {
 
                     {/* Staggered Floating Particles */}
                     <motion.div
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
+                      initial='hidden'
+                      animate='visible'
+                      exit='exit'
                       variants={{
                         visible: {
                           transition: {
                             staggerChildren: 0.15,
-                            delayChildren: 0.5
-                          }
+                            delayChildren: 0.5,
+                          },
                         },
                         exit: {
                           transition: {
                             staggerChildren: 0.1,
-                            staggerDirection: -1
-                          }
-                        }
+                            staggerDirection: -1,
+                          },
+                        },
                       }}
                       className='absolute inset-0'
                     >
@@ -559,21 +564,30 @@ export function Demo() {
                                 transition: {
                                   duration: 3,
                                   repeat: Infinity,
-                                  repeatType: "reverse",
-                                  ease: "easeInOut"
-                                }
+                                  repeatType: 'reverse',
+                                  ease: 'easeInOut',
+                                },
                               },
                               exit: {
                                 opacity: 0,
                                 scale: 0,
                                 x: 0,
                                 y: 0,
-                                transition: { duration: 0.5 }
-                              }
+                                transition: { duration: 0.5 },
+                              },
                             }}
-                            className={`w-4 h-4 rounded-full absolute ${['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-green-400',
-                              'bg-blue-400', 'bg-indigo-400', 'bg-purple-400', 'bg-pink-400'][i]
-                              } shadow-lg`}
+                            className={`w-4 h-4 rounded-full absolute ${
+                              [
+                                'bg-red-400',
+                                'bg-orange-400',
+                                'bg-yellow-400',
+                                'bg-green-400',
+                                'bg-blue-400',
+                                'bg-indigo-400',
+                                'bg-purple-400',
+                                'bg-pink-400',
+                              ][i]
+                            } shadow-lg`}
                             style={{
                               filter: `drop-shadow(0 0 8px ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#6366f1', '#a855f7', '#ec4899'][i]})`,
                               boxShadow: `0 0 10px ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#6366f1', '#a855f7', '#ec4899'][i]}40`,
@@ -589,12 +603,12 @@ export function Demo() {
                       animate={{
                         scale: [0, 1.5, 2.5, 3.5],
                         opacity: [0, 0.4, 0.2, 0],
-                        rotate: [0, 90, 180, 270]
+                        rotate: [0, 90, 180, 270],
                       }}
                       transition={{
                         duration: 5,
                         repeat: Infinity,
-                        ease: "easeInOut"
+                        ease: 'easeInOut',
                       }}
                       className='w-40 h-40 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 rounded-full absolute blur-2xl'
                     />
@@ -605,13 +619,13 @@ export function Demo() {
                       animate={{
                         scale: [0, 2, 3, 4],
                         opacity: [0, 0.2, 0.1, 0],
-                        borderWidth: [0, 2, 1, 0]
+                        borderWidth: [0, 2, 1, 0],
                       }}
                       transition={{
                         duration: 6,
                         repeat: Infinity,
-                        ease: "easeOut",
-                        delay: 1
+                        ease: 'easeOut',
+                        delay: 1,
                       }}
                       className='w-32 h-32 border border-purple-300 rounded-full absolute'
                       style={{
@@ -629,8 +643,8 @@ export function Demo() {
                       transition={{
                         duration: 4,
                         repeat: Infinity,
-                        ease: "easeOut",
-                        delay: 0.5
+                        ease: 'easeOut',
+                        delay: 0.5,
                       }}
                       className='w-24 h-24 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full absolute blur-lg'
                     />
@@ -647,10 +661,7 @@ export function Demo() {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-      >
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>

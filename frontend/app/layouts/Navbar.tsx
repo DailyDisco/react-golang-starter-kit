@@ -76,10 +76,11 @@ export function Navbar() {
                     key={item.name}
                     to={item.href}
                     search={{}}
-                    className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isActive(item.href)
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
-                      }`}
+                    className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      isActive(item.href)
+                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
+                    }`}
                   >
                     {item.name}
                   </Link>
@@ -164,10 +165,16 @@ export function Navbar() {
                   aria-controls='mobile-menu'
                 >
                   <Menu className='h-6 w-6' />
-                  <span className='sr-only'>{isOpen ? 'Close main menu' : 'Open main menu'}</span>
+                  <span className='sr-only'>
+                    {isOpen ? 'Close main menu' : 'Open main menu'}
+                  </span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side='right' className='w-[320px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700' id='mobile-menu'>
+              <SheetContent
+                side='right'
+                className='w-[320px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700'
+                id='mobile-menu'
+              >
                 <div className='flex flex-col h-full p-4' role='menu'>
                   {/* Header */}
                   <div className='border-b border-gray-200 dark:border-gray-700 pb-6 mb-6'>
@@ -197,10 +204,11 @@ export function Navbar() {
                           }
                           onClick={() => setIsOpen(false)}
                           role='menuitem'
-                          className={`flex items-center px-4 py-3 mx-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isActive(item.href)
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-100 hover:shadow-sm'
-                            }`}
+                          className={`flex items-center px-4 py-3 mx-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                            isActive(item.href)
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-100 hover:shadow-sm'
+                          }`}
                         >
                           {item.name}
                           {item.external && (
