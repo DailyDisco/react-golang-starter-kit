@@ -49,7 +49,10 @@ export function Demo() {
     lowercase: /[a-z]/.test(newUser.password || ''),
   };
 
-  const isPasswordValid = passwordValidation.length && passwordValidation.uppercase && passwordValidation.lowercase;
+  const isPasswordValid =
+    passwordValidation.length &&
+    passwordValidation.uppercase &&
+    passwordValidation.lowercase;
 
   // Test health check - now handled by useHealthCheck hook
   const testHealthCheck = () => {
@@ -69,7 +72,11 @@ export function Demo() {
     e.preventDefault();
 
     // Frontend validation
-    if (!newUser.name.trim() || !newUser.email.trim() || !newUser.password.trim()) {
+    if (
+      !newUser.name.trim() ||
+      !newUser.email.trim() ||
+      !newUser.password.trim()
+    ) {
       toast.error('Validation Error', {
         description: 'Please fill in all fields including password',
       });
@@ -243,16 +250,28 @@ export function Demo() {
                 <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-1'>
                   <p className='font-medium'>Password requirements:</p>
                   <div className='flex flex-col space-y-1'>
-                    <div className={`flex items-center ${passwordValidation.length ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      <span className={`mr-2 ${passwordValidation.length ? '✓' : '✗'}`}></span>
+                    <div
+                      className={`flex items-center ${passwordValidation.length ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                    >
+                      <span
+                        className={`mr-2 ${passwordValidation.length ? '✓' : '✗'}`}
+                      ></span>
                       At least 8 characters
                     </div>
-                    <div className={`flex items-center ${passwordValidation.uppercase ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      <span className={`mr-2 ${passwordValidation.uppercase ? '✓' : '✗'}`}></span>
+                    <div
+                      className={`flex items-center ${passwordValidation.uppercase ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                    >
+                      <span
+                        className={`mr-2 ${passwordValidation.uppercase ? '✓' : '✗'}`}
+                      ></span>
                       At least 1 uppercase letter
                     </div>
-                    <div className={`flex items-center ${passwordValidation.lowercase ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      <span className={`mr-2 ${passwordValidation.lowercase ? '✓' : '✗'}`}></span>
+                    <div
+                      className={`flex items-center ${passwordValidation.lowercase ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                    >
+                      <span
+                        className={`mr-2 ${passwordValidation.lowercase ? '✓' : '✗'}`}
+                      ></span>
                       At least 1 lowercase letter
                     </div>
                   </div>
@@ -264,7 +283,11 @@ export function Demo() {
               disabled={createUserMutation.isPending || !isPasswordValid}
               className='bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 disabled:bg-green-300 dark:disabled:bg-green-800 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:cursor-not-allowed'
             >
-              {createUserMutation.isPending ? 'Creating...' : isPasswordValid ? 'Create User' : 'Complete Password Requirements'}
+              {createUserMutation.isPending
+                ? 'Creating...'
+                : isPasswordValid
+                  ? 'Create User'
+                  : 'Complete Password Requirements'}
             </button>
           </form>
         </section>
