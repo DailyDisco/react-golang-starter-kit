@@ -107,7 +107,7 @@ WORKDIR /app
 COPY --from=builder --chown=appuser:appgroup /app/main .
 
 # Copy any necessary config files (without secrets)
-COPY --from=builder --chown=appuser:appgroup /app/config/ ./config/
+# Note: No config directory exists in the source, so this step is skipped
 
 # Switch to non-root user
 USER appuser
