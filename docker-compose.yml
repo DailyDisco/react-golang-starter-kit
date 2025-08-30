@@ -8,11 +8,11 @@ services:
       POSTGRES_USER: devuser
       POSTGRES_PASSWORD: devpass
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U devuser -d devdb"]
+      test: ['CMD-SHELL', 'pg_isready -U devuser -d devdb']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,12 +20,14 @@ services:
       - app-network
 
   backend:
-    image: golang:1.24-alpine
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile
     container_name: react-golang-backend
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "8080:8080"
+      - '8080:8080'
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -34,40 +36,64 @@ services:
       DB_NAME: devdb
       DB_SSLMODE: disable
       CGO_ENABLED: 0
+      GO_ENV: development
     volumes:
       - ./backend:/app
+      - /app/vendor # Cache Go modules
+      - /app/.cache # Cache build artifacts
     command: >
       sh -c "
-        apk add --no-cache git &&
+        apk add --no-cache git curl &&
         go mod download &&
         go run -tags=dev cmd/main.go
       "
     depends_on:
       postgres:
         condition: service_healthy
+    # Health check - commented out until backend has health endpoint
+    # healthcheck:
+    #   test: ['CMD', 'curl', '-f', 'http://localhost:8080/health', '||', 'exit', '1']
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 30s
     networks:
       - app-network
 
   frontend:
-    image: node:20-alpine
+    build:
+      context: ./frontend
+      dockerfile: ../docker-compose.frontend.Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080/api
     container_name: react-golang-frontend
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "5173:5173"
+      - '5173:5173'
+      - '4173:4173' # Preview server port
     environment:
       NODE_ENV: development
       VITE_API_BASE_URL: http://localhost:8080/api
       CI: false
     volumes:
       - ./frontend:/app
+      - /app/node_modules # Named volume for node_modules to avoid permission issues
+      - /app/.vite # Cache Vite build artifacts
+      - /app/.tanstack # Cache TanStack Router generated files
     command: >
       sh -c "
         npm install --no-audit --no-fund &&
-        npm run dev -- --host 0.0.0.0
+        npm run dev -- --host 0.0.0.0 --port 5173
       "
     depends_on:
       - backend
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5173']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - app-network
 

@@ -1,11 +1,23 @@
-import { reactRouter } from '@react-router/dev/vite';
-import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+  plugins: [
+    // Please make sure that '@tanstack/router-plugin' is passed before '@vitejs/plugin-react'
+    // Disable automatic route generation for now due to permission issues
+    // tanstackRouter({
+    //   target: 'react',
+    //   autoCodeSplitting: true,
+    //   routesDirectory: './app/routes',
+    // }),
+    react(),
+    tailwindcss(),
+    tsconfigPaths(),
+  ],
   server: {
     proxy: {
       '/api': {
@@ -24,10 +36,5 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom', // Faster than jsdom
     setupFiles: ['./app/test/setup.ts'],
-    server: {
-      deps: {
-        inline: ['@react-router/node'],
-      },
-    },
   },
 });

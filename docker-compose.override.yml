@@ -1,0 +1,54 @@
+# Development override configuration
+# This file is automatically merged with docker-compose.yml when running docker compose
+
+services:
+  # Development-specific frontend configuration
+  frontend:
+    build:
+      target: development
+      args:
+        VITE_API_BASE_URL: http://localhost:8080/api
+    volumes:
+      - ./frontend:/app:cached
+      # Override the node_modules volume to avoid conflicts
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true # For better file watching in containers
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+
+  # Development-specific backend configuration
+  backend:
+    build:
+      target: development
+    volumes:
+      - ./backend:/app:cached
+    environment:
+      - GO_ENV=development
+      - GOFLAGS=-mod=readonly
+    command: >
+      sh -c "
+        apk add --no-cache git curl &&
+        go mod download &&
+        go run -tags=dev -mod=readonly cmd/main.go
+      "
+
+  # Development database with additional tools
+  postgres:
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    environment:
+      - POSTGRES_DB=devdb
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=devpass
+
+# Development-specific volumes
+volumes:
+  postgres_data:
+
+# Development network
+networks:
+  app-network:
+    driver: bridge

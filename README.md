@@ -6,7 +6,7 @@ This project serves as a robust and modern starter kit for building full-stack a
 
 ## 📋 Table of Contents
 
-- [🚀 Quick Start](#-quick-start)
+- [🚀 Initial Quick Start](#-initial-quick-start)
 - [🚀 Features](#-features)
 - [🏁 Getting Started](#-getting-started)
 - [🔐 Authentication & Security](#-authentication--security)
@@ -16,22 +16,22 @@ This project serves as a robust and modern starter kit for building full-stack a
 - [🔧 Troubleshooting](#-troubleshooting)
 - [📂 Project Structure](#-project-structure)
 - [🔧 Configuration](#-configuration)
-- [🔄 CI/CD Pipeline](#-ci/cd-pipeline)
+- [🔄 CI/CD Pipeline](#ci/cd-pipeline)
 - [🤝 Contributing](#-contributing)
 
-## 🚀 Quick Start
+## 🚀 Initial Quick Start
 
 > **New to the project?** Start here for the fastest setup!
 
-### Option 1: Docker (Recommended)
+### Option 1: Docker Setup (Recommended)
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
 cd react-golang-starter-kit
-docker-compose up -d
+docker compose up -d
 ```
 
-Your app will be running at [http://localhost:5173](http://localhost:5173)!
+Your app will be running at [http://localhost:5173](http://localhost:5173) (Frontend) and [http://localhost:8080](http://localhost:8080) (Backend API)!
 
 ### Option 2: Local Development
 
@@ -43,7 +43,7 @@ cd react-golang-starter-kit
 cd backend && go mod tidy && go run cmd/main.go
 
 # Frontend (new terminal)
-cd ../frontend && npm install && npm run dev
+cd ../frontend && npm install && npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
 ## 🚀 Features
@@ -51,7 +51,8 @@ cd ../frontend && npm install && npm run dev
 ### ⚛️ React Frontend
 
 - **[Vite](https://vitejs.dev/)** - Blazing-fast development and optimized builds
-- **[React Router](https://reactrouter.com/en/main)** - Declarative navigation and routing
+- **[TanStack Router](https://tanstack.com/router)** - Type-safe routing and navigation
+- **[TanStack Query](https://tanstack.com/query)** - Powerful asynchronous state management
 - **[TailwindCSS](https://tailwindcss.com/)** - Utility-first CSS framework
 - **[ShadCN UI](https://ui.shadcn.com/)** - Beautiful and accessible UI components
 - **[Vitest](https://vitest.dev/)** - Fast unit and component testing
@@ -201,12 +202,12 @@ Rate limit exceeded. Too many requests from this IP address.
 
 ### Setup Options
 
-#### Option 1: Docker (Recommended)
+#### Option 1: Docker Setup (Recommended)
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
 cd react-golang-starter-kit
-docker-compose up -d
+docker compose up -d
 ```
 
 **Services:**
@@ -218,12 +219,12 @@ docker-compose up -d
 **Useful Docker Commands:**
 
 ```bash
-docker-compose logs -f          # View logs
-docker-compose down             # Stop services
-docker-compose up --build -d    # Rebuild after changes
+docker compose logs -f          # View logs
+docker compose down             # Stop services
+docker compose up --build -d    # Rebuild after changes
 ```
 
-#### Option 2: Local Development
+#### Option 2: Local Development Setup
 
 1. **Clone and setup:**
 
@@ -239,10 +240,10 @@ docker-compose up --build -d    # Rebuild after changes
 
    ```bash
    # Backend (with live reloading)
-   cd backend && go mod tidy && air
+   cd backend && go mod tidy && go run cmd/main.go
 
    # Frontend (new terminal)
-   cd ../frontend && npm install && npm run dev
+   cd ../frontend && npm install && npm run dev -- --host 0.0.0.0 --port 5173
    ```
 
 ## 🚀 Deployment
@@ -360,10 +361,10 @@ git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
 cd react-golang-starter-kit
 
 # Build images
-docker-compose build
+docker compose build
 
 # Start services
-docker-compose up -d
+docker compose up -d
 
 # Setup SSL (optional)
 # docker run -it --rm --name certbot certbot certonly --webroot --webroot-path /var/www/html -d yourdomain.com
@@ -400,7 +401,7 @@ docker-compose up -d
 ### Deployment Checklist
 
 - [ ] Database created and accessible
-- [ ] Backend deployed and health check passes (`/api/health`)
+- [ ] Backend deployed and health check passes (`/health`)
 - [ ] Frontend deployed and loads without errors
 - [ ] Environment variables configured correctly
 - [ ] CORS settings allow frontend origin
@@ -469,7 +470,8 @@ npm run prettier:fix   # Fix code formatting
 ```bash
 cd backend
 go run cmd/main.go   # Start server (without Air)
-air                  # Start with live reloading
+# Note: 'air' is replaced by direct 'go run' in docker-compose for consistency.
+# For local 'air' usage, ensure it's installed globally or via go install.
 go mod tidy          # Install/update dependencies
 go test ./...        # Run all tests
 ```
@@ -487,15 +489,18 @@ cd backend
 **Port already in use:**
 
 ```bash
-# Kill process using port 8080 (backend) or 3000 (frontend)
+# Kill process using port 8080 (backend) or 5173 (frontend)
 kill -9 $(lsof -ti:8080)
+kill -9 $(lsof -ti:5173)
 ```
 
-**Air not found after installation:**
+**Frontend build fails in Docker:**
 
 ```bash
-export PATH=$PATH:$(go env GOPATH)/bin
-# Or restart your terminal
+# Clean up node_modules and .vite caches, then rebuild
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ## 📂 Project Structure
@@ -507,6 +512,7 @@ react_golang_starter_kit/
 ├── backend/                  # 🏗️ Go Backend API
 ├── frontend/                 # ⚛️ React Frontend App
 ├── docker-compose.yml        # 🐳 Docker orchestration
+├── docker-compose.override.yml # 🐳 Docker development overrides
 └── README.md                # 📖 This documentation
 ```
 
@@ -526,30 +532,31 @@ react_golang_starter_kit/
 
 ### Frontend Structure (`/frontend`)
 
-| Directory/File        | Purpose                      |
-| --------------------- | ---------------------------- |
-| **`app/`**            | Main application source      |
-| ├── **`components/`** | Reusable React components    |
-| ├── **`routes/`**     | React Router page components |
-| ├── **`lib/`**        | Utilities & API client       |
-| ├── **`hooks/`**      | Custom React hooks           |
-| ├── **`types/`**      | TypeScript type definitions  |
-| **`public/`**         | Static assets                |
-| **`package.json`**    | Node.js dependencies         |
-| **`vite.config.ts`**  | Vite build configuration     |
+| Directory/File        | Purpose                                     |
+| --------------------- | ------------------------------------------- |
+| **`app/`**            | Main application source                     |
+| ├── **`components/`** | Reusable React components                   |
+| ├── **`routes/`**     | TanStack Router file-based route components |
+| ├── **`lib/`**        | Utilities & API client                      |
+| ├── **`hooks/`**      | Custom React hooks                          |
+| ├── **`types/`**      | TypeScript type definitions                 |
+| **`public/`**         | Static assets                               |
+| **`package.json`**    | Node.js dependencies                        |
+| **`vite.config.ts`**  | Vite build configuration                    |
 
 ### Key Files You'll Work With
 
 #### 🔧 Development
 
 - **`backend/cmd/main.go`** - Start here for backend changes
-- **`frontend/app/routes/`** - Add new pages here
+- **`frontend/app/routes/`** - Add new pages here using TanStack Router's file-based conventions
 - **`frontend/app/components/`** - Create reusable components here
 - **`frontend/app/lib/api.ts`** - API integration layer
 
 #### ⚙️ Configuration
 
-- **`docker-compose.yml`** - Local development environment
+- **`docker-compose.yml`** - Base Docker orchestration
+- **`docker-compose.override.yml`** - Docker development overrides (local only)
 - **`.env`** - Environment variables (create from `.env.example`)
 - **`backend/internal/auth/`** - Authentication settings
 - **`frontend/tailwind.config.ts`** - Styling configuration
@@ -557,12 +564,13 @@ react_golang_starter_kit/
 #### 🚀 Deployment
 
 - **`backend/Dockerfile`** - Backend container build
-- **`frontend/Dockerfile`** - Frontend container build
+- **`frontend/Dockerfile`** - Frontend container build (multi-stage)
+- **`frontend/nginx.conf`** - Nginx configuration for production frontend
 - **`vercel.json`** - Vercel deployment config (if needed)
 
 ### Quick Navigation Tips
 
-- **Adding a new page?** → `frontend/app/routes/`
+- **Adding a new page?** → `frontend/app/routes/` (using TanStack Router conventions)
 - **Creating API endpoint?** → `backend/internal/handlers/`
 - **Database model changes?** → `backend/internal/models/`
 - **Authentication logic?** → `backend/internal/auth/`
@@ -612,7 +620,8 @@ VITE_API_URL=http://localhost:8080
 ### Configuration Files
 
 - **`.env`** - Environment variables (create from `.env.example`)
-- **`docker-compose.yml`** - Local development environment
+- **`docker-compose.yml`** - Base Docker orchestration
+- **`docker-compose.override.yml`** - Docker development overrides
 - **`backend/go.mod`** - Go dependencies
 - **`frontend/package.json`** - Node.js dependencies
 - **`frontend/tailwind.config.ts`** - Styling configuration
