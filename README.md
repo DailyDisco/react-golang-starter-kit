@@ -6,18 +6,20 @@ This project serves as a robust and modern starter kit for building full-stack a
 
 ## 📋 Table of Contents
 
-- [🚀 Initial Quick Start](#-initial-quick-start)
-- [🚀 Features](#-features)
-- [🏁 Getting Started](#-getting-started)
-- [🔐 Authentication & Security](#-authentication--security)
-- [🚀 Deployment](#-deployment)
-- [🧪 Testing](#-testing)
-- [📜 Available Scripts](#-available-scripts)
-- [🔧 Troubleshooting](#-troubleshooting)
-- [📂 Project Structure](#-project-structure)
-- [🔧 Configuration](#-configuration)
+- [🚀 Initial Quick Start](#initial-quick-start)
+- [🚀 Features](#features)
+- [🏁 Getting Started](#getting-started)
+- [🔐 Authentication & Security](#authentication--security)
+- [🚀 Deployment](#deployment)
+- [🧪 Testing](#testing)
+- [📜 Available Scripts](#available-scripts)
+- [🔧 Troubleshooting](#troubleshooting)
+- [Common Frontend Errors](#common-frontend-errors)
+- [📂 Project Structure](#project-structure)
+- [🔧 Configuration](#configuration)
 - [🔄 CI/CD Pipeline](#ci/cd-pipeline)
-- [🤝 Contributing](#-contributing)
+- [🤝 Contributing](#contributing)
+- [📄 License](#license)
 
 ## 🚀 Initial Quick Start
 
@@ -51,8 +53,9 @@ cd ../frontend && npm install && npm run dev -- --host 0.0.0.0 --port 5173
 ### ⚛️ React Frontend
 
 - **[Vite](https://vitejs.dev/)** - Blazing-fast development and optimized builds
-- **[TanStack Router](https://tanstack.com/router)** - Type-safe routing and navigation
-- **[TanStack Query](https://tanstack.com/query)** - Powerful asynchronous state management
+- **[TanStack Router](https://tanstack.com/router)** - Type-safe, file-based routing with SSR and data loading integration
+- **[TanStack Query](https://tanstack.com/query)** - Powerful asynchronous server state management with caching, background refetching, and optimistic updates
+- **[Zustand](https://zustand.pm/)** - Lightweight client-side state management for UI-specific state
 - **[TailwindCSS](https://tailwindcss.com/)** - Utility-first CSS framework
 - **[ShadCN UI](https://ui.shadcn.com/)** - Beautiful and accessible UI components
 - **[Vitest](https://vitest.dev/)** - Fast unit and component testing
@@ -478,7 +481,13 @@ go test ./...        # Run all tests
 
 ## 🔧 Troubleshooting
 
-**Database connection failed:**
+### Common Frontend Errors
+
+- **'No QueryClient set, use QueryClientProvider to set one'**: This typically happens during SSR if TanStack Query hooks are used outside of `QueryClientProvider` or if mutations are called directly during server-side rendering. Ensure `QueryClientProvider` wraps your app and mutations are guarded for client-side execution (as done in `AuthContext.tsx`).
+- **`@tanstack/router-cli` module not found**: This means you are trying to use the CLI configuration (`tanstack.config.ts`) while also having the Vite plugin enabled. Remove `tanstack.config.ts` if you're using the Vite plugin for automatic route generation.
+- **Error: EACCES: permission denied**: This can occur during `npm run dev` or `npm run build` due to file permission issues in temporary directories created by `@tanstack/router-plugin`. Try running `npm cache clean --force` and `rm -rf node_modules/.vite` then `npm install` and restart your dev server.
+
+### Database Connection Failed
 
 ```bash
 cd backend
@@ -529,142 +538,3 @@ react_golang_starter_kit/
 | **`docs/`**               | Swagger API documentation    |
 | **`Dockerfile`**          | Backend containerization     |
 | **`go.mod`**              | Go module dependencies       |
-
-### Frontend Structure (`/frontend`)
-
-| Directory/File        | Purpose                                     |
-| --------------------- | ------------------------------------------- |
-| **`app/`**            | Main application source                     |
-| ├── **`components/`** | Reusable React components                   |
-| ├── **`routes/`**     | TanStack Router file-based route components |
-| ├── **`lib/`**        | Utilities & API client                      |
-| ├── **`hooks/`**      | Custom React hooks                          |
-| ├── **`types/`**      | TypeScript type definitions                 |
-| **`public/`**         | Static assets                               |
-| **`package.json`**    | Node.js dependencies                        |
-| **`vite.config.ts`**  | Vite build configuration                    |
-
-### Key Files You'll Work With
-
-#### 🔧 Development
-
-- **`backend/cmd/main.go`** - Start here for backend changes
-- **`frontend/app/routes/`** - Add new pages here using TanStack Router's file-based conventions
-- **`frontend/app/components/`** - Create reusable components here
-- **`frontend/app/lib/api.ts`** - API integration layer
-
-#### ⚙️ Configuration
-
-- **`docker-compose.yml`** - Base Docker orchestration
-- **`docker-compose.override.yml`** - Docker development overrides (local only)
-- **`.env`** - Environment variables (create from `.env.example`)
-- **`backend/internal/auth/`** - Authentication settings
-- **`frontend/tailwind.config.ts`** - Styling configuration
-
-#### 🚀 Deployment
-
-- **`backend/Dockerfile`** - Backend container build
-- **`frontend/Dockerfile`** - Frontend container build (multi-stage)
-- **`frontend/nginx.conf`** - Nginx configuration for production frontend
-- **`vercel.json`** - Vercel deployment config (if needed)
-
-### Quick Navigation Tips
-
-- **Adding a new page?** → `frontend/app/routes/` (using TanStack Router conventions)
-- **Creating API endpoint?** → `backend/internal/handlers/`
-- **Database model changes?** → `backend/internal/models/`
-- **Authentication logic?** → `backend/internal/auth/`
-- **Styling updates?** → `frontend/app/components/` or `tailwind.config.ts`
-
-## 🔧 Configuration
-
-### Environment Variables
-
-All configuration is managed through `.env` files. Copy `.env.example` to `.env` and customize the values.
-
-#### Required Variables
-
-```bash
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_NAME=your_database_name
-
-# Security
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-
-# CORS
-CORS_ALLOWED_ORIGINS=http://localhost:5173,https://yourdomain.com
-```
-
-#### Optional Variables
-
-```bash
-# JWT Configuration
-JWT_EXPIRATION_HOURS=24
-
-# Rate Limiting
-RATE_LIMIT_ENABLED=true
-RATE_LIMIT_IP_PER_MINUTE=60
-RATE_LIMIT_USER_PER_MINUTE=120
-
-# API
-API_PORT=8080
-
-# Frontend
-VITE_API_URL=http://localhost:8080
-```
-
-### Configuration Files
-
-- **`.env`** - Environment variables (create from `.env.example`)
-- **`docker-compose.yml`** - Base Docker orchestration
-- **`docker-compose.override.yml`** - Docker development overrides
-- **`backend/go.mod`** - Go dependencies
-- **`frontend/package.json`** - Node.js dependencies
-- **`frontend/tailwind.config.ts`** - Styling configuration
-
-## 🔄 CI/CD Pipeline
-
-This project includes comprehensive CI/CD workflows following industry best practices for React and Go development.
-
-### Available Workflows
-
-- **Complete CI** (`ci.yml`): Full pipeline with security scanning, linting, testing, and builds for both frontend and backend
-- **React CI** (`react-ci.yml`): Frontend-focused workflow with Node.js matrix testing and coverage reporting
-- **Go CI** (`go-ci.yml`): Backend-focused workflow with cross-platform builds and race detection
-
-### Key Features
-
-- **Security**: Automated vulnerability scanning for both npm and Go dependencies
-- **Quality**: Linting, formatting, and type checking with Prettier, TypeScript, and golangci-lint
-- **Testing**: Comprehensive test suites with coverage reporting via Codecov
-- **Performance**: Caching, parallel execution, and artifact management
-- **Cross-Platform**: Multi-Node.js testing and multi-platform Go builds
-
-### Triggers
-
-Workflows run on push to master, pull requests, and manual dispatch.
-
-### Customization
-
-Modify workflow files to adjust test commands, coverage thresholds, or security rules.
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature/your-feature-name`).
-3. Make your changes.
-4. Commit your changes (`git commit -m 'feat: Add new feature'`).
-5. Push to the branch (`git push origin feature/your-feature-name`).
-6. Open a Pull Request.
-
-Please ensure your code adheres to the existing style and conventions.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the `LICENSE` file for details.
