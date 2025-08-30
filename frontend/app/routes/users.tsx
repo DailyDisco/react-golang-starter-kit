@@ -1,6 +1,13 @@
-import { useParams, Link, useNavigate } from 'react-router';
-import { useState, useEffect } from 'react';
-import { useUsers } from '../hooks/use-users';
+import {
+  createFileRoute,
+  useParams,
+  Link,
+  useNavigate,
+} from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { useUsers, useUser } from '../hooks/queries/use-users';
+import { useUpdateUser } from '../hooks/mutations/use-user-mutations';
+import { useUserStore } from '../stores/user-store';
 import { UserService } from '../services';
 import type { User } from '../services';
 import {
@@ -22,57 +29,55 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function meta({ params }: { params: { userId: string } }) {
-  return [
-    { title: `User ${params.userId} - React + Go Starter Kit` },
-    { name: 'description', content: 'View and edit user details' },
-  ];
-}
+export const Route = createFileRoute('/users')({
+  component: UserDetailPage,
+});
 
-const UserDetailPage = () => {
-  const { userId } = useParams();
+function UserDetailPage() {
+  const { userId } = useParams({ from: '/users/$userId' });
   const navigate = useNavigate();
-  const { users, loading: usersLoading, editUser } = useUsers();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '' });
+  // Server state - handled by Tanstack Query
+  const { data: users, isLoading: usersLoading } = useUsers();
+  const { data: user, isLoading: userLoading } = useUser();
 
+  // Client state - handled by Zustand
+  const { editMode, formData, setEditMode, setFormData, setSelectedUser } =
+    useUserStore();
+
+  // Mutations
+  const updateUserMutation = useUpdateUser();
+
+  // Sync user data to client state when it loads
   useEffect(() => {
-    if (users.length > 0 && userId) {
-      const userIdNum = parseInt(userId, 10);
-      if (!isNaN(userIdNum)) {
-        const foundUser = users.find(u => u.id === userIdNum);
-        if (foundUser) {
-          setUser(foundUser);
-          setFormData({ name: foundUser.name, email: foundUser.email });
-        }
-      }
+    if (user && !editMode) {
+      setFormData({ name: user.name, email: user.email });
+      setSelectedUser(user.id);
     }
-  }, [users, userId]);
+  }, [user, editMode, setFormData, setSelectedUser]);
 
-  const handleSave = async () => {
+  // Set selected user when userId changes
+  useEffect(() => {
+    if (userId) {
+      setSelectedUser(Number(userId));
+    }
+  }, [userId, setSelectedUser]);
+
+  const handleSave = () => {
     if (!user) return;
 
-    setSaving(true);
-    try {
-      const updatedUser = await UserService.updateUser({
+    updateUserMutation.mutate(
+      {
         ...user,
         name: formData.name.trim(),
         email: formData.email.trim(),
-      });
-
-      await editUser(updatedUser);
-      setUser(updatedUser);
-      setEditMode(false);
-      toast.success('User updated successfully');
-    } catch (error) {
-      // Error handling is done in the hook
-    } finally {
-      setSaving(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          setEditMode(false);
+        },
+      }
+    );
   };
 
   const handleCancel = () => {
@@ -82,7 +87,7 @@ const UserDetailPage = () => {
     setEditMode(false);
   };
 
-  if (usersLoading) {
+  if (usersLoading || userLoading) {
     return (
       <div className='flex items-center justify-center min-h-[400px]'>
         <Loader2 className='h-8 w-8 animate-spin' />
@@ -100,7 +105,7 @@ const UserDetailPage = () => {
         <p className='text-gray-600 dark:text-gray-300 mb-4'>
           The user with ID {userId} could not be found
         </p>
-        <Link to='/demo'>
+        <Link to='/demo' search={{}}>
           <Button>
             <ArrowLeft className='h-4 w-4 mr-2' />
             Back to Demo
@@ -115,7 +120,7 @@ const UserDetailPage = () => {
       <div className='max-w-2xl mx-auto'>
         {/* Back Button */}
         <div className='mb-6'>
-          <Link to='/demo'>
+          <Link to='/demo' search={{}}>
             <Button variant='outline' size='sm'>
               <ArrowLeft className='h-4 w-4 mr-2' />
               Back to Demo
@@ -213,11 +218,13 @@ const UserDetailPage = () => {
                 <Button
                   onClick={handleSave}
                   disabled={
-                    saving || !formData.name.trim() || !formData.email.trim()
+                    updateUserMutation.isPending ||
+                    !formData.name.trim() ||
+                    !formData.email.trim()
                   }
                   className='flex-1'
                 >
-                  {saving ? (
+                  {updateUserMutation.isPending ? (
                     <Loader2 className='h-4 w-4 mr-2 animate-spin' />
                   ) : (
                     <Save className='h-4 w-4 mr-2' />
@@ -227,7 +234,7 @@ const UserDetailPage = () => {
                 <Button
                   variant='outline'
                   onClick={handleCancel}
-                  disabled={saving}
+                  disabled={updateUserMutation.isPending}
                 >
                   Cancel
                 </Button>
@@ -238,8 +245,4 @@ const UserDetailPage = () => {
       </div>
     </main>
   );
-};
-
-export default function UserDetail() {
-  return <UserDetailPage />;
 }

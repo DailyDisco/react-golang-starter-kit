@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router';
+import { Outlet } from '@tanstack/react-router';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 

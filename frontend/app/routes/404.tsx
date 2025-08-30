@@ -1,17 +1,11 @@
-import { Link } from 'react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { Home, ArrowLeft, FileQuestion } from 'lucide-react';
 
-export function meta() {
-  return [
-    { title: 'Page Not Found - React + Go Starter Kit' },
-    {
-      name: 'description',
-      content: "The page you're looking for doesn't exist.",
-    },
-  ];
-}
+export const Route = createFileRoute('/404')({
+  component: NotFoundPage,
+});
 
-const NotFoundPage = () => {
+function NotFoundPage() {
   return (
     <main className='flex-1 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 dark:from-slate-950 dark:via-gray-950 dark:to-zinc-950'>
       <div className='flex items-center justify-center px-4 py-12 min-h-[60vh]'>
@@ -43,6 +37,7 @@ const NotFoundPage = () => {
               <div className='flex flex-col sm:flex-row gap-3 pt-2'>
                 <Link
                   to='/'
+                  search={{}}
                   className='flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02]'
                 >
                   <Home className='w-4 h-4' />
@@ -63,6 +58,7 @@ const NotFoundPage = () => {
                   Try checking the URL or return to our{' '}
                   <Link
                     to='/demo'
+                    search={{}}
                     className='text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors'
                   >
                     demo page
@@ -76,8 +72,4 @@ const NotFoundPage = () => {
       </div>
     </main>
   );
-};
-
-export default function NotFound() {
-  return <NotFoundPage />;
 }

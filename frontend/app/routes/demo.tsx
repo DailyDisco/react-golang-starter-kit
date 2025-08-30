@@ -1,15 +1,11 @@
+import { createFileRoute } from '@tanstack/react-router';
 import { Demo } from '../components/demo/demo';
+import { UserService } from '../services';
 
-export function meta() {
-  return [
-    { title: 'React + Go Starter Kit' },
-    {
-      name: 'description',
-      content: 'Welcome to your React + Go full-stack application',
-    },
-  ];
-}
+export const Route = createFileRoute('/demo')({
+  component: DemoRoute,
+});
 
-export default function Home() {
+function DemoRoute() {
   return <Demo />;
 }

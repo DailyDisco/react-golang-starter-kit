@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router';
+import { useNavigate, useLocation, Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '../../hooks/auth/useAuth';
+import { useLogin } from '../../hooks/mutations/use-auth-mutations';
+import { useAuthStore } from '../../stores/auth-store';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -27,11 +28,12 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, isLoading } = useAuth();
+  const { isLoading } = useAuthStore();
+  const loginMutation = useLogin();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/';
+  const from = (location.state as any)?.from?.pathname || '/';
 
   const {
     register,
@@ -41,14 +43,16 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    try {
-      setError(null);
-      await login(data);
-      navigate(from, { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-    }
+  const onSubmit = (data: LoginFormData) => {
+    setError(null);
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        navigate({ to: from, replace: true });
+      },
+      onError: err => {
+        setError(err instanceof Error ? err.message : 'Login failed');
+      },
+    });
   };
 
   return (
@@ -75,7 +79,7 @@ export function LoginForm() {
                 type='email'
                 placeholder='Enter your email'
                 {...register('email')}
-                disabled={isLoading}
+                disabled={loginMutation.isPending}
               />
               {errors.email && (
                 <p className='text-sm text-red-500'>{errors.email.message}</p>
@@ -90,7 +94,7 @@ export function LoginForm() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder='Enter your password'
                   {...register('password')}
-                  disabled={isLoading}
+                  disabled={loginMutation.isPending}
                 />
                 <Button
                   type='button'
@@ -98,7 +102,7 @@ export function LoginForm() {
                   size='sm'
                   className='absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent'
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
+                  disabled={loginMutation.isPending}
                 >
                   {showPassword ? (
                     <EyeOff className='h-4 w-4' />
@@ -114,8 +118,14 @@ export function LoginForm() {
               )}
             </div>
 
-            <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+            <Button
+              type='submit'
+              className='w-full'
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending && (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              )}
               Sign in
             </Button>
           </form>

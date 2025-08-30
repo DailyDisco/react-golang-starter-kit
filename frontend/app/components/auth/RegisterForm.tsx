@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '../../hooks/auth/useAuth';
+import { useRegister } from '../../hooks/mutations/use-auth-mutations';
+import { useAuthStore } from '../../stores/auth-store';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -35,7 +36,8 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { register: registerUser, isLoading } = useAuth();
+  const { isLoading } = useAuthStore();
+  const registerMutation = useRegister();
   const navigate = useNavigate();
 
   const {
@@ -46,18 +48,23 @@ export function RegisterForm() {
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = async (data: RegisterFormData) => {
-    try {
-      setError(null);
-      await registerUser({
+  const onSubmit = (data: RegisterFormData) => {
+    setError(null);
+    registerMutation.mutate(
+      {
         name: data.name,
         email: data.email,
         password: data.password,
-      });
-      navigate('/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-    }
+      },
+      {
+        onSuccess: () => {
+          navigate({ to: '/', search: undefined });
+        },
+        onError: err => {
+          setError(err instanceof Error ? err.message : 'Registration failed');
+        },
+      }
+    );
   };
 
   return (
@@ -84,7 +91,7 @@ export function RegisterForm() {
                 type='text'
                 placeholder='Enter your full name'
                 {...register('name')}
-                disabled={isLoading}
+                disabled={registerMutation.isPending}
               />
               {errors.name && (
                 <p className='text-sm text-red-500'>{errors.name.message}</p>
@@ -98,7 +105,7 @@ export function RegisterForm() {
                 type='email'
                 placeholder='Enter your email'
                 {...register('email')}
-                disabled={isLoading}
+                disabled={registerMutation.isPending}
               />
               {errors.email && (
                 <p className='text-sm text-red-500'>{errors.email.message}</p>
@@ -113,7 +120,7 @@ export function RegisterForm() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder='Create a password'
                   {...register('password')}
-                  disabled={isLoading}
+                  disabled={registerMutation.isPending}
                 />
                 <Button
                   type='button'
@@ -121,7 +128,7 @@ export function RegisterForm() {
                   size='sm'
                   className='absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent'
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
+                  disabled={registerMutation.isPending}
                 >
                   {showPassword ? (
                     <EyeOff className='h-4 w-4' />
@@ -145,7 +152,7 @@ export function RegisterForm() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   placeholder='Confirm your password'
                   {...register('confirmPassword')}
-                  disabled={isLoading}
+                  disabled={registerMutation.isPending}
                 />
                 <Button
                   type='button'
@@ -153,7 +160,7 @@ export function RegisterForm() {
                   size='sm'
                   className='absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent'
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={isLoading}
+                  disabled={registerMutation.isPending}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className='h-4 w-4' />
@@ -169,8 +176,14 @@ export function RegisterForm() {
               )}
             </div>
 
-            <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+            <Button
+              type='submit'
+              className='w-full'
+              disabled={registerMutation.isPending}
+            >
+              {registerMutation.isPending && (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              )}
               Create account
             </Button>
           </form>

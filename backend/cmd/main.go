@@ -129,11 +129,16 @@ func getAllowedOrigins() []string {
 		return strings.Split(originsEnv, ",")
 	}
 
-	// Default development origins
+	// Default development origins - no wildcard to allow credentials
 	return []string{
 		"http://localhost:3000",
+		"http://localhost:3001",
+		"http://localhost:3002",
 		"http://localhost:5173",
+		"http://localhost:5174",
+		"http://localhost:5175",
 		"http://localhost:8080",
-		"*", // Allow all for development
+		"http://localhost:8081",
+		"http://localhost:8082",
 	}
 }

@@ -2,18 +2,19 @@ import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from '@tanstack/react-router';
 
+// Import CSS
+import './app.css';
+
+// Import router types first
+import './router.types';
+
 // Import the router with SSR Query integration
 import { createAppRouter } from './router';
 
+// Router types are registered in router.types.ts
+
 // Create a new router instance with SSR Query integration
 const router = createAppRouter();
-
-// Register the router instance for type safety
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: typeof router;
-  }
-}
 
 // Render the app
 const rootElement = document.getElementById('root')!;

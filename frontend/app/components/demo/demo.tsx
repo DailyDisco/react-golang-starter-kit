@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
+import { useEffect } from 'react';
+import { Link } from '@tanstack/react-router';
 import { toast } from 'sonner';
-import { API_BASE_URL } from '../../services';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,131 +12,51 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 
-interface User {
-  id: number;
-  CreatedAt?: string;
-  UpdatedAt?: string;
-  DeletedAt?: string | null;
-  name: string;
-  email: string;
-}
+// Import our new hooks and store
+import { useUsers } from '../../hooks/queries/use-users';
+import {
+  useCreateUser,
+  useDeleteUser,
+} from '../../hooks/mutations/use-user-mutations';
+import { useHealthCheck } from '../../hooks/queries/use-health';
+import { useUserStore } from '../../stores/user-store';
 
-interface HealthResponse {
-  status: string;
-  message: string;
-}
+// Import types from services
+import { API_BASE_URL, type User } from '../../services';
 
 export function Demo() {
-  const [healthStatus, setHealthStatus] = useState<HealthResponse | null>(null);
-  const [healthLoading, setHealthLoading] = useState(false);
+  // Server state - handled by Tanstack Query
+  const { data: users, isLoading: usersLoading } = useUsers();
+  const { data: healthStatus, isLoading: healthLoading } = useHealthCheck();
 
-  const [users, setUsers] = useState<User[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
+  // Mutations
+  const createUserMutation = useCreateUser();
+  const deleteUserMutation = useDeleteUser();
 
-  const [newUser, setNewUser] = useState({ name: '', email: '' });
-  const [createLoading, setCreateLoading] = useState(false);
+  // Client state - handled by Zustand
+  const {
+    formData: newUser,
+    setFormData: setNewUser,
+    deleteDialogOpen,
+    userToDelete,
+    setDeleteDialog,
+  } = useUserStore();
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
-
-  const API_BASE = `${API_BASE_URL}/api`;
-
-  // Test health check
-  const testHealthCheck = async () => {
-    setHealthLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/health`);
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = `HTTP error! status: ${response.status}`;
-
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch {
-          errorMessage = errorText || errorMessage;
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      const responseData = await response.json();
-
-      // Handle new success response format
-      let healthData: HealthResponse;
-      if (responseData.success === true && responseData.data) {
-        healthData = responseData.data;
-      } else {
-        // Fallback for old format
-        healthData = responseData;
-      }
-
-      setHealthStatus(healthData);
+  // Test health check - now handled by useHealthCheck hook
+  const testHealthCheck = () => {
+    // The health check is automatically handled by the useHealthCheck hook
+    // We just need to show a success message when it's successful
+    if (healthStatus) {
       toast.success('Health check successful!', {
-        description: `Status: ${healthData.status} - ${healthData.message}`,
+        description: `Status: ${healthStatus.status} - ${healthStatus.message}`,
       });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      toast.error('Health check failed', {
-        description: errorMessage,
-      });
-    } finally {
-      setHealthLoading(false);
     }
   };
 
-  // Fetch all users
-  const fetchUsers = async () => {
-    setUsersLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/users`);
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = `HTTP error! status: ${response.status}`;
-
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch {
-          // If error response is not JSON, use the raw text
-          errorMessage = errorText || errorMessage;
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      const responseData = await response.json();
-
-      console.log('Demo - Raw API response:', responseData);
-
-      // Handle new success response format
-      if (responseData.success === true && responseData.data) {
-        const usersArray = responseData.data.users || [];
-        console.log('Demo - Setting users from success response:', usersArray);
-        setUsers(usersArray);
-      } else {
-        // Fallback for old format or unexpected structure
-        const usersArray = Array.isArray(responseData) ? responseData : [];
-        console.log('Demo - Setting users from fallback:', usersArray);
-        setUsers(usersArray);
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      toast.error('Failed to fetch users', {
-        description: errorMessage,
-      });
-    } finally {
-      setUsersLoading(false);
-    }
-  };
+  // Users are now automatically fetched by the useUsers hook
 
   // Create a new user
-  const createUser = async (e: React.FormEvent) => {
+  const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUser.name.trim() || !newUser.email.trim()) {
       toast.error('Validation Error', {
@@ -146,100 +65,29 @@ export function Demo() {
       return;
     }
 
-    setCreateLoading(true);
-
-    try {
-      const response = await fetch(`${API_BASE}/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newUser),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = `HTTP error! status: ${response.status}`;
-
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch {
-          errorMessage = errorText || errorMessage;
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      const responseData = await response.json();
-
-      // Handle new success response format
-      let createdUser: User;
-      if (responseData.success === true && responseData.data) {
-        createdUser = responseData.data;
-      } else {
-        // Fallback for old format
-        createdUser = responseData;
-      }
-
-      toast.success('User created successfully!', {
-        description: `Welcome ${createdUser.name}!`,
-      });
-      setNewUser({ name: '', email: '' });
-      // Refresh the users list
-      fetchUsers();
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      toast.error('Failed to create user', {
-        description: errorMessage,
-      });
-    } finally {
-      setCreateLoading(false);
-    }
+    createUserMutation.mutate({
+      name: newUser.name,
+      email: newUser.email,
+    });
   };
 
   // Open delete confirmation dialog
   const openDeleteDialog = (userId: number, userName: string) => {
-    setUserToDelete({ id: userId, name: userName });
-    setDeleteDialogOpen(true);
+    setDeleteDialog(true, { id: userId, name: userName });
   };
 
   // Delete a user
-  const deleteUser = async (): Promise<void> => {
+  const handleDeleteUser = () => {
     if (!userToDelete) return;
 
-    try {
-      const response = await fetch(`${API_BASE}/users/${userToDelete.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      toast.success('User deleted successfully!', {
-        description: `${userToDelete.name} has been removed from the system.`,
-      });
-      // Refresh the users list
-      fetchUsers();
-      setDeleteDialogOpen(false);
-      setUserToDelete(null);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      toast.error('Failed to delete user', {
-        description: errorMessage,
-      });
-    }
+    deleteUserMutation.mutate(userToDelete.id, {
+      onSuccess: () => {
+        setDeleteDialog(false);
+      },
+    });
   };
 
-  // Load users on component mount
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // Add loading toast when initially fetching users
+  // Users are automatically loaded by the useUsers hook
   useEffect(() => {
     if (usersLoading) {
       toast.loading('Loading users...', {
@@ -247,13 +95,13 @@ export function Demo() {
       });
     } else {
       toast.dismiss('fetch-users');
-      if (users.length > 0) {
+      if ((users || []).length > 0) {
         toast.success('Users loaded successfully!', {
-          description: `Found ${users.length} user${users.length !== 1 ? 's' : ''}`,
+          description: `Found ${(users || []).length} user${(users || []).length !== 1 ? 's' : ''}`,
         });
       }
     }
-  }, [usersLoading]);
+  }, [usersLoading, users]);
 
   return (
     <main className='min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4'>
@@ -300,7 +148,7 @@ export function Demo() {
           <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
             👤 Create User
           </h2>
-          <form onSubmit={createUser} className='space-y-4'>
+          <form onSubmit={handleCreateUser} className='space-y-4'>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <div>
                 <label
@@ -318,7 +166,7 @@ export function Demo() {
                   }
                   className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white'
                   placeholder='Enter user name'
-                  disabled={createLoading}
+                  disabled={createUserMutation.isPending}
                 />
               </div>
               <div>
@@ -337,16 +185,16 @@ export function Demo() {
                   }
                   className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white'
                   placeholder='Enter email address'
-                  disabled={createLoading}
+                  disabled={createUserMutation.isPending}
                 />
               </div>
             </div>
             <button
               type='submit'
-              disabled={createLoading}
+              disabled={createUserMutation.isPending}
               className='bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 disabled:bg-green-300 dark:disabled:bg-green-800 text-white font-medium py-2 px-4 rounded-lg transition-colors'
             >
-              {createLoading ? 'Creating...' : 'Create User'}
+              {createUserMutation.isPending ? 'Creating...' : 'Create User'}
             </button>
           </form>
         </section>
@@ -359,8 +207,7 @@ export function Demo() {
             </h2>
             <button
               onClick={() => {
-                fetchUsers();
-                if (users.length > 0) {
+                if ((users || []).length > 0) {
                   toast.info('Refreshing users list...');
                 }
               }}
@@ -377,7 +224,7 @@ export function Demo() {
                 Loading users...
               </p>
             </div>
-          ) : users.length === 0 ? (
+          ) : (users || []).length === 0 ? (
             <div className='text-center py-8'>
               <p className='text-gray-500 dark:text-gray-400'>
                 No users found. Create one above!
@@ -412,7 +259,7 @@ export function Demo() {
                       'Is array:',
                       Array.isArray(users)
                     );
-                    return users.map(user => {
+                    return (users || []).map(user => {
                       const userUrl = `/users/${user.id}`;
                       console.log('Demo - User data:', {
                         id: user.id,
@@ -431,7 +278,9 @@ export function Demo() {
                           </td>
                           <td className='py-2 px-4'>
                             <Link
-                              to={userUrl}
+                              to='/users/$userId'
+                              params={{ userId: user.id.toString() }}
+                              search={{}}
                               className='text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-medium'
                             >
                               {user.name}
@@ -439,7 +288,9 @@ export function Demo() {
                           </td>
                           <td className='py-2 px-4'>
                             <Link
-                              to={userUrl}
+                              to='/users/$userId'
+                              params={{ userId: user.id.toString() }}
+                              search={{}}
                               className='text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline'
                             >
                               {user.email}
@@ -500,7 +351,10 @@ export function Demo() {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={open => setDeleteDialog(open)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
@@ -510,11 +364,11 @@ export function Demo() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setUserToDelete(null)}>
+            <AlertDialogCancel onClick={() => setDeleteDialog(false)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={deleteUser}
+              onClick={handleDeleteUser}
               className='bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600'
             >
               Delete

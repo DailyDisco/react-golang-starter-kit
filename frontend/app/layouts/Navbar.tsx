@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -49,6 +49,7 @@ export function Navbar() {
             <div className='flex-shrink-0 flex items-center'>
               <Link
                 to='/'
+                search={{}}
                 className='text-xl font-bold text-gray-900 dark:text-white'
               >
                 React + Go
@@ -56,19 +57,29 @@ export function Navbar() {
             </div>
             <div className='hidden sm:ml-6 sm:flex sm:space-x-8'>
               {navigation.map(item => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  target={item.external ? '_blank' : undefined}
-                  rel={item.external ? 'noopener noreferrer' : undefined}
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive(item.href)
-                      ? 'border-blue-500 text-gray-900 dark:text-white'
-                      : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-100'
-                  }`}
-                >
-                  {item.name}
-                </Link>
+                item.external ? (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-100`}
+                  >
+                    {item.name}
+                  </a>
+                ) : (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    search={{}}
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive(item.href)
+                        ? 'border-blue-500 text-gray-900 dark:text-white'
+                        : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-100'
+                      }`}
+                  >
+                    {item.name}
+                  </Link>
+                )
               ))}
             </div>
           </div>
@@ -105,7 +116,7 @@ export function Navbar() {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to='/profile' className='cursor-pointer'>
+                    <Link to='/profile' search={{}} className='cursor-pointer'>
                       <User className='mr-2 h-4 w-4' />
                       <span>Profile</span>
                     </Link>
@@ -123,10 +134,10 @@ export function Navbar() {
             ) : (
               <div className='flex items-center space-x-2'>
                 <Button variant='ghost' asChild>
-                  <Link to='/login'>Sign in</Link>
+                  <Link to='/login' search={{}}>Sign in</Link>
                 </Button>
                 <Button asChild>
-                  <Link to='/register'>Sign up</Link>
+                  <Link to='/register' search={{}}>Sign up</Link>
                 </Button>
               </div>
             )}
@@ -149,11 +160,10 @@ export function Navbar() {
                       target={item.external ? '_blank' : undefined}
                       rel={item.external ? 'noopener noreferrer' : undefined}
                       onClick={() => setIsOpen(false)}
-                      className={`inline-flex items-center px-3 py-2 rounded-md text-base font-medium ${
-                        isActive(item.href)
+                      className={`inline-flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive(item.href)
                           ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                      }`}
+                        }`}
                     >
                       {item.name}
                     </Link>
@@ -183,6 +193,7 @@ export function Navbar() {
                         <div className='space-y-2 mt-4'>
                           <Link
                             to='/profile'
+                            search={{}}
                             onClick={() => setIsOpen(false)}
                             className='flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                           >
@@ -191,6 +202,7 @@ export function Navbar() {
                           </Link>
                           <Link
                             to='/profile'
+                            search={{}}
                             onClick={() => setIsOpen(false)}
                             className='flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                           >
@@ -214,6 +226,7 @@ export function Navbar() {
                     <div className='border-t pt-4 mt-4 space-y-2'>
                       <Link
                         to='/login'
+                        search={{}}
                         onClick={() => setIsOpen(false)}
                         className='flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                       >
@@ -221,6 +234,7 @@ export function Navbar() {
                       </Link>
                       <Link
                         to='/register'
+                        search={{}}
                         onClick={() => setIsOpen(false)}
                         className='flex items-center px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700'
                       >

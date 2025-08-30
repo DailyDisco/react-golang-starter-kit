@@ -7,13 +7,15 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [
-    // Please make sure that '@tanstack/router-plugin' is passed before '@vitejs/plugin-react'
-    // Disable automatic route generation for now due to permission issues
-    // tanstackRouter({
-    //   target: 'react',
-    //   autoCodeSplitting: true,
-    //   routesDirectory: './app/routes',
-    // }),
+    // Please make sure that '@tanstack/router-plugin' is passed before '@vitejs/plugin-
+    tanstackRouter({
+      target: 'react',
+      autoCodeSplitting: true,
+      routesDirectory: './app/routes',
+      generatedRouteTree: './app/routeTree.gen.ts',
+      routeFileIgnorePrefix: '-',
+      quoteStyle: 'single',
+    }),
     react(),
     tailwindcss(),
     tsconfigPaths(),
