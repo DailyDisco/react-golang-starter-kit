@@ -1,4 +1,4 @@
-import { expect, afterEach } from 'vitest';
+import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
@@ -9,3 +9,33 @@ expect.extend(matchers);
 afterEach(() => {
   cleanup();
 });
+
+// Mock router hooks
+vi.mock('@tanstack/react-router', async () => ({
+  ...((await vi.importActual('@tanstack/react-router')) as any),
+  useNavigate: vi.fn(),
+  useLocation: vi.fn(),
+  Link: ({ to, children, ...props }: any) => ({
+    type: 'a',
+    props: { href: to, ...props, children },
+  }),
+}));
+
+// Mock sonner toast
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Mock auth store
+vi.mock('../stores/auth-store', () => ({
+  useAuthStore: vi.fn(),
+}));
+
+// Mock auth mutations
+vi.mock('../hooks/mutations/use-auth-mutations', () => ({
+  useLogin: vi.fn(),
+  useRegister: vi.fn(),
+}));

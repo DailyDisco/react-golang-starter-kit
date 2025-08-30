@@ -39,6 +39,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom', // Faster than jsdom
-    setupFiles: ['./app/test/setup.ts'],
+    setupFiles: ['./app/test/setup.tsx'],
   },
 });
