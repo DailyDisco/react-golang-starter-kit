@@ -130,8 +130,14 @@ func main() {
 
 	// Initialize Redis cache
 	redisClient := cache.ConnectRedis()
-	cacheService := cache.NewService(cache.NewCache(redisClient))
-	defer redisClient.Close()
+	var cacheService *cache.Service
+	if redisClient != nil {
+		cacheService = cache.NewService(cache.NewCache(redisClient))
+		defer redisClient.Close()
+	} else {
+		zerologlog.Warn().Msg("Redis not available, cache service disabled")
+		cacheService = nil
+	}
 
 	// Create Chi router
 	r := chi.NewRouter()

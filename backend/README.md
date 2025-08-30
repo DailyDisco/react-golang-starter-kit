@@ -289,6 +289,43 @@ Simply restart the application or run `make db-reset` for a fresh database.
 
 For production, consider using proper migration tools like [golang-migrate](https://github.com/golang-migrate/migrate).
 
+## 🚀 Deployment
+
+### Railway Deployment
+
+This application is configured to work with Railway out of the box:
+
+1. **PostgreSQL**: Railway provides PostgreSQL automatically
+2. **Redis**: By default, Redis is optional (can be disabled)
+3. **Environment Variables**: Set the following in Railway environment variables:
+
+```env
+# Redis Configuration (Optional)
+REDIS_REQUIRED=false
+
+# JWT Secret (Required)
+JWT_SECRET=your-secure-jwt-secret-here
+
+# CORS Origins (Update with your frontend URL)
+CORS_ALLOWED_ORIGINS=https://your-frontend-app.vercel.app
+
+# Logging
+LOG_LEVEL=info
+```
+
+### Redis Configuration
+
+The application supports Redis for caching but can run without it:
+
+- **Default**: Redis is required (will fail to start if Redis is unavailable)
+- **Optional**: Set `REDIS_REQUIRED=false` to run without Redis
+- **Railway**: Redis is not available by default, so set `REDIS_REQUIRED=false`
+
+When Redis is unavailable, the application will:
+- Skip all caching operations
+- Log warnings about Redis being unavailable
+- Continue to function normally using only the database
+
 ## 🚨 Troubleshooting
 
 ### Common Issues
@@ -302,11 +339,16 @@ For production, consider using proper migration tools like [golang-migrate](http
    - Check container logs: `make db-logs`
    - Verify credentials in `.env` match `Makefile`
 
-3. **Module import errors**
+3. **Redis connection failed**
+   - For Railway deployment: Set `REDIS_REQUIRED=false`
+   - For local development: Ensure Redis container is running
+   - The application will continue without caching if Redis is unavailable
+
+4. **Module import errors**
    - Ensure `go.mod` module name matches import paths
    - Run `go mod tidy` to clean up dependencies
 
-4. **Air not working**
+5. **Air not working**
    - Install Air: `go install github.com/air-verse/air@latest`
    - Add `$HOME/go/bin` to your PATH
    - Alternative: use `go run cmd/main.go`

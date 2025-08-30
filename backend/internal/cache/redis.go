@@ -80,10 +80,14 @@ func NewClient(config *RedisConfig) *Client {
 func ConnectRedis() *Client {
 	config := NewRedisConfig()
 
+	// Check if Redis is required (default: true for backward compatibility)
+	redisRequired := getEnv("REDIS_REQUIRED", "true") == "true"
+
 	zerologlog.Info().
 		Str("host", config.Host).
 		Int("port", config.Port).
 		Int("db", config.DB).
+		Bool("required", redisRequired).
 		Msg("connecting to Redis")
 
 	client := NewClient(config)
@@ -94,12 +98,21 @@ func ConnectRedis() *Client {
 
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
-		zerologlog.Error().
-			Err(err).
-			Str("host", config.Host).
-			Int("port", config.Port).
-			Msg("failed to connect to Redis")
-		log.Fatal("Failed to connect to Redis:", err)
+		if redisRequired {
+			zerologlog.Error().
+				Err(err).
+				Str("host", config.Host).
+				Int("port", config.Port).
+				Msg("failed to connect to Redis (Redis is required)")
+			log.Fatal("Failed to connect to Redis:", err)
+		} else {
+			zerologlog.Warn().
+				Err(err).
+				Str("host", config.Host).
+				Int("port", config.Port).
+				Msg("failed to connect to Redis (Redis is optional, continuing without cache)")
+			return nil
+		}
 	}
 
 	zerologlog.Info().Msg("Redis connected successfully")

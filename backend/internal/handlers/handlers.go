@@ -118,11 +118,21 @@ func (s *Service) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	statusCode := http.StatusOK
 
 	dbStatus := database.CheckDatabaseHealth()
-	redisStatus := s.RedisClient.CheckRedisHealth()
 
-	components := []models.ComponentStatus{
-		dbStatus,
-		redisStatus,
+	var components []models.ComponentStatus
+	components = append(components, dbStatus)
+
+	// Only check Redis health if Redis client is available
+	if s.RedisClient != nil {
+		redisStatus := s.RedisClient.CheckRedisHealth()
+		components = append(components, redisStatus)
+	} else {
+		// Redis is disabled, add a status indicating it's not available
+		redisStatus := models.ComponentStatus{
+			Name:   "redis",
+			Status: "disabled",
+		}
+		components = append(components, redisStatus)
 	}
 
 	for _, comp := range components {
@@ -228,38 +238,56 @@ func GetUsers(cacheService *cache.Service) http.HandlerFunc {
 			}
 		}
 
-		// Try to get from cache first
-		if cachedUsers, err := cacheService.GetUserList(page, limit); err == nil {
-			log.Debug().
-				Int("page", page).
-				Int("limit", limit).
-				Msg("Retrieved users from cache")
+		// Try to get from cache first (if available)
+		if cacheService != nil && cacheService.IsAvailable() {
+			if cachedUsers, err := cacheService.GetUserList(page, limit); err == nil {
+				log.Debug().
+					Int("page", page).
+					Int("limit", limit).
+					Msg("Retrieved users from cache")
 
-			response := models.SuccessResponse{
-				Success: true,
-				Message: "Users retrieved successfully",
-				Data:    cachedUsers,
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(w).Encode(response); err != nil {
-				response := models.ErrorResponse{
-					Error:   "Internal Server Error",
-					Message: "Failed to encode response",
-					Code:    http.StatusInternalServerError,
+				response := models.SuccessResponse{
+					Success: true,
+					Message: "Users retrieved successfully",
+					Data:    cachedUsers,
 				}
-				w.WriteHeader(http.StatusInternalServerError)
-				json.NewEncoder(w).Encode(response)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				if err := json.NewEncoder(w).Encode(response); err != nil {
+					response := models.ErrorResponse{
+						Error:   "Internal Server Error",
+						Message: "Failed to encode response",
+						Code:    http.StatusInternalServerError,
+					}
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(response)
+				}
+				return
 			}
-			return
 		}
 
-		// Get total count (try cache first)
+		// Get total count (try cache first if available)
 		var total int64
-		if cachedCount, err := cacheService.GetUserCount(); err == nil {
-			total = int64(cachedCount)
-			log.Debug().Int64("total", total).Msg("Retrieved user count from cache")
+		if cacheService != nil && cacheService.IsAvailable() {
+			if cachedCount, err := cacheService.GetUserCount(); err == nil {
+				total = int64(cachedCount)
+				log.Debug().Int64("total", total).Msg("Retrieved user count from cache")
+			} else {
+				if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
+					w.Header().Set("Content-Type", "application/json")
+					response := models.ErrorResponse{
+						Error:   "Internal Server Error",
+						Message: "Failed to count users",
+						Code:    http.StatusInternalServerError,
+					}
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(response)
+					return
+				}
+				// Cache the count
+				cacheService.SetUserCount(int(total))
+			}
 		} else {
 			if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
 				w.Header().Set("Content-Type", "application/json")
@@ -272,8 +300,6 @@ func GetUsers(cacheService *cache.Service) http.HandlerFunc {
 				json.NewEncoder(w).Encode(response)
 				return
 			}
-			// Cache the count
-			cacheService.SetUserCount(int(total))
 		}
 
 		// Calculate offset and total pages
@@ -309,15 +335,17 @@ func GetUsers(cacheService *cache.Service) http.HandlerFunc {
 			TotalPages: totalPages,
 		}
 
-		// Cache the result
-		if err := cacheService.SetUserList(page, limit, &usersResponse); err != nil {
-			log.Warn().Err(err).Msg("Failed to cache user list")
-		} else {
-			log.Debug().
-				Int("page", page).
-				Int("limit", limit).
-				Int("count", len(userResponses)).
-				Msg("Cached user list")
+		// Cache the result (if cache is available)
+		if cacheService != nil && cacheService.IsAvailable() {
+			if err := cacheService.SetUserList(page, limit, &usersResponse); err != nil {
+				log.Warn().Err(err).Msg("Failed to cache user list")
+			} else {
+				log.Debug().
+					Int("page", page).
+					Int("limit", limit).
+					Int("count", len(userResponses)).
+					Msg("Cached user list")
+			}
 		}
 
 		response := models.SuccessResponse{
