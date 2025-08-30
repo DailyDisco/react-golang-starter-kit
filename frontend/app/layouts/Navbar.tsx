@@ -22,6 +22,9 @@ export function Navbar() {
 
   const navigation = [
     { name: 'Home', href: '/' },
+    { name: 'About', href: '/about' },
+    { name: 'Blog', href: '/blog' },
+    { name: 'Search', href: '/search' },
     { name: 'Demo', href: '/demo' },
     { name: 'Layout Demo', href: '/layout-demo' },
     {
@@ -72,11 +75,10 @@ export function Navbar() {
                     key={item.name}
                     to={item.href}
                     search={{}}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive(item.href)
-                        ? 'border-blue-500 text-gray-900 dark:text-white'
-                        : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-100'
-                    }`}
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive(item.href)
+                      ? 'border-blue-500 text-gray-900 dark:text-white'
+                      : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-100'
+                      }`}
                   >
                     {item.name}
                   </Link>
@@ -156,32 +158,55 @@ export function Navbar() {
                   <span className='sr-only'>Open main menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side='right' className='w-[300px] sm:w-[400px]'>
-                <div className='flex flex-col space-y-4 mt-4'>
-                  {navigation.map(item => (
+              <SheetContent side='right' className='w-[320px]'>
+                <div className='flex flex-col h-full'>
+                  {/* Header */}
+                  <div className='border-b pb-4 mb-4'>
                     <Link
-                      key={item.name}
-                      to={item.href}
-                      target={item.external ? '_blank' : undefined}
-                      rel={item.external ? 'noopener noreferrer' : undefined}
+                      to='/'
+                      search={{}}
+                      className='text-xl font-bold text-gray-900 dark:text-white'
                       onClick={() => setIsOpen(false)}
-                      className={`inline-flex items-center px-3 py-2 rounded-md text-base font-medium ${
-                        isActive(item.href)
-                          ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                      }`}
                     >
-                      {item.name}
+                      React + Go
                     </Link>
-                  ))}
+                  </div>
 
-                  {isAuthenticated && user ? (
-                    <>
-                      <div className='border-t pt-4 mt-4'>
-                        <div className='flex items-center px-3 py-2'>
-                          <Avatar className='h-8 w-8 mr-3'>
+                  {/* Navigation */}
+                  <div className='flex-1'>
+                    <div className='space-y-1 mb-6'>
+                      <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2'>
+                        Navigation
+                      </p>
+                      {navigation.map(item => (
+                        <Link
+                          key={item.name}
+                          to={item.href}
+                          target={item.external ? '_blank' : undefined}
+                          rel={item.external ? 'noopener noreferrer' : undefined}
+                          onClick={() => setIsOpen(false)}
+                          className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(item.href)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-foreground hover:bg-muted'
+                            }`}
+                        >
+                          {item.name}
+                          {item.external && (
+                            <span className='ml-auto text-xs text-muted-foreground'>↗</span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* User Section */}
+                  <div className='border-t pt-4'>
+                    {isAuthenticated && user ? (
+                      <>
+                        <div className='flex items-center px-3 py-3 mb-4 bg-muted/50 rounded-lg'>
+                          <Avatar className='h-10 w-10 mr-3'>
                             <AvatarImage src='' alt={user.name} />
-                            <AvatarFallback>
+                            <AvatarFallback className='text-sm'>
                               {user.name
                                 .split(' ')
                                 .map(n => n[0])
@@ -189,30 +214,34 @@ export function Navbar() {
                                 .toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <div className='flex flex-col'>
-                            <p className='font-medium text-sm'>{user.name}</p>
-                            <p className='text-xs text-muted-foreground truncate max-w-[180px]'>
+                          <div className='flex-1 min-w-0'>
+                            <p className='font-medium text-sm truncate'>{user.name}</p>
+                            <p className='text-xs text-muted-foreground truncate'>
                               {user.email}
                             </p>
                           </div>
                         </div>
-                        <div className='space-y-2 mt-4'>
+
+                        <div className='space-y-1'>
+                          <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2'>
+                            Account
+                          </p>
                           <Link
                             to='/profile'
                             search={{}}
                             onClick={() => setIsOpen(false)}
-                            className='flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            className='flex items-center px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted'
                           >
-                            <User className='mr-2 h-4 w-4' />
+                            <User className='mr-3 h-4 w-4' />
                             Profile
                           </Link>
                           <Link
                             to='/profile'
                             search={{}}
                             onClick={() => setIsOpen(false)}
-                            className='flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            className='flex items-center px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted'
                           >
-                            <Settings className='mr-2 h-4 w-4' />
+                            <Settings className='mr-3 h-4 w-4' />
                             Settings
                           </Link>
                           <button
@@ -220,34 +249,37 @@ export function Navbar() {
                               handleLogout();
                               setIsOpen(false);
                             }}
-                            className='flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            className='flex items-center w-full px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted'
                           >
-                            <LogOut className='mr-2 h-4 w-4' />
-                            Log out
+                            <LogOut className='mr-3 h-4 w-4' />
+                            Sign Out
                           </button>
                         </div>
+                      </>
+                    ) : (
+                      <div className='space-y-2'>
+                        <p className='text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2'>
+                          Authentication
+                        </p>
+                        <Link
+                          to='/login'
+                          search={{}}
+                          onClick={() => setIsOpen(false)}
+                          className='flex items-center px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-muted'
+                        >
+                          Sign In
+                        </Link>
+                        <Link
+                          to='/register'
+                          search={{}}
+                          onClick={() => setIsOpen(false)}
+                          className='flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90'
+                        >
+                          Sign Up
+                        </Link>
                       </div>
-                    </>
-                  ) : (
-                    <div className='border-t pt-4 mt-4 space-y-2'>
-                      <Link
-                        to='/login'
-                        search={{}}
-                        onClick={() => setIsOpen(false)}
-                        className='flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                      >
-                        Sign in
-                      </Link>
-                      <Link
-                        to='/register'
-                        search={{}}
-                        onClick={() => setIsOpen(false)}
-                        className='flex items-center px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700'
-                      >
-                        Sign up
-                      </Link>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>

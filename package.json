@@ -15,5 +15,8 @@
     "audit": "cd frontend && npm audit --audit-level=moderate",
     "format:backend": "cd backend && go fmt ./...",
     "vet:backend": "cd backend && go vet ./..."
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.12"
   }
 }
