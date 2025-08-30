@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { Search as SearchIcon } from 'lucide-react';
 import { useState } from 'react';
+
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Search as SearchIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/(public)/search')({
   component: SearchPage,

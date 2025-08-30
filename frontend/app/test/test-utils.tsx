@@ -4,54 +4,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 import type { User } from '../services';
 
-// Mock @tanstack/react-router at module level
-vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual('@tanstack/react-router');
-  return {
-    ...actual,
-    createMemoryHistory: vi.fn(() => ({
-      initialEntries: ['/'],
-      push: vi.fn(),
-      replace: vi.fn(),
-    })),
-    RouterProvider: ({ children }: { children: React.ReactNode }) =>
-      React.createElement(
-        'div',
-        { 'data-testid': 'router-provider' },
-        children
-      ),
-    createRootRoute: vi.fn((config: any) => ({
-      ...config,
-      addChildren: vi.fn(() => ({
-        ...config,
-        addChildren: vi.fn(() => config),
-      })),
-    })),
-    createRoute: vi.fn((config: any) => config),
-    createRouter: vi.fn((config: any) => ({
-      ...config,
-      navigate: vi.fn(),
-      location: { pathname: '/', search: '', hash: '', state: null },
-    })),
-    useNavigate: vi.fn(() => vi.fn()),
-    useLocation: vi.fn(() => ({
-      pathname: '/',
-      search: '',
-      hash: '',
-      state: null,
-    })),
-    Link: ({ to, children, ...props }: any) =>
-      React.createElement('a', { href: to, ...props }, children),
-  };
-});
-
-// Import router functions after mock is set up
+// Import router functions after the mock is set up. These imports will now
+// get the mocked versions for useNavigate and useLocation, and the mocked
+// implementations for others.
 import {
   createMemoryHistory,
   RouterProvider,
   createRootRoute,
   createRoute,
   createRouter,
+  useNavigate,
+  useLocation,
+  Link,
+  Outlet,
 } from '@tanstack/react-router';
 
 // Test data factories
@@ -72,33 +37,33 @@ export const createMockAuthResponse = (overrides?: Partial<User>) => ({
 });
 
 // Create a test router for testing components that use router hooks
-const createTestRouter = () => {
+const createTestRouter = (initialPath: string = '/') => {
   const rootRoute = createRootRoute({
-    component: () => <div>Test Root</div>,
+    component: () => React.createElement('div', null, 'Test Root'),
   });
 
   const loginRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/login',
-    component: () => <div>Login Page</div>,
+    component: () => React.createElement('div', null, 'Login Page'),
   });
 
   const registerRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/register',
-    component: () => <div>Register Page</div>,
+    component: () => React.createElement('div', null, 'Register Page'),
   });
 
   const indexRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/',
-    component: () => <div>Home Page</div>,
+    component: () => React.createElement('div', null, 'Home Page'),
   });
 
   const dashboardRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/dashboard',
-    component: () => <div>Dashboard Page</div>,
+    component: () => React.createElement('div', null, 'Dashboard Page'),
   });
 
   const routeTree = rootRoute.addChildren([
@@ -110,7 +75,7 @@ const createTestRouter = () => {
 
   return createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ['/'] }),
+    history: createMemoryHistory({ initialEntries: [initialPath] }),
   });
 };
 
@@ -130,36 +95,31 @@ const createTestQueryClient = () =>
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   queryClient?: QueryClient;
   router?: ReturnType<typeof createTestRouter>;
+  initialPath?: string;
 }
 
 export const renderWithProviders = (
   ui: ReactElement,
   {
     queryClient = createTestQueryClient(),
-    router = createTestRouter(),
+    router,
+    initialPath = '/',
     ...renderOptions
   }: CustomRenderOptions = {}
 ) => {
   try {
+    const testRouter = router || createTestRouter(initialPath);
     let Wrapper: React.ComponentType<{ children: React.ReactNode }>;
 
-    // Always include router unless explicitly set to null
-    if (router !== null) {
-      Wrapper = ({ children }: { children: React.ReactNode }) => (
-        <RouterProvider router={router}>
-          <QueryClientProvider client={queryClient}>
-            {children}
-          </QueryClientProvider>
-        </RouterProvider>
-      );
-    } else {
-      // Skip router if explicitly set to null
-      Wrapper = ({ children }: { children: React.ReactNode }) => (
+    Wrapper = ({ children }: { children: React.ReactNode }) => (
+      <RouterProvider router={testRouter}>
         <QueryClientProvider client={queryClient}>
-          {children}
+          {ui}{' '}
+          {/* Render the UI component directly as children of QueryClientProvider */}
+          {children} {/* Render any additional children passed to Wrapper */}
         </QueryClientProvider>
-      );
-    }
+      </RouterProvider>
+    );
 
     return render(ui, { wrapper: Wrapper, ...renderOptions });
   } catch (error) {
@@ -168,7 +128,7 @@ export const renderWithProviders = (
   }
 };
 
-// Simple render without providers for debugging
+// Simple render without providers for debugging (use renderWithProviders for router-dependent components)
 export const renderSimple = (ui: ReactElement, options?: RenderOptions) => {
   try {
     return render(ui, options);

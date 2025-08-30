@@ -1,15 +1,48 @@
 {
-  "semi": true,
-  "trailingComma": "es5",
-  "singleQuote": true,
-  "printWidth": 80,
-  "tabWidth": 2,
-  "useTabs": false,
-  "bracketSpacing": true,
-  "bracketSameLine": false,
   "arrowParens": "avoid",
+  "bracketSameLine": false,
+  "bracketSpacing": true,
   "endOfLine": "lf",
-  "quoteProps": "as-needed",
   "jsxSingleQuote": true,
-  "plugins": ["prettier-plugin-tailwindcss"]
+  "overrides": [
+    {
+      "files": ["*.json"],
+      "options": {
+        "printWidth": 200
+      }
+    },
+    {
+      "files": ["*.md"],
+      "options": {
+        "printWidth": 100,
+        "proseWrap": "preserve"
+      }
+    },
+    {
+      "files": ["*.yaml", "*.yml"],
+      "options": {
+        "tabWidth": 2,
+        "singleQuote": false
+      }
+    },
+    {
+      "files": ["*.sh", "*.bash"],
+      "options": {
+        "printWidth": 100
+      }
+    }
+  ],
+  "plugins": [
+    "prettier-plugin-tailwindcss",
+    "prettier-plugin-packagejson",
+    "prettier-plugin-sh",
+    "prettier-plugin-sort-json"
+  ],
+  "printWidth": 80,
+  "quoteProps": "as-needed",
+  "semi": true,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "useTabs": false
 }

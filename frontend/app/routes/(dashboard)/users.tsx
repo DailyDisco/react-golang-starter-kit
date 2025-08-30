@@ -1,32 +1,32 @@
 import {
   createFileRoute,
-  useParams,
   Link,
   useNavigate,
+  useParams,
 } from '@tanstack/react-router';
+import {
+  ArrowLeft,
+  Edit3,
+  Loader2,
+  Lock,
+  Save,
+  User as UserIcon,
+} from 'lucide-react';
 import { useEffect } from 'react';
-import { useUsers, useUser } from '../../hooks/queries/use-users';
-import { useUpdateUser } from '../../hooks/mutations/use-user-mutations';
-import { useUserStore } from '../../stores/user-store';
+import { toast } from 'sonner';
 
+import { Button } from '../../components/ui/button';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import {
-  Loader2,
-  ArrowLeft,
-  Save,
-  Edit3,
-  User as UserIcon,
-  Lock,
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { useUpdateUser } from '../../hooks/mutations/use-user-mutations';
+import { useUser, useUsers } from '../../hooks/queries/use-users';
+import { useUserStore } from '../../stores/user-store';
 
 export const Route = createFileRoute('/(dashboard)/users')({
   component: UserDetailPage,

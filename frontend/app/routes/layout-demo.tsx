@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
+
 import { Navbar } from '@/layouts';
 
 export const Route = createFileRoute('/layout-demo')({

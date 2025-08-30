@@ -1,9 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
-import { useAuthStore } from '../../stores/auth-store';
-import { AuthService } from '../../services';
-import { queryKeys } from '../../lib/query-keys';
 import { toast } from 'sonner';
+
+import { queryKeys } from '../../lib/query-keys';
 import type { LoginRequest, RegisterRequest } from '../../services';
+import { AuthService } from '../../services';
+import { useAuthStore } from '../../stores/auth-store';
 
 export const useLogin = () => {
   const { setUser, setToken, setLoading } = useAuthStore();

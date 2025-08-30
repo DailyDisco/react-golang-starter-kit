@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from '@tanstack/react-router';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+
 import { useRegister } from '../../hooks/mutations/use-auth-mutations';
 import { useAuthStore } from '../../stores/auth-store';
+import { Alert, AlertDescription } from '../ui/alert';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import {
   Card,
   CardContent,
@@ -15,8 +16,8 @@ import {
   CardHeader,
   CardTitle,
 } from '../ui/card';
-import { Alert, AlertDescription } from '../ui/alert';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 const registerSchema = z
   .object({

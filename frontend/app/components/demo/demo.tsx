@@ -1,7 +1,18 @@
-import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+
+import {
+  useCreateUser,
+  useDeleteUser,
+} from '../../hooks/mutations/use-user-mutations';
+import { useHealthCheck } from '../../hooks/queries/use-health';
+// Import our new hooks and store
+import { useUsers } from '../../hooks/queries/use-users';
+// Import types from services
+import { API_BASE_URL } from '../../services';
+import { useUserStore } from '../../stores/user-store';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,18 +24,6 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import { Skeleton } from '../ui/skeleton';
-
-// Import our new hooks and store
-import { useUsers } from '../../hooks/queries/use-users';
-import {
-  useCreateUser,
-  useDeleteUser,
-} from '../../hooks/mutations/use-user-mutations';
-import { useHealthCheck } from '../../hooks/queries/use-health';
-import { useUserStore } from '../../stores/user-store';
-
-// Import types from services
-import { API_BASE_URL } from '../../services';
 
 export function Demo() {
   // Framer Motion demo state

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { UserService } from '../services';
-import type { User } from '../services';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+
+import type { User } from '../services';
+import { UserService } from '../services';
 
 interface UseUsersResult {
   users: User[];

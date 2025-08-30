@@ -1,16 +1,16 @@
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { RegisterForm } from './RegisterForm';
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
-  renderWithProviders,
   createMockAuthStore,
   createMockMutation,
-  createMockNavigate,
-  createMockLocation,
   createMockUser,
+  renderWithProviders,
 } from '../../test/test-utils';
+import { RegisterForm } from './RegisterForm';
 
 // Mock the hooks
 const mockUseAuthStore = vi.fn();
@@ -24,8 +24,6 @@ vi.mock('../../hooks/mutations/use-auth-mutations', () => ({
   useRegister: () => mockUseRegister(),
 }));
 
-// Router context is provided by renderWithProviders
-
 describe('RegisterForm', () => {
   let user: ReturnType<typeof userEvent.setup>;
 
@@ -36,16 +34,25 @@ describe('RegisterForm', () => {
     // Default mock implementations
     mockUseAuthStore.mockReturnValue(createMockAuthStore());
     mockUseRegister.mockReturnValue(createMockMutation());
+    vi.mocked(useNavigate).mockReturnValue(vi.fn());
+    vi.mocked(useLocation).mockReturnValue({
+      pathname: '/',
+      search: '',
+      hash: '',
+      state: null,
+      key: 'default',
+    });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    useNavigate.mockRestore();
+    useLocation.mockRestore();
   });
 
   it('renders without crashing', () => {
     try {
       const { container } = renderWithProviders(<RegisterForm />);
-      console.log('Container HTML:', container.innerHTML);
       expect(container.firstChild).toBeInTheDocument();
     } catch (error) {
       console.error('Rendering error:', error);
@@ -356,9 +363,15 @@ describe('RegisterForm', () => {
   describe('Success Handling', () => {
     it('navigates to home page on successful registration', async () => {
       const mockMutation = createMockMutation();
-      const mockNavigate = createMockNavigate();
       mockUseRegister.mockReturnValue(mockMutation);
-      mockUseNavigate.mockReturnValue(mockNavigate);
+      vi.mocked(useNavigate).mockReturnValue(vi.fn());
+      vi.mocked(useLocation).mockReturnValue({
+        pathname: '/',
+        search: '',
+        hash: '',
+        state: null,
+        key: 'default',
+      });
 
       renderWithProviders(<RegisterForm />);
 
@@ -390,7 +403,7 @@ describe('RegisterForm', () => {
       });
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith({
+        expect(vi.mocked(useNavigate)).toHaveBeenCalledWith({
           to: '/',
           search: undefined,
         });

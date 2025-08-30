@@ -1,8 +1,14 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
-import { useAuth } from '../../hooks/auth/useAuth';
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  redirect,
+  useLocation,
+} from '@tanstack/react-router';
+import { BarChart3, Home, LogOut, Settings, User, Users } from 'lucide-react';
+
 import { Button } from '../../components/ui/button';
-import { Link, useLocation } from '@tanstack/react-router';
-import { Users, BarChart3, Settings, Home, User, LogOut } from 'lucide-react';
+import { useAuth } from '../../hooks/auth/useAuth';
 
 export const Route = createFileRoute('/(auth)/_protected')({
   component: ProtectedLayout,

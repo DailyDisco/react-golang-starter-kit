@@ -1,11 +1,13 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Calendar, Edit3, Loader2, Mail, Save, User, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+
 import { useAuth } from '../../hooks/auth/useAuth';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import {
   Card,
   CardContent,
@@ -13,9 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from '../ui/card';
-import { Alert, AlertDescription } from '../ui/alert';
-import { Badge } from '../ui/badge';
-import { Loader2, User, Mail, Calendar, Edit3, Save, X } from 'lucide-react';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),

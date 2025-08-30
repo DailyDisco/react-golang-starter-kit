@@ -1,8 +1,8 @@
 import {
   API_BASE_URL,
   authenticatedFetch,
-  parseErrorResponse,
   authenticatedFetchWithParsing,
+  parseErrorResponse,
 } from '../api/client';
 import type { User } from '../types';
 

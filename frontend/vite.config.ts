@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 
 export default defineConfig({
@@ -19,6 +20,12 @@ export default defineConfig({
     react(),
     tailwindcss(),
     tsconfigPaths(),
+    visualizer({
+      filename: 'dist/stats.html',
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+    }),
   ],
   server: {
     host: '0.0.0.0',
@@ -40,5 +47,20 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom', // Faster than jsdom
     setupFiles: ['./app/test/setup.tsx'],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['@tanstack/react-router'],
+          query: ['@tanstack/react-query'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          utils: ['clsx', 'tailwind-merge', 'date-fns'],
+        },
+      },
+    },
+    sourcemap: true,
+    reportCompressedSize: true,
   },
 });

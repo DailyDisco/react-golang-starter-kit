@@ -1,7 +1,9 @@
 import { Link, useLocation } from '@tanstack/react-router';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { LogOut, Menu, Settings, User } from 'lucide-react';
+import { useState } from 'react';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,9 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, User, LogOut, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+
 import { useAuth } from '../hooks/auth/useAuth';
 import { API_BASE_URL } from '../services';
 

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Button } from '../../components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+
+import { Button } from '../../components/ui/button';
 
 export const Route = createFileRoute('/(dashboard)/users/$userId')({
   component: UserDetailPage,

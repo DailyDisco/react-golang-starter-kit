@@ -1,11 +1,11 @@
 import {
   API_BASE_URL,
   apiFetch,
-  authenticatedFetch,
-  parseErrorResponse,
-  authenticatedFetchWithParsing,
   apiFetchWithParsing,
+  authenticatedFetch,
+  authenticatedFetchWithParsing,
   createHeaders,
+  parseErrorResponse,
 } from '../api/client';
 import type {
   AuthResponse,

@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+
 import { Button } from '../../components/ui/button';
-import { Loader2, AlertCircle } from 'lucide-react';
 
 export const Route = createFileRoute('/(public)/blog')({
   component: BlogPage,

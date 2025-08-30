@@ -10,11 +10,11 @@ export * from './validation/schemas';
 
 // Types - explicit exports to avoid conflicts
 export type {
-  User,
-  AuthResponse,
-  LoginRequest,
-  RegisterRequest,
   ApiError,
   ApiResponse,
+  AuthResponse,
   ExampleData,
+  LoginRequest,
+  RegisterRequest,
+  User,
 } from './types';

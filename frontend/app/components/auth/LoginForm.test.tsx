@@ -1,23 +1,20 @@
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { LoginForm } from './LoginForm';
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
-  renderWithProviders,
-  renderSimple,
   createMockAuthStore,
   createMockMutation,
-  createMockNavigate,
-  createMockLocation,
   createMockUser,
+  renderWithProviders,
 } from '../../test/test-utils';
+import { LoginForm } from './LoginForm';
 
 // Mock the hooks
 const mockUseAuthStore = vi.fn();
 const mockUseLogin = vi.fn();
-const mockUseNavigate = vi.fn();
-const mockUseLocation = vi.fn();
 
 vi.mock('../../stores/auth-store', () => ({
   useAuthStore: () => mockUseAuthStore(),
@@ -26,8 +23,6 @@ vi.mock('../../stores/auth-store', () => ({
 vi.mock('../../hooks/mutations/use-auth-mutations', () => ({
   useLogin: () => mockUseLogin(),
 }));
-
-// Router context is provided by renderWithProviders
 
 describe('LoginForm', () => {
   let user: ReturnType<typeof userEvent.setup>;
@@ -39,47 +34,31 @@ describe('LoginForm', () => {
     // Default mock implementations
     mockUseAuthStore.mockReturnValue(createMockAuthStore());
     mockUseLogin.mockReturnValue(createMockMutation());
-  });
-
-  it('renders simple div without crashing', () => {
-    try {
-      const { container } = renderSimple(<div>Test</div>);
-      console.log('Simple div HTML:', container.innerHTML);
-      expect(container.firstChild).toBeInTheDocument();
-    } catch (error) {
-      console.error('Simple div rendering error:', error);
-      throw error;
-    }
-  });
-
-  it('renders div with providers', () => {
-    try {
-      const { container } = renderWithProviders(<div>Test</div>, {
-        router: null,
-      });
-      console.log('Div with providers HTML:', container.innerHTML);
-      expect(container.firstChild).toBeInTheDocument();
-    } catch (error) {
-      console.error('Div with providers rendering error:', error);
-      throw error;
-    }
-  });
-
-  it('renders LoginForm without providers', () => {
-    try {
-      const { container } = renderSimple(<LoginForm />);
-      console.log('LoginForm without providers HTML:', container.innerHTML);
-      // Don't expect anything specific, just that it doesn't crash
-      expect(true).toBe(true);
-    } catch (error) {
-      console.error('LoginForm without providers rendering error:', error);
-      // Log the error but don't fail the test
-      console.log('Error occurred but test will pass to see the output');
-    }
+    useNavigate.mockReturnValue(vi.fn());
+    useLocation.mockReturnValue({
+      pathname: '/',
+      search: {}, // Ensure search is an object
+      hash: '',
+      state: null,
+      key: 'default',
+    });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    // No need to call mockRestore on globally mocked functions.
+    // useNavigate.mockRestore();
+    // useLocation.mockRestore();
+  });
+
+  it('renders LoginForm with providers', () => {
+    try {
+      const { container } = renderWithProviders(<LoginForm />);
+      expect(container.firstChild).toBeInTheDocument();
+    } catch (error) {
+      console.error('LoginForm with providers rendering error:', error);
+      throw error;
+    }
   });
 
   describe('Form Rendering', () => {
@@ -287,11 +266,15 @@ describe('LoginForm', () => {
   describe('Success Handling and Navigation', () => {
     it('navigates to home page when no redirect location is specified', async () => {
       const mockMutation = createMockMutation();
-      const mockNavigate = createMockNavigate();
-      const mockLocation = createMockLocation();
       mockUseLogin.mockReturnValue(mockMutation);
-      mockUseNavigate.mockReturnValue(mockNavigate);
-      mockUseLocation.mockReturnValue(mockLocation);
+      useNavigate.mockReturnValue(vi.fn());
+      useLocation.mockReturnValue({
+        pathname: '/',
+        search: '',
+        hash: '',
+        state: null,
+        key: 'default',
+      });
 
       renderWithProviders(<LoginForm />);
 
@@ -314,7 +297,7 @@ describe('LoginForm', () => {
       });
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith({
+        expect(useNavigate).toHaveBeenCalledWith({
           to: '/',
           replace: true,
         });
@@ -323,13 +306,15 @@ describe('LoginForm', () => {
 
     it('navigates to intended page when redirect location is specified', async () => {
       const mockMutation = createMockMutation();
-      const mockNavigate = createMockNavigate();
-      const mockLocation = createMockLocation({
-        state: { from: { pathname: '/dashboard' } },
-      });
       mockUseLogin.mockReturnValue(mockMutation);
-      mockUseNavigate.mockReturnValue(mockNavigate);
-      mockUseLocation.mockReturnValue(mockLocation);
+      useNavigate.mockReturnValue(vi.fn());
+      useLocation.mockReturnValue({
+        pathname: '/',
+        search: '',
+        hash: '',
+        state: { from: { pathname: '/dashboard' } },
+        key: 'default',
+      });
 
       renderWithProviders(<LoginForm />);
 
@@ -352,7 +337,7 @@ describe('LoginForm', () => {
       });
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith({
+        expect(useNavigate).toHaveBeenCalledWith({
           to: '/dashboard',
           replace: true,
         });
@@ -361,13 +346,15 @@ describe('LoginForm', () => {
 
     it('navigates to home page when redirect location has no pathname', async () => {
       const mockMutation = createMockMutation();
-      const mockNavigate = createMockNavigate();
-      const mockLocation = createMockLocation({
-        state: { from: {} },
-      });
       mockUseLogin.mockReturnValue(mockMutation);
-      mockUseNavigate.mockReturnValue(mockNavigate);
-      mockUseLocation.mockReturnValue(mockLocation);
+      useNavigate.mockReturnValue(vi.fn());
+      useLocation.mockReturnValue({
+        pathname: '/',
+        search: '',
+        hash: '',
+        state: { from: {} },
+        key: 'default',
+      });
 
       renderWithProviders(<LoginForm />);
 
@@ -390,7 +377,7 @@ describe('LoginForm', () => {
       });
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith({
+        expect(useNavigate).toHaveBeenCalledWith({
           to: '/',
           replace: true,
         });

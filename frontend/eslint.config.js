@@ -7,6 +7,13 @@ import jsxA11yPlugin from 'eslint-plugin-jsx-a11y';
 import tanstackQueryPlugin from '@tanstack/eslint-plugin-query';
 import prettierPlugin from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import importPlugin from 'eslint-plugin-import';
+import unicornPlugin from 'eslint-plugin-unicorn';
+import securityPlugin from 'eslint-plugin-security';
+import promisePlugin from 'eslint-plugin-promise';
+import vitestPlugin from 'eslint-plugin-vitest';
+import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 
 export default [
   // Base ESLint recommended rules
@@ -126,6 +133,122 @@ export default [
     },
   },
 
+  // Import sorting and validation
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    plugins: {
+      'simple-import-sort': simpleImportSort,
+      import: importPlugin,
+    },
+    rules: {
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+      'import/first': 'error',
+      'import/newline-after-import': 'error',
+      'import/no-duplicates': 'error',
+      'import/no-unused-modules': 'warn',
+    },
+    settings: {
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+          project: './tsconfig.json',
+        },
+        node: {
+          extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        },
+      },
+    },
+  },
+
+  // Modern JavaScript best practices
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    plugins: {
+      unicorn: unicornPlugin,
+      promise: promisePlugin,
+    },
+    rules: {
+      'unicorn/prefer-node-protocol': 'error',
+      'unicorn/no-array-for-each': 'error',
+      'unicorn/prefer-dom-node-text-content': 'error',
+      'unicorn/prefer-modern-dom-apis': 'error',
+      'promise/no-return-wrap': 'error',
+      'promise/param-names': 'error',
+      'promise/no-nesting': 'warn',
+    },
+  },
+
+  // Security rules
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    plugins: {
+      security: securityPlugin,
+    },
+    rules: {
+      'security/detect-object-injection': 'warn',
+      'security/detect-non-literal-fs-filename': 'warn',
+      'security/detect-possible-timing-attacks': 'warn',
+    },
+  },
+
+  // React Fast Refresh compatibility
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    plugins: {
+      'react-refresh': reactRefreshPlugin,
+    },
+    rules: {
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+
+  // Testing rules
+  {
+    files: ['**/*.test.*', '**/*.spec.*', '**/__tests__/**'],
+    plugins: {
+      vitest: vitestPlugin,
+    },
+    rules: {
+      ...vitestPlugin.configs.recommended.rules,
+      'vitest/no-focused-tests': 'error',
+      'vitest/no-disabled-tests': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'react/display-name': 'off',
+    },
+  },
+
+  // TanStack Router specific rules
+  {
+    files: ['**/routes/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          args: 'after-used',
+          ignoreRestSiblings: true,
+        },
+      ],
+      // Add custom rules for route validation
+    },
+  },
+
+  // Performance rules
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'react/jsx-no-bind': 'warn',
+      'react/jsx-no-constructed-context-values': 'warn',
+      '@typescript-eslint/no-unnecessary-condition': 'warn',
+      'unicorn/prefer-spread': 'warn',
+    },
+  },
+
   // Prettier integration (must be last)
   {
     files: ['**/*.{ts,tsx,js,jsx,json,css,md}'],
@@ -174,6 +297,7 @@ export default [
       '.vite/',
       '.tanstack/',
       'coverage/',
+      '.vscode/',
       '*.config.js',
       '*.config.ts',
       '*.config.mjs',
@@ -195,6 +319,10 @@ export default [
       '.commitlintrc.json',
       'app.css', // CSS files that ESLint can't parse
       '**/*.css', // All CSS files
+      '**/*.json', // JSON files
+      '**/*.md', // Markdown files
+      '**/*.yml', // YAML files
+      '**/*.yaml', // YAML files
     ],
   },
 

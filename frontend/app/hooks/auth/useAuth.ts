@@ -1,6 +1,6 @@
+import type { LoginRequest, RegisterRequest, User } from '../../services';
 import { useAuthStore } from '../../stores/auth-store';
 import { useLogin, useRegister } from '../mutations/use-auth-mutations';
-import type { User, LoginRequest, RegisterRequest } from '../../services';
 
 interface AuthHookType {
   user: User | null;

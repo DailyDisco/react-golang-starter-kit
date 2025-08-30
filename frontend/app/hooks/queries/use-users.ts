@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { useUserStore } from '../../stores/user-store';
-import { UserService } from '../../services';
+
 import { queryKeys } from '../../lib/query-keys';
 import type { User } from '../../services';
+import { UserService } from '../../services';
 import type { UserFilters } from '../../stores/user-store';
+import { useUserStore } from '../../stores/user-store';
 
 export const useUsers = () => {
   const filters = useUserStore(state => state.filters);

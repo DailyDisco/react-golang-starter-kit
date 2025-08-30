@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { API_BASE_URL } from '../../services';
+
 import { queryKeys } from '../../lib/query-keys';
+import { API_BASE_URL } from '../../services';
 
 export const useHealthCheck = () => {
   return useQuery({

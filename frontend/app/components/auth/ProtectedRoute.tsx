@@ -1,5 +1,6 @@
-import React from 'react';
 import { Navigate, useLocation } from '@tanstack/react-router';
+import React from 'react';
+
 import { useAuth } from '../../hooks/auth/useAuth';
 
 interface ProtectedRouteProps {

@@ -1,15 +1,17 @@
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
-import { Navbar } from './Navbar';
-import { Footer } from './Footer';
+import React from 'react';
+
 import {
   Breadcrumb,
-  BreadcrumbLink,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import React from 'react';
+
+import { Footer } from './Footer';
+import { Navbar } from './Navbar';
 
 // User-friendly route labels mapping
 const ROUTE_LABELS: Record<string, string> = {

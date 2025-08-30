@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useUserStore } from '../../stores/user-store';
-import { UserService } from '../../services';
-import { queryKeys } from '../../lib/query-keys';
 import { toast } from 'sonner';
+
+import { queryKeys } from '../../lib/query-keys';
 import type { User } from '../../services';
+import { UserService } from '../../services';
+import { useUserStore } from '../../stores/user-store';
 
 export const useCreateUser = () => {
   const queryClient = useQueryClient();

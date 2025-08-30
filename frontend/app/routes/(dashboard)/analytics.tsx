@@ -1,6 +1,7 @@
-import { createFileRoute, Outlet, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet } from '@tanstack/react-router';
+import { BarChart3, TrendingUp, Users } from 'lucide-react';
+
 import { Button } from '../../components/ui/button';
-import { BarChart3, Users, TrendingUp } from 'lucide-react';
 
 export const Route = createFileRoute('/(dashboard)/analytics')({
   component: AnalyticsLayout,
