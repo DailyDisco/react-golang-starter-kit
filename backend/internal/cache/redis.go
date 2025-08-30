@@ -66,6 +66,7 @@ func NewClient(config *RedisConfig) *Client {
 		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
 		Password: config.Password,
 		DB:       config.DB,
+		Network:  "tcp4", // Force IPv4 to resolve "redis" hostname correctly
 	})
 
 	client := &Client{

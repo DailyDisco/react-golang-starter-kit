@@ -322,6 +322,7 @@ The application supports Redis for caching but can run without it:
 - **Railway**: Redis is not available by default, so set `REDIS_REQUIRED=false`
 
 When Redis is unavailable, the application will:
+
 - Skip all caching operations
 - Log warnings about Redis being unavailable
 - Continue to function normally using only the database
@@ -331,20 +332,24 @@ When Redis is unavailable, the application will:
 ### Common Issues
 
 1. **Port 5432 already in use**
+
    - The Makefile uses port 5433 to avoid conflicts
    - Check if system PostgreSQL is running: `sudo systemctl status postgresql`
 
 2. **Database connection failed**
+
    - Ensure Docker container is running: `docker ps`
    - Check container logs: `make db-logs`
    - Verify credentials in `.env` match `Makefile`
 
 3. **Redis connection failed**
+
    - For Railway deployment: Set `REDIS_REQUIRED=false`
    - For local development: Ensure Redis container is running
    - The application will continue without caching if Redis is unavailable
 
 4. **Module import errors**
+
    - Ensure `go.mod` module name matches import paths
    - Run `go mod tidy` to clean up dependencies
 
