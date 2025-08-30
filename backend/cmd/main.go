@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
+	zerologlog "github.com/rs/zerolog/log"
 )
 
 // @title React Go Starter Kit API
@@ -67,22 +68,58 @@ import (
 // @tag.name health
 // @tag.description System health monitoring and status endpoints for checking server availability
 func main() {
-	// Configure zerolog for structured logging
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-
 	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file found, using system environment variables")
+		zerologlog.Info().Msg("No .env file found, using system environment variables")
+	}
+
+	// Load logging configuration
+	logConfig := middleware.LoadLogConfig()
+
+	// Configure zerolog for structured logging
+	zerolog.TimeFieldFormat = logConfig.TimeFormat
+
+	// Set log level based on configuration
+	switch strings.ToLower(logConfig.Level) {
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warn", "warning":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "fatal":
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
+
+	// Configure pretty printing if enabled
+	if logConfig.Pretty {
+		zerologlog.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Logger()
+	}
+
+	// Log configuration status
+	if logConfig.Enabled {
+		zerologlog.Info().
+			Str("level", logConfig.Level).
+			Bool("user_context", logConfig.IncludeUserContext).
+			Bool("request_body", logConfig.IncludeRequestBody).
+			Bool("response_body", logConfig.IncludeResponseBody).
+			Float64("sampling_rate", logConfig.SamplingRate).
+			Msg("structured logging enabled")
+	} else {
+		zerologlog.Info().Msg("structured logging disabled")
 	}
 
 	// Load rate limiting configuration
 	rateLimitConfig := ratelimit.LoadConfig()
 	if rateLimitConfig.Enabled {
-		log.Println("Rate limiting is enabled")
+		zerologlog.Info().Msg("rate limiting enabled")
 	} else {
-		log.Println("Rate limiting is disabled")
+		zerologlog.Info().Msg("rate limiting disabled")
 	}
 
 	// Initialize database
@@ -92,7 +129,7 @@ func main() {
 	r := chi.NewRouter()
 
 	// Global middleware
-	r.Use(middleware.StructuredLogger())
+	r.Use(middleware.StructuredLoggerWithConfig(logConfig))
 	r.Use(chimiddleware.Recoverer)
 
 	// Apply IP-based rate limiting globally
@@ -114,7 +151,7 @@ func main() {
 	// Routes
 	setupRoutes(r, rateLimitConfig)
 
-	log.Println("Server starting on :8080")
+	zerologlog.Info().Str("port", ":8080").Msg("server starting")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
