@@ -4,3 +4,4 @@ coverage
 
 # Ignore generated React Router types
 .react-router/
+routeTree.gen.ts
