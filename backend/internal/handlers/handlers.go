@@ -2,15 +2,43 @@
 //
 // # React Go Starter Kit API
 //
-// This is the REST API for the React Go Starter Kit application.
-// It provides endpoints for user authentication, user management, and health checks.
+// A comprehensive REST API for the React Go Starter Kit application built with Fiber, GORM, and PostgreSQL.
+// This API provides secure user authentication, user management, and system health monitoring.
 //
-// Terms Of Service: http://swagger.io/terms/
+// ## Features
+//
+// - **User Authentication**: JWT-based authentication with email verification
+// - **User Management**: Complete CRUD operations for user accounts
+// - **Password Security**: Secure password hashing and reset functionality
+// - **Rate Limiting**: Built-in protection against abuse
+// - **Health Monitoring**: System health checks and status endpoints
+//
+// ## Authentication
+//
+// Most endpoints require JWT Bearer token authentication. Obtain a token by logging in
+// and include it in the Authorization header: `Authorization: Bearer {token}`
+//
+// ## Rate Limiting
+//
+// API endpoints are protected by rate limiting to prevent abuse. Different endpoints
+// have different rate limits based on their sensitivity.
+//
+// Terms Of Service: https://github.com/your-org/react-golang-starter-kit
 //
 // Schemes: http, https
 // Host: localhost:8080
 // BasePath: /api
 // Version: 1.0.0
+// Contact:
+//
+//	name: API Support
+//	url: https://github.com/your-org/react-golang-starter-kit/issues
+//	email: support@example.com
+//
+// License:
+//
+//	name: MIT
+//	url: https://opensource.org/licenses/MIT
 //
 // Consumes:
 // - application/json
@@ -24,7 +52,15 @@
 //	type: apiKey
 //	name: Authorization
 //	in: header
-//	description: "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
+//	description: |
+//	  JWT Authorization header using the Bearer scheme.
+//
+//	  Format: `Authorization: Bearer {token}`
+//
+//	  To obtain a token:
+//	  1. Register a new user account via POST /api/auth/register
+//	  2. Login via POST /api/auth/login to receive a JWT token
+//	  3. Include the token in all subsequent requests
 //
 // swagger:meta
 package handlers
@@ -43,12 +79,28 @@ import (
 
 // HealthCheck godoc
 // @Summary Check server health status
-// @Description Get the health status of the server
+// @Description Get the health status of the server and database connectivity
 // @Tags health
 // @Accept json
 // @Produce json
-// @Success 200 {object} models.SuccessResponse
+// @Success 200 {object} models.SuccessResponse "Server is healthy"
+// @Failure 500 {object} models.ErrorResponse "Server is unhealthy"
 // @Router /health [get]
+// @Example
+//
+// Request:
+// GET /api/health
+//
+// Response:
+//
+//	{
+//	  "success": true,
+//	  "message": "Server is running",
+//	  "data": {
+//	    "status": "ok",
+//	    "message": "Server is running"
+//	  }
+//	}
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := models.SuccessResponse{
@@ -74,16 +126,108 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 // GetUsers godoc
 // @Summary Get all users
-// @Description Retrieve a list of all users (public endpoint)
+// @Description Retrieve a paginated list of all users. This endpoint is public and does not require authentication.
+// @Description This endpoint is rate limited to prevent abuse. Maximum 30 requests per minute per IP.
 // @Tags users
 // @Accept json
 // @Produce json
-// @Success 200 {object} models.SuccessResponse
-// @Failure 500 {object} models.ErrorResponse
+// @Param page query int false "Page number (default: 1)" minimum(1)
+// @Param limit query int false "Items per page (default: 10, max: 100)" minimum(1) maximum(100)
+// @Success 200 {object} models.SuccessResponse{data=models.UsersResponse} "List of users retrieved successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid pagination parameters"
+// @Failure 429 {object} models.ErrorResponse "Rate limit exceeded"
+// @Failure 500 {object} models.ErrorResponse "Failed to fetch users"
 // @Router /users [get]
+// @Example
+//
+// Request:
+// GET /api/users?page=1&limit=10
+//
+// Response:
+//
+//	{
+//	  "success": true,
+//	  "message": "Users retrieved successfully",
+//	  "data": {
+//	    "users": [
+//	      {
+//	        "id": 1,
+//	        "name": "John Doe",
+//	        "email": "john.doe@example.com",
+//	        "email_verified": true,
+//	        "is_active": true,
+//	        "created_at": "2023-08-27T12:00:00Z",
+//	        "updated_at": "2023-08-27T12:00:00Z"
+//	      }
+//	    ],
+//	    "count": 1,
+//	    "total": 25,
+//	    "page": 1,
+//	    "limit": 10,
+//	    "total_pages": 3
+//	  }
+//	}
 func GetUsers(w http.ResponseWriter, r *http.Request) {
+	// Parse pagination parameters
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+
+	page := 1
+	limit := 10
+
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Bad Request",
+				Message: "Invalid page parameter",
+				Code:    http.StatusBadRequest,
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+	}
+
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+			limit = l
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Bad Request",
+				Message: "Invalid limit parameter (must be 1-100)",
+				Code:    http.StatusBadRequest,
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+	}
+
+	// Get total count
+	var total int64
+	if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to count users",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Calculate offset and total pages
+	offset := (page - 1) * limit
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	// Get paginated users
 	var users []models.User
-	if err := database.DB.Find(&users).Error; err != nil {
+	if err := database.DB.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		response := models.ErrorResponse{
 			Error:   "Internal Server Error",
@@ -91,7 +235,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -105,8 +249,12 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Message: "Users retrieved successfully",
 		Data: models.UsersResponse{
-			Users: userResponses,
-			Count: len(userResponses),
+			Users:      userResponses,
+			Count:      len(userResponses),
+			Total:      int(total),
+			Page:       page,
+			Limit:      limit,
+			TotalPages: totalPages,
 		},
 	}
 
@@ -119,25 +267,47 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 }
 
 // GetUser godoc
 // @Summary Get a user by ID
-// @Description Retrieve a single user by their ID (protected endpoint)
+// @Description Retrieve a single user by their ID. Users can only access their own profile unless they have admin privileges.
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param id path int true "User ID"
-// @Success 200 {object} models.SuccessResponse
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 401 {object} models.ErrorResponse
-// @Failure 403 {object} models.ErrorResponse
-// @Failure 404 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
+// @Param id path int true "User ID" minimum(1)
+// @Security BearerAuth
+// @Success 200 {object} models.SuccessResponse{data=models.UserResponse} "User retrieved successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid user ID"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized - authentication required"
+// @Failure 403 {object} models.ErrorResponse "Forbidden - can only access own profile"
+// @Failure 404 {object} models.ErrorResponse "User not found"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve user"
 // @Router /users/{id} [get]
+// @Example
+//
+// Request:
+// GET /api/users/1
+// Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+//
+// Response:
+//
+//	{
+//	  "success": true,
+//	  "message": "User retrieved successfully",
+//	  "data": {
+//	    "id": 1,
+//	    "name": "John Doe",
+//	    "email": "john.doe@example.com",
+//	    "email_verified": true,
+//	    "is_active": true,
+//	    "created_at": "2023-08-27T12:00:00Z",
+//	    "updated_at": "2023-08-27T12:00:00Z"
+//	  }
+//	}
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	userID, err := strconv.Atoi(id)
@@ -215,18 +385,44 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 // CreateUser godoc
 // @Summary Create a new user (Admin endpoint)
-// @Description Create a new user with the provided information (requires admin privileges)
+// @Description Create a new user with the provided information. This endpoint is intended for administrative use and may require admin privileges in production.
 // @Tags users
 // @Accept json
 // @Produce json
 // @Param user body models.RegisterRequest true "User registration data"
-// @Success 201 {object} models.SuccessResponse
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 401 {object} models.ErrorResponse
-// @Failure 403 {object} models.ErrorResponse
-// @Failure 409 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
+// @Success 201 {object} models.SuccessResponse{data=models.UserResponse} "User created successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid JSON or validation error"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 403 {object} models.ErrorResponse "Forbidden - admin privileges required"
+// @Failure 409 {object} models.ErrorResponse "User already exists"
+// @Failure 500 {object} models.ErrorResponse "Failed to create user"
 // @Router /users [post]
+// @Example
+//
+// Request:
+// POST /api/users
+//
+//	{
+//	  "name": "John Doe",
+//	  "email": "john.doe@example.com",
+//	  "password": "SecurePass123!"
+//	}
+//
+// Response:
+//
+//	{
+//	  "success": true,
+//	  "message": "User created successfully",
+//	  "data": {
+//	    "id": 1,
+//	    "name": "John Doe",
+//	    "email": "john.doe@example.com",
+//	    "email_verified": true,
+//	    "is_active": true,
+//	    "created_at": "2023-08-27T12:00:00Z",
+//	    "updated_at": "2023-08-27T12:00:00Z"
+//	  }
+//	}
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	// Check if user is authenticated (optional for now, but could be made admin-only)
 	_, _ = auth.GetUserFromContext(r.Context()) // authenticated status available for future admin-only logic
@@ -358,19 +554,47 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 // UpdateUser godoc
 // @Summary Update an existing user
-// @Description Update a user's information by their ID (protected endpoint)
+// @Description Update a user's information by their ID. Users can only update their own profile unless they have admin privileges.
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param id path int true "User ID"
-// @Param user body models.User true "Updated user object"
-// @Success 200 {object} models.SuccessResponse
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 401 {object} models.ErrorResponse
-// @Failure 403 {object} models.ErrorResponse
-// @Failure 404 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
+// @Param id path int true "User ID" minimum(1)
+// @Param user body object true "Updated user data (name and/or email)" '{"name":"string","email":"string"}'
+// @Security BearerAuth
+// @Success 200 {object} models.SuccessResponse{data=models.UserResponse} "User updated successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid user ID or JSON"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 403 {object} models.ErrorResponse "Forbidden - can only update own profile"
+// @Failure 404 {object} models.ErrorResponse "User not found"
+// @Failure 409 {object} models.ErrorResponse "Email already taken"
+// @Failure 500 {object} models.ErrorResponse "Failed to update user"
 // @Router /users/{id} [put]
+// @Example
+//
+// Request:
+// PUT /api/users/1
+// Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+//
+//	{
+//	  "name": "John Smith",
+//	  "email": "john.smith@example.com"
+//	}
+//
+// Response:
+//
+//	{
+//	  "success": true,
+//	  "message": "User updated successfully",
+//	  "data": {
+//	    "id": 1,
+//	    "name": "John Smith",
+//	    "email": "john.smith@example.com",
+//	    "email_verified": true,
+//	    "is_active": true,
+//	    "created_at": "2023-08-27T12:00:00Z",
+//	    "updated_at": "2023-08-27T14:30:00Z"
+//	  }
+//	}
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	userID, err := strconv.Atoi(id)
@@ -513,18 +737,27 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 // DeleteUser godoc
 // @Summary Delete a user
-// @Description Delete a user by their ID (protected endpoint)
+// @Description Delete a user by their ID. Users can only delete their own account unless they have admin privileges. This action is irreversible.
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param id path int true "User ID"
-// @Success 204 {string} string "No Content"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 401 {object} models.ErrorResponse
-// @Failure 403 {object} models.ErrorResponse
-// @Failure 404 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
+// @Param id path int true "User ID" minimum(1)
+// @Security BearerAuth
+// @Success 204 "No Content - User deleted successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid user ID"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 403 {object} models.ErrorResponse "Forbidden - can only delete own account"
+// @Failure 404 {object} models.ErrorResponse "User not found"
+// @Failure 500 {object} models.ErrorResponse "Failed to delete user"
 // @Router /users/{id} [delete]
+// @Example
+//
+// Request:
+// DELETE /api/users/1
+// Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+//
+// Response:
+// HTTP/1.1 204 No Content
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	userID, err := strconv.Atoi(id)

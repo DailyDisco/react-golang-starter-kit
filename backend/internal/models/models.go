@@ -67,64 +67,152 @@ func (u *User) ToUserResponse() UserResponse {
 // LoginRequest represents the login request payload
 // swagger:model LoginRequest
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	// User's email address (must be valid email format)
+	// required: true
+	// example: john.doe@example.com
+	Email string `json:"email" binding:"required,email" example:"john.doe@example.com"`
+
+	// User's password (minimum 8 characters)
+	// required: true
+	// example: SecurePass123!
+	// minLength: 8
+	Password string `json:"password" binding:"required" example:"SecurePass123!"`
 }
 
 // RegisterRequest represents the registration request payload
 // swagger:model RegisterRequest
 type RegisterRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
+	// User's full name (required, non-empty)
+	// required: true
+	// example: John Doe
+	// minLength: 1
+	Name string `json:"name" binding:"required" example:"John Doe"`
+
+	// User's email address (must be valid and unique)
+	// required: true
+	// example: john.doe@example.com
+	Email string `json:"email" binding:"required,email" example:"john.doe@example.com"`
+
+	// User's password (minimum 8 characters, must contain letters and numbers)
+	// required: true
+	// example: SecurePass123!
+	// minLength: 8
+	Password string `json:"password" binding:"required,min=8" example:"SecurePass123!"`
 }
 
 // AuthResponse represents the authentication response with tokens
 // swagger:model AuthResponse
 type AuthResponse struct {
-	User  UserResponse `json:"user"`
-	Token string       `json:"token"`
+	// Authenticated user information
+	User UserResponse `json:"user"`
+
+	// JWT access token for subsequent API requests
+	// example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+	Token string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
 }
 
 // PasswordResetRequest represents a password reset request
 // swagger:model PasswordResetRequest
 type PasswordResetRequest struct {
-	Email string `json:"email" binding:"required,email"`
+	// Email address for password reset (must be registered)
+	// required: true
+	// example: john.doe@example.com
+	Email string `json:"email" binding:"required,email" example:"john.doe@example.com"`
 }
 
 // PasswordResetConfirm represents password reset confirmation
 // swagger:model PasswordResetConfirm
 type PasswordResetConfirm struct {
-	Token    string `json:"token" binding:"required"`
-	Password string `json:"password" binding:"required,min=8"`
+	// Reset token received via email
+	// required: true
+	// example: abc123def456
+	Token string `json:"token" binding:"required" example:"abc123def456"`
+
+	// New password (minimum 8 characters)
+	// required: true
+	// example: NewSecurePass123!
+	// minLength: 8
+	Password string `json:"password" binding:"required,min=8" example:"NewSecurePass123!"`
 }
 
 // ErrorResponse represents an error response
 // swagger:model ErrorResponse
 type ErrorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message,omitempty"`
-	Code    int    `json:"code,omitempty"`
+	// Error type/category
+	// example: Bad Request
+	Error string `json:"error" example:"Bad Request"`
+
+	// Detailed error message
+	// example: Invalid email format
+	Message string `json:"message,omitempty" example:"Invalid email format"`
+
+	// HTTP status code
+	// example: 400
+	Code int `json:"code,omitempty" example:"400"`
 }
 
 // SuccessResponse represents a success response
 // swagger:model SuccessResponse
 type SuccessResponse struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	// Operation success status
+	// example: true
+	Success bool `json:"success" example:"true"`
+
+	// Success message
+	// example: User created successfully
+	Message string `json:"message" example:"User created successfully"`
+
+	// Response data (varies by endpoint)
+	Data interface{} `json:"data,omitempty"`
 }
 
 // HealthResponse represents the health check response
 // swagger:model HealthResponse
 type HealthResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
+	// Health status (ok, error, degraded)
+	// example: ok
+	Status string `json:"status" example:"ok"`
+
+	// Health status message
+	// example: Server is running
+	Message string `json:"message" example:"Server is running"`
 }
 
-// UsersResponse represents a list of users response
+// UsersResponse represents a paginated list of users response
 // swagger:model UsersResponse
 type UsersResponse struct {
+	// List of users on this page
 	Users []UserResponse `json:"users"`
-	Count int            `json:"count"`
+
+	// Number of users returned in this response
+	// example: 10
+	Count int `json:"count" example:"10"`
+
+	// Total number of users in the system
+	// example: 150
+	Total int `json:"total" example:"150"`
+
+	// Current page number
+	// example: 1
+	Page int `json:"page" example:"1"`
+
+	// Items per page
+	// example: 10
+	Limit int `json:"limit" example:"10"`
+
+	// Total number of pages available
+	// example: 15
+	TotalPages int `json:"total_pages" example:"15"`
+}
+
+// PaginationQuery represents pagination query parameters
+// swagger:model PaginationQuery
+type PaginationQuery struct {
+	// Page number to retrieve (default: 1, minimum: 1)
+	// example: 1
+	Page int `json:"page" form:"page" example:"1"`
+
+	// Number of items per page (default: 10, maximum: 100)
+	// example: 10
+	Limit int `json:"limit" form:"limit" example:"10"`
 }

@@ -16,6 +16,54 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// @title React Go Starter Kit API
+// @version 1.0.0
+// @description A comprehensive REST API for the React Go Starter Kit application built with Fiber, GORM, and PostgreSQL. This API provides secure user authentication, user management, and system health monitoring.
+//
+// ## Features
+//
+// - **User Authentication**: JWT-based authentication with email verification
+// - **User Management**: Complete CRUD operations for user accounts
+// - **Password Security**: Secure password hashing and reset functionality
+// - **Rate Limiting**: Built-in protection against abuse
+// - **Health Monitoring**: System health checks and status endpoints
+//
+// ## Authentication
+//
+// Most endpoints require JWT Bearer token authentication. Obtain a token by logging in
+// and include it in the Authorization header: `Authorization: Bearer {token}`
+//
+// ## Rate Limiting
+//
+// API endpoints are protected by rate limiting to prevent abuse. Different endpoints
+// have different rate limits based on their sensitivity.
+//
+// @termsOfService https://github.com/your-org/react-golang-starter-kit
+//
+// @contact.name API Support
+// @contact.url https://github.com/your-org/react-golang-starter-kit/issues
+// @contact.email support@example.com
+//
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+//
+// @host localhost:8080
+// @BasePath /api
+//
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description JWT Authorization header using the Bearer scheme. Format: `Authorization: Bearer {token}`
+// To obtain a token: 1. Register via POST /api/auth/register 2. Login via POST /api/auth/login
+//
+// @tag.name auth
+// @tag.description User authentication and authorization endpoints including login, registration, password reset, and email verification
+//
+// @tag.name users
+// @tag.description User management operations including CRUD operations for user accounts
+//
+// @tag.name health
+// @tag.description System health monitoring and status endpoints for checking server availability
 func main() {
 	// Load environment variables from .env file
 	err := godotenv.Load()
