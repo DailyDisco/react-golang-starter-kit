@@ -1,0 +1,22 @@
+#!/bin/bash
+echo "============================================"
+echo "JWT Secret Generator"
+echo "============================================"
+echo ""
+SECRET=$(openssl rand -hex 32)
+echo "Generated JWT Secret:"
+echo "----------------------------------------"
+echo "$SECRET"
+echo "----------------------------------------"
+echo ""
+echo "Add this to your production environment:"
+echo "JWT_SECRET=$SECRET"
+echo ""
+echo "Security Notes:"
+echo "- Store this secret securely (never in version control)"
+echo "- Use different secrets for different environments"
+echo "- Rotate secrets regularly (every 3-6 months)"
+echo "- Use environment variables or secret management services"
+echo ""
+echo "============================================"
+

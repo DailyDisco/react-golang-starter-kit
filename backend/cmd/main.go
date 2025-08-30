@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/handlers"
 	"react-golang-starter/internal/middleware"
@@ -125,10 +126,18 @@ func main() {
 	// Initialize database
 	database.ConnectDB()
 
+	// Initialize Redis cache
+	redisClient := cache.ConnectRedis()
+	cacheService := cache.NewService(cache.NewCache(redisClient))
+	defer redisClient.Close()
+
 	// Create Chi router
 	r := chi.NewRouter()
 
 	// Global middleware
+	// Compression middleware for improved performance (must be first)
+	r.Use(chimiddleware.Compress(5, "application/json", "text/plain", "text/html"))
+
 	r.Use(middleware.StructuredLoggerWithConfig(logConfig))
 	r.Use(chimiddleware.Recoverer)
 
@@ -149,15 +158,16 @@ func main() {
 	r.Get("/health", handlers.HealthCheck)
 
 	// Routes
-	setupRoutes(r, rateLimitConfig)
+	setupRoutes(r, rateLimitConfig, cacheService)
 
 	zerologlog.Info().Str("port", ":8080").Msg("server starting")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
-func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config) {
+func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, cacheService *cache.Service) {
 	// Simple test route at root level
 	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
 		if _, err := w.Write([]byte("Test route working!")); err != nil {
 			http.Error(w, "Failed to write response", http.StatusInternalServerError)
 		}
@@ -165,6 +175,7 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config) {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/plain")
 			if _, err := w.Write([]byte("API test route working!")); err != nil {
 				http.Error(w, "Failed to write response", http.StatusInternalServerError)
 			}
@@ -192,16 +203,16 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config) {
 		// User routes - API rate limiting
 		r.Route("/users", func(r chi.Router) {
 			r.Use(ratelimit.NewAPIRateLimitMiddleware(rateLimitConfig))
-			r.Get("/", handlers.GetUsers)    // GET /api/users (public for now)
-			r.Post("/", handlers.CreateUser) // POST /api/users (public for now)
+			r.Get("/", handlers.GetUsers(cacheService))    // GET /api/users (public for now)
+			r.Post("/", handlers.CreateUser(cacheService)) // POST /api/users (public for now)
 
 			// Protected user routes
 			r.Route("/{id}", func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
 				r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
-				r.Get("/", handlers.GetUser)       // GET /api/users/{id}
-				r.Put("/", handlers.UpdateUser)    // PUT /api/users/{id}
-				r.Delete("/", handlers.DeleteUser) // DELETE /api/users/{id}
+				r.Get("/", handlers.GetUser(cacheService))       // GET /api/users/{id}
+				r.Put("/", handlers.UpdateUser(cacheService))    // PUT /api/users/{id}
+				r.Delete("/", handlers.DeleteUser(cacheService)) // DELETE /api/users/{id}
 			})
 		})
 	})
