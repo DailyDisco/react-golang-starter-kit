@@ -1,7 +1,14 @@
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
-import { Breadcrumb, BreadcrumbLink, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import {
+  Breadcrumb,
+  BreadcrumbLink,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import React from 'react';
 
 // User-friendly route labels mapping
@@ -42,7 +49,10 @@ const getRouteLabel = (pathname: string): string => {
     }
 
     // Try to find a matching route
-    return ROUTE_LABELS['/' + lastSegment] || lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1);
+    return (
+      ROUTE_LABELS['/' + lastSegment] ||
+      lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1)
+    );
   }
 
   return 'Home';
@@ -96,20 +106,21 @@ export default function StandardLayout() {
               </BreadcrumbItem>
 
               {/* Show breadcrumbs for non-home pages */}
-              {!isOnHomePage && breadcrumbs.map((crumb, index) => (
-                <React.Fragment key={crumb.to}>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    {index === breadcrumbs.length - 1 ? (
-                      <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink asChild>
-                        <Link to={crumb.to}>{crumb.label}</Link>
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                </React.Fragment>
-              ))}
+              {!isOnHomePage &&
+                breadcrumbs.map((crumb, index) => (
+                  <React.Fragment key={crumb.to}>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      {index === breadcrumbs.length - 1 ? (
+                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink asChild>
+                          <Link to={crumb.to}>{crumb.label}</Link>
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                  </React.Fragment>
+                ))}
             </BreadcrumbList>
           </Breadcrumb>
         </div>
