@@ -9,7 +9,7 @@ RUN apk add --no-cache \
     tzdata
 
 # Install Air for hot reloading
-RUN go install github.com/cosmtrek/air@latest
+RUN go install github.com/air-verse/air@latest
 
 # Configure Go
 ENV GOPROXY=https://proxy.golang.org,direct

@@ -23,8 +23,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: ./backend/Dockerfile
+      context: ./backend
+      dockerfile: ./Dockerfile
       target: development
     container_name: react-golang-backend
     restart: unless-stopped
@@ -52,7 +52,7 @@ services:
       CGO_ENABLED: 0
       GO_ENV: development
     volumes:
-      - ./backend:/app:cached
+      - .:/app:cached
       - go_modules:/go/pkg/mod:cached
       - go_cache:/root/.cache/go-build:cached
     command: ['air', '-c', '.air.toml']
@@ -85,10 +85,9 @@ services:
       CI: false
     volumes:
       - ./frontend:/app:cached
-      - node_modules:/app/node_modules:cached
       - vite_cache:/app/.vite:cached
       - tanstack_cache:/app/.tanstack:cached
-    command: ['npm', 'run', 'dev', '--', '--host', '0.0.0.0', '--port', '5173']
+    entrypoint: ['./start-dev.sh']
     depends_on:
       - backend
     healthcheck:

@@ -29,8 +29,8 @@ ENV NODE_ENV=development
 # Expose ports
 EXPOSE 5173 4173
 
-# Default command for development
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+# Default command for development (can be overridden by docker-compose)
+# CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
 
 # Production dependencies stage
 FROM node:20-alpine AS production-dependencies
