@@ -1,28 +1,49 @@
+/* ==========================================================================
+   TAILWIND CSS IMPORTS
+   ========================================================================== */
+
 @import 'tailwindcss';
 @import 'tw-animate-css';
+
+/* ==========================================================================
+   CUSTOM VARIANTS & THEME CONFIGURATION
+   ========================================================================== */
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* Typography */
   --font-sans:
     'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
     'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+/* ==========================================================================
+   BASE STYLES & RESET
+   ========================================================================== */
+
 html,
 body {
   @apply bg-white dark:bg-gray-950;
 
+  /* Respect user's system dark mode preference */
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
   }
 }
 
+/* ==========================================================================
+   TAILWIND THEME INLINE CONFIGURATION
+   ========================================================================== */
+
 @theme inline {
+  /* Border radius system */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Core color tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -41,11 +62,15 @@ body {
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Chart colors */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
+  /* Sidebar colors */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -56,14 +81,25 @@ body {
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ==========================================================================
+   LIGHT THEME COLOR TOKENS
+   ========================================================================== */
+
 :root {
+  /* Layout & Structure */
   --radius: 0.625rem;
+
+  /* Base colors */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+
+  /* Surface colors */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
+
+  /* Interactive colors */
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
@@ -72,15 +108,23 @@ body {
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
+
+  /* Status colors */
   --destructive: oklch(0.577 0.245 27.325);
+
+  /* Border & Input */
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+
+  /* Data visualization */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+
+  /* Navigation */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -91,13 +135,22 @@ body {
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* ==========================================================================
+   DARK THEME COLOR TOKENS
+   ========================================================================== */
+
 .dark {
+  /* Base colors */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
+
+  /* Surface colors */
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
+
+  /* Interactive colors */
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
@@ -106,15 +159,23 @@ body {
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
+
+  /* Status colors */
   --destructive: oklch(0.704 0.191 22.216);
+
+  /* Border & Input - Dark theme uses transparent overlays */
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+
+  /* Data visualization - Dark theme variants */
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+
+  /* Navigation - Dark theme variants */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -125,11 +186,86 @@ body {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* ==========================================================================
+   BASE LAYER STYLES & RESET
+   ========================================================================== */
+
 @layer base {
+  /* CSS Reset & Global Styles */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* Global border and focus styles */
   * {
     @apply border-border outline-ring/50;
   }
+
+  /* Body element styles */
   body {
     @apply bg-background text-foreground;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+
+    /* Improve text rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Better line height for readability */
+    line-height: 1.6;
   }
+
+  /* Focus management for accessibility */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2;
+  }
+
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    * {
+      --border: oklch(0 0 0);
+      --ring: oklch(0 0 0);
+    }
+
+    .dark * {
+      --border: oklch(1 0 0);
+      --ring: oklch(1 0 0);
+    }
+  }
+}
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus trap for modals */
+.focus-trap:focus-within {
+  isolation: isolate;
 }

@@ -14,24 +14,24 @@ function ProtectedDashboard() {
         </p>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-        <div className='bg-card p-6 rounded-lg border'>
-          <h3 className='font-semibold mb-2'>Welcome Back!</h3>
-          <p className='text-sm text-muted-foreground'>
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='bg-card rounded-lg border p-6'>
+          <h3 className='mb-2 font-semibold'>Welcome Back!</h3>
+          <p className='text-muted-foreground text-sm'>
             You're viewing a protected area of the application.
           </p>
         </div>
 
-        <div className='bg-card p-6 rounded-lg border'>
-          <h3 className='font-semibold mb-2'>Your Profile</h3>
-          <p className='text-sm text-muted-foreground'>
+        <div className='bg-card rounded-lg border p-6'>
+          <h3 className='mb-2 font-semibold'>Your Profile</h3>
+          <p className='text-muted-foreground text-sm'>
             Manage your account settings and preferences.
           </p>
         </div>
 
-        <div className='bg-card p-6 rounded-lg border'>
-          <h3 className='font-semibold mb-2'>Recent Activity</h3>
-          <p className='text-sm text-muted-foreground'>
+        <div className='bg-card rounded-lg border p-6'>
+          <h3 className='mb-2 font-semibold'>Recent Activity</h3>
+          <p className='text-muted-foreground text-sm'>
             View your latest actions and updates.
           </p>
         </div>

@@ -11,5 +11,5 @@
   "endOfLine": "lf",
   "quoteProps": "as-needed",
   "jsxSingleQuote": true,
-  "plugins": []
+  "plugins": ["prettier-plugin-tailwindcss"]
 }

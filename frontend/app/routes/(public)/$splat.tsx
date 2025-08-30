@@ -8,58 +8,58 @@ export const Route = createFileRoute('/(public)/$splat')({
 function NotFoundPage() {
   return (
     <main className='flex-1 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 dark:from-slate-950 dark:via-gray-950 dark:to-zinc-950'>
-      <div className='flex items-center justify-center px-4 py-12 min-h-[60vh]'>
-        <div className='w-full max-w-lg mx-auto text-center'>
+      <div className='flex min-h-[60vh] items-center justify-center px-4 py-12'>
+        <div className='mx-auto w-full max-w-lg text-center'>
           {/* Icon and 404 Number */}
           <div className='mb-8'>
-            <div className='inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 mb-6'>
-              <FileQuestion className='w-10 h-10 text-blue-600 dark:text-blue-400' />
+            <div className='mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30'>
+              <FileQuestion className='h-10 w-10 text-blue-600 dark:text-blue-400' />
             </div>
-            <h1 className='text-6xl md:text-7xl font-bold bg-gradient-to-r from-slate-600 to-slate-800 dark:from-slate-300 dark:to-slate-500 bg-clip-text text-transparent select-none'>
+            <h1 className='bg-gradient-to-r from-slate-600 to-slate-800 bg-clip-text text-6xl font-bold text-transparent select-none md:text-7xl dark:from-slate-300 dark:to-slate-500'>
               404
             </h1>
           </div>
 
           {/* Main Content Card */}
-          <div className='bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-800/50 p-8 md:p-10'>
+          <div className='rounded-2xl border border-gray-200/50 bg-white/80 p-8 shadow-xl backdrop-blur-sm md:p-10 dark:border-gray-800/50 dark:bg-gray-900/80'>
             <div className='space-y-6'>
               <div>
-                <h2 className='text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white mb-3'>
+                <h2 className='mb-3 text-2xl font-semibold text-gray-900 md:text-3xl dark:text-white'>
                   Page Not Found
                 </h2>
-                <p className='text-gray-600 dark:text-gray-300 leading-relaxed'>
+                <p className='leading-relaxed text-gray-600 dark:text-gray-300'>
                   The page you're looking for doesn't exist or may have been
                   moved.
                 </p>
               </div>
 
               {/* Action Buttons */}
-              <div className='flex flex-col sm:flex-row gap-3 pt-2'>
+              <div className='flex flex-col gap-3 pt-2 sm:flex-row'>
                 <Link
                   to='/'
                   search={{}}
-                  className='flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02]'
+                  className='inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 font-medium text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:from-blue-700 hover:to-blue-800 hover:shadow-xl'
                 >
-                  <Home className='w-4 h-4' />
+                  <Home className='h-4 w-4' />
                   Go Home
                 </Link>
                 <button
                   onClick={() => window.history.back()}
-                  className='flex-1 inline-flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium py-3 px-6 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-[1.02]'
+                  className='inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 font-medium text-gray-700 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:bg-gray-50 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
                 >
-                  <ArrowLeft className='w-4 h-4' />
+                  <ArrowLeft className='h-4 w-4' />
                   Go Back
                 </button>
               </div>
 
               {/* Additional Help */}
-              <div className='pt-4 border-t border-gray-200 dark:border-gray-700'>
+              <div className='border-t border-gray-200 pt-4 dark:border-gray-700'>
                 <p className='text-sm text-gray-500 dark:text-gray-400'>
                   Try checking the URL or return to our{' '}
                   <Link
                     to='/demo'
                     search={{}}
-                    className='text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors'
+                    className='font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300'
                   >
                     demo page
                   </Link>

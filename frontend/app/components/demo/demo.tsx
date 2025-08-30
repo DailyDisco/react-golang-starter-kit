@@ -152,8 +152,8 @@ export function Demo() {
   }, [usersLoading, users]);
 
   return (
-    <main className='min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4'>
-      <div className='max-w-4xl mx-auto space-y-8'>
+    <main className='min-h-screen bg-gray-50 px-4 py-8 dark:bg-gray-900'>
+      <div className='mx-auto max-w-4xl space-y-8'>
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
@@ -161,7 +161,7 @@ export function Demo() {
           transition={{ duration: 0.5 }}
           className='text-center'
         >
-          <h1 className='text-4xl font-bold text-gray-900 dark:text-white mb-2'>
+          <h1 className='mb-2 text-4xl font-bold text-gray-900 dark:text-white'>
             React + Go Integration Test
           </h1>
           <p className='text-gray-600 dark:text-gray-300'>
@@ -170,25 +170,25 @@ export function Demo() {
         </motion.header>
 
         {/* Health Check Section */}
-        <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-6'>
-          <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+        <section className='rounded-lg bg-white p-6 shadow-md dark:bg-gray-800'>
+          <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
             🔍 Health Check
           </h2>
           <div className='space-y-4'>
             <button
               onClick={testHealthCheck}
               disabled={healthLoading}
-              className='bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-300 dark:disabled:bg-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-colors'
+              className='rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:bg-blue-300 dark:bg-blue-700 dark:hover:bg-blue-600 dark:disabled:bg-blue-800'
             >
               {healthLoading ? 'Testing...' : 'Test Health Check'}
             </button>
 
             {healthStatus && (
-              <div className='p-3 bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700 rounded-lg'>
+              <div className='rounded-lg border border-green-300 bg-green-100 p-3 dark:border-green-700 dark:bg-green-900'>
                 <p className='text-green-700 dark:text-green-300'>
                   ✅ Status: {healthStatus.status}
                 </p>
-                <p className='text-green-600 dark:text-green-400 text-sm'>
+                <p className='text-sm text-green-600 dark:text-green-400'>
                   {healthStatus.message}
                 </p>
               </div>
@@ -197,16 +197,16 @@ export function Demo() {
         </section>
 
         {/* Create User Section */}
-        <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-6'>
-          <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+        <section className='rounded-lg bg-white p-6 shadow-md dark:bg-gray-800'>
+          <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
             👤 Create User
           </h2>
           <form onSubmit={handleCreateUser} className='space-y-4'>
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
               <div>
                 <label
                   htmlFor='name'
-                  className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
+                  className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'
                 >
                   Name
                 </label>
@@ -217,7 +217,7 @@ export function Demo() {
                   onChange={e =>
                     setNewUser({ ...newUser, name: e.target.value })
                   }
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white'
+                  className='w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white'
                   placeholder='Enter user name'
                   disabled={createUserMutation.isPending}
                 />
@@ -225,7 +225,7 @@ export function Demo() {
               <div>
                 <label
                   htmlFor='email'
-                  className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
+                  className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'
                 >
                   Email
                 </label>
@@ -236,7 +236,7 @@ export function Demo() {
                   onChange={e =>
                     setNewUser({ ...newUser, email: e.target.value })
                   }
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white'
+                  className='w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white'
                   placeholder='Enter email address'
                   disabled={createUserMutation.isPending}
                 />
@@ -244,7 +244,7 @@ export function Demo() {
               <div className='md:col-span-2'>
                 <label
                   htmlFor='password'
-                  className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
+                  className='mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300'
                 >
                   Password
                 </label>
@@ -255,11 +255,11 @@ export function Demo() {
                   onChange={e =>
                     setNewUser({ ...newUser, password: e.target.value })
                   }
-                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white'
+                  className='w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white'
                   placeholder='Min 8 chars, 1 uppercase, 1 lowercase'
                   disabled={createUserMutation.isPending}
                 />
-                <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-1'>
+                <div className='mt-1 space-y-1 text-xs text-gray-500 dark:text-gray-400'>
                   <p className='font-medium'>Password requirements:</p>
                   <div className='flex flex-col space-y-1'>
                     <div
@@ -293,7 +293,7 @@ export function Demo() {
             <button
               type='submit'
               disabled={createUserMutation.isPending || !isPasswordValid}
-              className='bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 disabled:bg-green-300 dark:disabled:bg-green-800 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:cursor-not-allowed'
+              className='rounded-lg bg-green-600 px-4 py-2 font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300 dark:bg-green-700 dark:hover:bg-green-600 dark:disabled:bg-green-800'
             >
               {createUserMutation.isPending
                 ? 'Creating...'
@@ -305,8 +305,8 @@ export function Demo() {
         </section>
 
         {/* Users List Section */}
-        <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-6'>
-          <div className='flex justify-between items-center mb-4'>
+        <section className='rounded-lg bg-white p-6 shadow-md dark:bg-gray-800'>
+          <div className='mb-4 flex items-center justify-between'>
             <h2 className='text-2xl font-semibold text-gray-900 dark:text-white'>
               📋 Users List
             </h2>
@@ -317,20 +317,20 @@ export function Demo() {
                 }
               }}
               disabled={usersLoading}
-              className='bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:bg-gray-300 dark:disabled:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-colors'
+              className='rounded-lg bg-gray-600 px-4 py-2 font-medium text-white transition-colors hover:bg-gray-700 disabled:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:disabled:bg-gray-800'
             >
               {usersLoading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
 
           {usersLoading ? (
-            <div className='text-center py-8'>
+            <div className='py-8 text-center'>
               <p className='text-gray-600 dark:text-gray-300'>
                 Loading users...
               </p>
             </div>
           ) : (users || []).length === 0 ? (
-            <div className='text-center py-8'>
+            <div className='py-8 text-center'>
               <p className='text-gray-500 dark:text-gray-400'>
                 No users found. Create one above!
               </p>
@@ -340,16 +340,16 @@ export function Demo() {
               <table className='w-full border-collapse'>
                 <thead>
                   <tr className='border-b border-gray-200 dark:border-gray-600'>
-                    <th className='text-left py-2 px-4 text-gray-900 dark:text-white font-medium'>
+                    <th className='px-4 py-2 text-left font-medium text-gray-900 dark:text-white'>
                       ID
                     </th>
-                    <th className='text-left py-2 px-4 text-gray-900 dark:text-white font-medium'>
+                    <th className='px-4 py-2 text-left font-medium text-gray-900 dark:text-white'>
                       Name
                     </th>
-                    <th className='text-left py-2 px-4 text-gray-900 dark:text-white font-medium'>
+                    <th className='px-4 py-2 text-left font-medium text-gray-900 dark:text-white'>
                       Email
                     </th>
-                    <th className='text-left py-2 px-4 text-gray-900 dark:text-white font-medium'>
+                    <th className='px-4 py-2 text-left font-medium text-gray-900 dark:text-white'>
                       Actions
                     </th>
                   </tr>
@@ -380,37 +380,37 @@ export function Demo() {
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
                           transition={{ duration: 0.3 }}
-                          className='border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          className='border-b border-gray-100 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700'
                         >
-                          <td className='py-2 px-4 text-gray-700 dark:text-gray-300'>
+                          <td className='px-4 py-2 text-gray-700 dark:text-gray-300'>
                             {user.id}
                           </td>
-                          <td className='py-2 px-4'>
+                          <td className='px-4 py-2'>
                             <Link
                               to='/users/$userId'
                               params={{ userId: user.id.toString() }}
                               search={{}}
-                              className='text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline font-medium'
+                              className='font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300'
                             >
                               {user.name}
                             </Link>
                           </td>
-                          <td className='py-2 px-4'>
+                          <td className='px-4 py-2'>
                             <Link
                               to='/users/$userId'
                               params={{ userId: user.id.toString() }}
                               search={{}}
-                              className='text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline'
+                              className='text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300'
                             >
                               {user.email}
                             </Link>
                           </td>
-                          <td className='py-2 px-4'>
+                          <td className='px-4 py-2'>
                             <button
                               onClick={() =>
                                 openDeleteDialog(user.id, user.name)
                               }
-                              className='bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white font-medium py-1 px-3 rounded text-sm transition-colors'
+                              className='rounded bg-red-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600'
                             >
                               Delete
                             </button>
@@ -426,16 +426,16 @@ export function Demo() {
         </section>
 
         {/* Backend Status */}
-        <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-6'>
-          <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+        <section className='rounded-lg bg-white p-6 shadow-md dark:bg-gray-800'>
+          <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
             🔧 Backend Status
           </h2>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            <div className='p-4 bg-gray-100 dark:bg-gray-700 rounded-lg'>
-              <h3 className='font-medium text-gray-900 dark:text-white mb-2'>
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+            <div className='rounded-lg bg-gray-100 p-4 dark:bg-gray-700'>
+              <h3 className='mb-2 font-medium text-gray-900 dark:text-white'>
                 API Endpoints
               </h3>
-              <ul className='text-sm text-gray-600 dark:text-gray-300 space-y-1'>
+              <ul className='space-y-1 text-sm text-gray-600 dark:text-gray-300'>
                 <li>GET /api/health - Health check</li>
                 <li>GET /api/users - List all users</li>
                 <li>POST /api/users - Create user</li>
@@ -444,11 +444,11 @@ export function Demo() {
                 <li>DELETE /api/users/:id - Delete user</li>
               </ul>
             </div>
-            <div className='p-4 bg-gray-100 dark:bg-gray-700 rounded-lg'>
-              <h3 className='font-medium text-gray-900 dark:text-white mb-2'>
+            <div className='rounded-lg bg-gray-100 p-4 dark:bg-gray-700'>
+              <h3 className='mb-2 font-medium text-gray-900 dark:text-white'>
                 Server Details
               </h3>
-              <ul className='text-sm text-gray-600 dark:text-gray-300 space-y-1'>
+              <ul className='space-y-1 text-sm text-gray-600 dark:text-gray-300'>
                 <li>Base URL: {API_BASE_URL}</li>
                 <li>Database: PostgreSQL</li>
                 <li>Framework: Go + Chi Router</li>
@@ -459,36 +459,36 @@ export function Demo() {
         </section>
 
         {/* Framer Motion Demo Section */}
-        <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-6'>
-          <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+        <section className='rounded-lg bg-white p-6 shadow-md dark:bg-gray-800'>
+          <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
             🎬 Framer Motion Demo
           </h2>
-          <p className='text-gray-600 dark:text-gray-300 mb-6'>
+          <p className='mb-6 text-gray-600 dark:text-gray-300'>
             Experience a unique morphing animation that combines multiple
             techniques.
           </p>
 
-          <div className='bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner'>
-            <h3 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>
+          <div className='rounded-lg bg-gray-50 p-6 shadow-inner dark:bg-gray-700'>
+            <h3 className='mb-4 text-xl font-semibold text-gray-900 dark:text-white'>
               🔄 Shape Morphing with Staggered Particles
             </h3>
-            <p className='text-gray-600 dark:text-gray-300 mb-6'>
+            <p className='mb-6 text-gray-600 dark:text-gray-300'>
               Watch as geometric shapes transform while particles dance around
               them!
             </p>
 
-            <div className='flex justify-center mb-8'>
+            <div className='mb-8 flex justify-center'>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowCards(!showCards)}
-                className='bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium py-3 px-6 rounded-full shadow-lg'
+                className='rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-3 font-medium text-white shadow-lg hover:from-purple-600 hover:to-pink-600'
               >
                 {showCards ? 'Reset Animation' : 'Start Morphing Magic'}
               </motion.button>
             </div>
 
-            <div className='relative h-96 flex items-center justify-center overflow-hidden'>
+            <div className='relative flex h-96 items-center justify-center overflow-hidden'>
               <AnimatePresence>
                 {showCards && (
                   <>
@@ -513,7 +513,7 @@ export function Demo() {
                         ease: 'easeInOut',
                         times: [0, 0.2, 0.5, 0.8, 1],
                       }}
-                      className='w-28 h-28 bg-gradient-to-r from-blue-600 via-red-600 via-yellow-400 to-purple-600 absolute z-10'
+                      className='absolute z-10 h-28 w-28 bg-gradient-to-r from-blue-600 via-red-600 via-yellow-400 to-purple-600'
                       style={{
                         filter: 'drop-shadow(0 0 20px rgba(168, 85, 247, 0.6))',
                       }}
@@ -576,7 +576,7 @@ export function Demo() {
                                 transition: { duration: 0.5 },
                               },
                             }}
-                            className={`w-4 h-4 rounded-full absolute ${
+                            className={`absolute h-4 w-4 rounded-full ${
                               [
                                 'bg-red-400',
                                 'bg-orange-400',
@@ -610,7 +610,7 @@ export function Demo() {
                         repeat: Infinity,
                         ease: 'easeInOut',
                       }}
-                      className='w-40 h-40 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 rounded-full absolute blur-2xl'
+                      className='absolute h-40 w-40 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 blur-2xl'
                     />
 
                     {/* Secondary Pulsing Rings */}
@@ -627,7 +627,7 @@ export function Demo() {
                         ease: 'easeOut',
                         delay: 1,
                       }}
-                      className='w-32 h-32 border border-purple-300 rounded-full absolute'
+                      className='absolute h-32 w-32 rounded-full border border-purple-300'
                       style={{
                         filter: 'drop-shadow(0 0 15px rgba(168, 85, 247, 0.3))',
                       }}
@@ -646,14 +646,14 @@ export function Demo() {
                         ease: 'easeOut',
                         delay: 0.5,
                       }}
-                      className='w-24 h-24 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full absolute blur-lg'
+                      className='absolute h-24 w-24 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 blur-lg'
                     />
                   </>
                 )}
               </AnimatePresence>
             </div>
 
-            <div className='text-center mt-6 text-sm text-gray-500 dark:text-gray-400'>
+            <div className='mt-6 text-center text-sm text-gray-500 dark:text-gray-400'>
               ✨ Combines morphing, staggering, and continuous animations
             </div>
           </div>

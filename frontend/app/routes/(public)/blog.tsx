@@ -7,17 +7,17 @@ export const Route = createFileRoute('/(public)/blog')({
   component: BlogPage,
   // Add error boundary
   errorComponent: ({ error }: { error: Error }) => (
-    <div className='max-w-2xl mx-auto py-12 px-4 text-center'>
-      <AlertCircle className='w-12 h-12 text-destructive mx-auto mb-4' />
-      <h1 className='text-2xl font-bold mb-2'>Something went wrong</h1>
+    <div className='mx-auto max-w-2xl px-4 py-12 text-center'>
+      <AlertCircle className='text-destructive mx-auto mb-4 h-12 w-12' />
+      <h1 className='mb-2 text-2xl font-bold'>Something went wrong</h1>
       <p className='text-muted-foreground mb-4'>{error.message}</p>
       <Button onClick={() => window.location.reload()}>Try Again</Button>
     </div>
   ),
   // Add loading component
   pendingComponent: () => (
-    <div className='max-w-4xl mx-auto py-12 px-4 text-center'>
-      <Loader2 className='w-8 h-8 animate-spin mx-auto mb-4' />
+    <div className='mx-auto max-w-4xl px-4 py-12 text-center'>
+      <Loader2 className='mx-auto mb-4 h-8 w-8 animate-spin' />
       <p className='text-muted-foreground'>Loading blog posts...</p>
     </div>
   ),
@@ -66,34 +66,34 @@ function BlogPage() {
   const [selectedPost, setSelectedPost] = useState<number | null>(null);
 
   return (
-    <div className='max-w-4xl mx-auto py-8 px-4'>
+    <div className='mx-auto max-w-4xl px-4 py-8'>
       <div className='mb-8'>
-        <h1 className='text-3xl font-bold mb-2'>Blog</h1>
+        <h1 className='mb-2 text-3xl font-bold'>Blog</h1>
         <p className='text-muted-foreground'>
           Latest articles and tutorials about web development.
         </p>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
         {data.posts.map(post => (
           <article
             key={post.id}
-            className='bg-card p-6 rounded-lg border hover:shadow-md transition-shadow cursor-pointer'
+            className='bg-card cursor-pointer rounded-lg border p-6 transition-shadow hover:shadow-md'
             onClick={() =>
               setSelectedPost(selectedPost === post.id ? null : post.id)
             }
           >
-            <h2 className='text-xl font-semibold mb-2 hover:text-primary'>
+            <h2 className='hover:text-primary mb-2 text-xl font-semibold'>
               {post.title}
             </h2>
             <p className='text-muted-foreground mb-4'>{post.excerpt}</p>
-            <div className='flex justify-between items-center text-sm text-muted-foreground'>
+            <div className='text-muted-foreground flex items-center justify-between text-sm'>
               <span>By {post.author}</span>
               <span>{new Date(post.date).toLocaleDateString()}</span>
             </div>
 
             {selectedPost === post.id && (
-              <div className='mt-4 pt-4 border-t'>
+              <div className='mt-4 border-t pt-4'>
                 <p className='text-sm'>
                   This is the full content of the blog post. In a real
                   application, this would contain the complete article text,

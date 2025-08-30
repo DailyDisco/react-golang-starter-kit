@@ -17,9 +17,9 @@ export function createAppRouter() {
     defaultPreload: 'intent',
     // Add default error boundary and loading components
     defaultErrorComponent: ({ error }: { error: Error }) => (
-      <div className='min-h-screen flex items-center justify-center'>
+      <div className='flex min-h-screen items-center justify-center'>
         <div className='text-center'>
-          <h2 className='text-2xl font-bold text-red-600 mb-4'>
+          <h2 className='mb-4 text-2xl font-bold text-red-600'>
             Something went wrong!
           </h2>
           <p className='text-gray-600'>{error.message}</p>
@@ -27,8 +27,8 @@ export function createAppRouter() {
       </div>
     ),
     defaultPendingComponent: () => (
-      <div className='min-h-screen flex items-center justify-center'>
-        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+      <div className='flex min-h-screen items-center justify-center'>
+        <div className='border-primary h-8 w-8 animate-spin rounded-full border-b-2'></div>
       </div>
     ),
   } as any); // Cast to any to avoid router type issues

@@ -88,7 +88,7 @@ function UserDetailPage() {
 
   if (usersLoading || userLoading) {
     return (
-      <div className='flex items-center justify-center min-h-[400px]'>
+      <div className='flex min-h-[400px] items-center justify-center'>
         <Loader2 className='h-8 w-8 animate-spin' />
       </div>
     );
@@ -96,17 +96,17 @@ function UserDetailPage() {
 
   if (!user) {
     return (
-      <div className='text-center py-12'>
-        <UserIcon className='h-12 w-12 mx-auto text-gray-400 mb-4' />
-        <h3 className='text-lg font-medium text-gray-900 dark:text-white mb-2'>
+      <div className='py-12 text-center'>
+        <UserIcon className='mx-auto mb-4 h-12 w-12 text-gray-400' />
+        <h3 className='mb-2 text-lg font-medium text-gray-900 dark:text-white'>
           User not found
         </h3>
-        <p className='text-gray-600 dark:text-gray-300 mb-4'>
+        <p className='mb-4 text-gray-600 dark:text-gray-300'>
           The user with ID {userId} could not be found
         </p>
         <Link to='/demo' search={{}}>
           <Button>
-            <ArrowLeft className='h-4 w-4 mr-2' />
+            <ArrowLeft className='mr-2 h-4 w-4' />
             Back to Demo
           </Button>
         </Link>
@@ -115,13 +115,13 @@ function UserDetailPage() {
   }
 
   return (
-    <main className='bg-gray-50 dark:bg-gray-900 py-12 px-4'>
-      <div className='max-w-2xl mx-auto'>
+    <main className='bg-gray-50 px-4 py-12 dark:bg-gray-900'>
+      <div className='mx-auto max-w-2xl'>
         {/* Back Button */}
         <div className='mb-6'>
           <Link to='/demo' search={{}}>
             <Button variant='outline' size='sm'>
-              <ArrowLeft className='h-4 w-4 mr-2' />
+              <ArrowLeft className='mr-2 h-4 w-4' />
               Back to Demo
             </Button>
           </Link>
@@ -129,7 +129,7 @@ function UserDetailPage() {
 
         {/* Header */}
         <header className='mb-8'>
-          <h1 className='text-3xl font-bold text-gray-900 dark:text-white mb-2'>
+          <h1 className='mb-2 text-3xl font-bold text-gray-900 dark:text-white'>
             User Details
           </h1>
           <p className='text-gray-600 dark:text-gray-300'>
@@ -144,7 +144,7 @@ function UserDetailPage() {
               <span>{editMode ? 'Edit User' : 'User Information'}</span>
               {!editMode && (
                 <Button onClick={() => setEditMode(true)}>
-                  <Edit3 className='h-4 w-4 mr-2' />
+                  <Edit3 className='mr-2 h-4 w-4' />
                   Edit
                 </Button>
               )}
@@ -224,9 +224,9 @@ function UserDetailPage() {
                   className='flex-1'
                 >
                   {updateUserMutation.isPending ? (
-                    <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   ) : (
-                    <Save className='h-4 w-4 mr-2' />
+                    <Save className='mr-2 h-4 w-4' />
                   )}
                   Save
                 </Button>

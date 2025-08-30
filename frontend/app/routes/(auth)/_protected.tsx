@@ -1,13 +1,12 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
-import { useAuth } from '../../providers/AuthContext';
+import { useAuth } from '../../hooks/auth/useAuth';
 import { Button } from '../../components/ui/button';
 import { Link, useLocation } from '@tanstack/react-router';
 import { Users, BarChart3, Settings, Home, User, LogOut } from 'lucide-react';
-import { Breadcrumbs } from '../../components/ui/breadcrumbs';
 
 export const Route = createFileRoute('/(auth)/_protected')({
   component: ProtectedLayout,
-  beforeLoad: async ({ location }) => {
+  beforeLoad: async ({ location }: { location: { href: string } }) => {
     // Check authentication status
     // const { isAuthenticated } = useAuth();
     // For demo purposes, we'll simulate authentication check
@@ -49,19 +48,19 @@ function ProtectedLayout() {
   };
 
   return (
-    <div className='min-h-screen bg-background flex'>
+    <div className='bg-background flex min-h-screen'>
       {/* Sidebar Navigation */}
-      <aside className='w-64 bg-card border-r border-border'>
-        <div className='p-6 border-b border-border'>
+      <aside className='bg-card border-border w-64 border-r'>
+        <div className='border-border border-b p-6'>
           <div className='flex items-center gap-3'>
-            <div className='w-10 h-10 bg-primary rounded-lg flex items-center justify-center'>
-              <span className='text-primary-foreground font-bold text-lg'>
+            <div className='bg-primary flex h-10 w-10 items-center justify-center rounded-lg'>
+              <span className='text-primary-foreground text-lg font-bold'>
                 RG
               </span>
             </div>
             <div>
-              <h2 className='font-semibold text-lg'>Dashboard</h2>
-              <p className='text-sm text-muted-foreground'>Welcome back!</p>
+              <h2 className='text-lg font-semibold'>Dashboard</h2>
+              <p className='text-muted-foreground text-sm'>Welcome back!</p>
             </div>
           </div>
         </div>
@@ -75,13 +74,13 @@ function ProtectedLayout() {
                   <Link
                     to={item.href}
                     search={{}}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                       isActive(item.href)
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                   >
-                    <Icon className='w-4 h-4' />
+                    <Icon className='h-4 w-4' />
                     {item.name}
                   </Link>
                 </li>
@@ -91,9 +90,9 @@ function ProtectedLayout() {
         </nav>
 
         {/* User Info & Logout */}
-        <div className='absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card/50'>
-          <div className='flex items-center gap-3 mb-3'>
-            <div className='w-8 h-8 bg-muted rounded-full flex items-center justify-center'>
+        <div className='border-border bg-card/50 absolute right-0 bottom-0 left-0 border-t p-4'>
+          <div className='mb-3 flex items-center gap-3'>
+            <div className='bg-muted flex h-8 w-8 items-center justify-center rounded-full'>
               <span className='text-xs font-medium'>
                 {user?.name
                   ?.split(' ')
@@ -102,11 +101,11 @@ function ProtectedLayout() {
                   .toUpperCase() || 'U'}
               </span>
             </div>
-            <div className='flex-1 min-w-0'>
-              <p className='text-sm font-medium truncate'>
+            <div className='min-w-0 flex-1'>
+              <p className='truncate text-sm font-medium'>
                 {user?.name || 'User'}
               </p>
-              <p className='text-xs text-muted-foreground truncate'>
+              <p className='text-muted-foreground truncate text-xs'>
                 {user?.email || ''}
               </p>
             </div>
@@ -117,20 +116,22 @@ function ProtectedLayout() {
             onClick={logout}
             className='w-full justify-start gap-2'
           >
-            <LogOut className='w-4 h-4' />
+            <LogOut className='h-4 w-4' />
             Sign Out
           </Button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className='flex-1 flex flex-col'>
-        <div className='border-b bg-muted/30'>
+      <div className='flex flex-1 flex-col'>
+        <div className='bg-muted/30 border-b'>
           <div className='p-6'>
-            <Breadcrumbs />
+            <h1 className='text-foreground text-2xl font-semibold'>
+              Dashboard
+            </h1>
           </div>
         </div>
-        <main className='flex-1 p-6 overflow-auto'>
+        <main className='flex-1 overflow-auto p-6'>
           <Outlet />
         </main>
       </div>

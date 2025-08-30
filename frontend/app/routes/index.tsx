@@ -7,12 +7,12 @@ export const Route = createFileRoute('/')({
 
 function Home() {
   return (
-    <main className='bg-gray-50 dark:bg-gray-900 py-12 px-4'>
-      <div className='max-w-4xl mx-auto'>
+    <main className='bg-gray-50 px-4 py-12 dark:bg-gray-900'>
+      <div className='mx-auto max-w-4xl'>
         {/* Header */}
         <header className='mb-12'>
           <div className='text-center'>
-            <h1 className='text-4xl font-bold text-gray-900 dark:text-white mb-4'>
+            <h1 className='mb-4 text-4xl font-bold text-gray-900 dark:text-white'>
               About This Project
             </h1>
             <p className='text-xl text-gray-600 dark:text-gray-300'>
@@ -22,11 +22,11 @@ function Home() {
         </header>
 
         {/* Action Buttons */}
-        <div className='flex flex-col sm:flex-row gap-4 sm:gap-6 md:gap-8 justify-center items-center mb-12 px-4'>
+        <div className='mb-12 flex flex-col items-center justify-center gap-4 px-4 sm:flex-row sm:gap-6 md:gap-8'>
           <Link
             to='/demo'
             search={{}}
-            className='w-full sm:w-auto inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold py-3 px-6 sm:px-8 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 min-w-[180px] text-center'
+            className='inline-flex w-full min-w-[180px] transform items-center justify-center rounded-lg bg-blue-600 px-6 py-3 text-center font-semibold text-white shadow-lg transition-colors duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl sm:w-auto sm:px-8 dark:bg-blue-700 dark:hover:bg-blue-600'
           >
             🚀 Try the Demo
           </Link>
@@ -34,7 +34,7 @@ function Home() {
             href={`${API_BASE_URL}/swagger/`}
             target='_blank'
             rel='noopener noreferrer'
-            className='w-full sm:w-auto inline-flex items-center justify-center bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white font-semibold py-3 px-6 sm:px-8 rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 min-w-[180px] text-center'
+            className='inline-flex w-full min-w-[180px] transform items-center justify-center rounded-lg bg-green-600 px-6 py-3 text-center font-semibold text-white shadow-lg transition-colors duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-xl sm:w-auto sm:px-8 dark:bg-green-700 dark:hover:bg-green-600'
           >
             📚 API Docs
           </a>
@@ -43,17 +43,17 @@ function Home() {
         {/* Main Content */}
         <div className='space-y-8'>
           {/* Project Overview */}
-          <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-8'>
-            <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+          <section className='rounded-lg bg-white p-8 shadow-md dark:bg-gray-800'>
+            <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
               🚀 What is this?
             </h2>
-            <p className='text-gray-700 dark:text-gray-300 leading-relaxed mb-4'>
+            <p className='mb-4 leading-relaxed text-gray-700 dark:text-gray-300'>
               This is a production-ready starter kit that combines the power of
               React on the frontend with Go on the backend. It's designed to
               help developers quickly bootstrap modern web applications with
               best practices built-in.
             </p>
-            <p className='text-gray-700 dark:text-gray-300 leading-relaxed'>
+            <p className='leading-relaxed text-gray-700 dark:text-gray-300'>
               Whether you're building a SaaS product, API service, or full-stack
               web app, this starter kit provides a solid foundation to build
               upon.
@@ -61,13 +61,13 @@ function Home() {
           </section>
 
           {/* Technology Stack */}
-          <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-8'>
-            <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+          <section className='rounded-lg bg-white p-8 shadow-md dark:bg-gray-800'>
+            <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
               🛠️ Technology Stack
             </h2>
-            <div className='grid md:grid-cols-2 gap-6'>
+            <div className='grid gap-6 md:grid-cols-2'>
               <div>
-                <h3 className='text-lg font-medium text-blue-600 dark:text-blue-400 mb-3'>
+                <h3 className='mb-3 text-lg font-medium text-blue-600 dark:text-blue-400'>
                   Frontend
                 </h3>
                 <ul className='space-y-2 text-gray-700 dark:text-gray-300'>
@@ -79,7 +79,7 @@ function Home() {
                 </ul>
               </div>
               <div>
-                <h3 className='text-lg font-medium text-green-600 dark:text-green-400 mb-3'>
+                <h3 className='mb-3 text-lg font-medium text-green-600 dark:text-green-400'>
                   Backend
                 </h3>
                 <ul className='space-y-2 text-gray-700 dark:text-gray-300'>
@@ -94,11 +94,11 @@ function Home() {
           </section>
 
           {/* Features */}
-          <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-8'>
-            <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+          <section className='rounded-lg bg-white p-8 shadow-md dark:bg-gray-800'>
+            <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
               ✨ Key Features
             </h2>
-            <div className='grid md:grid-cols-2 gap-4'>
+            <div className='grid gap-4 md:grid-cols-2'>
               <div className='space-y-3'>
                 <div className='flex items-center space-x-2'>
                   <span className='text-green-500'>✓</span>
@@ -143,11 +143,11 @@ function Home() {
           </section>
 
           {/* Use Cases */}
-          <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-8'>
-            <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+          <section className='rounded-lg bg-white p-8 shadow-md dark:bg-gray-800'>
+            <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
               🎯 Perfect For
             </h2>
-            <div className='grid md:grid-cols-2 gap-4'>
+            <div className='grid gap-4 md:grid-cols-2'>
               <div className='space-y-3'>
                 <div className='text-gray-700 dark:text-gray-300'>
                   • <strong>SaaS Applications</strong> - User management,
@@ -178,12 +178,12 @@ function Home() {
           </section>
 
           {/* Getting Started */}
-          <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-8'>
-            <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+          <section className='rounded-lg bg-white p-8 shadow-md dark:bg-gray-800'>
+            <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
               🎯 Getting Started
             </h2>
-            <div className='bg-gray-100 dark:bg-gray-700 rounded-lg p-4'>
-              <p className='text-gray-700 dark:text-gray-300 mb-3'>
+            <div className='rounded-lg bg-gray-100 p-4 dark:bg-gray-700'>
+              <p className='mb-3 text-gray-700 dark:text-gray-300'>
                 Ready to start building? Here's how to get up and running:
               </p>
               <div className='space-y-2 text-sm'>
@@ -192,18 +192,18 @@ function Home() {
                 </p>
                 <p className='font-medium text-gray-900 dark:text-white'>
                   2. Copy{' '}
-                  <code className='bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded'>
+                  <code className='rounded bg-gray-200 px-1 py-0.5 dark:bg-gray-600'>
                     .env.example
                   </code>{' '}
                   to{' '}
-                  <code className='bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded'>
+                  <code className='rounded bg-gray-200 px-1 py-0.5 dark:bg-gray-600'>
                     .env
                   </code>{' '}
                   and configure database settings
                 </p>
                 <p className='font-medium text-gray-900 dark:text-white'>
                   3. Run{' '}
-                  <code className='bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded'>
+                  <code className='rounded bg-gray-200 px-1 py-0.5 dark:bg-gray-600'>
                     docker-compose up
                   </code>
                 </p>
@@ -219,13 +219,13 @@ function Home() {
           </section>
 
           {/* Development Workflow */}
-          <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-8'>
-            <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+          <section className='rounded-lg bg-white p-8 shadow-md dark:bg-gray-800'>
+            <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
               ⚡ Development Workflow
             </h2>
-            <div className='grid md:grid-cols-2 gap-6'>
+            <div className='grid gap-6 md:grid-cols-2'>
               <div>
-                <h3 className='text-lg font-medium text-blue-600 dark:text-blue-400 mb-3'>
+                <h3 className='mb-3 text-lg font-medium text-blue-600 dark:text-blue-400'>
                   🚀 Quick Commands
                 </h3>
                 <div className='space-y-2 text-sm'>
@@ -233,7 +233,7 @@ function Home() {
                     <span className='text-gray-700 dark:text-gray-300'>
                       Start all services:
                     </span>
-                    <code className='bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded'>
+                    <code className='rounded bg-gray-200 px-2 py-1 dark:bg-gray-600'>
                       docker-compose up
                     </code>
                   </div>
@@ -241,7 +241,7 @@ function Home() {
                     <span className='text-gray-700 dark:text-gray-300'>
                       View logs:
                     </span>
-                    <code className='bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded'>
+                    <code className='rounded bg-gray-200 px-2 py-1 dark:bg-gray-600'>
                       docker-compose logs -f
                     </code>
                   </div>
@@ -249,14 +249,14 @@ function Home() {
                     <span className='text-gray-700 dark:text-gray-300'>
                       Stop services:
                     </span>
-                    <code className='bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded'>
+                    <code className='rounded bg-gray-200 px-2 py-1 dark:bg-gray-600'>
                       docker-compose down
                     </code>
                   </div>
                 </div>
               </div>
               <div>
-                <h3 className='text-lg font-medium text-green-600 dark:text-green-400 mb-3'>
+                <h3 className='mb-3 text-lg font-medium text-green-600 dark:text-green-400'>
                   🔗 Useful Links
                 </h3>
                 <div className='space-y-2 text-sm'>
@@ -264,7 +264,7 @@ function Home() {
                     📚{' '}
                     <a
                       href={`${API_BASE_URL}/swagger/`}
-                      className='text-blue-600 dark:text-blue-400 hover:underline'
+                      className='text-blue-600 hover:underline dark:text-blue-400'
                     >
                       API Documentation
                     </a>
@@ -274,7 +274,7 @@ function Home() {
                     <Link
                       to='/demo'
                       search={{}}
-                      className='text-blue-600 dark:text-blue-400 hover:underline'
+                      className='text-blue-600 hover:underline dark:text-blue-400'
                     >
                       Try Live Demo
                     </Link>
@@ -283,7 +283,7 @@ function Home() {
                     🐙{' '}
                     <a
                       href='https://github.com'
-                      className='text-blue-600 dark:text-blue-400 hover:underline'
+                      className='text-blue-600 hover:underline dark:text-blue-400'
                     >
                       View Source Code
                     </a>

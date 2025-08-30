@@ -88,10 +88,10 @@ export default function StandardLayout() {
   const breadcrumbs = generateBreadcrumbs();
 
   return (
-    <div className='min-h-screen flex flex-col'>
+    <div className='flex min-h-screen flex-col'>
       <Navbar />
-      <div className='border-b bg-muted/30'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3'>
+      <div className='bg-muted/30 border-b'>
+        <div className='mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8'>
           <Breadcrumb>
             <BreadcrumbList>
               {/* Always show Home */}

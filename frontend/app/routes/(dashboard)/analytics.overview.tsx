@@ -7,18 +7,18 @@ export const Route = createFileRoute('/(dashboard)/analytics/overview')({
 function AnalyticsOverview() {
   return (
     <div className='space-y-6'>
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        <div className='bg-muted/50 p-6 rounded-lg'>
-          <h3 className='font-semibold mb-4'>Traffic Overview</h3>
-          <div className='h-64 bg-muted rounded flex items-center justify-center'>
+      <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
+        <div className='bg-muted/50 rounded-lg p-6'>
+          <h3 className='mb-4 font-semibold'>Traffic Overview</h3>
+          <div className='bg-muted flex h-64 items-center justify-center rounded'>
             <span className='text-muted-foreground'>
               Traffic Chart Placeholder
             </span>
           </div>
         </div>
 
-        <div className='bg-muted/50 p-6 rounded-lg'>
-          <h3 className='font-semibold mb-4'>User Demographics</h3>
+        <div className='bg-muted/50 rounded-lg p-6'>
+          <h3 className='mb-4 font-semibold'>User Demographics</h3>
           <div className='space-y-3'>
             <div className='flex justify-between'>
               <span>Desktop</span>
@@ -36,20 +36,20 @@ function AnalyticsOverview() {
         </div>
       </div>
 
-      <div className='bg-muted/50 p-6 rounded-lg'>
-        <h3 className='font-semibold mb-4'>Recent Activity</h3>
+      <div className='bg-muted/50 rounded-lg p-6'>
+        <h3 className='mb-4 font-semibold'>Recent Activity</h3>
         <div className='space-y-2'>
-          <div className='flex justify-between py-2 border-b border-border'>
+          <div className='border-border flex justify-between border-b py-2'>
             <span>User registration</span>
-            <span className='text-sm text-muted-foreground'>2 minutes ago</span>
+            <span className='text-muted-foreground text-sm'>2 minutes ago</span>
           </div>
-          <div className='flex justify-between py-2 border-b border-border'>
+          <div className='border-border flex justify-between border-b py-2'>
             <span>Page view</span>
-            <span className='text-sm text-muted-foreground'>5 minutes ago</span>
+            <span className='text-muted-foreground text-sm'>5 minutes ago</span>
           </div>
           <div className='flex justify-between py-2'>
             <span>Form submission</span>
-            <span className='text-sm text-muted-foreground'>
+            <span className='text-muted-foreground text-sm'>
               10 minutes ago
             </span>
           </div>

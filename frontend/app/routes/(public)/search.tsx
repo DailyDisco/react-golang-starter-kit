@@ -35,8 +35,8 @@ function SearchPage() {
   };
 
   return (
-    <div className='max-w-4xl mx-auto py-8 px-4'>
-      <h1 className='text-3xl font-bold mb-8'>Search</h1>
+    <div className='mx-auto max-w-4xl px-4 py-8'>
+      <h1 className='mb-8 text-3xl font-bold'>Search</h1>
 
       {/* Search Form */}
       <form onSubmit={handleSearch} className='mb-8'>
@@ -51,7 +51,7 @@ function SearchPage() {
             />
           </div>
           <Button type='submit'>
-            <SearchIcon className='w-4 h-4 mr-2' />
+            <SearchIcon className='mr-2 h-4 w-4' />
             Search
           </Button>
         </div>
@@ -85,8 +85,8 @@ function SearchPage() {
       </div>
 
       {/* Search Results */}
-      <div className='bg-card p-6 rounded-lg border'>
-        <h2 className='text-lg font-semibold mb-4'>Search Results</h2>
+      <div className='bg-card rounded-lg border p-6'>
+        <h2 className='mb-4 text-lg font-semibold'>Search Results</h2>
 
         {q ? (
           <div className='space-y-4'>
@@ -97,15 +97,15 @@ function SearchPage() {
 
             {/* Mock search results */}
             <div className='space-y-3'>
-              <div className='p-4 border rounded'>
+              <div className='rounded border p-4'>
                 <h3 className='font-medium'>Sample Result 1</h3>
-                <p className='text-sm text-muted-foreground'>
+                <p className='text-muted-foreground text-sm'>
                   This is a sample search result...
                 </p>
               </div>
-              <div className='p-4 border rounded'>
+              <div className='rounded border p-4'>
                 <h3 className='font-medium'>Sample Result 2</h3>
-                <p className='text-sm text-muted-foreground'>
+                <p className='text-muted-foreground text-sm'>
                   Another sample search result...
                 </p>
               </div>

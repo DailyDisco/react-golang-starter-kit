@@ -33,7 +33,7 @@ export function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as any)?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/';
 
   const {
     register,
@@ -56,10 +56,10 @@ export function LoginForm() {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8'>
+    <div className='bg-background flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8'>
       <Card className='w-full max-w-md'>
         <CardHeader className='space-y-1'>
-          <CardTitle className='text-2xl text-center'>Sign in</CardTitle>
+          <CardTitle className='text-center text-2xl'>Sign in</CardTitle>
           <CardDescription className='text-center'>
             Enter your email and password to sign in to your account
           </CardDescription>
@@ -100,7 +100,7 @@ export function LoginForm() {
                   type='button'
                   variant='ghost'
                   size='sm'
-                  className='absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent'
+                  className='absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent'
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loginMutation.isPending}
                 >

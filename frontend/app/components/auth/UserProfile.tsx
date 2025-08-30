@@ -73,7 +73,7 @@ export function UserProfile() {
   }
 
   return (
-    <Card className='w-full max-w-2xl mx-auto'>
+    <Card className='mx-auto w-full max-w-2xl'>
       <CardHeader>
         <CardTitle className='flex items-center gap-2'>
           <User className='h-5 w-5' />
@@ -97,7 +97,7 @@ export function UserProfile() {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
             <div className='space-y-2'>
               <Label htmlFor='name' className='flex items-center gap-2'>
                 <User className='h-4 w-4' />
@@ -113,7 +113,7 @@ export function UserProfile() {
                   )}
                 </>
               ) : (
-                <p className='text-sm text-gray-900 p-2 border rounded-md bg-gray-50'>
+                <p className='rounded-md border bg-gray-50 p-2 text-sm text-gray-900'>
                   {user.name}
                 </p>
               )}
@@ -139,7 +139,7 @@ export function UserProfile() {
                   )}
                 </>
               ) : (
-                <div className='flex items-center gap-2 p-2 border rounded-md bg-gray-50'>
+                <div className='flex items-center gap-2 rounded-md border bg-gray-50 p-2'>
                   <span className='text-sm text-gray-900'>{user.email}</span>
                   {user.email_verified && (
                     <Badge variant='secondary' className='text-xs'>
@@ -151,20 +151,20 @@ export function UserProfile() {
             </div>
           </div>
 
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
             <div className='space-y-2'>
               <Label className='flex items-center gap-2'>
                 <Calendar className='h-4 w-4' />
                 Member Since
               </Label>
-              <p className='text-sm text-gray-900 p-2 border rounded-md bg-gray-50'>
+              <p className='rounded-md border bg-gray-50 p-2 text-sm text-gray-900'>
                 {new Date(user.created_at).toLocaleDateString()}
               </p>
             </div>
 
             <div className='space-y-2'>
               <Label>Status</Label>
-              <div className='p-2 border rounded-md bg-gray-50'>
+              <div className='rounded-md border bg-gray-50 p-2'>
                 <Badge variant={user.is_active ? 'default' : 'destructive'}>
                   {user.is_active ? 'Active' : 'Inactive'}
                 </Badge>
@@ -173,7 +173,7 @@ export function UserProfile() {
 
             <div className='space-y-2'>
               <Label>Email Status</Label>
-              <div className='p-2 border rounded-md bg-gray-50'>
+              <div className='rounded-md border bg-gray-50 p-2'>
                 <Badge variant={user.email_verified ? 'default' : 'secondary'}>
                   {user.email_verified ? 'Verified' : 'Unverified'}
                 </Badge>

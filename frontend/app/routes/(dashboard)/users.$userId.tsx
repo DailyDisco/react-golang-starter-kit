@@ -34,19 +34,19 @@ function UserDetailPage() {
   const navigate = Route.useNavigate();
 
   return (
-    <div className='max-w-2xl mx-auto py-8 px-4'>
+    <div className='mx-auto max-w-2xl px-4 py-8'>
       <div className='mb-6'>
         <Button
           variant='outline'
           onClick={() => navigate({ to: '/(dashboard)/users' })}
         >
-          <ArrowLeft className='w-4 h-4 mr-2' />
+          <ArrowLeft className='mr-2 h-4 w-4' />
           Back to Users
         </Button>
       </div>
 
-      <div className='bg-card p-6 rounded-lg border'>
-        <h1 className='text-2xl font-bold mb-4'>User Details</h1>
+      <div className='bg-card rounded-lg border p-6'>
+        <h1 className='mb-4 text-2xl font-bold'>User Details</h1>
 
         <div className='space-y-3'>
           <div>
