@@ -17,7 +17,7 @@
     "lint:fix": "cd frontend && npm run lint:fix",
     "typecheck": "cd frontend && npm run typecheck",
     "audit": "cd frontend && npm audit --audit-level=moderate",
-    "format:backend": "cd backend && go fmt ./...",
+    "format:backend": "./format-backend.sh",
     "vet:backend": "cd backend && go vet ./..."
   },
   "lint-staged": {

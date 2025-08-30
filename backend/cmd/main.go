@@ -7,13 +7,15 @@ import (
 	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/handlers"
+	"react-golang-starter/internal/middleware"
 	"react-golang-starter/internal/ratelimit"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
 )
 
 // @title React Go Starter Kit API
@@ -65,6 +67,10 @@ import (
 // @tag.name health
 // @tag.description System health monitoring and status endpoints for checking server availability
 func main() {
+	// Configure zerolog for structured logging
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
 	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
@@ -86,8 +92,8 @@ func main() {
 	r := chi.NewRouter()
 
 	// Global middleware
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(middleware.StructuredLogger())
+	r.Use(chimiddleware.Recoverer)
 
 	// Apply IP-based rate limiting globally
 	r.Use(ratelimit.NewIPRateLimitMiddleware(rateLimitConfig))

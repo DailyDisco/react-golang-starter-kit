@@ -188,3 +188,5 @@ postgres_data/
 *.rpm
 *.pkg
 *.msi
+
+.cursorignore
