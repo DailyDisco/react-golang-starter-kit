@@ -7,7 +7,7 @@ import { Search as SearchIcon } from 'lucide-react';
 export const Route = createFileRoute('/(public)/search')({
   component: SearchPage,
   // Validate search parameters
-  validateSearch: (search) => ({
+  validateSearch: search => ({
     q: (search.q as string) || '',
     type: (search.type as 'all' | 'users' | 'posts') || 'all',
     page: Number(search.page) || 1,
@@ -46,7 +46,7 @@ function SearchPage() {
               type='text'
               placeholder='Search for users, posts, or content...'
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className='w-full'
             />
           </div>
@@ -91,23 +91,30 @@ function SearchPage() {
         {q ? (
           <div className='space-y-4'>
             <p className='text-muted-foreground'>
-              Searching for "<strong>{q}</strong>" in <strong>{type}</strong> (Page {page})
+              Searching for "<strong>{q}</strong>" in <strong>{type}</strong>{' '}
+              (Page {page})
             </p>
 
             {/* Mock search results */}
             <div className='space-y-3'>
               <div className='p-4 border rounded'>
                 <h3 className='font-medium'>Sample Result 1</h3>
-                <p className='text-sm text-muted-foreground'>This is a sample search result...</p>
+                <p className='text-sm text-muted-foreground'>
+                  This is a sample search result...
+                </p>
               </div>
               <div className='p-4 border rounded'>
                 <h3 className='font-medium'>Sample Result 2</h3>
-                <p className='text-sm text-muted-foreground'>Another sample search result...</p>
+                <p className='text-sm text-muted-foreground'>
+                  Another sample search result...
+                </p>
               </div>
             </div>
           </div>
         ) : (
-          <p className='text-muted-foreground'>Enter a search query to get started.</p>
+          <p className='text-muted-foreground'>
+            Enter a search query to get started.
+          </p>
         )}
       </div>
     </div>

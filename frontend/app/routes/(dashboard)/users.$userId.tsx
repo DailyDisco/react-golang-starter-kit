@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 export const Route = createFileRoute('/(dashboard)/users/$userId')({
   component: UserDetailPage,
   // Validate the userId parameter
-  validateSearch: (search) => ({
+  validateSearch: search => ({
     tab: search.tab as 'profile' | 'settings' | undefined,
   }),
   // Loader with parameter validation
@@ -23,7 +23,7 @@ export const Route = createFileRoute('/(dashboard)/users/$userId')({
         name: `User ${userId}`,
         email: `user${userId}@example.com`,
         role: userId === 1 ? 'Admin' : 'User',
-      }
+      },
     };
   },
 });

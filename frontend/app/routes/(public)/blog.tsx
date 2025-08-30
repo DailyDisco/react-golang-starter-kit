@@ -43,18 +43,20 @@ export const Route = createFileRoute('/(public)/blog')({
         {
           id: 2,
           title: 'Advanced Route Patterns',
-          excerpt: 'Explore dynamic routes, search parameters, and nested layouts...',
+          excerpt:
+            'Explore dynamic routes, search parameters, and nested layouts...',
           author: 'Jane Smith',
           date: '2024-01-10',
         },
         {
           id: 3,
           title: 'Type Safety in React Router',
-          excerpt: 'How TanStack Router provides excellent TypeScript support...',
+          excerpt:
+            'How TanStack Router provides excellent TypeScript support...',
           author: 'Bob Johnson',
           date: '2024-01-05',
         },
-      ]
+      ],
     };
   },
 });
@@ -73,11 +75,13 @@ function BlogPage() {
       </div>
 
       <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-        {data.posts.map((post) => (
+        {data.posts.map(post => (
           <article
             key={post.id}
             className='bg-card p-6 rounded-lg border hover:shadow-md transition-shadow cursor-pointer'
-            onClick={() => setSelectedPost(selectedPost === post.id ? null : post.id)}
+            onClick={() =>
+              setSelectedPost(selectedPost === post.id ? null : post.id)
+            }
           >
             <h2 className='text-xl font-semibold mb-2 hover:text-primary'>
               {post.title}
@@ -91,8 +95,9 @@ function BlogPage() {
             {selectedPost === post.id && (
               <div className='mt-4 pt-4 border-t'>
                 <p className='text-sm'>
-                  This is the full content of the blog post. In a real application,
-                  this would contain the complete article text, images, and formatting.
+                  This is the full content of the blog post. In a real
+                  application, this would contain the complete article text,
+                  images, and formatting.
                 </p>
               </div>
             )}

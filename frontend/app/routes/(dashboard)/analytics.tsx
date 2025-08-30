@@ -12,7 +12,9 @@ function AnalyticsLayout() {
       <div className='flex items-center justify-between'>
         <h1 className='text-2xl font-bold'>Analytics Dashboard</h1>
         <div className='flex gap-2'>
-          <Button variant='outline' size='sm'>Export</Button>
+          <Button variant='outline' size='sm'>
+            Export
+          </Button>
           <Button size='sm'>Refresh</Button>
         </div>
       </div>

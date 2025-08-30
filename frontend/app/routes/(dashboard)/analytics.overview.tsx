@@ -11,7 +11,9 @@ function AnalyticsOverview() {
         <div className='bg-muted/50 p-6 rounded-lg'>
           <h3 className='font-semibold mb-4'>Traffic Overview</h3>
           <div className='h-64 bg-muted rounded flex items-center justify-center'>
-            <span className='text-muted-foreground'>Traffic Chart Placeholder</span>
+            <span className='text-muted-foreground'>
+              Traffic Chart Placeholder
+            </span>
           </div>
         </div>
 
@@ -47,7 +49,9 @@ function AnalyticsOverview() {
           </div>
           <div className='flex justify-between py-2'>
             <span>Form submission</span>
-            <span className='text-sm text-muted-foreground'>10 minutes ago</span>
+            <span className='text-sm text-muted-foreground'>
+              10 minutes ago
+            </span>
           </div>
         </div>
       </div>

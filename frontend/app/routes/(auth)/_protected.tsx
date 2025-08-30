@@ -33,13 +33,22 @@ function ProtectedLayout() {
           <div className='flex items-center gap-4'>
             <h1 className='text-xl font-semibold'>Dashboard</h1>
             <nav className='flex gap-4'>
-              <Link to='/(dashboard)/users' className='text-muted-foreground hover:text-foreground'>
+              <Link
+                to='/(dashboard)/users'
+                className='text-muted-foreground hover:text-foreground'
+              >
                 Users
               </Link>
-              <Link to='/(dashboard)/settings' className='text-muted-foreground hover:text-foreground'>
+              <Link
+                to='/(dashboard)/settings'
+                className='text-muted-foreground hover:text-foreground'
+              >
                 Settings
               </Link>
-              <Link to='/(dashboard)/analytics' className='text-muted-foreground hover:text-foreground'>
+              <Link
+                to='/(dashboard)/analytics'
+                className='text-muted-foreground hover:text-foreground'
+              >
                 Analytics
               </Link>
             </nav>

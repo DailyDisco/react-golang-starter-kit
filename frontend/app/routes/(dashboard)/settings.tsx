@@ -22,8 +22,10 @@ function SettingsPage() {
         <div className='bg-card p-6 rounded-lg border'>
           <h2 className='text-lg font-semibold mb-4'>User Preferences</h2>
           <p className='text-muted-foreground mb-4'>
-            Theme: {data.userSettings.theme}<br />
-            Notifications: {data.userSettings.notifications ? 'Enabled' : 'Disabled'}
+            Theme: {data.userSettings.theme}
+            <br />
+            Notifications:{' '}
+            {data.userSettings.notifications ? 'Enabled' : 'Disabled'}
           </p>
           <Button>Update Settings</Button>
         </div>
