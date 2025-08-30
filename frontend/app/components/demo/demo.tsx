@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,9 @@ import { useUserStore } from '../../stores/user-store';
 import { API_BASE_URL, type User } from '../../services';
 
 export function Demo() {
+  // Framer Motion demo state
+  const [showCards, setShowCards] = useState(false);
+
   // Server state - handled by Tanstack Query
   const { data: users, isLoading: usersLoading } = useUsers();
   const { data: healthStatus, isLoading: healthLoading } = useHealthCheck();
@@ -35,13 +38,11 @@ export function Demo() {
   const deleteUserMutation = useDeleteUser();
 
   // Client state - handled by Zustand
-  const {
-    formData: newUser,
-    setFormData: setNewUser,
-    deleteDialogOpen,
-    userToDelete,
-    setDeleteDialog,
-  } = useUserStore();
+  const { formData: newUser, setFormData: setNewUser } = useUserStore();
+
+  // Local state for delete dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{ id: number; name: string } | null>(null);
 
   // Password validation helpers
   const passwordValidation = {
@@ -115,7 +116,8 @@ export function Demo() {
 
   // Open delete confirmation dialog
   const openDeleteDialog = (userId: number, userName: string) => {
-    setDeleteDialog(true, { id: userId, name: userName });
+    setUserToDelete({ id: userId, name: userName });
+    setDeleteDialogOpen(true);
   };
 
   // Delete a user
@@ -124,7 +126,8 @@ export function Demo() {
 
     deleteUserMutation.mutate(userToDelete.id, {
       onSuccess: () => {
-        setDeleteDialog(false);
+        setDeleteDialogOpen(false);
+        setUserToDelete(null);
       },
     });
   };
@@ -348,7 +351,7 @@ export function Demo() {
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <AnimatePresence>
                   {(() => {
                     console.log(
                       'Demo - Users array before map:',
@@ -368,8 +371,12 @@ export function Demo() {
                       });
 
                       return (
-                        <tr
+                        <motion.tr
                           key={user.id}
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
                           className='border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                         >
                           <td className='py-2 px-4 text-gray-700 dark:text-gray-300'>
@@ -405,11 +412,11 @@ export function Demo() {
                               Delete
                             </button>
                           </td>
-                        </tr>
+                        </motion.tr>
                       );
                     });
                   })()}
-                </tbody>
+                </AnimatePresence>
               </table>
             </div>
           )}
@@ -447,12 +454,202 @@ export function Demo() {
             </div>
           </div>
         </section>
+
+        {/* Framer Motion Demo Section */}
+        <section className='bg-white dark:bg-gray-800 rounded-lg shadow-md p-6'>
+          <h2 className='text-2xl font-semibold text-gray-900 dark:text-white mb-4'>
+            🎬 Framer Motion Demo
+          </h2>
+          <p className='text-gray-600 dark:text-gray-300 mb-6'>
+            Experience a unique morphing animation that combines multiple techniques.
+          </p>
+
+          <div className='bg-gray-50 dark:bg-gray-700 p-6 rounded-lg shadow-inner'>
+            <h3 className='text-xl font-semibold text-gray-900 dark:text-white mb-4'>
+              🔄 Shape Morphing with Staggered Particles
+            </h3>
+            <p className='text-gray-600 dark:text-gray-300 mb-6'>
+              Watch as geometric shapes transform while particles dance around them!
+            </p>
+
+            <div className='flex justify-center mb-8'>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowCards(!showCards)}
+                className='bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium py-3 px-6 rounded-full shadow-lg'
+              >
+                {showCards ? 'Reset Animation' : 'Start Morphing Magic'}
+              </motion.button>
+            </div>
+
+            <div className='relative h-96 flex items-center justify-center overflow-hidden'>
+              <AnimatePresence>
+                {showCards && (
+                  <>
+                    {/* Central Morphing Shape */}
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{
+                        scale: [0, 1.3, 1, 1.1, 1],
+                        rotate: [0, 180, 360, 540, 720],
+                        borderRadius: ["0%", "50%", "25%", "75%", "0%"],
+                        boxShadow: [
+                          "0 0 0px rgba(59, 130, 246, 0)",
+                          "0 0 20px rgba(59, 130, 246, 0.5)",
+                          "0 0 40px rgba(168, 85, 247, 0.8)",
+                          "0 0 60px rgba(236, 72, 153, 1)",
+                          "0 0 80px rgba(59, 130, 246, 0.6)"
+                        ]
+                      }}
+                      exit={{ scale: 0, rotate: 180, opacity: 0 }}
+                      transition={{
+                        duration: 3,
+                        ease: "easeInOut",
+                        times: [0, 0.2, 0.5, 0.8, 1]
+                      }}
+                      className='w-28 h-28 bg-gradient-to-r from-blue-600 via-red-600 via-yellow-400 to-purple-600 absolute z-10'
+                      style={{
+                        filter: 'drop-shadow(0 0 20px rgba(168, 85, 247, 0.6))',
+                      }}
+                    />
+
+                    {/* Staggered Floating Particles */}
+                    <motion.div
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      variants={{
+                        visible: {
+                          transition: {
+                            staggerChildren: 0.15,
+                            delayChildren: 0.5
+                          }
+                        },
+                        exit: {
+                          transition: {
+                            staggerChildren: 0.1,
+                            staggerDirection: -1
+                          }
+                        }
+                      }}
+                      className='absolute inset-0'
+                    >
+                      {[...Array(8)].map((_, i) => {
+                        const angle = (i / 8) * 360;
+                        const radius = 120;
+                        const x = Math.cos((angle * Math.PI) / 180) * radius;
+                        const y = Math.sin((angle * Math.PI) / 180) * radius;
+
+                        return (
+                          <motion.div
+                            key={i}
+                            variants={{
+                              hidden: {
+                                opacity: 0,
+                                scale: 0,
+                                x: 0,
+                                y: 0,
+                              },
+                              visible: {
+                                opacity: [0, 1, 0.8, 1],
+                                scale: [0, 1.5, 1, 1.2],
+                                x: [0, x, x * 0.8, x],
+                                y: [0, y, y * 0.8, y],
+                                transition: {
+                                  duration: 3,
+                                  repeat: Infinity,
+                                  repeatType: "reverse",
+                                  ease: "easeInOut"
+                                }
+                              },
+                              exit: {
+                                opacity: 0,
+                                scale: 0,
+                                x: 0,
+                                y: 0,
+                                transition: { duration: 0.5 }
+                              }
+                            }}
+                            className={`w-4 h-4 rounded-full absolute ${['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-green-400',
+                              'bg-blue-400', 'bg-indigo-400', 'bg-purple-400', 'bg-pink-400'][i]
+                              } shadow-lg`}
+                            style={{
+                              filter: `drop-shadow(0 0 8px ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#6366f1', '#a855f7', '#ec4899'][i]})`,
+                              boxShadow: `0 0 10px ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#6366f1', '#a855f7', '#ec4899'][i]}40`,
+                            }}
+                          />
+                        );
+                      })}
+                    </motion.div>
+
+                    {/* Pulsing Background Effect */}
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{
+                        scale: [0, 1.5, 2.5, 3.5],
+                        opacity: [0, 0.4, 0.2, 0],
+                        rotate: [0, 90, 180, 270]
+                      }}
+                      transition={{
+                        duration: 5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                      className='w-40 h-40 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 rounded-full absolute blur-2xl'
+                    />
+
+                    {/* Secondary Pulsing Rings */}
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{
+                        scale: [0, 2, 3, 4],
+                        opacity: [0, 0.2, 0.1, 0],
+                        borderWidth: [0, 2, 1, 0]
+                      }}
+                      transition={{
+                        duration: 6,
+                        repeat: Infinity,
+                        ease: "easeOut",
+                        delay: 1
+                      }}
+                      className='w-32 h-32 border border-purple-300 rounded-full absolute'
+                      style={{
+                        filter: 'drop-shadow(0 0 15px rgba(168, 85, 247, 0.3))',
+                      }}
+                    />
+
+                    {/* Energy Wave Effect */}
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{
+                        scale: [0, 1.8, 2.8],
+                        opacity: [0, 0.3, 0],
+                      }}
+                      transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: "easeOut",
+                        delay: 0.5
+                      }}
+                      className='w-24 h-24 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full absolute blur-lg'
+                    />
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className='text-center mt-6 text-sm text-gray-500 dark:text-gray-400'>
+              ✨ Combines morphing, staggering, and continuous animations
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={deleteDialogOpen}
-        onOpenChange={open => setDeleteDialog(open)}
+        onOpenChange={setDeleteDialogOpen}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -463,7 +660,7 @@ export function Demo() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteDialog(false)}>
+            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
