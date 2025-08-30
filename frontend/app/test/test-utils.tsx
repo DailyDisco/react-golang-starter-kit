@@ -4,6 +4,53 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 import type { User } from '../services';
 
+// Mock @tanstack/react-router globally
+vi.mock('@tanstack/react-router', () => {
+  const navigateMock = vi.fn();
+  const locationMock = {
+    pathname: '/',
+    search: {}, // Ensure search is an object
+    hash: '',
+    state: null,
+    key: 'default',
+  };
+
+  return {
+    // Mock router hooks directly
+    useNavigate: vi.fn(() => navigateMock),
+    useLocation: vi.fn(() => locationMock),
+
+    // Provide a simple RouterProvider that just renders its children
+    RouterProvider: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        'div',
+        { 'data-testid': 'router-provider' },
+        children
+      ),
+
+    // Mock other necessary router functions to prevent errors if they are called
+    createMemoryHistory: vi.fn(() => ({
+      initialEntries: ['/'],
+      push: vi.fn(),
+      replace: vi.fn(),
+    })),
+    createRootRoute: vi.fn((config: any) => ({
+      ...config,
+      addChildren: vi.fn(() => config),
+    })),
+    createRoute: vi.fn((config: any) => config),
+    createRouter: vi.fn((config: any) => ({
+      ...config,
+      navigate: navigateMock,
+      location: locationMock,
+    })),
+    Link: ({ to, children, ...props }: any) =>
+      React.createElement('a', { href: to, ...props }, children),
+    Outlet: ({ children }: { children?: React.ReactNode }) =>
+      React.createElement('div', { 'data-testid': 'router-outlet' }, children),
+  };
+});
+
 // Import router functions after the mock is set up. These imports will now
 // get the mocked versions for useNavigate and useLocation, and the mocked
 // implementations for others.
@@ -18,6 +65,9 @@ import {
   Link,
   Outlet,
 } from '@tanstack/react-router';
+
+// Export the mocked hooks so test files can use them
+export { useNavigate, useLocation };
 
 // Test data factories
 export const createMockUser = (overrides?: Partial<User>): User => ({

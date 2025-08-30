@@ -1,4 +1,3 @@
-import { useLocation, useNavigate } from '@tanstack/react-router';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -9,6 +8,8 @@ import {
   createMockMutation,
   createMockUser,
   renderWithProviders,
+  useNavigate,
+  useLocation,
 } from '../../test/test-utils';
 import { LoginForm } from './LoginForm';
 
@@ -34,8 +35,8 @@ describe('LoginForm', () => {
     // Default mock implementations
     mockUseAuthStore.mockReturnValue(createMockAuthStore());
     mockUseLogin.mockReturnValue(createMockMutation());
-    useNavigate.mockReturnValue(vi.fn());
-    useLocation.mockReturnValue({
+    (useNavigate as vi.Mock).mockReturnValue(vi.fn());
+    (useLocation as vi.Mock).mockReturnValue({
       pathname: '/',
       search: {}, // Ensure search is an object
       hash: '',
@@ -46,9 +47,8 @@ describe('LoginForm', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    // No need to call mockRestore on globally mocked functions.
-    // useNavigate.mockRestore();
-    // useLocation.mockRestore();
+    (useNavigate as vi.Mock).mockRestore();
+    (useLocation as vi.Mock).mockRestore();
   });
 
   it('renders LoginForm with providers', () => {
@@ -267,7 +267,8 @@ describe('LoginForm', () => {
     it('navigates to home page when no redirect location is specified', async () => {
       const mockMutation = createMockMutation();
       mockUseLogin.mockReturnValue(mockMutation);
-      useNavigate.mockReturnValue(vi.fn());
+      const mockNavigate = vi.fn();
+      useNavigate.mockReturnValue(mockNavigate);
       useLocation.mockReturnValue({
         pathname: '/',
         search: '',
@@ -297,7 +298,7 @@ describe('LoginForm', () => {
       });
 
       await waitFor(() => {
-        expect(useNavigate).toHaveBeenCalledWith({
+        expect(mockNavigate).toHaveBeenCalledWith({
           to: '/',
           replace: true,
         });
@@ -307,7 +308,8 @@ describe('LoginForm', () => {
     it('navigates to intended page when redirect location is specified', async () => {
       const mockMutation = createMockMutation();
       mockUseLogin.mockReturnValue(mockMutation);
-      useNavigate.mockReturnValue(vi.fn());
+      const mockNavigate = vi.fn();
+      useNavigate.mockReturnValue(mockNavigate);
       useLocation.mockReturnValue({
         pathname: '/',
         search: '',
@@ -337,7 +339,7 @@ describe('LoginForm', () => {
       });
 
       await waitFor(() => {
-        expect(useNavigate).toHaveBeenCalledWith({
+        expect(mockNavigate).toHaveBeenCalledWith({
           to: '/dashboard',
           replace: true,
         });
@@ -347,7 +349,8 @@ describe('LoginForm', () => {
     it('navigates to home page when redirect location has no pathname', async () => {
       const mockMutation = createMockMutation();
       mockUseLogin.mockReturnValue(mockMutation);
-      useNavigate.mockReturnValue(vi.fn());
+      const mockNavigate = vi.fn();
+      useNavigate.mockReturnValue(mockNavigate);
       useLocation.mockReturnValue({
         pathname: '/',
         search: '',
@@ -377,7 +380,7 @@ describe('LoginForm', () => {
       });
 
       await waitFor(() => {
-        expect(useNavigate).toHaveBeenCalledWith({
+        expect(mockNavigate).toHaveBeenCalledWith({
           to: '/',
           replace: true,
         });

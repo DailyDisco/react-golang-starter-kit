@@ -15,7 +15,7 @@ vi.mock('@tanstack/react-router', () => {
 
   return {
     // Mock router hooks directly
-    useNavigate: vi.fn(() => navigateMock),
+    useNavigate: vi.fn(), // Directly return vi.fn()
     useLocation: vi.fn(() => locationMock),
 
     // Provide a simple RouterProvider that just renders its children

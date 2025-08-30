@@ -11,4 +11,3 @@ vite.config.*
 tailwind.config.*
 postcss.config.*
 routeTree.gen.ts
-

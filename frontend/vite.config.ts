@@ -46,7 +46,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom', // Faster than jsdom
-    setupFiles: ['./app/test/setup.tsx'],
+    setupFiles: ['./app/test/setup.tsx', './app/test/vitest.setup.ts'],
   },
   build: {
     rollupOptions: {
