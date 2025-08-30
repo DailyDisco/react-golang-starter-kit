@@ -19,7 +19,7 @@ function HydrateFallback() {
   );
 }
 
-// RootLayout component that conditionally applies layouts
+// RootLayout component that applies layouts based on route groups
 function RootLayout() {
   const location = useLocation();
 

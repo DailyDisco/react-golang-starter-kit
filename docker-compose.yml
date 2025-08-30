@@ -65,7 +65,7 @@ services:
       context: ./frontend
       dockerfile: ../docker-compose.frontend.Dockerfile
       args:
-        VITE_API_BASE_URL: http://localhost:8080/api
+        VITE_API_BASE_URL: http://backend:8080/api
     container_name: react-golang-frontend
     restart: unless-stopped
     working_dir: /app
@@ -74,7 +74,7 @@ services:
       - '4173:4173' # Preview server port
     environment:
       NODE_ENV: development
-      VITE_API_BASE_URL: http://localhost:8080/api
+      VITE_API_BASE_URL: http://backend:8080/api
       CI: false
     volumes:
       - ./frontend:/app

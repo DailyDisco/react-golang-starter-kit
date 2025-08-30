@@ -5,20 +5,19 @@ import {
   useNavigate,
 } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { useUsers, useUser } from '../hooks/queries/use-users';
-import { useUpdateUser } from '../hooks/mutations/use-user-mutations';
-import { useUserStore } from '../stores/user-store';
-import { UserService } from '../services';
-import type { User } from '../services';
+import { useUsers, useUser } from '../../hooks/queries/use-users';
+import { useUpdateUser } from '../../hooks/mutations/use-user-mutations';
+import { useUserStore } from '../../stores/user-store';
+
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
+} from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import {
   Loader2,
   ArrowLeft,
@@ -29,7 +28,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export const Route = createFileRoute('/users')({
+export const Route = createFileRoute('/(dashboard)/users')({
   component: UserDetailPage,
 });
 

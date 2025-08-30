@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Home, ArrowLeft, FileQuestion } from 'lucide-react';
 
-export const Route = createFileRoute('/404')({
+export const Route = createFileRoute('/(public)/$splat')({
   component: NotFoundPage,
 });
 
