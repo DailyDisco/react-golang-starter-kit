@@ -56,7 +56,7 @@ export function Navbar() {
               </Link>
             </div>
             <div className='hidden sm:ml-6 sm:flex sm:space-x-8'>
-              {navigation.map(item => (
+              {navigation.map(item =>
                 item.external ? (
                   <a
                     key={item.name}
@@ -72,15 +72,16 @@ export function Navbar() {
                     key={item.name}
                     to={item.href}
                     search={{}}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive(item.href)
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      isActive(item.href)
                         ? 'border-blue-500 text-gray-900 dark:text-white'
                         : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-100'
-                      }`}
+                    }`}
                   >
                     {item.name}
                   </Link>
                 )
-              ))}
+              )}
             </div>
           </div>
           <div className='hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4'>
@@ -134,10 +135,14 @@ export function Navbar() {
             ) : (
               <div className='flex items-center space-x-2'>
                 <Button variant='ghost' asChild>
-                  <Link to='/login' search={{}}>Sign in</Link>
+                  <Link to='/login' search={{}}>
+                    Sign in
+                  </Link>
                 </Button>
                 <Button asChild>
-                  <Link to='/register' search={{}}>Sign up</Link>
+                  <Link to='/register' search={{}}>
+                    Sign up
+                  </Link>
                 </Button>
               </div>
             )}
@@ -160,10 +165,11 @@ export function Navbar() {
                       target={item.external ? '_blank' : undefined}
                       rel={item.external ? 'noopener noreferrer' : undefined}
                       onClick={() => setIsOpen(false)}
-                      className={`inline-flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive(item.href)
+                      className={`inline-flex items-center px-3 py-2 rounded-md text-base font-medium ${
+                        isActive(item.href)
                           ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
+                      }`}
                     >
                       {item.name}
                     </Link>

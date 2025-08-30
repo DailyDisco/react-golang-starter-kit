@@ -294,18 +294,15 @@ For production, consider using proper migration tools like [golang-migrate](http
 ### Common Issues
 
 1. **Port 5432 already in use**
-
    - The Makefile uses port 5433 to avoid conflicts
    - Check if system PostgreSQL is running: `sudo systemctl status postgresql`
 
 2. **Database connection failed**
-
    - Ensure Docker container is running: `docker ps`
    - Check container logs: `make db-logs`
    - Verify credentials in `.env` match `Makefile`
 
 3. **Module import errors**
-
    - Ensure `go.mod` module name matches import paths
    - Run `go mod tidy` to clean up dependencies
 

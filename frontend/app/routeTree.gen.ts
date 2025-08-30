@@ -8,98 +8,98 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as UsersRouteImport } from './routes/users'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LayoutDemoRouteImport } from './routes/layout-demo'
-import { Route as DemoRouteImport } from './routes/demo'
-import { Route as R404RouteImport } from './routes/404'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as LayoutDemoIndexRouteImport } from './routes/layout-demo.index'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as UsersRouteImport } from './routes/users';
+import { Route as RegisterRouteImport } from './routes/register';
+import { Route as ProfileRouteImport } from './routes/profile';
+import { Route as LoginRouteImport } from './routes/login';
+import { Route as LayoutDemoRouteImport } from './routes/layout-demo';
+import { Route as DemoRouteImport } from './routes/demo';
+import { Route as R404RouteImport } from './routes/404';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as LayoutDemoIndexRouteImport } from './routes/layout-demo.index';
 
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LayoutDemoRoute = LayoutDemoRouteImport.update({
   id: '/layout-demo',
   path: '/layout-demo',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const DemoRoute = DemoRouteImport.update({
   id: '/demo',
   path: '/demo',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const R404Route = R404RouteImport.update({
   id: '/404',
   path: '/404',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LayoutDemoIndexRoute = LayoutDemoIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LayoutDemoRoute,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/404': typeof R404Route
-  '/demo': typeof DemoRoute
-  '/layout-demo': typeof LayoutDemoRouteWithChildren
-  '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/register': typeof RegisterRoute
-  '/users': typeof UsersRoute
-  '/layout-demo/': typeof LayoutDemoIndexRoute
+  '/': typeof IndexRoute;
+  '/404': typeof R404Route;
+  '/demo': typeof DemoRoute;
+  '/layout-demo': typeof LayoutDemoRouteWithChildren;
+  '/login': typeof LoginRoute;
+  '/profile': typeof ProfileRoute;
+  '/register': typeof RegisterRoute;
+  '/users': typeof UsersRoute;
+  '/layout-demo/': typeof LayoutDemoIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/404': typeof R404Route
-  '/demo': typeof DemoRoute
-  '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/register': typeof RegisterRoute
-  '/users': typeof UsersRoute
-  '/layout-demo': typeof LayoutDemoIndexRoute
+  '/': typeof IndexRoute;
+  '/404': typeof R404Route;
+  '/demo': typeof DemoRoute;
+  '/login': typeof LoginRoute;
+  '/profile': typeof ProfileRoute;
+  '/register': typeof RegisterRoute;
+  '/users': typeof UsersRoute;
+  '/layout-demo': typeof LayoutDemoIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/404': typeof R404Route
-  '/demo': typeof DemoRoute
-  '/layout-demo': typeof LayoutDemoRouteWithChildren
-  '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/register': typeof RegisterRoute
-  '/users': typeof UsersRoute
-  '/layout-demo/': typeof LayoutDemoIndexRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/404': typeof R404Route;
+  '/demo': typeof DemoRoute;
+  '/layout-demo': typeof LayoutDemoRouteWithChildren;
+  '/login': typeof LoginRoute;
+  '/profile': typeof ProfileRoute;
+  '/register': typeof RegisterRoute;
+  '/users': typeof UsersRoute;
+  '/layout-demo/': typeof LayoutDemoIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
     | '/404'
@@ -109,8 +109,8 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/users'
-    | '/layout-demo/'
-  fileRoutesByTo: FileRoutesByTo
+    | '/layout-demo/';
+  fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
     | '/404'
@@ -119,7 +119,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/users'
-    | '/layout-demo'
+    | '/layout-demo';
   id:
     | '__root__'
     | '/'
@@ -130,99 +130,99 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/users'
-    | '/layout-demo/'
-  fileRoutesById: FileRoutesById
+    | '/layout-demo/';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  R404Route: typeof R404Route
-  DemoRoute: typeof DemoRoute
-  LayoutDemoRoute: typeof LayoutDemoRouteWithChildren
-  LoginRoute: typeof LoginRoute
-  ProfileRoute: typeof ProfileRoute
-  RegisterRoute: typeof RegisterRoute
-  UsersRoute: typeof UsersRoute
+  IndexRoute: typeof IndexRoute;
+  R404Route: typeof R404Route;
+  DemoRoute: typeof DemoRoute;
+  LayoutDemoRoute: typeof LayoutDemoRouteWithChildren;
+  LoginRoute: typeof LoginRoute;
+  ProfileRoute: typeof ProfileRoute;
+  RegisterRoute: typeof RegisterRoute;
+  UsersRoute: typeof UsersRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/users';
+      path: '/users';
+      fullPath: '/users';
+      preLoaderRoute: typeof UsersRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/register';
+      path: '/register';
+      fullPath: '/register';
+      preLoaderRoute: typeof RegisterRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/profile';
+      path: '/profile';
+      fullPath: '/profile';
+      preLoaderRoute: typeof ProfileRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/login';
+      path: '/login';
+      fullPath: '/login';
+      preLoaderRoute: typeof LoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/layout-demo': {
-      id: '/layout-demo'
-      path: '/layout-demo'
-      fullPath: '/layout-demo'
-      preLoaderRoute: typeof LayoutDemoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/layout-demo';
+      path: '/layout-demo';
+      fullPath: '/layout-demo';
+      preLoaderRoute: typeof LayoutDemoRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/demo': {
-      id: '/demo'
-      path: '/demo'
-      fullPath: '/demo'
-      preLoaderRoute: typeof DemoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/demo';
+      path: '/demo';
+      fullPath: '/demo';
+      preLoaderRoute: typeof DemoRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/404': {
-      id: '/404'
-      path: '/404'
-      fullPath: '/404'
-      preLoaderRoute: typeof R404RouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/404';
+      path: '/404';
+      fullPath: '/404';
+      preLoaderRoute: typeof R404RouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/layout-demo/': {
-      id: '/layout-demo/'
-      path: '/'
-      fullPath: '/layout-demo/'
-      preLoaderRoute: typeof LayoutDemoIndexRouteImport
-      parentRoute: typeof LayoutDemoRoute
-    }
+      id: '/layout-demo/';
+      path: '/';
+      fullPath: '/layout-demo/';
+      preLoaderRoute: typeof LayoutDemoIndexRouteImport;
+      parentRoute: typeof LayoutDemoRoute;
+    };
   }
 }
 
 interface LayoutDemoRouteChildren {
-  LayoutDemoIndexRoute: typeof LayoutDemoIndexRoute
+  LayoutDemoIndexRoute: typeof LayoutDemoIndexRoute;
 }
 
 const LayoutDemoRouteChildren: LayoutDemoRouteChildren = {
   LayoutDemoIndexRoute: LayoutDemoIndexRoute,
-}
+};
 
 const LayoutDemoRouteWithChildren = LayoutDemoRoute._addFileChildren(
-  LayoutDemoRouteChildren,
-)
+  LayoutDemoRouteChildren
+);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -233,7 +233,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   UsersRoute: UsersRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

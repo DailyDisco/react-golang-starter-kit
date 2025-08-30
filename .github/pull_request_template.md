@@ -3,9 +3,11 @@
 <!-- ^^^ Replace # with the Jira ticket number -->
 
 ## Description
+
 <!-- Please include a summary of the change and which issue is fixed. -->
 
 ## PR Type
+
 <!-- What kind of change does this PR introduce? -->
 
 - [ ] Feature
@@ -16,6 +18,7 @@
 - [ ] Other (Please describe)
 
 ## Checklist
+
 <!-- Please check the boxes that apply. -->
 
 - [ ] My code follows the style guidelines of this project
@@ -26,7 +29,9 @@
 - [ ] I have verified that my changes do not break existing functionality
 
 ## Screenshots (if applicable)
+
 <!-- If applicable, add screenshots to help explain your changes. -->
 
 ## Additional Information
+
 <!-- Add any additional information about the changes. -->
