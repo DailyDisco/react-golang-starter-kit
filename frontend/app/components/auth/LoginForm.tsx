@@ -66,7 +66,11 @@ export function LoginForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className='space-y-4'
+            role='form'
+          >
             {error && (
               <Alert variant='destructive'>
                 <AlertDescription>{error}</AlertDescription>
@@ -79,6 +83,7 @@ export function LoginForm() {
                 id='email'
                 type='email'
                 placeholder='Enter your email'
+                autoFocus
                 {...register('email')}
                 disabled={loginMutation.isPending}
               />

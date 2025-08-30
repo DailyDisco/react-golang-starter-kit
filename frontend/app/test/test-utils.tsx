@@ -89,39 +89,11 @@ export const createMockAuthResponse = (overrides?: Partial<User>) => ({
 // Create a test router for testing components that use router hooks
 const createTestRouter = (initialPath: string = '/') => {
   const rootRoute = createRootRoute({
-    component: () => React.createElement('div', null, 'Test Root'),
+    component: () =>
+      React.createElement('div', { 'data-testid': 'router-outlet' }),
   });
 
-  const loginRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/login',
-    component: () => React.createElement('div', null, 'Login Page'),
-  });
-
-  const registerRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/register',
-    component: () => React.createElement('div', null, 'Register Page'),
-  });
-
-  const indexRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/',
-    component: () => React.createElement('div', null, 'Home Page'),
-  });
-
-  const dashboardRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/dashboard',
-    component: () => React.createElement('div', null, 'Dashboard Page'),
-  });
-
-  const routeTree = rootRoute.addChildren([
-    loginRoute,
-    registerRoute,
-    indexRoute,
-    dashboardRoute,
-  ]);
+  const routeTree = rootRoute.addChildren([]);
 
   return createRouter({
     routeTree,
@@ -164,9 +136,7 @@ export const renderWithProviders = (
     Wrapper = ({ children }: { children: React.ReactNode }) => (
       <RouterProvider router={testRouter}>
         <QueryClientProvider client={queryClient}>
-          {ui}{' '}
-          {/* Render the UI component directly as children of QueryClientProvider */}
-          {children} {/* Render any additional children passed to Wrapper */}
+          {children} {/* Only render children, not the ui directly */}
         </QueryClientProvider>
       </RouterProvider>
     );
