@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
+import { Skeleton } from '../ui/skeleton';
 
 // Import our new hooks and store
 import { useUsers } from '../../hooks/queries/use-users';
@@ -23,7 +24,7 @@ import { useHealthCheck } from '../../hooks/queries/use-health';
 import { useUserStore } from '../../stores/user-store';
 
 // Import types from services
-import { API_BASE_URL, type User } from '../../services';
+import { API_BASE_URL } from '../../services';
 
 export function Demo() {
   // Framer Motion demo state
@@ -655,6 +656,132 @@ export function Demo() {
 
             <div className='mt-6 text-center text-sm text-gray-500 dark:text-gray-400'>
               ✨ Combines morphing, staggering, and continuous animations
+            </div>
+          </div>
+        </section>
+
+        {/* Skeleton Examples Section */}
+        <section className='rounded-lg bg-white p-6 shadow-md dark:bg-gray-800'>
+          <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
+            💀 Skeleton Loading Examples
+          </h2>
+          <p className='mb-6 text-gray-600 dark:text-gray-300'>
+            Various skeleton loading patterns using the shadcn Skeleton
+            component to improve perceived performance during data loading.
+          </p>
+
+          <div className='space-y-8'>
+            {/* Basic Shapes */}
+            <div>
+              <h3 className='mb-3 text-lg font-medium text-gray-900 dark:text-white'>
+                Basic Shapes
+              </h3>
+              <div className='flex flex-wrap items-center gap-4'>
+                <div className='flex flex-col items-center space-y-2'>
+                  <Skeleton className='h-4 w-32' />
+                  <span className='text-sm text-gray-500 dark:text-gray-400'>
+                    Rectangle
+                  </span>
+                </div>
+                <div className='flex flex-col items-center space-y-2'>
+                  <Skeleton className='h-12 w-12 rounded-full' />
+                  <span className='text-sm text-gray-500 dark:text-gray-400'>
+                    Circle
+                  </span>
+                </div>
+                <div className='flex flex-col items-center space-y-2'>
+                  <Skeleton className='h-8 w-20 rounded-lg' />
+                  <span className='text-sm text-gray-500 dark:text-gray-400'>
+                    Rounded
+                  </span>
+                </div>
+                <div className='flex flex-col items-center space-y-2'>
+                  <Skeleton className='h-3 w-16 rounded-sm' />
+                  <span className='text-sm text-gray-500 dark:text-gray-400'>
+                    Small
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Text Content Skeleton */}
+            <div>
+              <h3 className='mb-3 text-lg font-medium text-gray-900 dark:text-white'>
+                Text Content
+              </h3>
+              <div className='space-y-3'>
+                <div className='space-y-2'>
+                  <Skeleton className='h-6 w-3/4' />
+                  <Skeleton className='h-4 w-full' />
+                  <Skeleton className='h-4 w-2/3' />
+                </div>
+                <div className='space-y-2'>
+                  <Skeleton className='h-5 w-1/2' />
+                  <Skeleton className='h-4 w-full' />
+                  <Skeleton className='h-4 w-4/5' />
+                  <Skeleton className='h-4 w-3/4' />
+                </div>
+              </div>
+            </div>
+
+            {/* Card Skeleton */}
+            <div>
+              <h3 className='mb-3 text-lg font-medium text-gray-900 dark:text-white'>
+                Card Layout
+              </h3>
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                <div className='rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800'>
+                  <div className='flex items-center space-x-4'>
+                    <Skeleton className='h-12 w-12 rounded-full' />
+                    <div className='space-y-2'>
+                      <Skeleton className='h-4 w-32' />
+                      <Skeleton className='h-3 w-24' />
+                    </div>
+                  </div>
+                  <div className='mt-4 space-y-2'>
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-3/4' />
+                  </div>
+                </div>
+                <div className='rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800'>
+                  <div className='flex items-center space-x-4'>
+                    <Skeleton className='h-12 w-12 rounded-full' />
+                    <div className='space-y-2'>
+                      <Skeleton className='h-4 w-40' />
+                      <Skeleton className='h-3 w-28' />
+                    </div>
+                  </div>
+                  <div className='mt-4 space-y-2'>
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-2/3' />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* User Profile Skeleton */}
+            <div>
+              <h3 className='mb-3 text-lg font-medium text-gray-900 dark:text-white'>
+                User Profile
+              </h3>
+              <div className='rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800'>
+                <div className='flex items-start space-x-6'>
+                  <Skeleton className='h-20 w-20 rounded-full' />
+                  <div className='flex-1 space-y-3'>
+                    <Skeleton className='h-7 w-48' />
+                    <Skeleton className='h-4 w-32' />
+                    <div className='space-y-2'>
+                      <Skeleton className='h-4 w-full' />
+                      <Skeleton className='h-4 w-5/6' />
+                      <Skeleton className='h-4 w-4/6' />
+                    </div>
+                    <div className='flex space-x-2 pt-2'>
+                      <Skeleton className='h-8 w-20 rounded' />
+                      <Skeleton className='h-8 w-24 rounded' />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
