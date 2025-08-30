@@ -54,6 +54,9 @@ func main() {
 		MaxAge:           300,
 	}))
 
+	// Health check at root level for Docker health checks
+	r.Get("/health", handlers.HealthCheck)
+
 	// Routes
 	setupRoutes(r, rateLimitConfig)
 

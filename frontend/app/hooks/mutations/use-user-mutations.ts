@@ -29,7 +29,36 @@ export const useCreateUser = () => {
       toast.success('User created successfully');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create user');
+      console.error('User creation error:', error);
+
+      // Provide more specific error messages based on common backend responses
+      if (
+        error.message.includes('password must contain at least one uppercase')
+      ) {
+        toast.error('Password validation failed', {
+          description:
+            'Password must contain at least one uppercase letter (A-Z)',
+        });
+      } else if (error.message.includes('password must be at least 8')) {
+        toast.error('Password too short', {
+          description: 'Password must be at least 8 characters long',
+        });
+      } else if (error.message.includes('Bad Request')) {
+        toast.error('Invalid request', {
+          description: 'Please check your input and try again',
+        });
+      } else if (
+        error.message.includes('Conflict') ||
+        error.message.includes('already exists')
+      ) {
+        toast.error('User already exists', {
+          description: 'A user with this email already exists',
+        });
+      } else {
+        toast.error('Failed to create user', {
+          description: error.message || 'An unexpected error occurred',
+        });
+      }
     },
   });
 };

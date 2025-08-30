@@ -8,11 +8,11 @@ services:
       POSTGRES_USER: devuser
       POSTGRES_PASSWORD: devpass
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U devuser -d devdb"]
+      test: ['CMD-SHELL', 'pg_isready -U devuser -d devdb']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,7 +27,7 @@ services:
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "8080:8080"
+      - '8080:8080'
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -50,13 +50,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # Health check - commented out until backend has health endpoint
-    # healthcheck:
-    #   test: ['CMD', 'curl', '-f', 'http://localhost:8080/health', '||', 'exit', '1']
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 30s
+    healthcheck:
+      test:
+        ['CMD', 'curl', '-f', 'http://localhost:8080/health', '||', 'exit', '1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - app-network
 
@@ -70,8 +70,8 @@ services:
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "5173:5173"
-      - "4173:4173" # Preview server port
+      - '5173:5173'
+      - '4173:4173' # Preview server port
     environment:
       NODE_ENV: development
       VITE_API_BASE_URL: http://localhost:8080/api
@@ -89,7 +89,7 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:5173']
       interval: 30s
       timeout: 10s
       retries: 3

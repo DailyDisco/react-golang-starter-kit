@@ -42,6 +42,15 @@ export function Demo() {
     setDeleteDialog,
   } = useUserStore();
 
+  // Password validation helpers
+  const passwordValidation = {
+    length: newUser.password?.length >= 8,
+    uppercase: /[A-Z]/.test(newUser.password || ''),
+    lowercase: /[a-z]/.test(newUser.password || ''),
+  };
+
+  const isPasswordValid = passwordValidation.length && passwordValidation.uppercase && passwordValidation.lowercase;
+
   // Test health check - now handled by useHealthCheck hook
   const testHealthCheck = () => {
     // The health check is automatically handled by the useHealthCheck hook
@@ -58,9 +67,33 @@ export function Demo() {
   // Create a new user
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUser.name.trim() || !newUser.email.trim()) {
+
+    // Frontend validation
+    if (!newUser.name.trim() || !newUser.email.trim() || !newUser.password.trim()) {
       toast.error('Validation Error', {
-        description: 'Please fill in all fields',
+        description: 'Please fill in all fields including password',
+      });
+      return;
+    }
+
+    // Password validation
+    if (newUser.password.length < 8) {
+      toast.error('Password too short', {
+        description: 'Password must be at least 8 characters long',
+      });
+      return;
+    }
+
+    if (!/[A-Z]/.test(newUser.password)) {
+      toast.error('Password validation failed', {
+        description: 'Password must contain at least one uppercase letter',
+      });
+      return;
+    }
+
+    if (!/[a-z]/.test(newUser.password)) {
+      toast.error('Password validation failed', {
+        description: 'Password must contain at least one lowercase letter',
       });
       return;
     }
@@ -68,6 +101,7 @@ export function Demo() {
     createUserMutation.mutate({
       name: newUser.name,
       email: newUser.email,
+      password: newUser.password,
     });
   };
 
@@ -188,13 +222,49 @@ export function Demo() {
                   disabled={createUserMutation.isPending}
                 />
               </div>
+              <div className='md:col-span-2'>
+                <label
+                  htmlFor='password'
+                  className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'
+                >
+                  Password
+                </label>
+                <input
+                  type='password'
+                  id='password'
+                  value={newUser.password || ''}
+                  onChange={e =>
+                    setNewUser({ ...newUser, password: e.target.value })
+                  }
+                  className='w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white'
+                  placeholder='Min 8 chars, 1 uppercase, 1 lowercase'
+                  disabled={createUserMutation.isPending}
+                />
+                <div className='text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-1'>
+                  <p className='font-medium'>Password requirements:</p>
+                  <div className='flex flex-col space-y-1'>
+                    <div className={`flex items-center ${passwordValidation.length ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <span className={`mr-2 ${passwordValidation.length ? '✓' : '✗'}`}></span>
+                      At least 8 characters
+                    </div>
+                    <div className={`flex items-center ${passwordValidation.uppercase ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <span className={`mr-2 ${passwordValidation.uppercase ? '✓' : '✗'}`}></span>
+                      At least 1 uppercase letter
+                    </div>
+                    <div className={`flex items-center ${passwordValidation.lowercase ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <span className={`mr-2 ${passwordValidation.lowercase ? '✓' : '✗'}`}></span>
+                      At least 1 lowercase letter
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <button
               type='submit'
-              disabled={createUserMutation.isPending}
-              className='bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 disabled:bg-green-300 dark:disabled:bg-green-800 text-white font-medium py-2 px-4 rounded-lg transition-colors'
+              disabled={createUserMutation.isPending || !isPasswordValid}
+              className='bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 disabled:bg-green-300 dark:disabled:bg-green-800 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:cursor-not-allowed'
             >
-              {createUserMutation.isPending ? 'Creating...' : 'Create User'}
+              {createUserMutation.isPending ? 'Creating...' : isPasswordValid ? 'Create User' : 'Complete Password Requirements'}
             </button>
           </form>
         </section>

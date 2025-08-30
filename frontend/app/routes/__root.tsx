@@ -1,10 +1,11 @@
-import { createRootRoute, Outlet } from '@tanstack/react-router';
+import { createRootRoute, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { AuthProvider } from '../providers/AuthContext';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { StandardLayout } from '../layouts';
 
 // HydrateFallback component for better SSR UX
 function HydrateFallback() {
@@ -18,6 +19,22 @@ function HydrateFallback() {
   );
 }
 
+// RootLayout component that conditionally applies layouts
+function RootLayout() {
+  const location = useLocation();
+
+  // Check if we're in the layout-demo route
+  const isLayoutDemo = location.pathname.startsWith('/layout-demo');
+
+  if (isLayoutDemo) {
+    // For layout-demo routes, just render the outlet without StandardLayout
+    return <Outlet />;
+  }
+
+  // For all other routes, use StandardLayout
+  return <StandardLayout />;
+}
+
 export const Route = createRootRoute({
   component: () => (
     <>
@@ -25,7 +42,7 @@ export const Route = createRootRoute({
         <ThemeProvider defaultTheme='system'>
           {/* QueryClientProvider is handled by the SSR Query integration */}
           <Toaster />
-          <Outlet />
+          <RootLayout />
           <ReactQueryDevtools initialIsOpen={false} />
         </ThemeProvider>
       </AuthProvider>

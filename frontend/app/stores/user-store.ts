@@ -12,7 +12,7 @@ interface UserState {
   selectedUserId: number | null;
   filters: UserFilters;
   editMode: boolean;
-  formData: { name: string; email: string };
+  formData: { name: string; email: string; password: string };
   deleteDialogOpen: boolean;
   userToDelete: { id: number; name: string } | null;
 
@@ -34,7 +34,7 @@ export const useUserStore = create<UserState>()(
       selectedUserId: null,
       filters: { search: '', role: '', isActive: true },
       editMode: false,
-      formData: { name: '', email: '' },
+      formData: { name: '', email: '', password: '' },
       deleteDialogOpen: false,
       userToDelete: null,
 
@@ -48,7 +48,7 @@ export const useUserStore = create<UserState>()(
         set(state => ({
           formData: { ...state.formData, ...data },
         })),
-      resetForm: () => set({ formData: { name: '', email: '' } }),
+      resetForm: () => set({ formData: { name: '', email: '', password: '' } }),
       setDeleteDialog: (open, user = null) =>
         set({
           deleteDialogOpen: open,

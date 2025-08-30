@@ -1,10 +1,30 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
-import CustomDemoLayout from '../layouts/CustomDemoLayout';
+import { Navbar } from '@/layouts';
 
 export const Route = createFileRoute('/layout-demo')({
   component: LayoutDemo,
 });
 
 function LayoutDemo() {
-  return <CustomDemoLayout />;
+  return (
+    <div className='min-h-screen flex flex-col bg-background'>
+      <Navbar />
+      {/* Custom Layout Header */}
+      <div className='bg-card text-card-foreground p-4 text-center border-b'>
+        <div className='text-lg font-medium'>Custom Demo Layout</div>
+        <div className='text-sm text-muted-foreground mt-1'>
+          This page uses a different layout structure, for example you can
+          scroll down and see the footer is not present.
+        </div>
+      </div>
+
+      <main className='flex-1 p-6'>
+        <div className='max-w-4xl mx-auto'>
+          <div className='bg-card rounded-lg shadow-sm border p-8'>
+            <Outlet />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }

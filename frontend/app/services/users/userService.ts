@@ -22,12 +22,15 @@ export class UserService {
 
     try {
       const responseData = await response.json();
+      console.log('Users API response:', responseData); // Debug log
+
       // Handle new success response format
       if (responseData.success === true && responseData.data) {
+        // Backend returns {"users": null, "count": 0} when no users exist
         return responseData.data.users || [];
       }
       // Fallback for old format (if still in use)
-      return responseData.users || responseData;
+      return responseData.users || responseData || [];
     } catch (parseError) {
       console.error('Failed to parse users response:', parseError);
       throw new Error('Invalid response format from server');
