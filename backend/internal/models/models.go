@@ -37,6 +37,10 @@ type User struct {
 
 	// Whether the user account is active
 	IsActive bool `json:"is_active" gorm:"default:true"`
+
+	// The role of the user (e.g., "super_admin", "admin", "premium", "user")
+	// example: user
+	Role string `json:"role" gorm:"type:varchar(50);default:'user'"`
 }
 
 // UserResponse represents the user data returned to the frontend (without sensitive fields)
@@ -49,6 +53,7 @@ type UserResponse struct {
 	IsActive      bool   `json:"is_active"`
 	CreatedAt     string `json:"created_at"`
 	UpdatedAt     string `json:"updated_at"`
+	Role          string `json:"role"`
 }
 
 // ToUserResponse converts a User to UserResponse (removes sensitive fields)
@@ -61,6 +66,7 @@ func (u *User) ToUserResponse() UserResponse {
 		IsActive:      u.IsActive,
 		CreatedAt:     u.CreatedAt,
 		UpdatedAt:     u.UpdatedAt,
+		Role:          u.Role,
 	}
 }
 
@@ -166,16 +172,19 @@ type SuccessResponse struct {
 	Data interface{} `json:"data,omitempty"`
 }
 
-// HealthResponse represents the health check response
-// swagger:model HealthResponse
-type HealthResponse struct {
-	// Health status (ok, error, degraded)
-	// example: ok
-	Status string `json:"status" example:"ok"`
+// ComponentStatus represents the status of a single component (e.g., database, redis)
+type ComponentStatus struct {
+	Name    string `json:"name"`
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+}
 
-	// Health status message
-	// example: Server is running
-	Message string `json:"message" example:"Server is running"`
+// HealthStatus represents the overall health of the application
+// swagger:model HealthStatus
+type HealthStatus struct {
+	OverallStatus string            `json:"overall_status"`
+	Timestamp     string            `json:"timestamp"`
+	Components    []ComponentStatus `json:"components"`
 }
 
 // UsersResponse represents a paginated list of users response
@@ -215,4 +224,86 @@ type PaginationQuery struct {
 	// Number of items per page (default: 10, maximum: 100)
 	// example: 10
 	Limit int `json:"limit" form:"limit" example:"10"`
+}
+
+// File represents a file stored in the system
+// swagger:model File
+type File struct {
+	// The unique ID of the file
+	// example: 1
+	ID uint `json:"id" gorm:"primaryKey"`
+
+	// When the file was created
+	// example: 2023-08-27T12:00:00Z
+	CreatedAt string `json:"created_at"`
+
+	// When the file was last updated
+	// example: 2023-08-27T12:00:00Z
+	UpdatedAt string `json:"updated_at"`
+
+	// The original name of the uploaded file
+	// example: my-document.pdf
+	FileName string `json:"file_name" gorm:"not null" binding:"required"`
+
+	// MIME type of the file
+	// example: application/pdf
+	ContentType string `json:"content_type"`
+
+	// Size of the file in bytes
+	// example: 1024
+	FileSize int64 `json:"file_size"`
+
+	// Storage location - either S3 URL or database identifier
+	// example: https://bucket-name.s3.amazonaws.com/uploads/file.pdf
+	Location string `json:"location"`
+
+	// Actual file content (only used for database storage)
+	Content []byte `json:"-" gorm:"type:bytea"`
+
+	// Storage type (s3 or database)
+	// example: s3
+	StorageType string `json:"storage_type" gorm:"default:database"`
+}
+
+// FileResponse represents the file data returned to the frontend
+// swagger:model FileResponse
+type FileResponse struct {
+	ID          uint   `json:"id"`
+	FileName    string `json:"file_name"`
+	ContentType string `json:"content_type"`
+	FileSize    int64  `json:"file_size"`
+	Location    string `json:"location"`
+	StorageType string `json:"storage_type"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+// ToFileResponse converts a File to FileResponse
+func (f *File) ToFileResponse() FileResponse {
+	return FileResponse{
+		ID:          f.ID,
+		FileName:    f.FileName,
+		ContentType: f.ContentType,
+		FileSize:    f.FileSize,
+		Location:    f.Location,
+		StorageType: f.StorageType,
+		CreatedAt:   f.CreatedAt,
+		UpdatedAt:   f.UpdatedAt,
+	}
+}
+
+// Role constants
+const (
+	RoleSuperAdmin = "super_admin" // System administrators (full access)
+	RoleAdmin      = "admin"       // Content/service administrators
+	RolePremium    = "premium"     // Paid subscribers with extra features
+	RoleUser       = "user"        // Regular users (default)
+)
+
+// RoleHierarchy defines the permission level for each role (higher number = more permissions)
+var RoleHierarchy = map[string]int{
+	RoleSuperAdmin: 100,
+	RoleAdmin:      50,
+	RolePremium:    20,
+	RoleUser:       10,
 }

@@ -79,51 +79,69 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Service represents the application service with its dependencies
+type Service struct {
+	RedisClient *cache.Client
+}
+
+// NewService creates a new Service instance
+func NewService(redisClient *cache.Client) *Service {
+	return &Service{
+		RedisClient: redisClient,
+	}
+}
+
+// respondWithJSON sends a JSON response
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	response, _ := json.Marshal(payload)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
+}
+
+// respondWithError sends an error response
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	respondWithJSON(w, code, map[string]string{"error": message})
+}
+
 // HealthCheck godoc
 // @Summary Check server health status
-// @Description Get the health status of the server and database connectivity
+// @Description Get the health status of the server and its dependencies (database, redis)
 // @Tags health
 // @Accept json
 // @Produce json
-// @Success 200 {object} models.SuccessResponse "Server is healthy"
-// @Failure 500 {object} models.ErrorResponse "Server is unhealthy"
+// @Success 200 {object} models.HealthStatus "Server and its dependencies are healthy"
+// @Failure 503 {object} models.HealthStatus "Server or one of its critical dependencies is unhealthy"
 // @Router /health [get]
-// @Example
-//
-// Request:
-// GET /api/health
-//
-// Response:
-//
-//	{
-//	  "success": true,
-//	  "message": "Server is running",
-//	  "data": {
-//	    "status": "ok",
-//	    "message": "Server is running"
-//	  }
-//	}
-func HealthCheck(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	response := models.SuccessResponse{
-		Success: true,
-		Message: "Server is running",
-		Data: models.HealthResponse{
-			Status:  "ok",
-			Message: "Server is running",
-		},
+func (s *Service) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	overallStatus := "healthy"
+	statusCode := http.StatusOK
+
+	dbStatus := database.CheckDatabaseHealth()
+	redisStatus := s.RedisClient.CheckRedisHealth()
+
+	components := []models.ComponentStatus{
+		dbStatus,
+		redisStatus,
 	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to encode response",
-			Code:    http.StatusInternalServerError,
+
+	for _, comp := range components {
+		if comp.Status == "unhealthy" {
+			overallStatus = "unhealthy"
+			statusCode = http.StatusServiceUnavailable
+			break
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
-		return
 	}
+
+	healthResponse := models.HealthStatus{
+		OverallStatus: overallStatus,
+		Timestamp:     time.Now().Format(time.RFC3339),
+		Components:    components,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(healthResponse)
 }
 
 // GetUsers godoc
@@ -960,4 +978,327 @@ func DeleteUser(cacheService *cache.Service) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusNoContent)
 	}
+}
+
+// UpdateUserRole godoc
+// @Summary Update a user's role (Admin only)
+// @Description Update the role of a specific user by their ID. Requires admin or super_admin privileges.
+// @Tags admin, users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID" minimum(1)
+// @Param role body UpdateRoleRequest true "New role for the user"
+// @Security BearerAuth
+// @Success 200 {object} models.SuccessResponse{data=models.UserResponse} "User role updated successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid user ID or role"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 403 {object} models.ErrorResponse "Forbidden - insufficient permissions"
+// @Failure 404 {object} models.ErrorResponse "User not found"
+// @Failure 500 {object} models.ErrorResponse "Failed to update user role"
+// @Router /admin/users/{id}/role [put]
+func UpdateUserRole(cacheService *cache.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		userID, err := strconv.Atoi(id)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Bad Request",
+				Message: "Invalid user ID",
+				Code:    http.StatusBadRequest,
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		var req UpdateRoleRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Bad Request",
+				Message: "Invalid request payload",
+				Code:    http.StatusBadRequest,
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		// Validate role
+		validRoles := map[string]bool{
+			models.RoleSuperAdmin: true,
+			models.RoleAdmin:      true,
+			models.RolePremium:    true,
+			models.RoleUser:       true,
+		}
+		if !validRoles[req.Role] {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Bad Request",
+				Message: "Invalid role. Valid roles are: super_admin, admin, premium, user",
+				Code:    http.StatusBadRequest,
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		// Check if user exists
+		var user models.User
+		if err := database.DB.First(&user, userID).Error; err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Not Found",
+				Message: "User not found",
+				Code:    http.StatusNotFound,
+			}
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		// Prevent users from modifying their own role (security measure)
+		currentUser, ok := auth.GetUserFromContext(r.Context())
+		if ok && currentUser.ID == uint(userID) {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Forbidden",
+				Message: "You cannot modify your own role",
+				Code:    http.StatusForbidden,
+			}
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		oldRole := user.Role
+		user.Role = req.Role
+		user.UpdatedAt = time.Now().Format(time.RFC3339)
+
+		if err := database.DB.Save(&user).Error; err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Internal Server Error",
+				Message: "Failed to update user role",
+				Code:    http.StatusInternalServerError,
+			}
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		// Invalidate user cache
+		if err := cacheService.DeleteUser(uint(userID)); err != nil {
+			log.Warn().Err(err).Int("userID", userID).Msg("Failed to invalidate user cache after role update")
+		} else {
+			log.Debug().Int("userID", userID).Str("oldRole", oldRole).Str("newRole", req.Role).Msg("Invalidated user cache after role update")
+		}
+
+		userResponse := user.ToUserResponse()
+
+		w.Header().Set("Content-Type", "application/json")
+		response := models.SuccessResponse{
+			Success: true,
+			Message: "User role updated successfully",
+			Data:    userResponse,
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
+// GetPremiumContent godoc
+// @Summary Get premium content
+// @Description Retrieve exclusive content available only to premium and admin users
+// @Tags premium
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.SuccessResponse{data=PremiumContentResponse} "Premium content retrieved successfully"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 403 {object} models.ErrorResponse "Forbidden - premium subscription required"
+// @Router /premium/content [get]
+func GetPremiumContent(w http.ResponseWriter, r *http.Request) {
+	response := models.SuccessResponse{
+		Success: true,
+		Message: "Welcome to the exclusive premium content!",
+		Data: PremiumContentResponse{
+			Content: "This is premium content only available to our valued subscribers and administrators.",
+			Features: []string{
+				"Exclusive articles and tutorials",
+				"Priority customer support",
+				"Advanced features and tools",
+				"Early access to new features",
+			},
+			AccessLevel: "premium",
+		},
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// GetCurrentUser godoc
+// @Summary Get current user profile
+// @Description Get the profile of the currently authenticated user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.SuccessResponse{data=models.UserResponse} "User profile retrieved successfully"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 404 {object} models.ErrorResponse "User not found"
+// @Failure 500 {object} models.ErrorResponse "Failed to retrieve user"
+// @Router /users/me [get]
+func GetCurrentUser(cacheService *cache.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		currentUser, ok := auth.GetUserFromContext(r.Context())
+		if !ok {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Unauthorized",
+				Message: "User not found in context",
+				Code:    http.StatusUnauthorized,
+			}
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		userResponse := currentUser.ToUserResponse()
+
+		w.Header().Set("Content-Type", "application/json")
+		response := models.SuccessResponse{
+			Success: true,
+			Message: "User profile retrieved successfully",
+			Data:    userResponse,
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
+// UpdateCurrentUser godoc
+// @Summary Update current user profile
+// @Description Update the profile of the currently authenticated user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body object true "Updated user data (name and/or email)"
+// @Security BearerAuth
+// @Success 200 {object} models.SuccessResponse{data=models.UserResponse} "User profile updated successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid JSON"
+// @Failure 401 {object} models.ErrorResponse "Unauthorized"
+// @Failure 404 {object} models.ErrorResponse "User not found"
+// @Failure 409 {object} models.ErrorResponse "Email already taken"
+// @Failure 500 {object} models.ErrorResponse "Failed to update user"
+// @Router /users/me [put]
+func UpdateCurrentUser(cacheService *cache.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		currentUser, ok := auth.GetUserFromContext(r.Context())
+		if !ok {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Unauthorized",
+				Message: "User not found in context",
+				Code:    http.StatusUnauthorized,
+			}
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		var req models.RegisterRequest // Reuse for update
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Bad Request",
+				Message: "Invalid JSON",
+				Code:    http.StatusBadRequest,
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		// Validate email format if provided
+		if req.Email != "" && req.Email != currentUser.Email {
+			if err := auth.ValidateEmail(req.Email); err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				response := models.ErrorResponse{
+					Error:   "Bad Request",
+					Message: err.Error(),
+					Code:    http.StatusBadRequest,
+				}
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(response)
+				return
+			}
+
+			// Check if email is already taken by another user
+			var existingUser models.User
+			if err := database.DB.Where("email = ? AND id != ?", req.Email, currentUser.ID).First(&existingUser).Error; err == nil {
+				w.Header().Set("Content-Type", "application/json")
+				response := models.ErrorResponse{
+					Error:   "Conflict",
+					Message: "Email already taken",
+					Code:    http.StatusConflict,
+				}
+				w.WriteHeader(http.StatusConflict)
+				json.NewEncoder(w).Encode(response)
+				return
+			}
+		}
+
+		// Update user fields
+		if req.Name != "" {
+			currentUser.Name = req.Name
+		}
+		if req.Email != "" {
+			currentUser.Email = req.Email
+		}
+		currentUser.UpdatedAt = time.Now().Format(time.RFC3339)
+
+		if err := database.DB.Save(&currentUser).Error; err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			response := models.ErrorResponse{
+				Error:   "Internal Server Error",
+				Message: "Failed to update user",
+				Code:    http.StatusInternalServerError,
+			}
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		// Invalidate user cache
+		if err := cacheService.DeleteUser(currentUser.ID); err != nil {
+			log.Warn().Err(err).Uint("userID", currentUser.ID).Msg("Failed to invalidate user cache after update")
+		} else {
+			log.Debug().Uint("userID", currentUser.ID).Msg("Invalidated user cache after update")
+		}
+
+		userResponse := currentUser.ToUserResponse()
+
+		w.Header().Set("Content-Type", "application/json")
+		response := models.SuccessResponse{
+			Success: true,
+			Message: "User profile updated successfully",
+			Data:    userResponse,
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
+// UpdateRoleRequest represents the request payload for updating a user role
+type UpdateRoleRequest struct {
+	Role string `json:"role" binding:"required" example:"premium"`
+}
+
+// PremiumContentResponse represents the premium content response
+type PremiumContentResponse struct {
+	Content     string   `json:"content"`
+	Features    []string `json:"features"`
+	AccessLevel string   `json:"access_level"`
 }

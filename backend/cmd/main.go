@@ -4,12 +4,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+
 	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/handlers"
 	"react-golang-starter/internal/middleware"
 	"react-golang-starter/internal/ratelimit"
+	"react-golang-starter/internal/services"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -154,17 +156,26 @@ func main() {
 		MaxAge:           300,
 	}))
 
+	// Initialize file service
+	fileService, err := services.NewFileService()
+	if err != nil {
+		zerologlog.Fatal().Err(err).Msg("failed to initialize file service")
+	}
+
+	// Initialize the service with dependencies
+	appService := handlers.NewService(redisClient)
+
 	// Health check at root level for Docker health checks
-	r.Get("/health", handlers.HealthCheck)
+	r.Get("/health", appService.HealthCheck)
 
 	// Routes
-	setupRoutes(r, rateLimitConfig, cacheService)
+	setupRoutes(r, rateLimitConfig, cacheService, appService, fileService)
 
 	zerologlog.Info().Str("port", ":8080").Msg("server starting")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
-func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, cacheService *cache.Service) {
+func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, cacheService *cache.Service, appService *handlers.Service, fileService *services.FileService) {
 	// Simple test route at root level
 	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -180,40 +191,42 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, cacheService *
 				http.Error(w, "Failed to write response", http.StatusInternalServerError)
 			}
 		})
-		r.Get("/health", handlers.HealthCheck)
+		r.Get("/health", appService.HealthCheck)
 
-		// Authentication routes - combined public and protected
-		r.Route("/auth", func(r chi.Router) {
-			// Public authentication routes - stricter rate limiting
-			r.Use(ratelimit.NewAuthRateLimitMiddleware(rateLimitConfig))
-			r.Post("/register", auth.RegisterUser)                // POST /api/auth/register
-			r.Post("/login", auth.LoginUser)                      // POST /api/auth/login
-			r.Get("/verify-email", auth.VerifyEmail)              // GET /api/auth/verify-email
-			r.Post("/reset-password", auth.RequestPasswordReset)  // POST /api/auth/reset-password
-			r.Post("/reset-password/confirm", auth.ResetPassword) // POST /api/auth/reset-password/confirm
-
-			// Protected authentication routes - require authentication
-			r.Route("/me", func(r chi.Router) {
-				r.Use(auth.AuthMiddleware)
-				r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
-				r.Get("/", auth.GetCurrentUser) // GET /api/auth/me
-			})
-		})
-
-		// User routes - API rate limiting
-		r.Route("/users", func(r chi.Router) {
+		// File upload routes
+		r.Route("/files", func(r chi.Router) {
 			r.Use(ratelimit.NewAPIRateLimitMiddleware(rateLimitConfig))
-			r.Get("/", handlers.GetUsers(cacheService))    // GET /api/users (public for now)
-			r.Post("/", handlers.CreateUser(cacheService)) // POST /api/users (public for now)
 
-			// Protected user routes
-			r.Route("/{id}", func(r chi.Router) {
+			// File upload - requires authentication for security
+			r.Route("/upload", func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
 				r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
-				r.Get("/", handlers.GetUser(cacheService))       // GET /api/users/{id}
-				r.Put("/", handlers.UpdateUser(cacheService))    // PUT /api/users/{id}
-				r.Delete("/", handlers.DeleteUser(cacheService)) // DELETE /api/users/{id}
+				r.Post("/", handlers.NewFileHandler(fileService).UploadFile) // POST /api/files/upload
 			})
+
+			// File operations - public access for downloads, authenticated for management
+			r.Route("/{id}", func(r chi.Router) {
+				r.Get("/download", handlers.NewFileHandler(fileService).DownloadFile) // GET /api/files/{id}/download
+				r.Get("/url", handlers.NewFileHandler(fileService).GetFileURL)        // GET /api/files/{id}/url
+				r.Get("/", handlers.NewFileHandler(fileService).GetFileInfo)          // GET /api/files/{id}
+
+				// Protected operations - require authentication
+				r.Route("/", func(r chi.Router) {
+					r.Use(auth.AuthMiddleware)
+					r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
+					r.Delete("/", handlers.NewFileHandler(fileService).DeleteFile) // DELETE /api/files/{id}
+				})
+			})
+
+			// List files - requires authentication
+			r.Route("/", func(r chi.Router) {
+				r.Use(auth.AuthMiddleware)
+				r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
+				r.Get("/", handlers.NewFileHandler(fileService).ListFiles) // GET /api/files
+			})
+
+			// Storage status - public endpoint
+			r.Get("/storage/status", handlers.NewFileHandler(fileService).GetStorageStatus) // GET /api/files/storage/status
 		})
 	})
 

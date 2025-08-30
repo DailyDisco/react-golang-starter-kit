@@ -14,6 +14,7 @@ const (
 	UserContextKey      ContextKey = "user"
 	UserIDContextKey    ContextKey = "user_id"
 	UserEmailContextKey ContextKey = "user_email"
+	UserRoleContextKey  ContextKey = "user_role"
 )
 
 // AuthMiddleware validates JWT tokens and adds user context to requests
@@ -53,6 +54,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), UserContextKey, &user)
 		ctx = context.WithValue(ctx, UserIDContextKey, user.ID)
 		ctx = context.WithValue(ctx, UserEmailContextKey, user.Email)
+		ctx = context.WithValue(ctx, UserRoleContextKey, user.Role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -74,6 +76,7 @@ func OptionalAuthMiddleware(next http.Handler) http.Handler {
 						ctx := context.WithValue(r.Context(), UserContextKey, &user)
 						ctx = context.WithValue(ctx, UserIDContextKey, user.ID)
 						ctx = context.WithValue(ctx, UserEmailContextKey, user.Email)
+						ctx = context.WithValue(ctx, UserRoleContextKey, user.Role)
 						next.ServeHTTP(w, r.WithContext(ctx))
 						return
 					}
@@ -144,4 +147,10 @@ func AdminMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	}))
+}
+
+// GetUserRoleFromContext retrieves the user role from the request context
+func GetUserRoleFromContext(ctx context.Context) (string, bool) {
+	role, ok := ctx.Value(UserRoleContextKey).(string)
+	return role, ok
 }

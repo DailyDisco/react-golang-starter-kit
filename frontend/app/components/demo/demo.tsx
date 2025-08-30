@@ -7,12 +7,23 @@ import {
   useCreateUser,
   useDeleteUser,
 } from '../../hooks/mutations/use-user-mutations';
+import {
+  useFileUpload,
+  useFileDelete,
+} from '../../hooks/mutations/use-file-mutations';
 import { useHealthCheck } from '../../hooks/queries/use-health';
 // Import our new hooks and store
 import { useUsers } from '../../hooks/queries/use-users';
+import {
+  useFiles,
+  useStorageStatus,
+  useFileDownload,
+} from '../../hooks/queries/use-files';
 // Import types from services
 import { API_BASE_URL } from '../../services';
 import { useUserStore } from '../../stores/user-store';
+import { useFileStore } from '../../stores/file-store';
+import { useAuthStore } from '../../stores/auth-store';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,13 +43,28 @@ export function Demo() {
   // Server state - handled by Tanstack Query
   const { data: users, isLoading: usersLoading } = useUsers();
   const { data: healthStatus, isLoading: healthLoading } = useHealthCheck();
+  const { data: files, isLoading: filesLoading } = useFiles();
+  const { data: storageStatus } = useStorageStatus();
+
+  // File download hook
+  const { downloadFile } = useFileDownload();
 
   // Mutations
   const createUserMutation = useCreateUser();
   const deleteUserMutation = useDeleteUser();
+  const fileUploadMutation = useFileUpload();
+  const fileDeleteMutation = useFileDelete();
 
   // Client state - handled by Zustand
   const { formData: newUser, setFormData: setNewUser } = useUserStore();
+  const {
+    selectedFile,
+    isDragOver,
+    setSelectedFile,
+    setIsDragOver,
+    resetFileSelection,
+  } = useFileStore();
+  const { accessToken: authToken } = useAuthStore();
 
   // Local state for delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -64,9 +90,22 @@ export function Demo() {
     // The health check is automatically handled by the useHealthCheck hook
     // We just need to show a success message when it's successful
     if (healthStatus) {
+      const overallStatus = healthStatus.overall_status;
+      const components = healthStatus.components;
+
       toast.success('Health check successful!', {
-        description: `Status: ${healthStatus.status} - ${healthStatus.message}`,
+        description: `Overall: ${overallStatus.toUpperCase()}`,
       });
+
+      // Show individual component statuses
+      if (components && components.length > 0) {
+        for (const component of components) {
+          const statusIcon = component.status === 'healthy' ? '✅' : '❌';
+          toast.info(`${statusIcon} ${component.name}: ${component.status}`, {
+            description: component.message || 'No issues detected',
+          });
+        }
+      }
     }
   };
 
@@ -135,6 +174,59 @@ export function Demo() {
     });
   };
 
+  // File upload handlers
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDragOver(false);
+
+    const file = event.dataTransfer.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleFileUpload = () => {
+    if (!selectedFile) {
+      toast.error('No file selected', {
+        description: 'Please select a file to upload',
+      });
+      return;
+    }
+
+    fileUploadMutation.mutate(selectedFile, {
+      onSuccess: () => {
+        resetFileSelection();
+      },
+    });
+  };
+
+  // File delete handler
+  const handleFileDelete = (fileId: number, _fileName: string) => {
+    fileDeleteMutation.mutate(fileId);
+  };
+
+  // File download handler
+  const handleFileDownload = (fileId: number, fileName: string) => {
+    downloadFile(fileId, fileName);
+  };
+
   // Users are automatically loaded by the useUsers hook
   useEffect(() => {
     if (usersLoading) {
@@ -184,13 +276,71 @@ export function Demo() {
             </button>
 
             {healthStatus && (
-              <div className='rounded-lg border border-green-300 bg-green-100 p-3 dark:border-green-700 dark:bg-green-900'>
-                <p className='text-green-700 dark:text-green-300'>
-                  ✅ Status: {healthStatus.status}
-                </p>
-                <p className='text-sm text-green-600 dark:text-green-400'>
-                  {healthStatus.message}
-                </p>
+              <div className='space-y-3'>
+                {/* Overall Status */}
+                <div
+                  className={`rounded-lg border p-3 ${
+                    healthStatus.overall_status === 'healthy'
+                      ? 'border-green-300 bg-green-100 dark:border-green-700 dark:bg-green-900'
+                      : 'border-red-300 bg-red-100 dark:border-red-700 dark:bg-red-900'
+                  }`}
+                >
+                  <p
+                    className={`font-medium ${
+                      healthStatus.overall_status === 'healthy'
+                        ? 'text-green-700 dark:text-green-300'
+                        : 'text-red-700 dark:text-red-300'
+                    }`}
+                  >
+                    {healthStatus.overall_status === 'healthy' ? '✅' : '❌'}{' '}
+                    Overall Status: {healthStatus.overall_status.toUpperCase()}
+                  </p>
+                  <p className='text-sm text-gray-600 dark:text-gray-400'>
+                    Checked at:{' '}
+                    {new Date(healthStatus.timestamp).toLocaleString()}
+                  </p>
+                </div>
+
+                {/* Component Statuses */}
+                {healthStatus.components &&
+                  healthStatus.components.length > 0 && (
+                    <div className='space-y-2'>
+                      <h4 className='text-sm font-medium text-gray-700 dark:text-gray-300'>
+                        Component Details:
+                      </h4>
+                      {healthStatus.components.map((component, index) => (
+                        <div
+                          key={index}
+                          className={`rounded-lg border p-2 text-sm ${
+                            component.status === 'healthy'
+                              ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950'
+                              : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950'
+                          }`}
+                        >
+                          <div className='flex items-center justify-between'>
+                            <span className='font-medium capitalize'>
+                              {component.name}
+                            </span>
+                            <span
+                              className={`font-medium ${
+                                component.status === 'healthy'
+                                  ? 'text-green-700 dark:text-green-300'
+                                  : 'text-red-700 dark:text-red-300'
+                              }`}
+                            >
+                              {component.status === 'healthy' ? '✅' : '❌'}{' '}
+                              {component.status}
+                            </span>
+                          </div>
+                          {component.message && (
+                            <p className='mt-1 text-xs text-gray-600 dark:text-gray-400'>
+                              {component.message}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
               </div>
             )}
           </div>
@@ -302,6 +452,237 @@ export function Demo() {
                   : 'Complete Password Requirements'}
             </button>
           </form>
+        </section>
+
+        {/* File Upload Section */}
+        <section className='rounded-lg bg-white p-6 shadow-md dark:bg-gray-800'>
+          <h2 className='mb-4 text-2xl font-semibold text-gray-900 dark:text-white'>
+            📁 File Upload Demo
+          </h2>
+          <p className='mb-6 text-gray-600 dark:text-gray-300'>
+            Upload files to the server. Files are automatically stored in S3 if
+            configured, otherwise stored in the database.{' '}
+            <strong className='text-blue-600 dark:text-blue-400'>
+              You must be logged in to upload files.
+            </strong>
+          </p>
+
+          <div className='space-y-4'>
+            {/* File Upload Area */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`relative rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+                isDragOver
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
+            >
+              <input
+                type='file'
+                onChange={handleFileSelect}
+                className='absolute inset-0 h-full w-full cursor-pointer opacity-0'
+                disabled={fileUploadMutation.isPending}
+              />
+
+              <div className='space-y-4'>
+                <div className='mx-auto h-12 w-12 text-gray-400'>
+                  <svg
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                    className='h-full w-full'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={1.5}
+                      d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12'
+                    />
+                  </svg>
+                </div>
+
+                <div>
+                  <p className='text-lg font-medium text-gray-900 dark:text-white'>
+                    {selectedFile
+                      ? selectedFile.name
+                      : 'Drop files here or click to browse'}
+                  </p>
+                  <p className='text-sm text-gray-500 dark:text-gray-400'>
+                    {selectedFile
+                      ? `${(selectedFile.size / 1024).toFixed(2)} KB • ${
+                          selectedFile.type || 'Unknown type'
+                        }`
+                      : 'Supports any file type up to 10MB'}
+                  </p>
+
+                  {/* Storage Indicator */}
+                  {storageStatus && storageStatus.storage_type && (
+                    <div className='mt-3 flex items-center justify-center space-x-2'>
+                      <div
+                        className={`h-2 w-2 rounded-full ${
+                          storageStatus.storage_type === 's3'
+                            ? 'bg-green-500'
+                            : 'bg-orange-500'
+                        }`}
+                      />
+                      <span className='text-xs font-medium text-gray-600 dark:text-gray-400'>
+                        Uploading to: {storageStatus.storage_type.toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {selectedFile && (
+                  <button
+                    onClick={(e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      resetFileSelection();
+                    }}
+                    className='text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300'
+                  >
+                    Clear selection
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Upload Button */}
+            <button
+              onClick={handleFileUpload}
+              disabled={
+                !selectedFile || fileUploadMutation.isPending || !authToken
+              }
+              className='w-full rounded-lg bg-green-600 px-4 py-3 font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300 dark:bg-green-700 dark:hover:bg-green-600 dark:disabled:bg-green-800'
+            >
+              {fileUploadMutation.isPending
+                ? 'Uploading...'
+                : !authToken
+                  ? 'Please log in to upload files'
+                  : selectedFile
+                    ? `Upload ${selectedFile.name}`
+                    : 'Select a file to upload'}
+            </button>
+
+            {/* Storage Status */}
+            {storageStatus && storageStatus.storage_type && (
+              <div className='rounded-lg border border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20'>
+                <div className='flex items-center space-x-2'>
+                  <div
+                    className={`h-3 w-3 rounded-full ${
+                      storageStatus.storage_type === 's3'
+                        ? 'bg-green-500'
+                        : 'bg-orange-500'
+                    }`}
+                  />
+                  <p className='font-medium text-blue-700 dark:text-blue-300'>
+                    Storage: {storageStatus.storage_type.toUpperCase()}
+                  </p>
+                </div>
+                <p className='mt-1 text-sm text-blue-600 dark:text-blue-400'>
+                  {storageStatus.message}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Files List Section */}
+        <section className='rounded-lg bg-white p-6 shadow-md dark:bg-gray-800'>
+          <div className='mb-4 flex items-center justify-between'>
+            <h2 className='text-2xl font-semibold text-gray-900 dark:text-white'>
+              📂 Uploaded Files
+            </h2>
+            <button
+              onClick={() => {
+                if (files && files.length > 0) {
+                  toast.info('Refreshing files list...');
+                }
+              }}
+              disabled={filesLoading}
+              className='rounded-lg bg-gray-600 px-4 py-2 font-medium text-white transition-colors hover:bg-gray-700 disabled:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:disabled:bg-gray-800'
+            >
+              {filesLoading ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
+
+          {filesLoading ? (
+            <div className='py-8 text-center'>
+              <p className='text-gray-600 dark:text-gray-300'>
+                Loading files...
+              </p>
+            </div>
+          ) : !files || files.length === 0 ? (
+            <div className='py-8 text-center'>
+              <p className='text-gray-500 dark:text-gray-400'>
+                {files === undefined
+                  ? 'Please log in to view your files'
+                  : 'No files uploaded yet. Upload one above!'}
+              </p>
+            </div>
+          ) : (
+            <div className='space-y-4'>
+              <AnimatePresence>
+                {files.map((file: any) => (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className='flex items-center justify-between rounded-lg border border-gray-200 p-4 dark:border-gray-700'
+                  >
+                    <div className='flex items-center space-x-4'>
+                      <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900'>
+                        <svg
+                          className='h-6 w-6 text-blue-600 dark:text-blue-400'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className='font-medium text-gray-900 dark:text-white'>
+                          {file.file_name}
+                        </p>
+                        <p className='text-sm text-gray-500 dark:text-gray-400'>
+                          {(file.file_size / 1024).toFixed(2)} KB •{' '}
+                          {file.content_type} •{' '}
+                          {file.storage_type.toUpperCase()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <button
+                        onClick={() =>
+                          handleFileDownload(file.id, file.file_name)
+                        }
+                        className='rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
+                      >
+                        Download
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleFileDelete(file.id, file.file_name)
+                        }
+                        className='rounded bg-red-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600'
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
         </section>
 
         {/* Users List Section */}
@@ -442,6 +823,10 @@ export function Demo() {
                 <li>GET /api/users/:id - Get user by ID</li>
                 <li>PUT /api/users/:id - Update user</li>
                 <li>DELETE /api/users/:id - Delete user</li>
+                <li>POST /api/files/upload - Upload file</li>
+                <li>GET /api/files - List files</li>
+                <li>GET /api/files/:id/download - Download file</li>
+                <li>DELETE /api/files/:id - Delete file</li>
               </ul>
             </div>
             <div className='rounded-lg bg-gray-100 p-4 dark:bg-gray-700'>
@@ -451,6 +836,7 @@ export function Demo() {
               <ul className='space-y-1 text-sm text-gray-600 dark:text-gray-300'>
                 <li>Base URL: {API_BASE_URL}</li>
                 <li>Database: PostgreSQL</li>
+                <li>File Storage: S3 or Database</li>
                 <li>Framework: Go + Chi Router</li>
                 <li>CORS: Enabled for React dev server</li>
               </ul>

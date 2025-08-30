@@ -48,6 +48,34 @@ export interface ApiError {
   statusCode?: number;
 }
 
+// File-related types
+export interface File {
+  id: number;
+  file_name: string;
+  content_type: string;
+  file_size: number;
+  location: string;
+  storage_type: 's3' | 'database';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FileResponse {
+  id: number;
+  file_name: string;
+  content_type: string;
+  file_size: number;
+  location: string;
+  storage_type: 's3' | 'database';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StorageStatus {
+  storage_type: 's3' | 'database';
+  message: string;
+}
+
 // Example/demo types (consider removing in production)
 export interface ExampleData {
   name: string;

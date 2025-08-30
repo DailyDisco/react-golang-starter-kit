@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"react-golang-starter/internal/models"
 	"strconv"
 	"time"
 
@@ -103,6 +104,26 @@ func ConnectRedis() *Client {
 
 	zerologlog.Info().Msg("Redis connected successfully")
 	return client
+}
+
+// CheckRedisHealth pings the Redis server to check its connectivity
+func (c *Client) CheckRedisHealth() models.ComponentStatus {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	_, err := c.Ping(ctx).Result()
+	if err != nil {
+		return models.ComponentStatus{
+			Name:    "redis",
+			Status:  "unhealthy",
+			Message: fmt.Sprintf("failed to ping redis: %v", err),
+		}
+	}
+
+	return models.ComponentStatus{
+		Name:   "redis",
+		Status: "healthy",
+	}
 }
 
 // NewCache creates a new cache service

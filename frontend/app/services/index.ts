@@ -4,6 +4,7 @@ export * from './api/client';
 // Services
 export * from './auth/authService';
 export * from './users/userService';
+export * from './files/fileService';
 
 // Validation
 export * from './validation/schemas';
@@ -14,7 +15,10 @@ export type {
   ApiResponse,
   AuthResponse,
   ExampleData,
+  File,
+  FileResponse,
   LoginRequest,
   RegisterRequest,
+  StorageStatus,
   User,
 } from './types';

@@ -8,18 +8,17 @@ This project serves as a robust and modern starter kit for building full-stack a
 
 - [🚀 Initial Quick Start](#initial-quick-start)
 - [🚀 Features](#features)
-- [🏁 Getting Started](#getting-started)
+- [🏁 Getting Started (Detailed)](#getting-started-detailed)
 - [🔐 Authentication & Security](#authentication--security)
-- [🚀 Deployment](#deployment)
+- [🚀 Deployment Guide](#deployment-guide)
 - [🧪 Testing](#testing)
 - [📜 Available Scripts](#available-scripts)
-- [🔧 Troubleshooting](#troubleshooting)
-- [Common Frontend Errors](#common-frontend-errors)
-- [📂 Project Structure](#project-structure)
-- [🔧 Configuration](#configuration)
-- [🔄 CI/CD Pipeline](#ci/cd-pipeline)
-- [🤝 Contributing](#contributing)
-- [📄 License](#license)
+- [🔧 Troubleshooting Guides](#troubleshooting-guides)
+- [Frontend Troubleshooting](#frontend-troubleshooting)
+- [📂 Project Structure Overview](#project-structure-overview)
+- [⬆️ File Upload System](#file-upload-system)
+- [🛡️ Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
+- [🚀 Redis Caching](#redis-caching)
 
 ## 🚀 Initial Quick Start
 
@@ -44,7 +43,7 @@ docker compose logs -f
 
 Your app will be running at [http://localhost:5173](http://localhost:5173) (Frontend) and [http://localhost:8080](http://localhost:8080) (Backend API)!
 
-#### Docker Commands
+#### Useful Docker Commands
 
 ```bash
 # Development (with hot reload)
@@ -103,6 +102,60 @@ cd ../frontend && npm install && npm run dev -- --host 0.0.0.0 --port 5173
 - **[Rate Limiting](https://github.com/go-chi/httprate)** - API abuse protection
 - **[Swagger/OpenAPI](https://swagger.io/)** - Interactive API documentation
 - **[Air](https://github.com/cosmtrek/air)** - Live reloading during development
+
+### ⬆️ File Upload System
+
+The application includes a robust file upload system with dual storage backend capabilities (AWS S3 or PostgreSQL database).
+
+- **Dual Storage Backend**: Automatically uses AWS S3 when configured; otherwise, stores files directly in the PostgreSQL database.
+- **Secure Uploads**: All file uploads require user authentication via JWT tokens.
+- **File Management**: Comprehensive CRUD (Create, Read, Update, Delete) operations are supported for uploaded files.
+- **Public Downloads**: Files can be downloaded publicly without authentication.
+- **Metadata Storage**: All file metadata (name, type, size, location) is consistently stored in the PostgreSQL database.
+- **Configurable Limits**: Supports configurable file size limits (default 10MB via `MAX_FILE_SIZE_MB` environment variable).
+- **Content Type Detection**: Automatic MIME type detection for uploaded files.
+
+**Key Endpoints:**
+
+- `POST /api/files/upload`: Upload a new file (authenticated).
+- `GET /api/files/{id}/download`: Download a file by its ID (public).
+- `GET /api/files/{id}`: Retrieve metadata for a specific file (authenticated).
+- `GET /api/files/{id}/url`: Get the direct URL for a file (public).
+- `GET /api/files`: List all uploaded files with pagination (authenticated).
+- `DELETE /api/files/{id}`: Delete a file from storage and database (authenticated).
+- `GET /api/files/storage/status`: Get current file storage configuration status (public).
+
+### 🛡️ Role-Based Access Control (RBAC)
+
+The backend implements a comprehensive RBAC system with four distinct user roles, providing fine-grained control over resource access.
+
+- **Four User Roles**:
+
+  - **Super Admin (`super_admin`)**: Full system-level administration, all permissions, user and role management.
+  - **Admin (`admin`)**: Content and user administration, premium content access, but cannot modify user roles.
+  - **Premium (`premium`)**: Access to exclusive premium content and basic user profile management.
+  - **User (`user`)**: The default role for new registrations, with basic user profile management.
+
+- **Permission-Based Architecture**: Roles are explicitly mapped to specific permissions (e.g., `users:view`, `content:premium`), ensuring granular control.
+- **Secure Role Management**: Only Super Admins can assign or modify user roles.
+- **Integration**: User roles are included in JWT tokens and validated via middleware for every protected request.
+
+**Key Endpoints & Access:**
+
+- **Public**: `/api/auth/register`, `/api/auth/login`, `/api/auth/reset-password`.
+- **Authenticated**: `/api/auth/me`, `/api/users/me`.
+- **Premium Access**: `/api/premium/content`.
+- **Admin Access**: `/api/users/admin` (list, get, update, delete users).
+- **Super Admin Access**: `/api/users/admin/{id}/role` (update user roles).
+
+### 🚀 Redis Caching
+
+Redis is integrated into the backend for enhanced performance and responsiveness, primarily for caching frequently accessed data.
+
+- **Purpose**: Used for caching user roles and potentially session management.
+- **Configuration**: Integrated via Docker Compose, exposing port `6379`. Backend connects using `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD` environment variables.
+- **Persistence**: Data is persisted using a dedicated Redis volume in Docker.
+- **Benefits**: Reduces database load, speeds up data retrieval, and improves application responsiveness.
 
 ### 🛡️ Security & Performance
 
@@ -200,7 +253,7 @@ Rate limits are configurable via environment variables and apply different rules
 
 When rate limited, the API returns these headers:
 
-```
+```text
 X-RateLimit-Limit: 60          # Maximum requests allowed
 X-RateLimit-Remaining: 0       # Remaining requests in current window
 X-RateLimit-Reset: 1693526400  # Unix timestamp when limit resets
@@ -227,7 +280,7 @@ Retry-After: 60
 Rate limit exceeded. Too many requests from this IP address.
 ```
 
-## 🏁 Getting Started
+## 🏁 Getting Started (Detailed)
 
 ### Prerequisites
 
@@ -239,35 +292,57 @@ Rate limit exceeded. Too many requests from this IP address.
 
 ### Setup Options
 
-#### Option 1: Docker Setup (Recommended)
+#### Getting Started with Docker (Option 1)
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
 cd react-golang-starter-kit
+
+# Copy and configure environment variables
+cp .env.example .env
+# Edit .env file with your preferred settings
+
+# Start all services
 docker compose up -d
+
+# View logs
+docker compose logs -f
 ```
 
-**Services:**
+Your app will be running at [http://localhost:5173](http://localhost:5173) (Frontend) and [http://localhost:8080](http://localhost:8080) (Backend API)!
 
-- **Frontend:** [http://localhost:5173](http://localhost:5173)
-- **Backend API:** [http://localhost:8080](http://localhost:8080)
-- **API Docs:** [http://localhost:8080/swagger/](http://localhost:8080/swagger/)
-
-**Useful Docker Commands:**
+#### Docker Commands
 
 ```bash
-docker compose logs -f          # View logs
-docker compose down             # Stop services
-docker compose up --build -d    # Rebuild after changes
+# Development (with hot reload)
+docker compose up -d
+
+# Production build
+docker compose -f docker-compose.prod.yml up -d
+
+# Staging build
+docker compose -f docker-compose.staging.yml up -d
+
+# Stop all services
+docker compose down
+
+# Rebuild and restart
+docker compose up -d --build
+
+# View logs
+docker compose logs -f [service-name]
+
+# Clean up (remove volumes too)
+docker compose down -v
 ```
 
-#### Option 2: Local Development Setup
+### Option 2: Local Development Setup
 
 1. **Clone and setup:**
 
    ```bash
    git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-   cd react-golang-starter-kit
+   cd react-golang-starter_kit
    cp .env.example .env
    ```
 
@@ -283,7 +358,7 @@ docker compose up --build -d    # Rebuild after changes
    cd ../frontend && npm install && npm run dev -- --host 0.0.0.0 --port 5173
    ```
 
-## 🚀 Deployment
+## 🚀 Deployment Guide
 
 ### Quick Deployment Guide
 
@@ -332,7 +407,7 @@ docker-compose up -d
 3. Set build settings:
    - **Root Directory:** `backend`
    - **Environment Variables:**
-     ```
+     ```yaml
      CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
      JWT_SECRET=your-secret-key-here
      ```
@@ -347,9 +422,9 @@ docker-compose up -d
    - **Build Command:** `npm run build`
    - **Output Directory:** `dist`
 3. Set environment variables:
-   ```
-   VITE_API_URL=https://your-railway-backend.up.railway.app
-   ```
+     ```yaml
+     VITE_API_URL=https://your-railway-backend.up.railway.app
+     ```
 4. Deploy!
 
 #### Option 2: Docker VPS Deployment
@@ -513,15 +588,15 @@ go mod tidy          # Install/update dependencies
 go test ./...        # Run all tests
 ```
 
-## 🔧 Troubleshooting
+## 🔧 Troubleshooting Guides
 
-### Common Frontend Errors
+### Frontend Troubleshooting
 
 - **'No QueryClient set, use QueryClientProvider to set one'**: This typically happens during SSR if TanStack Query hooks are used outside of `QueryClientProvider` or if mutations are called directly during server-side rendering. Ensure `QueryClientProvider` wraps your app and mutations are guarded for client-side execution (as done in `AuthContext.tsx`).
 - **`@tanstack/router-cli` module not found**: This means you are trying to use the CLI configuration (`tanstack.config.ts`) while also having the Vite plugin enabled. Remove `tanstack.config.ts` if you're using the Vite plugin for automatic route generation.
 - **Error: EACCES: permission denied**: This can occur during `npm run dev` or `npm run build` due to file permission issues in temporary directories created by `@tanstack/router-plugin`. Try running `npm cache clean --force` and `rm -rf node_modules/.vite` then `npm install` and restart your dev server.
 
-### Database Connection Failed
+#### Database Connection Issues
 
 ```bash
 cd backend
@@ -546,11 +621,11 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
-## 📂 Project Structure
+## 📂 Project Structure Overview
 
 ### High-Level Overview
 
-```
+```text
 react_golang_starter_kit/
 ├── backend/                  # 🏗️ Go Backend API
 ├── frontend/                 # ⚛️ React Frontend App

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -41,7 +42,7 @@ func ConnectDB() {
 			log.Println("PostgreSQL database connected successfully")
 
 			// Auto-migrate your models
-			err = DB.AutoMigrate(&models.User{})
+			err = DB.AutoMigrate(&models.User{}, &models.File{})
 			if err != nil {
 				log.Printf("Failed to migrate database: %v", err)
 				continue
@@ -60,6 +61,35 @@ func ConnectDB() {
 	}
 
 	log.Fatal("Failed to connect to PostgreSQL database after", maxRetries, "attempts:", err)
+}
+
+// CheckDatabaseHealth pings the database to check its connectivity
+func CheckDatabaseHealth() models.ComponentStatus {
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return models.ComponentStatus{
+			Name:    "database",
+			Status:  "unhealthy",
+			Message: fmt.Sprintf("failed to get underlying database connection: %v", err),
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err = sqlDB.PingContext(ctx)
+	if err != nil {
+		return models.ComponentStatus{
+			Name:    "database",
+			Status:  "unhealthy",
+			Message: fmt.Sprintf("failed to ping database: %v", err),
+		}
+	}
+
+	return models.ComponentStatus{
+		Name:   "database",
+		Status: "healthy",
+	}
 }
 
 func getEnv(key, fallback string) string {
