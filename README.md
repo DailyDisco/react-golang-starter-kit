@@ -405,12 +405,15 @@ docker-compose up -d
 1. Create new Railway project
 2. Connect your GitHub repository
 3. Set build settings:
+
    - **Root Directory:** `backend`
    - **Environment Variables:**
+
      ```yaml
      CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
      JWT_SECRET=your-secret-key-here
      ```
+
 4. Railway auto-detects Go and deploys
 5. Note your backend URL: `https://your-app.up.railway.app`
 
@@ -422,9 +425,11 @@ docker-compose up -d
    - **Build Command:** `npm run build`
    - **Output Directory:** `dist`
 3. Set environment variables:
-     ```yaml
-     VITE_API_URL=https://your-railway-backend.up.railway.app
-     ```
+
+   ```yaml
+   VITE_API_URL=https://your-railway-backend.up.railway.app
+   ```
+
 4. Deploy!
 
 #### Option 2: Docker VPS Deployment
@@ -570,6 +575,7 @@ npm run typecheck    # Run TypeScript type checking
 npm test             # Run tests in watch mode
 npm run test:fast    # Run tests once with basic output
 npm run test:dev     # Run tests in watch mode (alias for npm test)
+
 npm run test:coverage # Run tests with coverage report
 npm run test:ui      # Run tests with web UI (opens browser)
 
