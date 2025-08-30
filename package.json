@@ -27,8 +27,5 @@
     "backend/**/*.go": [
       "npm run format:backend"
     ]
-  },
-  "dependencies": {
-    "framer-motion": "^12.23.12"
   }
 }

@@ -22,12 +22,15 @@ func ConnectDB() {
 	user := getEnv("PGUSER", getEnv("DB_USER", "devuser"))
 	password := getEnv("PGPASSWORD", getEnv("DB_PASSWORD", "devpass"))
 	dbname := getEnv("PGDATABASE", getEnv("DB_NAME", "devdb"))
-	sslmode := getEnv("DB_SSLMODE", "require") // Railway uses SSL by default
+	sslmode := getEnv("DB_SSLMODE", "disable") // Default to disable for local development
+
+	log.Printf("Environment variables - DB_SSLMODE: %s, DB_HOST: %s, DB_PORT: %s, DB_USER: %s, DB_NAME: %s",
+		os.Getenv("DB_SSLMODE"), os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_NAME"))
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		host, port, user, password, dbname, sslmode)
 
-	log.Printf("Connecting to database: host=%s port=%s user=%s dbname=%s", host, port, user, dbname)
+	log.Printf("Connecting to database: host=%s port=%s user=%s dbname=%s sslmode=%s", host, port, user, dbname, sslmode)
 
 	// Retry connection with exponential backoff
 	maxRetries := 10
