@@ -54,6 +54,9 @@ services:
       DEBUG: false
       CGO_ENABLED: 0
       GO_ENV: staging
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy

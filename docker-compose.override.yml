@@ -15,6 +15,10 @@ services:
       - GO_ENV=development
       - LOG_LEVEL=debug
       - DEBUG=true
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     command: ['air', '-c', '.air.toml']
 
   # Development-specific frontend configuration
