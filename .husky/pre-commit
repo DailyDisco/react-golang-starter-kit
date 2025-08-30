@@ -61,6 +61,18 @@ failed=0
 # Frontend checks (if frontend files changed)
 if [ "$HAS_FRONTEND" = "true" ]; then
   echo "🎨 Running frontend checks..."
+
+  # Auto-format staged frontend files with Prettier
+  echo "🔄 Auto-formatting staged frontend files with Prettier..."
+  if git diff --cached --name-only | grep -E "\.(ts|tsx|js|jsx|json|css|scss|md)$" > /dev/null; then
+    STAGED_FILES=$(git diff --cached --name-only | grep -E "\.(ts|tsx|js|jsx|json|css|scss|md)$")
+    echo "$STAGED_FILES" | xargs npx prettier --write --ignore-path .prettierignore
+    echo "$STAGED_FILES" | xargs git add
+    echo "✅ Prettier formatting applied to staged files"
+  else
+    echo "⏭️  No frontend files to format"
+  fi
+
   (run_cmd "npm run test:frontend" "Frontend tests") &
   pid1=$!
 else
