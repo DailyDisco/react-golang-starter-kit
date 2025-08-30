@@ -156,7 +156,16 @@ func (fh *FileHandler) DownloadFile(w http.ResponseWriter, r *http.Request) {
 
 	// Write file content
 	w.WriteHeader(http.StatusOK)
-	w.Write(content)
+	if _, err := w.Write(content); err != nil {
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to write file content",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 }
 
 // GetFileInfo handles requests for file information

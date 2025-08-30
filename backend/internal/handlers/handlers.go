@@ -93,10 +93,15 @@ func NewService(redisClient *cache.Client) *Service {
 
 // respondWithJSON sends a JSON response
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
+	response, err := json.Marshal(payload)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error": "Internal Server Error", "message": "Failed to marshal response"}`))
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	w.Write(response)
+	_, _ = w.Write(response)
 }
 
 // respondWithError sends an error response
@@ -210,14 +215,11 @@ func GetUsers(cacheService *cache.Service) http.HandlerFunc {
 			if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
 				page = p
 			} else {
-				w.Header().Set("Content-Type", "application/json")
-				response := models.ErrorResponse{
+				respondWithJSON(w, http.StatusBadRequest, models.ErrorResponse{
 					Error:   "Bad Request",
 					Message: "Invalid page parameter",
 					Code:    http.StatusBadRequest,
-				}
-				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(response)
+				})
 				return
 			}
 		}
@@ -226,14 +228,11 @@ func GetUsers(cacheService *cache.Service) http.HandlerFunc {
 			if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
 				limit = l
 			} else {
-				w.Header().Set("Content-Type", "application/json")
-				response := models.ErrorResponse{
+				respondWithJSON(w, http.StatusBadRequest, models.ErrorResponse{
 					Error:   "Bad Request",
 					Message: "Invalid limit parameter (must be 1-100)",
 					Code:    http.StatusBadRequest,
-				}
-				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(response)
+				})
 				return
 			}
 		}
@@ -286,18 +285,17 @@ func GetUsers(cacheService *cache.Service) http.HandlerFunc {
 					return
 				}
 				// Cache the count
-				cacheService.SetUserCount(int(total))
+				if err := cacheService.SetUserCount(int(total)); err != nil {
+					log.Warn().Err(err).Msg("Failed to cache user count")
+				}
 			}
 		} else {
 			if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
-				w.Header().Set("Content-Type", "application/json")
-				response := models.ErrorResponse{
+				respondWithJSON(w, http.StatusInternalServerError, models.ErrorResponse{
 					Error:   "Internal Server Error",
 					Message: "Failed to count users",
 					Code:    http.StatusInternalServerError,
-				}
-				w.WriteHeader(http.StatusInternalServerError)
-				json.NewEncoder(w).Encode(response)
+				})
 				return
 			}
 		}
@@ -410,14 +408,7 @@ func GetUser(cacheService *cache.Service) http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Invalid user ID",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			respondWithError(w, http.StatusBadRequest, "Invalid user ID")
 			return
 		}
 
