@@ -1,4 +1,9 @@
-# Development stage - for local development
+# ============================================
+# React Frontend Dockerfile
+# Multi-stage build for development and production
+# ============================================
+
+# Development stage
 FROM node:20-alpine AS development
 
 # Install curl for healthchecks
@@ -17,8 +22,8 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 
 # Copy environment variables for build
-ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 ENV NODE_ENV=development
 
 # Expose ports
@@ -54,8 +59,8 @@ COPY --from=production-dependencies /app/node_modules ./node_modules
 COPY . .
 
 # Copy environment variables for build
-ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 ENV NODE_ENV=production
 
 # Build the application
@@ -71,13 +76,15 @@ RUN apk add --no-cache curl
 COPY --from=build /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY --from=build /app/nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Create nginx user and set permissions
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
-    chown -R nginx:nginx /etc/nginx/conf.d
+    chown -R nginx:nginx /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && \
+    chown nginx:nginx /var/run/nginx.pid
 
 # Switch to non-root user
 USER nginx

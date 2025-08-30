@@ -30,10 +30,44 @@ This project serves as a robust and modern starter kit for building full-stack a
 ```bash
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
 cd react-golang-starter-kit
+
+# Copy and configure environment variables
+cp .env.example .env
+# Edit .env file with your preferred settings
+
+# Start all services
 docker compose up -d
+
+# View logs
+docker compose logs -f
 ```
 
 Your app will be running at [http://localhost:5173](http://localhost:5173) (Frontend) and [http://localhost:8080](http://localhost:8080) (Backend API)!
+
+#### Docker Commands
+
+```bash
+# Development (with hot reload)
+docker compose up -d
+
+# Production build
+docker compose -f docker-compose.prod.yml up -d
+
+# Staging build
+docker compose -f docker-compose.staging.yml up -d
+
+# Stop all services
+docker compose down
+
+# Rebuild and restart
+docker compose up -d --build
+
+# View logs
+docker compose logs -f [service-name]
+
+# Clean up (remove volumes too)
+docker compose down -v
+```
 
 ### Option 2: Local Development
 

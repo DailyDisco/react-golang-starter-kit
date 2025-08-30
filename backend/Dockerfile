@@ -1,12 +1,15 @@
 # Development stage
 FROM golang:1.24-alpine AS development
 
-# Install development tools
+# Install development tools and Air for hot reloading
 RUN apk add --no-cache \
     git \
     curl \
     ca-certificates \
     tzdata
+
+# Install Air for hot reloading
+RUN go install github.com/cosmtrek/air@latest
 
 # Configure Go
 ENV GOPROXY=https://proxy.golang.org,direct
@@ -27,12 +30,6 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application with development optimizations
-RUN go build \
-    -tags=dev \
-    -o main \
-    ./cmd
-
 # Expose port
 EXPOSE 8080
 
@@ -40,8 +37,8 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-# Run the application
-CMD ["./main"]
+# Default command for development (will be overridden by docker-compose)
+CMD ["air", "-c", ".air.toml"]
 
 # Production build stage
 FROM golang:1.24-alpine AS builder
