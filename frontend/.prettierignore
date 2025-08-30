@@ -3,6 +3,9 @@ build
 coverage
 dist
 
+# Ignore Docker files (not supported by prettier)
+Dockerfile*
+
 # Ignore generated React Router types
 .react-router/
 routeTree.gen.ts
