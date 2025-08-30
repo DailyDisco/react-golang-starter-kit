@@ -21,9 +21,11 @@ export default defineConfig({
     tsconfigPaths(),
   ],
   server: {
+    host: '0.0.0.0',
+    allowedHosts: ['localhost', '127.0.0.1'],
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://backend:8080',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api/, ''),
       },
