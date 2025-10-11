@@ -61,7 +61,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 
 # Download dependencies with BuildKit cache mount
-RUN --mount=type=cache,target=/go/pkg/mod \
+RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
     go mod download && \
     go mod verify
 
@@ -69,8 +69,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 COPY . .
 
 # Build the application with production optimizations using build cache
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
+    --mount=type=cache,id=go-build-cache,target=/root/.cache/go-build \
     go build \
     -ldflags="-w -s -X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')" \
     -trimpath \
