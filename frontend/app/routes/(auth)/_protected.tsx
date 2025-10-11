@@ -20,10 +20,7 @@ export const Route = createFileRoute('/(auth)/_protected')({
 
     if (!isAuthenticated) {
       throw redirect({
-        to: '/(auth)/login',
-        search: {
-          redirect: location.href,
-        },
+        to: '/login',
       });
     }
   },
@@ -36,20 +33,19 @@ function ProtectedLayout() {
   const dashboardNav = [
     {
       name: 'Dashboard',
-      href: '/(auth)/_protected/(dashboard)/users',
+      href: '/dashboard',
       icon: Home,
     },
-    { name: 'Users', href: '/(dashboard)/users', icon: Users },
-    { name: 'Analytics', href: '/(dashboard)/analytics', icon: BarChart3 },
-    { name: 'Settings', href: '/(dashboard)/settings', icon: Settings },
+    { name: 'Users', href: '/users', icon: Users },
+    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+    { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Profile', href: '/profile', icon: User },
   ];
 
   const isActive = (href: string) => {
     return (
       location.pathname.startsWith(href) ||
-      (href === '/(auth)/_protected/(dashboard)/users' &&
-        location.pathname === '/')
+      (href === '/dashboard' && location.pathname === '/')
     );
   };
 

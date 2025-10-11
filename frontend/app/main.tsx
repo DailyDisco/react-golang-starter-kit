@@ -1,7 +1,5 @@
 // Import CSS
 import './app.css';
-// Import router types first
-import './router.types';
 
 import { RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';

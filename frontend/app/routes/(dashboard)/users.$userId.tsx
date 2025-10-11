@@ -37,10 +37,7 @@ function UserDetailPage() {
   return (
     <div className='mx-auto max-w-2xl px-4 py-8'>
       <div className='mb-6'>
-        <Button
-          variant='outline'
-          onClick={() => navigate({ to: '/(dashboard)/users' })}
-        >
+        <Button variant='outline' onClick={() => navigate({ to: '/users' })}>
           <ArrowLeft className='mr-2 h-4 w-4' />
           Back to Users
         </Button>

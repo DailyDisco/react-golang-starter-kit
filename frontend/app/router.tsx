@@ -5,7 +5,17 @@ import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query
 import { queryClient } from './lib/query-client';
 import { routeTree } from './routeTree.gen';
 
-// Router types are registered in router.types.ts
+// Define the router context shape for type safety
+export interface RouterContext {
+  queryClient: QueryClient;
+}
+
+// Declare module augmentation for TanStack Router
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof createAppRouter>;
+  }
+}
 
 export function createAppRouter() {
   const router = createRouter({
@@ -13,7 +23,7 @@ export function createAppRouter() {
     // Expose the QueryClient via router context for use in loaders
     context: {
       queryClient,
-    } as any, // Cast to any to avoid type issues
+    },
     scrollRestoration: true,
     defaultPreload: 'intent',
     // Add default error boundary and loading components
@@ -32,7 +42,7 @@ export function createAppRouter() {
         <div className='border-primary h-8 w-8 animate-spin rounded-full border-b-2'></div>
       </div>
     ),
-  } as any); // Cast to any to avoid router type issues
+  });
 
   setupRouterSsrQueryIntegration({
     router,
