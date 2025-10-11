@@ -120,6 +120,7 @@
     "prettier-plugin-sh": "^0.18.0",
     "prettier-plugin-sort-json": "^4.1.1",
     "prettier-plugin-tailwindcss": "^0.6.14",
+    "rollup-plugin-visualizer": "^5.12.0",
     "tailwindcss": "^4.1.12",
     "tw-animate-css": "^1.3.7",
     "typescript": "^5.9.2",
