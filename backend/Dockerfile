@@ -22,8 +22,8 @@ WORKDIR /app
 COPY go.mod go.sum ./
 
 # Download dependencies with BuildKit cache mount for faster rebuilds
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
+    --mount=type=cache,id=go-build-cache,target=/root/.cache/go-build \
     go mod download && \
     go install github.com/air-verse/air@latest
 
