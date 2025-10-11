@@ -4,3 +4,8 @@
 # React Router
 /.react-router/
 /build/
+
+# TanStack Router - DO NOT ignore the generated route tree
+# It should be committed to git for production builds
+# /app/routeTree.gen.ts  # Keep this commented - we need this file
+/.tanstack/  # Cache directory can be ignored

@@ -15,8 +15,9 @@ WORKDIR /app
 # Copy package files for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --no-audit --no-fund
+# Install dependencies with BuildKit cache mount for faster rebuilds
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
 
 # Copy source code
 COPY . .
@@ -40,9 +41,9 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --omit=dev --no-audit --no-fund && \
-    npm cache clean --force
+# Install only production dependencies with BuildKit cache
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --omit=dev --no-audit --no-fund
 
 # Build stage
 FROM node:20-alpine AS build
@@ -52,8 +53,9 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Copy node_modules from production dependencies stage
-COPY --from=production-dependencies /app/node_modules ./node_modules
+# Install all dependencies (including dev dependencies) with BuildKit cache
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
 
 # Copy source code
 COPY . .
@@ -63,7 +65,7 @@ ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 ENV NODE_ENV=production
 
-# Build the application
+# Build the application with optimizations
 RUN npm run build
 
 # Production stage

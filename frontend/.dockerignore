@@ -99,10 +99,20 @@ temp/
 .vite/
 .tanstack/
 .eslintcache
+.turbo/
+.cache/
+.swc/
 
 # Testing
 test-results/
 playwright-report/
+coverage/
+__tests__/
+*.spec.ts
+*.spec.tsx
+*.test.ts
+*.test.tsx
+e2e/
 
 # Docker
 Dockerfile*
@@ -112,15 +122,40 @@ docker-compose*
 # Git
 .git
 .gitignore
+.gitattributes
+.github/
 
 # Documentation
 README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
 *.md
+docs/
 
-# Configuration files that shouldn't be in container
-nginx.conf
+# Configuration files that shouldn't be in container (for production stage)
+# nginx.conf is needed for production, so don't exclude it
 vercel.json
 components.json
+prettier.config.*
+.prettierrc*
+.editorconfig
 
 # Development tools
 format-backend.sh
+*.sh
+
+# CI/CD
+.circleci/
+.travis.yml
+.gitlab-ci.yml
+.github/
+Jenkinsfile
+
+# Storybook
+.storybook/
+storybook-static/
+
+# IMPORTANT: Allow generated route tree for production builds
+!app/routeTree.gen.ts
+!src/routeTree.gen.ts

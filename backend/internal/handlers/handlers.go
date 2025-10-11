@@ -69,26 +69,21 @@ import (
 	"encoding/json"
 	"net/http"
 	"react-golang-starter/internal/auth"
-	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
 	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/rs/zerolog/log"
 )
 
 // Service represents the application service with its dependencies
 type Service struct {
-	RedisClient *cache.Client
 }
 
 // NewService creates a new Service instance
-func NewService(redisClient *cache.Client) *Service {
-	return &Service{
-		RedisClient: redisClient,
-	}
+func NewService() *Service {
+	return &Service{}
 }
 
 // respondWithJSON sends a JSON response
@@ -111,7 +106,7 @@ func respondWithError(w http.ResponseWriter, code int, message string) {
 
 // HealthCheck godoc
 // @Summary Check server health status
-// @Description Get the health status of the server and its dependencies (database, redis)
+// @Description Get the health status of the server and its dependencies (database)
 // @Tags health
 // @Accept json
 // @Produce json
@@ -126,19 +121,6 @@ func (s *Service) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 	var components []models.ComponentStatus
 	components = append(components, dbStatus)
-
-	// Only check Redis health if Redis client is available
-	if s.RedisClient != nil {
-		redisStatus := s.RedisClient.CheckRedisHealth()
-		components = append(components, redisStatus)
-	} else {
-		// Redis is disabled, add a status indicating it's not available
-		redisStatus := models.ComponentStatus{
-			Name:   "redis",
-			Status: "disabled",
-		}
-		components = append(components, redisStatus)
-	}
 
 	for _, comp := range components {
 		if comp.Status == "unhealthy" {
@@ -202,7 +184,7 @@ func (s *Service) HealthCheck(w http.ResponseWriter, r *http.Request) {
 //	    "total_pages": 3
 //	  }
 //	}
-func GetUsers(cacheService *cache.Service) http.HandlerFunc {
+func GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse pagination parameters
 		pageStr := r.URL.Query().Get("page")
@@ -237,67 +219,15 @@ func GetUsers(cacheService *cache.Service) http.HandlerFunc {
 			}
 		}
 
-		// Try to get from cache first (if available)
-		if cacheService != nil && cacheService.IsAvailable() {
-			if cachedUsers, err := cacheService.GetUserList(page, limit); err == nil {
-				log.Debug().
-					Int("page", page).
-					Int("limit", limit).
-					Msg("Retrieved users from cache")
-
-				response := models.SuccessResponse{
-					Success: true,
-					Message: "Users retrieved successfully",
-					Data:    cachedUsers,
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				if err := json.NewEncoder(w).Encode(response); err != nil {
-					response := models.ErrorResponse{
-						Error:   "Internal Server Error",
-						Message: "Failed to encode response",
-						Code:    http.StatusInternalServerError,
-					}
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(response)
-				}
-				return
-			}
-		}
-
-		// Get total count (try cache first if available)
+		// Get total count
 		var total int64
-		if cacheService != nil && cacheService.IsAvailable() {
-			if cachedCount, err := cacheService.GetUserCount(); err == nil {
-				total = int64(cachedCount)
-				log.Debug().Int64("total", total).Msg("Retrieved user count from cache")
-			} else {
-				if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
-					w.Header().Set("Content-Type", "application/json")
-					response := models.ErrorResponse{
-						Error:   "Internal Server Error",
-						Message: "Failed to count users",
-						Code:    http.StatusInternalServerError,
-					}
-					w.WriteHeader(http.StatusInternalServerError)
-					json.NewEncoder(w).Encode(response)
-					return
-				}
-				// Cache the count
-				if err := cacheService.SetUserCount(int(total)); err != nil {
-					log.Warn().Err(err).Msg("Failed to cache user count")
-				}
-			}
-		} else {
-			if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
-				respondWithJSON(w, http.StatusInternalServerError, models.ErrorResponse{
-					Error:   "Internal Server Error",
-					Message: "Failed to count users",
-					Code:    http.StatusInternalServerError,
-				})
-				return
-			}
+		if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
+			respondWithJSON(w, http.StatusInternalServerError, models.ErrorResponse{
+				Error:   "Internal Server Error",
+				Message: "Failed to count users",
+				Code:    http.StatusInternalServerError,
+			})
+			return
 		}
 
 		// Calculate offset and total pages
@@ -331,19 +261,6 @@ func GetUsers(cacheService *cache.Service) http.HandlerFunc {
 			Page:       page,
 			Limit:      limit,
 			TotalPages: totalPages,
-		}
-
-		// Cache the result (if cache is available)
-		if cacheService != nil && cacheService.IsAvailable() {
-			if err := cacheService.SetUserList(page, limit, &usersResponse); err != nil {
-				log.Warn().Err(err).Msg("Failed to cache user list")
-			} else {
-				log.Debug().
-					Int("page", page).
-					Int("limit", limit).
-					Int("count", len(userResponses)).
-					Msg("Cached user list")
-			}
 		}
 
 		response := models.SuccessResponse{
@@ -403,7 +320,7 @@ func GetUsers(cacheService *cache.Service) http.HandlerFunc {
 //	    "updated_at": "2023-08-27T12:00:00Z"
 //	  }
 //	}
-func GetUser(cacheService *cache.Service) http.HandlerFunc {
+func GetUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		userID, err := strconv.Atoi(id)
@@ -440,31 +357,6 @@ func GetUser(cacheService *cache.Service) http.HandlerFunc {
 			return
 		}
 
-		// Try to get from cache first
-		if cachedUser, err := cacheService.GetUser(uint(userID)); err == nil {
-			log.Debug().
-				Uint("userID", uint(userID)).
-				Msg("Retrieved user from cache")
-
-			w.Header().Set("Content-Type", "application/json")
-			response := models.SuccessResponse{
-				Success: true,
-				Message: "User retrieved successfully",
-				Data:    cachedUser,
-			}
-			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(w).Encode(response); err != nil {
-				response := models.ErrorResponse{
-					Error:   "Internal Server Error",
-					Message: "Failed to encode response",
-					Code:    http.StatusInternalServerError,
-				}
-				w.WriteHeader(http.StatusInternalServerError)
-				json.NewEncoder(w).Encode(response)
-			}
-			return
-		}
-
 		var user models.User
 		if err := database.DB.First(&user, userID).Error; err != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -479,13 +371,6 @@ func GetUser(cacheService *cache.Service) http.HandlerFunc {
 		}
 
 		userResponse := user.ToUserResponse()
-
-		// Cache the result
-		if err := cacheService.SetUser(&userResponse); err != nil {
-			log.Warn().Err(err).Uint("userID", uint(userID)).Msg("Failed to cache user")
-		} else {
-			log.Debug().Uint("userID", uint(userID)).Msg("Cached user")
-		}
 
 		w.Header().Set("Content-Type", "application/json")
 		response := models.SuccessResponse{
@@ -547,7 +432,7 @@ func GetUser(cacheService *cache.Service) http.HandlerFunc {
 //	    "updated_at": "2023-08-27T12:00:00Z"
 //	  }
 //	}
-func CreateUser(cacheService *cache.Service) http.HandlerFunc {
+func CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Check if user is authenticated (optional for now, but could be made admin-only)
 		_, _ = auth.GetUserFromContext(r.Context()) // authenticated status available for future admin-only logic
@@ -660,20 +545,6 @@ func CreateUser(cacheService *cache.Service) http.HandlerFunc {
 
 		userResponse := user.ToUserResponse()
 
-		// Cache the new user
-		if err := cacheService.SetUser(&userResponse); err != nil {
-			log.Warn().Err(err).Uint("userID", user.ID).Msg("Failed to cache new user")
-		} else {
-			log.Debug().Uint("userID", user.ID).Msg("Cached new user")
-		}
-
-		// Invalidate user lists and count cache since we added a user
-		if err := cacheService.InvalidateAllUsers(); err != nil {
-			log.Warn().Err(err).Msg("Failed to invalidate user caches after creation")
-		} else {
-			log.Debug().Msg("Invalidated user caches after creation")
-		}
-
 		w.Header().Set("Content-Type", "application/json")
 		response := models.SuccessResponse{
 			Success: true,
@@ -737,7 +608,7 @@ func CreateUser(cacheService *cache.Service) http.HandlerFunc {
 //	    "updated_at": "2023-08-27T14:30:00Z"
 //	  }
 //	}
-func UpdateUser(cacheService *cache.Service) http.HandlerFunc {
+func UpdateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		userID, err := strconv.Atoi(id)
@@ -862,20 +733,6 @@ func UpdateUser(cacheService *cache.Service) http.HandlerFunc {
 
 		userResponse := user.ToUserResponse()
 
-		// Update cache with the new user data
-		if err := cacheService.SetUser(&userResponse); err != nil {
-			log.Warn().Err(err).Uint("userID", uint(userID)).Msg("Failed to cache updated user")
-		} else {
-			log.Debug().Uint("userID", uint(userID)).Msg("Cached updated user")
-		}
-
-		// Invalidate user lists since user data might appear in cached lists
-		if err := cacheService.InvalidateUserList(); err != nil {
-			log.Warn().Err(err).Msg("Failed to invalidate user list cache after update")
-		} else {
-			log.Debug().Msg("Invalidated user list cache after update")
-		}
-
 		w.Header().Set("Content-Type", "application/json")
 		response := models.SuccessResponse{
 			Success: true,
@@ -918,7 +775,7 @@ func UpdateUser(cacheService *cache.Service) http.HandlerFunc {
 //
 // Response:
 // HTTP/1.1 204 No Content
-func DeleteUser(cacheService *cache.Service) http.HandlerFunc {
+func DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		userID, err := strconv.Atoi(id)
@@ -988,13 +845,6 @@ func DeleteUser(cacheService *cache.Service) http.HandlerFunc {
 			return
 		}
 
-		// Invalidate all user-related caches after deletion
-		if err := cacheService.InvalidateUser(uint(userID)); err != nil {
-			log.Warn().Err(err).Int("userID", userID).Msg("Failed to invalidate user cache after deletion")
-		} else {
-			log.Debug().Int("userID", userID).Msg("Invalidated user cache after deletion")
-		}
-
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
@@ -1015,7 +865,7 @@ func DeleteUser(cacheService *cache.Service) http.HandlerFunc {
 // @Failure 404 {object} models.ErrorResponse "User not found"
 // @Failure 500 {object} models.ErrorResponse "Failed to update user role"
 // @Router /admin/users/{id}/role [put]
-func UpdateUserRole(cacheService *cache.Service) http.HandlerFunc {
+func UpdateUserRole() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		userID, err := strconv.Atoi(id)
@@ -1091,7 +941,6 @@ func UpdateUserRole(cacheService *cache.Service) http.HandlerFunc {
 			return
 		}
 
-		oldRole := user.Role
 		user.Role = req.Role
 		user.UpdatedAt = time.Now().Format(time.RFC3339)
 
@@ -1105,13 +954,6 @@ func UpdateUserRole(cacheService *cache.Service) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(response)
 			return
-		}
-
-		// Invalidate user cache
-		if err := cacheService.DeleteUser(uint(userID)); err != nil {
-			log.Warn().Err(err).Int("userID", userID).Msg("Failed to invalidate user cache after role update")
-		} else {
-			log.Debug().Int("userID", userID).Str("oldRole", oldRole).Str("newRole", req.Role).Msg("Invalidated user cache after role update")
 		}
 
 		userResponse := user.ToUserResponse()
@@ -1169,7 +1011,7 @@ func GetPremiumContent(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} models.ErrorResponse "User not found"
 // @Failure 500 {object} models.ErrorResponse "Failed to retrieve user"
 // @Router /users/me [get]
-func GetCurrentUser(cacheService *cache.Service) http.HandlerFunc {
+func GetCurrentUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		currentUser, ok := auth.GetUserFromContext(r.Context())
 		if !ok {
@@ -1212,7 +1054,7 @@ func GetCurrentUser(cacheService *cache.Service) http.HandlerFunc {
 // @Failure 409 {object} models.ErrorResponse "Email already taken"
 // @Failure 500 {object} models.ErrorResponse "Failed to update user"
 // @Router /users/me [put]
-func UpdateCurrentUser(cacheService *cache.Service) http.HandlerFunc {
+func UpdateCurrentUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		currentUser, ok := auth.GetUserFromContext(r.Context())
 		if !ok {
@@ -1288,13 +1130,6 @@ func UpdateCurrentUser(cacheService *cache.Service) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(response)
 			return
-		}
-
-		// Invalidate user cache
-		if err := cacheService.DeleteUser(currentUser.ID); err != nil {
-			log.Warn().Err(err).Uint("userID", currentUser.ID).Msg("Failed to invalidate user cache after update")
-		} else {
-			log.Debug().Uint("userID", currentUser.ID).Msg("Invalidated user cache after update")
 		}
 
 		userResponse := currentUser.ToUserResponse()

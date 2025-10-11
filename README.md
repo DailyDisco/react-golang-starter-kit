@@ -14,11 +14,11 @@ This project serves as a robust and modern starter kit for building full-stack a
 - [🧪 Testing](#testing)
 - [📜 Available Scripts](#available-scripts)
 - [🔧 Troubleshooting Guides](#troubleshooting-guides)
-- [Frontend Troubleshooting](#frontend-troubleshooting)
 - [📂 Project Structure Overview](#project-structure-overview)
 - [⬆️ File Upload System](#file-upload-system)
 - [🛡️ Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
 - [🚀 Redis Caching](#redis-caching)
+- [📚 Additional Documentation](#additional-documentation)
 
 ## 🚀 Initial Quick Start
 
@@ -51,9 +51,6 @@ docker compose up -d
 
 # Production build
 docker compose -f docker-compose.prod.yml up -d
-
-# Staging build
-docker compose -f docker-compose.staging.yml up -d
 
 # Stop all services
 docker compose down
@@ -319,9 +316,6 @@ docker compose up -d
 
 # Production build
 docker compose -f docker-compose.prod.yml up -d
-
-# Staging build
-docker compose -f docker-compose.staging.yml up -d
 
 # Stop all services
 docker compose down
@@ -653,3 +647,29 @@ react_golang_starter_kit/
 | **`docs/`**               | Swagger API documentation    |
 | **`Dockerfile`**          | Backend containerization     |
 | **`go.mod`**              | Go module dependencies       |
+
+---
+
+## 📚 Additional Documentation
+
+For detailed information on specific features and setup, see the following documentation:
+
+### Feature Documentation
+- **[docs/FEATURES.md](docs/FEATURES.md)** - Comprehensive feature documentation including:
+  - JWT Authentication & Security best practices
+  - Rate Limiting configuration and usage
+  - Role-Based Access Control (RBAC) system
+  - File Upload System (S3 & Database)
+
+### Setup & Deployment
+- **[docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md)** - Complete Docker guide including:
+  - Quick start commands
+  - Development and production workflows
+  - Performance optimizations (BuildKit, caching)
+  - Troubleshooting common issues
+
+### Other Resources
+- **[.env.example](.env.example)** - Environment variable configuration template
+- **[todo.md](todo.md)** - Project roadmap and development status
+- **Backend README**: [backend/README.md](backend/README.md)
+- **Frontend Docs**: See [frontend/QUICK_START.md](frontend/QUICK_START.md)

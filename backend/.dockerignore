@@ -4,18 +4,21 @@
 *.dll
 *.so
 *.dylib
+main
 
 # Test binary, built with `go test -c`
 *.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+*.prof
 
 # Dependency directories (uncomment if using go mod)
 # vendor/
 
 # Go workspace file
 go.work
+go.work.sum
 
 # IDE files
 .vscode/
@@ -23,6 +26,7 @@ go.work
 *.swp
 *.swo
 *~
+.editorconfig
 
 # OS generated files
 .DS_Store
@@ -33,11 +37,10 @@ go.work
 ehthumbs.db
 Thumbs.db
 
-# Environment files
+# Environment files (sensitive data)
 .env
-.env.local
-.env.production
-.env.staging
+.env.*
+!.env.example
 
 # Logs
 *.log
@@ -49,22 +52,24 @@ pids
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
+# Coverage directory
 coverage/
 *.lcov
-
-# nyc test coverage
-.nyc_output
+*.cov
+*.html
 
 # Build artifacts
 bin/
 dist/
 build/
+out/
 
 # Temporary files
 tmp/
 temp/
 *.tmp
+*.bak
+*.cache
 
 # Database files (if any)
 *.db
@@ -74,6 +79,8 @@ temp/
 # Git
 .git
 .gitignore
+.gitattributes
+.github/
 
 # Docker
 Dockerfile*
@@ -82,8 +89,27 @@ docker-compose*
 
 # Documentation
 README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
 *.md
+docs/
 
 # Testing
 test-results/
 *_test.go
+testdata/
+
+# CI/CD
+.circleci/
+.travis.yml
+.gitlab-ci.yml
+.github/
+Jenkinsfile
+
+# Air hot reload config (include this for dev builds)
+# .air.toml
+
+# Makefiles and scripts
+Makefile
+*.sh

@@ -1,1 +1,6 @@
-npx lint-staged
+# Load nvm if available
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Use the locally installed lint-staged
+npx --no-install lint-staged

@@ -4,7 +4,7 @@
 DB_NAME=devdb
 DB_USER=devuser  
 DB_PASS=devpass
-DB_PORT=5433
+DB_PORT=5432
 CONTAINER_NAME=postgres-dev
 
 # Start PostgreSQL container

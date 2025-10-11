@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"react-golang-starter/internal/auth"
-	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/handlers"
 	"react-golang-starter/internal/middleware"
@@ -128,17 +127,6 @@ func main() {
 	// Initialize database
 	database.ConnectDB()
 
-	// Initialize Redis cache
-	redisClient := cache.ConnectRedis()
-	var cacheService *cache.Service
-	if redisClient != nil {
-		cacheService = cache.NewService(cache.NewCache(redisClient))
-		defer redisClient.Close()
-	} else {
-		zerologlog.Warn().Msg("Redis not available, cache service disabled")
-		cacheService = nil
-	}
-
 	// Create Chi router
 	r := chi.NewRouter()
 
@@ -169,19 +157,19 @@ func main() {
 	}
 
 	// Initialize the service with dependencies
-	appService := handlers.NewService(redisClient)
+	appService := handlers.NewService()
 
 	// Health check at root level for Docker health checks
 	r.Get("/health", appService.HealthCheck)
 
 	// Routes
-	setupRoutes(r, rateLimitConfig, cacheService, appService, fileService)
+	setupRoutes(r, rateLimitConfig, appService, fileService)
 
 	zerologlog.Info().Str("port", ":8080").Msg("server starting")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
-func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, cacheService *cache.Service, appService *handlers.Service, fileService *services.FileService) {
+func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, appService *handlers.Service, fileService *services.FileService) {
 	// Simple test route at root level
 	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -198,6 +186,39 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, cacheService *
 			}
 		})
 		r.Get("/health", appService.HealthCheck)
+
+		// User management routes
+		r.Route("/users", func(r chi.Router) {
+			r.Use(ratelimit.NewAPIRateLimitMiddleware(rateLimitConfig))
+
+			// Public routes
+			r.Get("/", handlers.GetUsers())    // GET /api/users - List all users
+			r.Post("/", handlers.CreateUser()) // POST /api/users - Create new user
+
+			// Protected routes - require authentication
+			r.Route("/", func(r chi.Router) {
+				r.Use(auth.AuthMiddleware)
+				r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
+
+				r.Get("/me", handlers.GetCurrentUser())    // GET /api/users/me - Get current user
+				r.Put("/me", handlers.UpdateCurrentUser()) // PUT /api/users/me - Update current user
+			})
+
+			// Specific user routes
+			r.Route("/{id}", func(r chi.Router) {
+				r.Get("/", handlers.GetUser()) // GET /api/users/{id} - Get user by ID
+
+				// Protected operations - require authentication
+				r.Route("/", func(r chi.Router) {
+					r.Use(auth.AuthMiddleware)
+					r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
+
+					r.Put("/", handlers.UpdateUser())           // PUT /api/users/{id} - Update user
+					r.Delete("/", handlers.DeleteUser())        // DELETE /api/users/{id} - Delete user
+					r.Patch("/role", handlers.UpdateUserRole()) // PATCH /api/users/{id}/role - Update user role
+				})
+			})
+		})
 
 		// File upload routes
 		r.Route("/files", func(r chi.Router) {

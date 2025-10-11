@@ -65,6 +65,9 @@ lerna-debug.log*
 /.react-router/
 /frontend/.react-router/
 
+# AWS
+aws/
+
 # Husky
 .husky/_/
 

@@ -27,5 +27,8 @@
     "backend/**/*.go": [
       "npm run format:backend"
     ]
+  },
+  "comments": {
+    "git-hooks": "Uses husky with pre-commit (lint-staged) and commit-msg (commitlint). Pre-push hook removed for faster workflow - CI handles testing."
   }
 }
