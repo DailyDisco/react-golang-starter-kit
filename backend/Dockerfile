@@ -21,10 +21,8 @@ WORKDIR /app
 # Copy go mod files for better caching
 COPY go.mod go.sum ./
 
-# Download dependencies with BuildKit cache mount for faster rebuilds
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go mod download && \
+# Download dependencies for faster rebuilds
+RUN go mod download && \
     go install github.com/air-verse/air@latest
 
 # Copy source code
@@ -60,18 +58,15 @@ WORKDIR /app
 # Copy go mod files
 COPY go.mod go.sum ./
 
-# Download dependencies with BuildKit cache mount
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download && \
+# Download dependencies
+RUN go mod download && \
     go mod verify
 
 # Copy source code
 COPY . .
 
-# Build the application with production optimizations using build cache
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go build \
+# Build the application with production optimizations
+RUN go build \
     -ldflags="-w -s -X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')" \
     -trimpath \
     -o main \
