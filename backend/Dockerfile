@@ -44,7 +44,8 @@ FROM golang:1.25-alpine AS builder
 # Install build dependencies
 RUN apk add --no-cache \
     git \
-    ca-certificates
+    ca-certificates \
+    tzdata
 
 # Configure Go for production build
 ENV GOPROXY=https://proxy.golang.org,direct
