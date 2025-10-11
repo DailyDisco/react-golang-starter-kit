@@ -10,6 +10,13 @@ export const Route = createFileRoute('/(dashboard)/users/$userId')({
     tab: search.tab as 'profile' | 'settings' | undefined,
   }),
   // Loader with parameter validation
+  // Note: context.queryClient is now fully typed and accessible!
+  // Example: loader: async ({ params, context }) => {
+  //   return await context.queryClient.ensureQueryData({
+  //     queryKey: ['user', params.userId],
+  //     queryFn: () => fetchUser(params.userId),
+  //   })
+  // }
   loader: async ({ params }) => {
     const userId = Number(params.userId);
     if (isNaN(userId)) {

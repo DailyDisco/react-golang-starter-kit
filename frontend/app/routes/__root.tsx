@@ -1,9 +1,14 @@
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { createRootRoute, Outlet, useLocation } from '@tanstack/react-router';
+import {
+  createRootRouteWithContext,
+  Outlet,
+  useLocation,
+} from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { Toaster } from 'sonner';
 
 import { ThemeProvider } from '@/providers/theme-provider';
+import type { RouterContext } from '@/router';
 
 import { StandardLayout } from '../layouts';
 
@@ -35,7 +40,7 @@ function RootLayout() {
   return <StandardLayout />;
 }
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
     <>
       <ThemeProvider defaultTheme='system'>

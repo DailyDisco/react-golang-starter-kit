@@ -6,15 +6,9 @@ import { queryClient } from './lib/query-client';
 import { routeTree } from './routeTree.gen';
 
 // Define the router context shape for type safety
+// This interface is used by createRootRouteWithContext in __root.tsx
 export interface RouterContext {
   queryClient: QueryClient;
-}
-
-// Declare module augmentation for TanStack Router
-declare module '@tanstack/react-router' {
-  interface Register {
-    router: ReturnType<typeof createAppRouter>;
-  }
 }
 
 export function createAppRouter() {
@@ -54,4 +48,12 @@ export function createAppRouter() {
   });
 
   return router;
+}
+
+// Declare module augmentation for TanStack Router
+// This registers the router type globally so hooks like useNavigate, Link, etc. are fully typed
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof createAppRouter>;
+  }
 }
