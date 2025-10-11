@@ -61,10 +61,6 @@ services:
       DEBUG: ${DEBUG:-true}
       CGO_ENABLED: 0
       GO_ENV: development
-      # Redis configuration (optional)
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     volumes:
       - ./backend:/app:cached
       - go_modules:/go/pkg/mod:cached

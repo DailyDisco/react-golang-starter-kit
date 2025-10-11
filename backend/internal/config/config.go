@@ -20,9 +20,6 @@ type Config struct {
 	// Database configuration
 	Database DatabaseConfig
 
-	// Redis configuration
-	Redis RedisConfig
-
 	// JWT configuration
 	JWT JWTConfig
 
@@ -57,14 +54,6 @@ type DatabaseConfig struct {
 	Password string
 	Name     string
 	SSLMode  string
-}
-
-type RedisConfig struct {
-	Host     string
-	Port     string
-	Password string
-	DB       int
-	Required bool
 }
 
 type JWTConfig struct {
@@ -143,14 +132,6 @@ func Load() (*Config, error) {
 			Password: getEnv("PGPASSWORD", getEnv("DB_PASSWORD", "devpass")),
 			Name:     getEnv("PGDATABASE", getEnv("DB_NAME", "devdb")),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
-		},
-
-		Redis: RedisConfig{
-			Host:     getEnv("REDIS_HOST", "localhost"),
-			Port:     getEnv("REDIS_PORT", "6379"),
-			Password: getEnv("REDIS_PASSWORD", ""),
-			DB:       getEnvInt("REDIS_DB", 0),
-			Required: getEnvBool("REDIS_REQUIRED", false),
 		},
 
 		JWT: JWTConfig{
@@ -353,11 +334,6 @@ func (c *Config) GetDatabaseDSN() string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		c.Database.Host, c.Database.Port, c.Database.User,
 		c.Database.Password, c.Database.Name, c.Database.SSLMode)
-}
-
-// GetRedisAddr returns the Redis connection address
-func (c *Config) GetRedisAddr() string {
-	return fmt.Sprintf("%s:%s", c.Redis.Host, c.Redis.Port)
 }
 
 // GetServerAddr returns the server address

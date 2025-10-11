@@ -84,9 +84,6 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       DEBUG: false
       GO_ENV: production
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     depends_on:
       postgres:
         condition: service_healthy

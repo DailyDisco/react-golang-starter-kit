@@ -25,10 +25,7 @@ export function Navbar() {
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'About', href: '/about' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'Search', href: '/search' },
     { name: 'Demo', href: '/demo' },
-    { name: 'Layout Demo', href: '/layout-demo' },
     {
       name: 'API Docs',
       href: `${API_BASE_URL}/swagger/`,
