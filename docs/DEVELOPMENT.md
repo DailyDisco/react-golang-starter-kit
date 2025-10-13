@@ -266,8 +266,10 @@ Contains only essentials:
 - Logging basics (2 variables)
 - Rate limiting toggle (1 variable)
 
-##### `.env.advanced.example` (NEW - 180 lines)
-Contains optional features:
+##### Optional Features (in `.env.example`)
+
+All optional features are now consolidated in `.env.example` as commented sections:
+
 - Detailed rate limiting (12+ variables)
 - Redis caching (when you need it)
 - AWS S3 file storage
@@ -278,11 +280,12 @@ Contains optional features:
 - Advanced logging configuration
 
 **Benefits:**
-- ✨ **Much less intimidating**: New users see only what they need
-- ⚡ **Faster setup**: 5-10 minutes saved per project
-- 📚 **Better organized**: Optional features clearly separated
-- 🎯 **Focused**: Minimal file focuses on getting started
-- 🔧 **Flexible**: Advanced features still documented and available
+
+- ✨ **Single source of truth**: All configuration in one place
+- ⚡ **Faster setup**: No confusion about which file to use
+- 📚 **Better organized**: Optional features clearly marked and commented
+- 🎯 **Focused**: Required variables at top, optional below
+- 🔧 **Flexible**: Simply uncomment features when needed
 
 #### 3. Documentation Updates
 
@@ -295,16 +298,18 @@ Contains optional features:
 ### How to Use Going Forward
 
 #### For New Projects:
+
 1. `cp .env.example .env`
 2. Update JWT_SECRET: `openssl rand -hex 32`
 3. Start coding!
-4. Add features from `.env.advanced.example` only when needed
+4. Uncomment optional features in `.env` only when needed
 
 #### When You Need Advanced Features:
-1. Open `.env.advanced.example`
-2. Find the section you need (e.g., SMTP, S3, Redis)
-3. Copy only that section to your `.env`
-4. Configure with your credentials
+
+1. Open your `.env` file
+2. Scroll to the optional sections at the bottom
+3. Find the section you need (e.g., SMTP, S3, Redis)
+4. Uncomment that section and configure with your credentials
 5. Restart the app
 
 ### Migration Notes
@@ -317,8 +322,8 @@ If you're updating an existing project based on this template:
 
 **Action Required If:**
 - You had custom Redis configuration → Keep your Redis vars in `.env`
-- You need advanced rate limiting → Copy from `.env.advanced.example`
-- You use S3/SMTP/payments → Copy relevant sections from `.env.advanced.example`
+- You need advanced rate limiting → Uncomment from optional section in `.env.example`
+- You use S3/SMTP/payments → Uncomment relevant sections from `.env.example`
 
 ---
 
@@ -361,18 +366,18 @@ TOTAL: 69 lines, ~25 variables
 BENEFIT: New users see only essentials 😊
 ```
 
-**`.env.advanced.example` (188 lines):**
+**Optional sections (commented in `.env.example`):**
 ```
-# Detailed Rate Limiting (12+ vars)
-# Redis Caching (5 vars)
-# AWS S3 Storage (4 vars)
-# SMTP Email (6 vars)
-# Payment Processing (8+ vars)
-# AI Services (6+ vars)
-# Analytics & Monitoring (10+ vars)
+# Detailed Rate Limiting (12+ vars) - commented
+# Redis Caching (5 vars) - commented
+# AWS S3 Storage (4 vars) - commented
+# SMTP Email (6 vars) - commented
+# Payment Processing (8+ vars) - commented
+# AI Services (6+ vars) - commented
+# Analytics & Monitoring (10+ vars) - commented
 
-TOTAL: 188 lines (optional features)
-BENEFIT: Copy only what you need, when you need it
+TOTAL: ~260 lines (essentials + optional commented)
+BENEFIT: Single file, uncomment only what you need
 ```
 
 ### Redis Removal Comparison
@@ -414,26 +419,25 @@ BENEFIT: Copy only what you need, when you need it
 
 #### AFTER:
 1. Clone repo
-2. See 69-line .env.example 😊
-3. Read: "Just the essentials - see .env.advanced.example for more"
+2. See 260-line .env.example with clear sections 😊
+3. Read: "Essentials at top, optional features below (commented)"
 4. Copy, update JWT_SECRET
 5. Start coding in 5 minutes!
-6. Add advanced features later only if needed
+6. Uncomment optional features later only if needed
 
 ### Code Quality Metrics
 
-**Files Modified:** 6
+**Files Modified:** 5
 - docker-compose.yml
 - docker-compose.prod.yml
 - backend/internal/config/config.go
 - README.md
-- .env.example
-- .env.advanced.example (new)
+- .env.example (consolidated)
 
 **Lines Changed:**
 - **Removed:** ~50 lines (Redis config + docs)
-- **Reorganized:** 195 lines → 69 + 188 lines
-- **Net result:** Better organized, easier to navigate
+- **Consolidated:** 69 lines (required) + 188 lines (optional) → 260 lines total
+- **Net result:** Single source of truth, better organized
 
 **Breaking Changes:** **0**
 - All existing features work exactly the same
@@ -450,11 +454,9 @@ BEFORE:
     └── Confusing mix
 
 AFTER:
-├── .env.example (69 lines) ⭐ START HERE
-│   └── Only essentials
-│
-└── .env.advanced.example (188 lines) 📚 REFERENCE
-    └── Copy sections as needed
+└── .env.example (260 lines) ⭐ SINGLE SOURCE
+    ├── Required (69 lines) - Uncommented ⭐
+    └── Optional (188 lines) - Commented 📚
 ```
 
 ### Summary

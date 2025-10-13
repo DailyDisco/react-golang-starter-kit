@@ -26,8 +26,7 @@ Welcome to the React-Golang Starter Kit documentation! This page provides an ove
    - Basic setup instructions
 
 2. **Environment setup:** [Main README - Environment Configuration](../README.md#environment-configuration)
-   - `.env.example` - Essential configuration
-   - `.env.advanced.example` - Optional features
+   - `.env.example` - All configuration (required + optional features)
 
 3. **Choose your path:**
    - **Docker users:** [Docker Setup Guide](DOCKER_SETUP.md#quick-start)

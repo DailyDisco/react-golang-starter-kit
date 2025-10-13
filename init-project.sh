@@ -328,7 +328,7 @@ RATE_LIMIT_ENABLED=true
 # 1. Set DB_SSLMODE=require
 # 2. Update CORS_ALLOWED_ORIGINS with your production domain
 # 3. Set DEBUG=false and LOG_LEVEL=info or warn
-# 4. Review .env.advanced.example for additional features
+# 4. Review optional features below for additional capabilities
 EOF
 
 print_success "Created .env file with secure configuration"

@@ -132,8 +132,8 @@ react-golang-starter-kit/
 - **[Features Documentation](docs/FEATURES.md)** - Auth, RBAC, File uploads, Rate limiting
 
 ### Configuration
-- **[Environment Variables](.env.example)** - Essential configuration
-- **[Advanced Configuration](.env.advanced.example)** - Optional features (Redis, S3, SMTP)
+
+- **[Environment Variables](.env.example)** - All configuration (required + optional features)
 
 ---
 
@@ -247,16 +247,8 @@ cp .env.example .env
 - `VITE_API_URL` - Frontend API endpoint
 
 ### Optional Features
-```bash
-# Copy for advanced features
-cp .env.advanced.example .env.advanced
-```
 
-**Optional services:**
-- AWS S3 for file storage
-- Redis for caching
-- SMTP for email notifications
-- AI services integration
+All optional features (AWS S3, Redis, SMTP, payments, AI, analytics) are included in `.env.example` as commented sections. Simply uncomment and configure the features you need.
 
 📖 **[Environment Configuration Guide →](.env.example)**
 
