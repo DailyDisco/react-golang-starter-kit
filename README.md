@@ -91,18 +91,29 @@ react-golang-starter-kit/
 │   ├── cmd/             # Application entry point
 │   ├── internal/        # Private application code
 │   │   ├── auth/        # JWT authentication
+│   │   ├── config/      # Configuration management
+│   │   ├── database/    # Database connection & setup
 │   │   ├── handlers/    # HTTP request handlers
 │   │   ├── middleware/  # Chi middleware
 │   │   ├── models/      # GORM models
+│   │   ├── ratelimit/   # Rate limiting logic
+│   │   ├── services/    # Business logic layer
 │   │   └── storage/     # File storage (S3/DB)
-│   └── docs/            # Swagger documentation
+│   ├── docs/            # Swagger documentation
+│   └── scripts/         # Utility scripts
 │
 ├── frontend/            # React application
 │   ├── app/            # Application code
-│   │   ├── routes/     # TanStack Router pages
 │   │   ├── components/ # Reusable UI components
+│   │   ├── constants/  # Application constants
 │   │   ├── hooks/      # Custom React hooks
-│   │   └── lib/        # Utilities and helpers
+│   │   ├── layouts/    # Layout components
+│   │   ├── lib/        # Utilities and helpers
+│   │   ├── providers/  # Context providers
+│   │   ├── routes/     # TanStack Router pages
+│   │   ├── services/   # API service layer
+│   │   ├── stores/     # State management
+│   │   └── test/       # Test utilities
 │   └── public/         # Static assets
 │
 ├── docs/               # Documentation
@@ -110,9 +121,14 @@ react-golang-starter-kit/
 │   ├── FEATURES.md     # Feature documentation
 │   ├── DEPLOYMENT.md   # Deployment guides
 │   ├── DOCKER_SETUP.md # Docker configuration
-│   └── FRONTEND_GUIDE.md # React development
+│   ├── FRONTEND_GUIDE.md # React development
+│   └── DEVELOPMENT.md  # Contributor guide
 │
-└── docker-compose.yml  # Development environment
+├── docker-compose.yml  # Development environment
+├── docker-compose.prod.yml # Production environment
+├── docker-build.sh     # Docker build script
+├── init-project.sh     # Project initialization
+└── Makefile            # Development commands
 ```
 
 📖 **[Backend Architecture →](backend/README.md)** | **[Frontend Development →](docs/FRONTEND_GUIDE.md)**
