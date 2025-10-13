@@ -190,6 +190,7 @@ print_info "Generating secure secrets..."
 
 JWT_SECRET=$(generate_secret 32)
 print_success "Generated JWT secret"
+print_info "Note: JWT secret generator also available at backend/scripts/generate-jwt-secret.sh"
 
 # JWT expiration
 read -p "JWT token expiration (hours) [24]: " JWT_EXPIRATION
@@ -337,10 +338,10 @@ print_info "Updating README.md..."
 
 if [ -f "README.md" ]; then
     # Update title
-    sed -i.bak "s/# ✨ React-Golang Starter Kit ✨/# $PROJECT_NAME_CAMEL/" README.md
+    sed -i.bak "s/# ✨ React-Golang Starter Kit/# $PROJECT_NAME_CAMEL/" README.md
 
     # Update description
-    sed -i.bak "s/This project serves as a robust and modern starter kit.*/$PROJECT_DESC/" README.md
+    sed -i.bak "s/A modern, production-ready full-stack starter template.*/$PROJECT_DESC/" README.md
 
     # Update clone URLs if GitHub user provided
     if [ -n "$GITHUB_USER" ]; then
@@ -353,7 +354,7 @@ if [ -f "README.md" ]; then
         sed -i.bak "s|https://react-golang-starter-kit.vercel.app/|https://$PROD_DOMAIN/|g" README.md
     else
         # Remove demo URL line if no domain
-        sed -i.bak '/🌐 \*\*Live Demo:\*\*/d' README.md
+        sed -i.bak '/🌐 \*\*\[Live Demo\]/d' README.md
     fi
 
     rm README.md.bak
@@ -463,6 +464,12 @@ fi
 touch .initialized
 echo "$PROJECT_NAME" > .initialized
 
+# Ensure .initialized is in .gitignore
+if ! grep -q "^\.initialized$" .gitignore 2>/dev/null; then
+    echo ".initialized" >> .gitignore
+    print_success "Added .initialized to .gitignore"
+fi
+
 # ============================================
 # Step 9: Summary and Next Steps
 # ============================================
@@ -503,7 +510,7 @@ ${BLUE}Next Steps:${NC}
 3. Access your application:
    Frontend: ${GREEN}http://localhost:$FRONTEND_PORT${NC}
    Backend:  ${GREEN}http://localhost:$API_PORT${NC}
-   API Docs: ${GREEN}http://localhost:$API_PORT/swagger/index.html${NC}
+   Health:   ${GREEN}http://localhost:$API_PORT/health${NC}
 
 4. Check service health:
    ${GREEN}make health${NC}
@@ -514,19 +521,24 @@ $([ -n "$GITHUB_USER" ] && echo "5. Create GitHub repository and push:
 
 ${BLUE}Useful Commands:${NC}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  make help           Show all available commands
-  make dev            Start development environment
-  make logs           View all service logs
-  make clean          Clean up containers and volumes
-  make health         Check service health
+  make help             Show all available commands
+  make dev              Start development environment
+  make prod             Start production environment
+  make logs             View all service logs
+  make clean            Clean up containers and volumes
+  make health           Check service health
+  make format-backend   Format Go backend code
+  ./docker-build.sh     Build operations (see --help)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${BLUE}Documentation:${NC}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   README.md                Main documentation
   docs/README.md          Documentation hub
+  docs/DEPLOYMENT.md      Deployment guides
   docs/FEATURES.md        Feature guides
   docs/FRONTEND_GUIDE.md  Frontend development
+  docs/DOCKER_SETUP.md    Docker configuration
   backend/README.md       Backend development
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
