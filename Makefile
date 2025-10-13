@@ -2,7 +2,7 @@
 # React + Go Starter Kit - Docker Development
 # ============================================
 
-.PHONY: help dev prod staging build rebuild stop clean logs shell backend-logs frontend-logs db-logs
+.PHONY: help dev prod build rebuild stop clean logs shell backend-logs frontend-logs db-logs format-backend
 
 # Default target
 help: ## Show this help message
@@ -29,16 +29,6 @@ prod-logs: ## View production logs
 prod-stop: ## Stop production environment
 	docker compose -f docker-compose.prod.yml down
 
-# Staging commands
-staging: ## Start staging environment
-	docker compose -f docker-compose.staging.yml up -d
-
-staging-logs: ## View staging logs
-	docker compose -f docker-compose.staging.yml logs -f
-
-staging-stop: ## Stop staging environment
-	docker compose -f docker-compose.staging.yml down
-
 # Build commands
 build: ## Build all services
 	docker compose build
@@ -49,19 +39,14 @@ rebuild: ## Rebuild all services without cache
 prod-build: ## Build production images
 	docker compose -f docker-compose.prod.yml build
 
-staging-build: ## Build staging images
-	docker compose -f docker-compose.staging.yml build
-
 # Utility commands
 stop: ## Stop all running containers
 	docker compose down
 	docker compose -f docker-compose.prod.yml down
-	docker compose -f docker-compose.staging.yml down
 
 clean: ## Clean up containers, volumes, and images
 	docker compose down -v
 	docker compose -f docker-compose.prod.yml down -v
-	docker compose -f docker-compose.staging.yml down -v
 	docker system prune -f
 
 logs: ## View logs from all services
@@ -106,3 +91,7 @@ health: ## Check health of all services
 	curl -f http://localhost:5173 || echo "Frontend not healthy"
 	@echo "Checking database..."
 	docker compose exec postgres pg_isready -U $(DB_USER) -d $(DB_NAME) || echo "Database not ready"
+
+# Code formatting
+format-backend: ## Format backend Go code
+	cd backend && go fmt ./...
