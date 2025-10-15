@@ -118,11 +118,12 @@ jobs:
           cache: true
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v6 # Upgrade to v6
         with:
           version: latest
           working-directory: ${{ env.BACKEND_DIR }}
           args: --timeout=5m
+          install-mode: go-install # Build from source with your Go version
 
   # Backend Security
   backend-security:
