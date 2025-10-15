@@ -76,7 +76,7 @@ This structure follows Go's [Standard Project Layout](https://github.com/golang-
 
 ### Prerequisites
 
-- Go 1.24 or higher
+- Go 1.25 or higher
 - Docker and Docker Compose
 - Make (usually pre-installed on Linux/macOS)
 

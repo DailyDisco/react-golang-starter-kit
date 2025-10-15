@@ -27,6 +27,7 @@ docker compose logs -f
 ```
 
 **Your app is now running:**
+
 - Frontend: [http://localhost:5173](http://localhost:5173)
 - Backend API: [http://localhost:8080](http://localhost:8080)
 - API Health: [http://localhost:8080/health](http://localhost:8080/health)
@@ -35,7 +36,7 @@ docker compose logs -f
 
 ### Local Development
 
-**Prerequisites:** Go 1.24+, Node.js (LTS), PostgreSQL
+**Prerequisites:** Go 1.25+, Node.js (LTS), PostgreSQL
 
 ```bash
 # Configure environment
@@ -58,6 +59,7 @@ npm run dev
 ## ✨ Features
 
 ### Frontend Stack
+
 - ⚛️ **React 19** with TypeScript
 - ⚡ **Vite** - Lightning-fast builds and HMR
 - 🛣️ **TanStack Router** - Type-safe, file-based routing
@@ -66,7 +68,8 @@ npm run dev
 - 🧪 **Vitest** - Fast, comprehensive testing
 
 ### Backend Stack
-- 🐹 **Go 1.24+** with Chi router
+
+- 🐹 **Go 1.25+** with Chi router
 - 🗄️ **GORM + PostgreSQL** - Powerful ORM and database
 - 🔐 **JWT Authentication** - Secure token-based auth
 - 👥 **Role-Based Access Control (RBAC)** - 4 permission levels
@@ -74,6 +77,7 @@ npm run dev
 - 🛡️ **Rate Limiting** - Configurable API protection
 
 ### DevOps & Production
+
 - 🐳 **Docker** - Development and production ready
 - 📦 **Multi-stage builds** - Optimized images
 - 🔧 **Environment-based config** - Comprehensive .env support
@@ -138,11 +142,13 @@ react-golang-starter-kit/
 ## 📚 Documentation
 
 ### Getting Started
+
 - **[Complete Documentation Hub](docs/README.md)** - Start here for all guides
 - **[Docker Setup Guide](docs/DOCKER_SETUP.md)** - Development and production Docker
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Deploy to Vercel, Railway, VPS, AWS
 
 ### Development
+
 - **[Frontend Development](docs/FRONTEND_GUIDE.md)** - React, Vite, TanStack, Testing
 - **[Backend Development](backend/README.md)** - Go architecture, GORM, API design
 - **[Features Documentation](docs/FEATURES.md)** - Auth, RBAC, File uploads, Rate limiting
@@ -158,6 +164,7 @@ react-golang-starter-kit/
 Deploy to production in minutes with your preferred platform:
 
 ### Vercel + Railway (Easiest)
+
 1. Create PostgreSQL on [Railway.app](https://railway.app)
 2. Deploy backend to Railway (`backend/` folder)
 3. Deploy frontend to [Vercel](https://vercel.com) (`frontend/` folder)
@@ -166,6 +173,7 @@ Deploy to production in minutes with your preferred platform:
 **Time:** 15-30 minutes | **Cost:** $0-10/month
 
 ### Docker + VPS (Most Control)
+
 ```bash
 docker compose -f docker-compose.prod.yml up -d
 ```
@@ -179,6 +187,7 @@ docker compose -f docker-compose.prod.yml up -d
 ## 🧪 Testing
 
 ### Frontend Tests
+
 ```bash
 cd frontend
 npm test              # Watch mode
@@ -187,6 +196,7 @@ npm run test:coverage # Coverage report
 ```
 
 ### Backend Tests
+
 ```bash
 cd backend
 go test ./...         # Run all tests
@@ -200,6 +210,7 @@ go test -cover ./...  # With coverage
 ## 🛠️ Available Scripts
 
 ### Build Operations
+
 ```bash
 ./docker-build.sh dev         # Build development images
 ./docker-build.sh prod        # Build production images
@@ -207,6 +218,7 @@ go test -cover ./...  # With coverage
 ```
 
 ### Runtime Operations
+
 ```bash
 make dev              # Start development environment
 make prod             # Start production environment
@@ -216,6 +228,7 @@ make clean            # Clean up containers & volumes
 ```
 
 ### Code Quality
+
 ```bash
 npm test              # Run frontend tests
 npm run lint          # Check code formatting
@@ -228,21 +241,26 @@ make format-backend   # Format Go backend code
 ## 🔐 Core Features
 
 ### JWT Authentication
+
 Complete authentication system with registration, login, email verification, and password reset. Includes secure password hashing and token management.
 
 **Key Endpoints:**
+
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login (returns JWT)
 - `GET /api/auth/me` - Get current user (authenticated)
 
 ### Role-Based Access Control (RBAC)
+
 Four-tier permission system with granular access control:
+
 - `user` - Basic profile management
 - `premium` - Access to premium content
 - `admin` - User and content management
 - `super_admin` - Full system administration
 
 ### File Upload System
+
 Dual-backend storage supporting both AWS S3 and PostgreSQL with automatic fallback, secure uploads, and configurable size limits.
 
 📖 **[Complete Features Documentation →](docs/FEATURES.md)**
@@ -252,12 +270,14 @@ Dual-backend storage supporting both AWS S3 and PostgreSQL with automatic fallba
 ## 🔧 Environment Configuration
 
 ### Essential Variables (Required)
+
 ```bash
 # Copy and configure
 cp .env.example .env
 ```
 
 **Critical settings:**
+
 - `JWT_SECRET` - Generate with: `openssl rand -hex 32`
 - `DB_PASSWORD` - Strong database password
 - `VITE_API_URL` - Frontend API endpoint

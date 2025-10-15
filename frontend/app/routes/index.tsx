@@ -84,7 +84,7 @@ function Home() {
                   Backend
                 </h3>
                 <ul className='space-y-2 text-gray-700 dark:text-gray-300'>
-                  <li>• Go 1.24 with Chi router</li>
+                  <li>• Go 1.25 with Chi router</li>
                   <li>• PostgreSQL database</li>
                   <li>• GORM ORM</li>
                   <li>• RESTful API design</li>
