@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from "@tanstack/react-query";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -9,7 +9,7 @@ export const queryClient = new QueryClient({
       gcTime: 1000 * 60 * 5, // 5 minutes (formerly cacheTime)
       retry: (failureCount, error) => {
         // Don't retry on 4xx client errors (bad request, unauthorized, etc.)
-        if (error instanceof Error && error.message.includes('4')) {
+        if (error instanceof Error && error.message.includes("4")) {
           return false;
         }
         // Retry up to 2 times for other errors (network issues, 5xx, etc.)
@@ -20,15 +20,15 @@ export const queryClient = new QueryClient({
       // Refetch on network reconnection
       refetchOnReconnect: true,
       // Network mode - continue to show cached data if offline
-      networkMode: 'online',
+      networkMode: "online",
     },
     mutations: {
       // Don't retry mutations by default - they could have side effects
       retry: false,
       // Network mode for mutations
-      networkMode: 'online',
-      onError: error => {
-        console.error('Mutation error:', error);
+      networkMode: "online",
+      onError: (error) => {
+        console.error("Mutation error:", error);
       },
     },
   },

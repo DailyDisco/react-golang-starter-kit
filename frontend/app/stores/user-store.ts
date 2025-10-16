@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
 
 export interface UserFilters {
   search?: string;
@@ -18,7 +18,7 @@ interface UserState {
   setSelectedUser: (id: number | null) => void;
   setFilters: (filters: Partial<UserFilters>) => void;
   setEditMode: (mode: boolean) => void;
-  setFormData: (data: Partial<UserState['formData']>) => void;
+  setFormData: (data: Partial<UserState["formData"]>) => void;
   resetForm: () => void;
 }
 
@@ -26,22 +26,22 @@ export const useUserStore = create<UserState>()(
   devtools(
     (set, get) => ({
       selectedUserId: null,
-      filters: { search: '', role: '', isActive: true },
+      filters: { search: "", role: "", isActive: true },
       editMode: false,
-      formData: { name: '', email: '', password: '' },
+      formData: { name: "", email: "", password: "" },
 
-      setSelectedUser: id => set({ selectedUserId: id }),
-      setFilters: filters =>
-        set(state => ({
+      setSelectedUser: (id) => set({ selectedUserId: id }),
+      setFilters: (filters) =>
+        set((state) => ({
           filters: { ...state.filters, ...filters },
         })),
-      setEditMode: mode => set({ editMode: mode }),
-      setFormData: data =>
-        set(state => ({
+      setEditMode: (mode) => set({ editMode: mode }),
+      setFormData: (data) =>
+        set((state) => ({
           formData: { ...state.formData, ...data },
         })),
-      resetForm: () => set({ formData: { name: '', email: '', password: '' } }),
+      resetForm: () => set({ formData: { name: "", email: "", password: "" } }),
     }),
-    { name: 'user-store' }
+    { name: "user-store" }
   )
 );

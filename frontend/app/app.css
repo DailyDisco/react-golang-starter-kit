@@ -2,8 +2,8 @@
    TAILWIND CSS IMPORTS
    ========================================================================== */
 
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 /* ==========================================================================
    CUSTOM VARIANTS & THEME CONFIGURATION
@@ -14,8 +14,8 @@
 @theme {
   /* Typography */
   --font-sans:
-    'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
 }
 
 /* ==========================================================================
@@ -207,8 +207,8 @@ body {
   body {
     @apply bg-background text-foreground;
     font-feature-settings:
-      'rlig' 1,
-      'calt' 1;
+      "rlig" 1,
+      "calt" 1;
 
     /* Improve text rendering */
     -webkit-font-smoothing: antialiased;

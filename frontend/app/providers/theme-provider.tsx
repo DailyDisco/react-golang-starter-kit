@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import type { ThemeProviderProps } from 'next-themes';
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import * as React from 'react';
+import * as React from "react";
+
+import { ThemeProvider as NextThemesProvider, type ThemeProviderProps } from "next-themes";
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
@@ -10,8 +10,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       {...props}
       enableSystem
       disableTransitionOnChange
-      storageKey='theme'
-      attribute='class'
+      storageKey="theme"
+      attribute="class"
     >
       {children}
     </NextThemesProvider>

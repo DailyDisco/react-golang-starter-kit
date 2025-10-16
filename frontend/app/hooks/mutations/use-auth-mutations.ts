@@ -1,24 +1,23 @@
-import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-import { queryKeys } from '../../lib/query-keys';
-import type { LoginRequest, RegisterRequest } from '../../services';
-import { AuthService } from '../../services';
-import { useAuthStore } from '../../stores/auth-store';
+import { queryKeys } from "../../lib/query-keys";
+import { AuthService, type LoginRequest, type RegisterRequest } from "../../services";
+import { useAuthStore } from "../../stores/auth-store";
 
 export const useLogin = () => {
   const { setUser, setToken, setLoading } = useAuthStore();
 
   return useMutation({
     mutationFn: (credentials: LoginRequest) => AuthService.login(credentials),
-    onSuccess: authData => {
+    onSuccess: (authData) => {
       setUser(authData.user);
       setToken(authData.token);
       AuthService.storeAuthData(authData);
-      toast.success('Login successful');
+      toast.success("Login successful");
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Login failed');
+      toast.error(error.message || "Login failed");
     },
     onSettled: () => {
       setLoading(false);
@@ -31,14 +30,14 @@ export const useRegister = () => {
 
   return useMutation({
     mutationFn: (userData: RegisterRequest) => AuthService.register(userData),
-    onSuccess: authData => {
+    onSuccess: (authData) => {
       setUser(authData.user);
       setToken(authData.token);
       AuthService.storeAuthData(authData);
-      toast.success('Registration successful');
+      toast.success("Registration successful");
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Registration failed');
+      toast.error(error.message || "Registration failed");
     },
     onSettled: () => {
       setLoading(false);

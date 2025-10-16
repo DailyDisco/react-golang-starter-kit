@@ -55,7 +55,7 @@ export interface File {
   content_type: string;
   file_size: number;
   location: string;
-  storage_type: 's3' | 'database';
+  storage_type: "s3" | "database";
   created_at: string;
   updated_at: string;
 }
@@ -66,13 +66,13 @@ export interface FileResponse {
   content_type: string;
   file_size: number;
   location: string;
-  storage_type: 's3' | 'database';
+  storage_type: "s3" | "database";
   created_at: string;
   updated_at: string;
 }
 
 export interface StorageStatus {
-  storage_type: 's3' | 'database';
+  storage_type: "s3" | "database";
   message: string;
 }
 

@@ -1,11 +1,65 @@
-# Ignore artifacts:
-build
-coverage
-dist
+# Artifacts and Build Outputs
+build/
+coverage/
+dist/
+.next/
+out/
 
-# Ignore Docker files (not supported by prettier)
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Docker
 Dockerfile*
 
-# Ignore generated React Router types
+# Generated React Router Types
 .react-router/
 routeTree.gen.ts
+
+# Environment Variables
+.env
+.env.development.local
+.env.local
+.env.production.local
+.env.test.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime Data
+pids
+*.pid
+*.pid.lock
+*.seed
+
+# IDE/Editor Files
+.idea/
+.vscode/
+*.swo
+*.swp
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Generated Files (Maps, Types)
+*.d.ts.map
+*.js.map
+
+# Configuration Files
+*.config.js
+*.config.ts
+next.config.ts
+*.mjs
+next-env.d.ts
+
+# Ignore ShadCN Components
+app/components/ui/

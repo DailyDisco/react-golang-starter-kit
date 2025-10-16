@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-import type { User } from '../../services';
+import type { User } from "../../services";
 
 interface UserFormProps {
   onSubmit: (name: string, email: string, id?: number) => void;
@@ -11,21 +11,17 @@ interface UserFormProps {
   isLoading?: boolean;
 }
 
-export const UserForm: React.FC<UserFormProps> = ({
-  onSubmit,
-  initialData,
-  isLoading,
-}) => {
-  const [name, setName] = useState(initialData?.name || '');
-  const [email, setEmail] = useState(initialData?.email || '');
+export const UserForm: React.FC<UserFormProps> = ({ onSubmit, initialData, isLoading }) => {
+  const [name, setName] = useState(initialData?.name || "");
+  const [email, setEmail] = useState(initialData?.email || "");
 
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
       setEmail(initialData.email);
     } else {
-      setName('');
-      setEmail('');
+      setName("");
+      setEmail("");
     }
   }, [initialData]);
 
@@ -34,31 +30,37 @@ export const UserForm: React.FC<UserFormProps> = ({
     onSubmit(name, email, initialData?.id);
     if (!initialData) {
       // Clear form only for new user creation
-      setName('');
-      setEmail('');
+      setName("");
+      setEmail("");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className='flex flex-col gap-3'>
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-3"
+    >
       <Input
-        type='text'
-        placeholder='Name'
+        type="text"
+        placeholder="Name"
         value={name}
-        onChange={e => setName(e.target.value)}
+        onChange={(e) => setName(e.target.value)}
         required
         disabled={isLoading}
       />
       <Input
-        type='email'
-        placeholder='Email'
+        type="email"
+        placeholder="Email"
         value={email}
-        onChange={e => setEmail(e.target.value)}
+        onChange={(e) => setEmail(e.target.value)}
         required
         disabled={isLoading}
       />
-      <Button type='submit' disabled={isLoading}>
-        {initialData ? 'Update User' : 'Create User'}
+      <Button
+        type="submit"
+        disabled={isLoading}
+      >
+        {initialData ? "Update User" : "Create User"}
       </Button>
     </form>
   );

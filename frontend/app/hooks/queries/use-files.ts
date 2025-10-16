@@ -1,23 +1,22 @@
-import { useQuery } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-import type { FileResponse, StorageStatus } from '../../services';
-import { FileService } from '../../services';
-import { useAuthStore } from '../../stores/auth-store';
+import { FileService, type FileResponse, type StorageStatus } from "../../services";
+import { useAuthStore } from "../../stores/auth-store";
 
 export function useFiles(limit?: number, offset?: number) {
   const { accessToken } = useAuthStore();
 
   return useQuery({
-    queryKey: ['files', limit, offset],
+    queryKey: ["files", limit, offset],
     queryFn: () => FileService.fetchFiles(limit, offset),
     enabled: !!accessToken, // Only run query if authenticated
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
     onError: (error: Error) => {
-      console.error('Files fetch error:', error);
-      toast.error('Failed to load files', {
-        description: 'Please try again later',
+      console.error("Files fetch error:", error);
+      toast.error("Failed to load files", {
+        description: "Please try again later",
       });
     },
   });
@@ -25,25 +24,25 @@ export function useFiles(limit?: number, offset?: number) {
 
 export function useFileUrl(fileId: number) {
   return useQuery({
-    queryKey: ['file-url', fileId],
+    queryKey: ["file-url", fileId],
     queryFn: () => FileService.getFileUrl(fileId),
     enabled: !!fileId && fileId > 0,
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 1,
     onError: (error: Error) => {
-      console.error('File URL fetch error:', error);
+      console.error("File URL fetch error:", error);
     },
   });
 }
 
 export function useStorageStatus() {
   return useQuery({
-    queryKey: ['storage-status'],
+    queryKey: ["storage-status"],
     queryFn: () => FileService.getStorageStatus(),
     staleTime: 30 * 60 * 1000, // 30 minutes
     retry: 1,
     onError: (error: Error) => {
-      console.error('Storage status fetch error:', error);
+      console.error("Storage status fetch error:", error);
     },
   });
 }
@@ -57,7 +56,7 @@ export function useFileDownload() {
 
         // Create download link
         const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = url;
         link.download = fileName;
         document.body.appendChild(link);
@@ -65,11 +64,11 @@ export function useFileDownload() {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
 
-        toast.success('File downloaded successfully!');
+        toast.success("File downloaded successfully!");
       } catch (error) {
-        console.error('File download error:', error);
-        toast.error('Download failed', {
-          description: 'Please try again later',
+        console.error("File download error:", error);
+        toast.error("Download failed", {
+          description: "Please try again later",
         });
       }
     },

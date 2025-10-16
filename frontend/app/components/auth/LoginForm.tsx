@@ -1,27 +1,22 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useLocation, useNavigate } from '@tanstack/react-router';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import React, { useState } from "react";
 
-import { useLogin } from '../../hooks/mutations/use-auth-mutations';
-import { useAuthStore } from '../../stores/auth-store';
-import { Alert, AlertDescription } from '../ui/alert';
-import { Button } from '../ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '../ui/card';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { useLogin } from "../../hooks/mutations/use-auth-mutations";
+import { useAuthStore } from "../../stores/auth-store";
+import { Alert, AlertDescription } from "../ui/alert";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -34,7 +29,7 @@ export function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || "/";
 
   const {
     register,
@@ -50,95 +45,86 @@ export function LoginForm() {
       onSuccess: () => {
         navigate({ to: from, replace: true });
       },
-      onError: err => {
-        setError(err instanceof Error ? err.message : 'Login failed');
+      onError: (err) => {
+        setError(err instanceof Error ? err.message : "Login failed");
       },
     });
   };
 
   return (
-    <div className='bg-background flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8'>
-      <Card className='w-full max-w-md'>
-        <CardHeader className='space-y-1'>
-          <CardTitle className='text-center text-2xl'>Sign in</CardTitle>
-          <CardDescription className='text-center'>
+    <div className="bg-background flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-center text-2xl">Sign in</CardTitle>
+          <CardDescription className="text-center">
             Enter your email and password to sign in to your account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className='space-y-4'
-            role='form'
+            className="space-y-4"
+            role="form"
           >
             {error && (
-              <Alert variant='destructive'>
+              <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            <div className='space-y-2'>
-              <Label htmlFor='email'>Email</Label>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
               <Input
-                id='email'
-                type='email'
-                placeholder='Enter your email'
+                id="email"
+                type="email"
+                placeholder="Enter your email"
                 autoFocus
-                {...register('email')}
+                {...register("email")}
                 disabled={loginMutation.isPending}
               />
-              {errors.email && (
-                <p className='text-sm text-red-500'>{errors.email.message}</p>
-              )}
+              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
             </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='password'>Password</Label>
-              <div className='relative'>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
                 <Input
-                  id='password'
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder='Enter your password'
-                  {...register('password')}
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  {...register("password")}
                   disabled={loginMutation.isPending}
                 />
                 <Button
-                  type='button'
-                  variant='ghost'
-                  size='sm'
-                  className='absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent'
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loginMutation.isPending}
                 >
-                  {showPassword ? (
-                    <EyeOff className='h-4 w-4' />
-                  ) : (
-                    <Eye className='h-4 w-4' />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-              {errors.password && (
-                <p className='text-sm text-red-500'>
-                  {errors.password.message}
-                </p>
-              )}
+              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
             </div>
 
             <Button
-              type='submit'
-              className='w-full'
+              type="submit"
+              className="w-full"
               disabled={loginMutation.isPending}
             >
-              {loginMutation.isPending && (
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-              )}
+              {loginMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign in
             </Button>
           </form>
 
-          <div className='mt-4 text-center text-sm'>
-            Don't have an account?{' '}
-            <Link to='/register' className='text-primary hover:underline'>
+          <div className="mt-4 text-center text-sm">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-primary hover:underline"
+            >
               Sign up
             </Link>
           </div>

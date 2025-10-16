@@ -1,16 +1,17 @@
-import React from 'react';
-import { vi } from 'vitest';
-import { Outlet } from '@tanstack/react-router';
+import React from "react";
+
+import { Outlet } from "@tanstack/react-router";
+import { vi } from "vitest";
 
 // A more explicit and robust mock for @tanstack/react-router
-vi.mock('@tanstack/react-router', () => {
+vi.mock("@tanstack/react-router", () => {
   const navigateMock = vi.fn();
   const locationMock = {
-    pathname: '/',
+    pathname: "/",
     search: {}, // Ensure search is an object
-    hash: '',
+    hash: "",
     state: null,
-    key: 'default',
+    key: "default",
   };
 
   return {
@@ -21,16 +22,12 @@ vi.mock('@tanstack/react-router', () => {
     // Provide a simple RouterProvider that just renders its children
     // We'll give it a data-testid for easier debugging if needed
     RouterProvider: ({ children }: { children: React.ReactNode }) =>
-      React.createElement(
-        'div',
-        { 'data-testid': 'router-provider' },
-        children
-      ),
+      React.createElement("div", { "data-testid": "router-provider" }, children),
 
     // Mock other necessary router functions and components to prevent errors if they are called
     // or accessed internally by the router context itself.
     createMemoryHistory: vi.fn(() => ({
-      initialEntries: ['/'],
+      initialEntries: ["/"],
       push: vi.fn(),
       replace: vi.fn(),
     })),
@@ -44,10 +41,9 @@ vi.mock('@tanstack/react-router', () => {
       navigate: navigateMock,
       location: locationMock,
     })),
-    Link: ({ to, children, ...props }: any) =>
-      React.createElement('a', { href: to, ...props }, children),
+    Link: ({ to, children, ...props }: any) => React.createElement("a", { href: to, ...props }, children),
     Outlet: ({ children }: { children: React.ReactNode }) =>
-      React.createElement('div', { 'data-testid': 'router-outlet' }, children),
+      React.createElement("div", { "data-testid": "router-outlet" }, children),
 
     // Ensure other commonly used exports are also mocked to prevent undefined errors
     // Add more as needed if specific errors arise related to other exports.

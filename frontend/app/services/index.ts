@@ -1,13 +1,13 @@
 // API client
-export * from './api/client';
+export * from "./api/client";
 
 // Services
-export * from './auth/authService';
-export * from './users/userService';
-export * from './files/fileService';
+export * from "./auth/authService";
+export * from "./users/userService";
+export * from "./files/fileService";
 
 // Validation
-export * from './validation/schemas';
+export * from "./validation/schemas";
 
 // Types - explicit exports to avoid conflicts
 export type {
@@ -21,4 +21,4 @@ export type {
   RegisterRequest,
   StorageStatus,
   User,
-} from './types';
+} from "./types";

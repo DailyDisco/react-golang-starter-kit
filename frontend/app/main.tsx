@@ -1,12 +1,13 @@
 // Import CSS
-import './app.css';
+import "./app.css";
 
-import { RouterProvider } from '@tanstack/react-router';
-import { StrictMode } from 'react';
-import ReactDOM from 'react-dom/client';
+import { StrictMode } from "react";
+
+import { RouterProvider } from "@tanstack/react-router";
+import ReactDOM from "react-dom/client";
 
 // Import the router with SSR Query integration
-import { createAppRouter } from './router';
+import { createAppRouter } from "./router";
 
 // Router types are registered in router.types.ts
 
@@ -14,7 +15,7 @@ import { createAppRouter } from './router';
 const router = createAppRouter();
 
 // Render the app
-const rootElement = document.getElementById('root')!;
+const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(

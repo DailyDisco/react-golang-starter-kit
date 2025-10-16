@@ -1,12 +1,4 @@
-import {
-  Home,
-  HomeIcon,
-  LockIcon,
-  MailIcon,
-  PhoneIcon,
-  SettingsIcon,
-  UserIcon,
-} from 'lucide-react';
+import { Home, HomeIcon, LockIcon, MailIcon, PhoneIcon, SettingsIcon, UserIcon } from "lucide-react";
 
 const ICONS = {
   app_icons: {

@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 
-import type { User } from '../services';
+import type { User } from "../services";
 
 interface AuthState {
   user: User | null;
@@ -27,17 +27,17 @@ export const useAuthStore = create<AuthState>()(
         isLoading: true,
         isAuthenticated: false,
 
-        setUser: user =>
+        setUser: (user) =>
           set({
             user,
             isAuthenticated: !!user && !!get().token,
           }),
-        setToken: token =>
+        setToken: (token) =>
           set({
             token,
             isAuthenticated: !!token && !!get().user,
           }),
-        setLoading: isLoading => set({ isLoading }),
+        setLoading: (isLoading) => set({ isLoading }),
         logout: () =>
           set({
             user: null,
@@ -52,14 +52,8 @@ export const useAuthStore = create<AuthState>()(
           }),
         initialize: () => {
           // This will be called when the app starts to load auth state from localStorage
-          const storedToken =
-            typeof window !== 'undefined'
-              ? localStorage.getItem('auth_token')
-              : null;
-          const storedUser =
-            typeof window !== 'undefined'
-              ? localStorage.getItem('auth_user')
-              : null;
+          const storedToken = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+          const storedUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
 
           if (storedToken && storedUser) {
             try {
@@ -71,7 +65,7 @@ export const useAuthStore = create<AuthState>()(
                 isLoading: false,
               });
             } catch (error) {
-              console.error('Auth state invalid:', error);
+              console.error("Auth state invalid:", error);
               get().logout();
               set({ isLoading: false });
             }
@@ -81,13 +75,13 @@ export const useAuthStore = create<AuthState>()(
         },
       }),
       {
-        name: 'auth-storage',
-        partialize: state => ({
+        name: "auth-storage",
+        partialize: (state) => ({
           user: state.user,
           token: state.token,
         }),
       }
     ),
-    { name: 'auth-store' }
+    { name: "auth-store" }
   )
 );

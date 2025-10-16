@@ -1,6 +1,6 @@
 const LABELS = {
   app: {
-    name: 'App',
+    name: "App",
   },
 };
 
