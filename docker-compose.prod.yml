@@ -84,6 +84,29 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       DEBUG: false
       GO_ENV: production
+      # Database migrations (auto-run on startup)
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      MIGRATIONS_PATH: ${MIGRATIONS_PATH:-./migrations}
+      # Background jobs (River)
+      JOBS_ENABLED: ${JOBS_ENABLED:-true}
+      JOBS_WORKER_COUNT: ${JOBS_WORKER_COUNT:-10}
+      # Email service
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
+      FRONTEND_URL: ${FRONTEND_URL:-}
+      # Stripe payments
+      STRIPE_ENABLED: ${STRIPE_ENABLED:-false}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-}
+      STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

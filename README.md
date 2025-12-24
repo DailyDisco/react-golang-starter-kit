@@ -75,6 +75,10 @@ npm run dev
 - 👥 **Role-Based Access Control (RBAC)** - 4 permission levels
 - 📤 **File Upload System** - AWS S3 or database storage
 - 🛡️ **Rate Limiting** - Configurable API protection
+- 📧 **Email Service** - SMTP with HTML templates
+- 💳 **Stripe Payments** - Subscriptions, Checkout, Customer Portal
+- ⚡ **Background Jobs** - River (PostgreSQL-backed job queue)
+- 🔄 **Database Migrations** - golang-migrate with CI validation
 
 ### DevOps & Production
 
@@ -93,16 +97,21 @@ npm run dev
 react-golang-starter-kit/
 ├── backend/              # Go API server
 │   ├── cmd/             # Application entry point
+│   ├── migrations/      # SQL database migrations
 │   ├── internal/        # Private application code
 │   │   ├── auth/        # JWT authentication
+│   │   ├── cache/       # Redis/memory caching
 │   │   ├── config/      # Configuration management
-│   │   ├── database/    # Database connection & setup
+│   │   ├── database/    # Database connection & migrations
+│   │   ├── email/       # SMTP email service
 │   │   ├── handlers/    # HTTP request handlers
+│   │   ├── jobs/        # River background jobs
 │   │   ├── middleware/  # Chi middleware
 │   │   ├── models/      # GORM models
 │   │   ├── ratelimit/   # Rate limiting logic
 │   │   ├── services/    # Business logic layer
-│   │   └── storage/     # File storage (S3/DB)
+│   │   ├── storage/     # File storage (S3/DB)
+│   │   └── stripe/      # Stripe payments
 │   ├── docs/            # Swagger documentation
 │   └── scripts/         # Utility scripts
 │
@@ -126,7 +135,8 @@ react-golang-starter-kit/
 │   ├── DEPLOYMENT.md   # Deployment guides
 │   ├── DOCKER_SETUP.md # Docker configuration
 │   ├── FRONTEND_GUIDE.md # React development
-│   └── DEVELOPMENT.md  # Contributor guide
+│   ├── DEVELOPMENT.md  # Contributor guide
+│   └── decisions/      # Architecture Decision Records (ADRs)
 │
 ├── docker-compose.yml  # Development environment
 ├── docker-compose.prod.yml # Production environment
@@ -227,6 +237,16 @@ make stop             # Stop all containers
 make clean            # Clean up containers & volumes
 ```
 
+### Database Migrations
+
+```bash
+cd backend
+make migrate-up       # Run all pending migrations
+make migrate-down     # Rollback last migration
+make migrate-create name=add_feature  # Create new migration
+make migrate-version  # Show current version
+```
+
 ### Code Quality
 
 ```bash
@@ -255,15 +275,47 @@ Complete authentication system with registration, login, email verification, and
 Four-tier permission system with granular access control:
 
 - `user` - Basic profile management
-- `premium` - Access to premium content
+- `premium` - Access to premium content (via Stripe subscription)
 - `admin` - User and content management
 - `super_admin` - Full system administration
+
+### Stripe Payments
+
+Full subscription billing with Stripe integration:
+
+- **Checkout Sessions** - Secure, hosted payment pages
+- **Customer Portal** - Self-service subscription management
+- **Webhooks** - Real-time subscription sync with role updates
+- **Billing Pages** - `/pricing` and `/billing` routes included
+
+**Key Endpoints:**
+
+- `GET /api/billing/plans` - Available subscription plans
+- `POST /api/billing/checkout` - Create checkout session
+- `POST /api/billing/portal` - Create portal session
+- `POST /api/webhooks/stripe` - Webhook handler
+
+### Email Service
+
+SMTP-based transactional emails with HTML templates:
+
+- Verification emails after registration
+- Password reset emails
+- Async sending via background jobs
+
+### Background Jobs (River)
+
+PostgreSQL-backed job queue for reliable async processing:
+
+- Email sending
+- Webhook processing
+- Configurable workers and retries
 
 ### File Upload System
 
 Dual-backend storage supporting both AWS S3 and PostgreSQL with automatic fallback, secure uploads, and configurable size limits.
 
-📖 **[Complete Features Documentation →](docs/FEATURES.md)**
+📖 **[Complete Features Documentation →](docs/FEATURES.md)** | **[Architecture Decisions →](docs/decisions/)**
 
 ---
 

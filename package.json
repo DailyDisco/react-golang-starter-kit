@@ -4,6 +4,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@types/dompurify": "^3.0.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5"
   },
@@ -22,13 +23,21 @@
   },
   "lint-staged": {
     "frontend/**/*.{ts,tsx,js,jsx}": [
+      "npm run lint:fix --",
       "npm run format"
     ],
     "backend/**/*.go": [
-      "npm run format:backend"
+      "npm run format:backend",
+      "npm run vet:backend"
     ]
   },
   "comments": {
     "git-hooks": "Uses husky with pre-commit (lint-staged) and commit-msg (commitlint). Pre-push hook removed for faster workflow - CI handles testing."
+  },
+  "dependencies": {
+    "dompurify": "^3.3.1"
+  },
+  "optionalDependencies": {
+    "@sentry/react": "^10.32.1"
   }
 }
