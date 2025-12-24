@@ -103,6 +103,60 @@ jobs:
         run: npm run test:fast
         working-directory: ${{ env.FRONTEND_DIR }}
 
+  # Frontend E2E Testing (Playwright)
+  frontend-e2e:
+    name: Frontend E2E
+    runs-on: ubuntu-latest
+    needs: [frontend-security, frontend-quality, frontend-test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          # E2E_TEST_USER and E2E_TEST_PASSWORD can be set as secrets
+          # E2E_TEST_USER: ${{ secrets.E2E_TEST_USER }}
+          # E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: ${{ env.FRONTEND_DIR }}/playwright-report/
+          retention-days: 30
+
+      - name: Upload Playwright results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: ${{ env.FRONTEND_DIR }}/playwright-results/
+          retention-days: 7
+
   # Backend Linting and Formatting
   backend-lint:
     name: Backend Lint
@@ -166,21 +220,68 @@ jobs:
 
       - name: Run tests
         run: |
-          echo "🧪 Running Go tests..."
+          echo "🧪 Running Go tests with race detector..."
           # Skip tests if no test files exist (faster execution)
           if find . -name "*_test.go" -type f | grep -q .; then
-            go test -v ./...
+            go test -v -race ./...
           else
             echo "✅ No Go test files found - skipping tests"
           fi
         shell: bash
         working-directory: ${{ env.BACKEND_DIR }}
 
+  # Backend Migrations Test
+  backend-migrations:
+    name: Backend Migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install golang-migrate
+        run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+      - name: Run migrations up
+        run: migrate -path ./migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" up
+        working-directory: ${{ env.BACKEND_DIR }}
+
+      - name: Run migrations down
+        run: migrate -path ./migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" down -all
+        working-directory: ${{ env.BACKEND_DIR }}
+
+      - name: Re-run migrations (idempotency check)
+        run: migrate -path ./migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" up
+        working-directory: ${{ env.BACKEND_DIR }}
+
+      - name: Verify final state
+        run: migrate -path ./migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" version
+        working-directory: ${{ env.BACKEND_DIR }}
+
   # Frontend Build
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
-    needs: [frontend-security, frontend-quality, frontend-test]
+    needs: [frontend-security, frontend-quality, frontend-test, frontend-e2e]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -214,7 +315,7 @@ jobs:
   backend-build:
     name: Backend Build
     runs-on: ubuntu-latest
-    needs: [backend-lint, backend-security, backend-test]
+    needs: [backend-lint, backend-security, backend-test, backend-migrations]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -240,7 +341,7 @@ jobs:
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [frontend-build, backend-build]
+    needs: [frontend-build, backend-build, frontend-e2e]
     if: always()
     steps:
       - name: Generate summary
@@ -251,9 +352,10 @@ jobs:
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend Build | ${{ needs.frontend-build.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Backend Build | ${{ needs.backend-build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend E2E | ${{ needs.frontend-e2e.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [[ "${{ needs.frontend-build.result }}" == "success" && "${{ needs.backend-build.result }}" == "success" ]]; then
+          if [[ "${{ needs.frontend-build.result }}" == "success" && "${{ needs.backend-build.result }}" == "success" && "${{ needs.frontend-e2e.result }}" == "success" ]]; then
             echo "🎉 **All CI checks passed!**" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Some CI checks failed. Please review the failed jobs.**" >> $GITHUB_STEP_SUMMARY

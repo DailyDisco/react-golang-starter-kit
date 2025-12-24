@@ -63,7 +63,7 @@ vi.mock("@tanstack/react-router", () => {
 });
 
 // Export the mocked hooks so test files can use them
-export { useNavigate, useLocation };
+export { useLocation, useNavigate };
 
 // Test data factories
 export const createMockUser = (overrides?: Partial<User>): User => ({

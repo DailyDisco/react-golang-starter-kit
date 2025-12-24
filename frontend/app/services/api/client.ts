@@ -1,3 +1,5 @@
+import { logger } from "../../lib/logger";
+
 // Create API_BASE_URL safely for SSR
 const getApiBaseUrl = () => {
   // In SSR, import.meta.env might not be available or populated
@@ -9,52 +11,91 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
-// Debug: Log the API URL being used (only on client side)
-if (typeof window !== "undefined") {
-  console.log("🔗 API_BASE_URL:", import.meta.env.VITE_API_URL);
-  console.log("🚀 Final API_BASE_URL:", API_BASE_URL);
-}
-
-// Get auth token from localStorage
-const getAuthToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("auth_token");
+// Generate a unique request ID for traceability
+export const generateRequestId = (): string => {
+  // Use crypto.randomUUID() if available (modern browsers)
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 };
 
-// Create headers with optional auth token
-export const createHeaders = (includeAuth: boolean = true): Record<string, string> => {
+// Get CSRF token from cookie
+const getCSRFToken = (): string | null => {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp("(^| )csrf_token=([^;]+)"));
+  return match ? decodeURIComponent(match[2]) : null;
+};
+
+/**
+ * Fetch a fresh CSRF token from the server.
+ * Call this on app initialization to ensure CSRF protection is ready.
+ */
+export const initCSRFToken = async (): Promise<string | null> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/csrf-token`, {
+      credentials: "include",
+    });
+    if (response.ok) {
+      const data = (await response.json()) as { csrf_token: string };
+      return data.csrf_token;
+    }
+  } catch {
+    // Silently fail - CSRF token will be in cookie from response
+  }
+  return getCSRFToken();
+};
+
+// Create headers with request ID and optional CSRF token
+// Authentication is handled via httpOnly cookies (credentials: "include")
+export const createHeaders = (includeCSRF: boolean = false): Record<string, string> => {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "X-Request-ID": generateRequestId(),
   };
 
-  if (includeAuth) {
-    const token = getAuthToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+  // Include CSRF token for state-changing requests
+  if (includeCSRF) {
+    const csrfToken = getCSRFToken();
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
     }
   }
 
   return headers;
 };
 
-// Enhanced fetch with auth token and error handling
+// Check if method is state-changing (needs CSRF protection)
+const isStateChangingMethod = (method?: string): boolean => {
+  const stateChangingMethods = ["POST", "PUT", "DELETE", "PATCH"];
+  return stateChangingMethods.includes((method || "GET").toUpperCase());
+};
+
+// Enhanced fetch with auth (uses httpOnly cookies via credentials: "include")
 export const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
-  const headers = createHeaders(options.method !== "GET");
+  const needsCSRF = isStateChangingMethod(options.method);
+  const headers = createHeaders(needsCSRF);
 
   const response = await fetch(url, {
     ...options,
+    credentials: "include", // Include httpOnly cookies for authentication
     headers: {
       ...headers,
       ...options.headers,
     },
   });
 
-  // Handle 401 Unauthorized - token might be expired
+  // Handle 401 Unauthorized - session might be expired
   if (response.status === 401) {
-    // Clear invalid token
+    // Clear auth data from localStorage (user info for UI)
     if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_user");
+      localStorage.removeItem("refresh_token");
       // Redirect to login if on a protected page
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
@@ -65,12 +106,14 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
   return response;
 };
 
-// Simple fetch without auth (for login/register)
+// Simple fetch for auth endpoints (login/register) - includes credentials for cookie handling
 export const apiFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
-  const headers = createHeaders(false);
+  const needsCSRF = isStateChangingMethod(options.method);
+  const headers = createHeaders(needsCSRF);
 
   return fetch(url, {
     ...options,
+    credentials: "include", // Include httpOnly cookies
     headers: {
       ...headers,
       ...options.headers,
@@ -89,6 +132,7 @@ export interface ApiErrorResponse {
   error: string;
   message: string;
   code: number;
+  request_id?: string;
 }
 
 export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
@@ -111,7 +155,7 @@ export const parseErrorResponse = async (response: Response, defaultMessage: str
     }
   } catch (parseError) {
     // If anything fails, use a generic error message
-    console.error("Failed to parse error response:", parseError);
+    logger.error("Failed to parse error response", parseError);
     return `${defaultMessage} with status ${response.status}`;
   }
 };
@@ -139,7 +183,7 @@ export const parseApiResponse = async <T = any>(response: Response): Promise<T> 
     // If it's already the expected data format (for auth endpoints that return AuthResponse directly)
     return responseData as T;
   } catch (parseError) {
-    console.error("Failed to parse API response:", parseError);
+    logger.error("Failed to parse API response", parseError);
     throw new Error("Invalid response format from server");
   }
 };
@@ -158,4 +202,33 @@ export const authenticatedFetchWithParsing = async <T = any>(url: string, option
 export const apiFetchWithParsing = async <T = any>(url: string, options: RequestInit = {}): Promise<T> => {
   const response = await apiFetch(url, options);
   return parseApiResponse<T>(response);
+};
+
+/**
+ * Simple API client for making authenticated requests
+ */
+export const apiClient = {
+  async get<T = unknown>(path: string): Promise<T> {
+    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api${path}`);
+  },
+
+  async post<T = unknown>(path: string, body: unknown): Promise<T> {
+    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api${path}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async put<T = unknown>(path: string, body: unknown): Promise<T> {
+    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api${path}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async delete<T = unknown>(path: string): Promise<T> {
+    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api${path}`, {
+      method: "DELETE",
+    });
+  },
 };

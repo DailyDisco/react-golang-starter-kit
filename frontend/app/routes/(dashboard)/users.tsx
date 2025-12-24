@@ -1,8 +1,9 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { Loader2, User as UserIcon, Users as UsersIcon } from "lucide-react";
+import { Plus, User as UserIcon, Users as UsersIcon } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { PageHeaderSkeleton, UserListSkeleton } from "../../components/ui/skeletons";
 import { useUsers } from "../../hooks/queries/use-users";
 
 export const Route = createFileRoute("/(dashboard)/users")({
@@ -15,9 +16,12 @@ function UsersPage() {
 
   if (usersLoading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <main className="bg-gray-50 px-4 py-12 dark:bg-gray-900">
+        <div className="mx-auto max-w-4xl">
+          <PageHeaderSkeleton />
+          <UserListSkeleton count={4} />
+        </div>
+      </main>
     );
   }
 
@@ -73,9 +77,19 @@ function UsersPage() {
           ) : (
             <Card className="shadow-md">
               <CardContent className="py-12 text-center">
-                <UserIcon className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                <div className="bg-muted mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+                  <UsersIcon className="text-muted-foreground h-8 w-8" />
+                </div>
                 <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">No users found</h3>
-                <p className="text-gray-600 dark:text-gray-300">There are no users to display</p>
+                <p className="mb-6 text-gray-600 dark:text-gray-300">
+                  Get started by creating your first user account.
+                </p>
+                <Link to="/demo">
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create User
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           )}

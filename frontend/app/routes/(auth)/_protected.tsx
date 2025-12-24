@@ -6,11 +6,23 @@ import { useAuth } from "../../hooks/auth/useAuth";
 
 export const Route = createFileRoute("/(auth)/_protected")({
   component: ProtectedLayout,
-  beforeLoad: async ({ location }: { location: { href: string } }) => {
-    // Check authentication status
-    // const { isAuthenticated } = useAuth();
-    // For demo purposes, we'll simulate authentication check
-    const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+  beforeLoad: async () => {
+    // Check for valid user data in localStorage
+    // Authentication is verified via httpOnly cookies when making API calls
+    const storedUser = localStorage.getItem("auth_user");
+
+    let isAuthenticated = false;
+    if (storedUser) {
+      try {
+        // Validate that user data is valid JSON
+        JSON.parse(storedUser);
+        isAuthenticated = true;
+      } catch {
+        // Invalid user data - clear auth storage
+        localStorage.removeItem("auth_user");
+        localStorage.removeItem("refresh_token");
+      }
+    }
 
     if (!isAuthenticated) {
       throw redirect({

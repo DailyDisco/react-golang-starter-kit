@@ -14,7 +14,6 @@ export class UserService {
 
     try {
       const responseData = await response.json();
-      console.log("Users API response:", responseData); // Debug log
 
       // Handle new success response format
       if (responseData.success === true && responseData.data) {
@@ -23,8 +22,7 @@ export class UserService {
       }
       // Fallback for old format (if still in use)
       return responseData.users || responseData || [];
-    } catch (parseError) {
-      console.error("Failed to parse users response:", parseError);
+    } catch {
       throw new Error("Invalid response format from server");
     }
   }
@@ -53,8 +51,7 @@ export class UserService {
       }
       // Fallback for old format
       return responseData;
-    } catch (parseError) {
-      console.error("Failed to parse create user response:", parseError);
+    } catch {
       throw new Error("Invalid response format from server");
     }
   }

@@ -88,6 +88,13 @@ export default function StandardLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Skip to main content link for accessibility */}
+      <a
+        href="#main-content"
+        className="focus:bg-primary focus:text-primary-foreground focus:ring-ring sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:px-4 focus:py-2 focus:ring-2 focus:outline-none"
+      >
+        Skip to main content
+      </a>
       <Navbar />
       <div className="bg-muted/30 border-b">
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
@@ -124,7 +131,10 @@ export default function StandardLayout() {
           </Breadcrumb>
         </div>
       </div>
-      <main className="flex-1">
+      <main
+        id="main-content"
+        className="flex-1"
+      >
         <Outlet />
       </main>
       <Footer />

@@ -269,3 +269,19 @@ body {
 .focus-trap:focus-within {
   isolation: isolate;
 }
+
+/* ==========================================================================
+   CUSTOM ANIMATIONS
+   ========================================================================== */
+
+/* Shimmer animation for skeleton loading states */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Register the shimmer animation with Tailwind */
+@theme {
+  --animate-shimmer: shimmer 1.5s infinite;
+}

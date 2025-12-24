@@ -9,3 +9,8 @@
 # It should be committed to git for production builds
 # /app/routeTree.gen.ts  # Keep this commented - we need this file
 /.tanstack/ # Cache directory can be ignored
+
+# Playwright
+/playwright-report/
+/playwright-results/
+/e2e/.auth/

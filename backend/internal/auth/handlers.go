@@ -3,9 +3,14 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
+
 	"react-golang-starter/internal/database"
+	"react-golang-starter/internal/jobs"
 	"react-golang-starter/internal/models"
+
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // RegisterUser godoc
@@ -50,94 +55,40 @@ import (
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Bad Request",
-			Message: "Invalid JSON",
-			Code:    http.StatusBadRequest,
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeBadRequest(w, r, "Invalid JSON")
 		return
 	}
 
 	// Validate email format
 	if err := ValidateEmail(req.Email); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Bad Request",
-			Message: err.Error(),
-			Code:    http.StatusBadRequest,
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeBadRequest(w, r, err.Error())
 		return
 	}
 
 	// Validate password strength
 	if err := ValidatePassword(req.Password); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Bad Request",
-			Message: err.Error(),
-			Code:    http.StatusBadRequest,
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeBadRequest(w, r, err.Error())
 		return
 	}
 
 	// Check if user already exists
 	var existingUser models.User
 	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Conflict",
-			Message: "User with this email already exists",
-			Code:    http.StatusConflict,
-		}
-		w.WriteHeader(http.StatusConflict)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeConflict(w, r, "User with this email already exists")
 		return
 	}
 
 	// Hash password
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to hash password",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to hash password")
 		return
 	}
 
 	// Generate verification token
 	verificationToken, err := GenerateVerificationToken()
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to generate verification token",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to generate verification token")
 		return
 	}
 
@@ -155,55 +106,52 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := database.DB.Create(&user).Error; err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to create user",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to create user")
 		return
 	}
 
-	// Generate JWT token
+	// Queue verification email (async via job queue)
+	if jobs.IsAvailable() {
+		if err := jobs.EnqueueVerificationEmail(r.Context(), user.ID, user.Email, user.Name, verificationToken); err != nil {
+			// Log but don't fail registration - email can be resent
+			log.Warn().Err(err).Uint("user_id", user.ID).Msg("failed to queue verification email")
+		}
+	}
+
+	// Generate JWT access token
 	token, err := GenerateJWT(&user)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to generate token",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to generate token")
 		return
 	}
 
-	// Return response
+	// Generate refresh token
+	refreshToken, err := GenerateRefreshToken()
+	if err != nil {
+		writeInternalError(w, r, "Failed to generate refresh token")
+		return
+	}
+
+	// Save refresh token to user
+	user.RefreshToken = refreshToken
+	user.RefreshTokenExpires = time.Now().Add(GetRefreshTokenExpirationTime()).Format(time.RFC3339)
+	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	if err := database.DB.Save(&user).Error; err != nil {
+		log.Warn().Err(err).Msg("failed to save refresh token")
+	}
+
+	// Set auth cookie
+	SetAuthCookie(w, token)
+
+	// Return response with refresh token
 	response := models.AuthResponse{
-		User:  user.ToUserResponse(),
-		Token: token,
+		User:         user.ToUserResponse(),
+		Token:        token,
+		RefreshToken: refreshToken,
+		ExpiresIn:    int64(GetAccessTokenExpirationTime().Seconds()),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to encode response",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
-		return
-	}
+	writeJSON(w, http.StatusCreated, response)
 }
 
 // LoginUser godoc
@@ -247,101 +195,102 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var req models.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Bad Request",
-			Message: "Invalid JSON",
-			Code:    http.StatusBadRequest,
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeBadRequest(w, r, "Invalid JSON")
 		return
 	}
 
 	// Find user by email
 	var user models.User
 	if err := database.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Unauthorized",
-			Message: "Invalid credentials",
-			Code:    http.StatusUnauthorized,
-		}
-		w.WriteHeader(http.StatusUnauthorized)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeUnauthorized(w, r, "Invalid credentials")
 		return
 	}
 
 	// Check if account is active
 	if !user.IsActive {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Unauthorized",
-			Message: "Account is deactivated",
-			Code:    http.StatusUnauthorized,
-		}
-		w.WriteHeader(http.StatusUnauthorized)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeAccountInactive(w, r, "Account is deactivated")
 		return
 	}
 
 	// Check password
 	if !CheckPassword(req.Password, user.Password) {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Unauthorized",
-			Message: "Invalid credentials",
-			Code:    http.StatusUnauthorized,
-		}
-		w.WriteHeader(http.StatusUnauthorized)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeUnauthorized(w, r, "Invalid credentials")
 		return
 	}
 
-	// Generate JWT token
+	// Generate JWT access token
 	token, err := GenerateJWT(&user)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to generate token",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to generate token")
 		return
 	}
 
-	// Return response
+	// Generate refresh token
+	refreshToken, err := GenerateRefreshToken()
+	if err != nil {
+		writeInternalError(w, r, "Failed to generate refresh token")
+		return
+	}
+
+	// Save refresh token to user
+	user.RefreshToken = refreshToken
+	user.RefreshTokenExpires = time.Now().Add(GetRefreshTokenExpirationTime()).Format(time.RFC3339)
+	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	if err := database.DB.Save(&user).Error; err != nil {
+		log.Warn().Err(err).Msg("failed to save refresh token")
+	}
+
+	// Set auth cookie
+	SetAuthCookie(w, token)
+
+	// Return response with refresh token
 	response := models.AuthResponse{
-		User:  user.ToUserResponse(),
-		Token: token,
+		User:         user.ToUserResponse(),
+		Token:        token,
+		RefreshToken: refreshToken,
+		ExpiresIn:    int64(GetAccessTokenExpirationTime().Seconds()),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to encode response",
-			Code:    http.StatusInternalServerError,
+	writeJSON(w, http.StatusOK, response)
+}
+
+// LogoutUser godoc
+// @Summary Logout user
+// @Description Logout user by clearing the authentication cookie and revoking the token
+// @Tags auth
+// @Produce json
+// @Success 200 {object} models.SuccessResponse "Logout successful"
+// @Router /auth/logout [post]
+func LogoutUser(w http.ResponseWriter, r *http.Request) {
+	// Try to get the current token to blacklist it
+	tokenString, err := ExtractTokenFromCookie(r)
+	if err != nil {
+		// Try Authorization header as fallback
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			tokenString, _ = ExtractTokenFromHeader(authHeader)
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
-		return
 	}
+
+	// If we have a token, blacklist it
+	if tokenString != "" {
+		claims, err := ValidateJWT(tokenString)
+		if err == nil && claims != nil {
+			// Blacklist the access token
+			if claims.ExpiresAt != nil {
+				_ = BlacklistToken(tokenString, claims.UserID, claims.ExpiresAt.Time, "logout")
+			}
+
+			// Clear the user's refresh token
+			_ = RevokeAllUserTokens(claims.UserID, "logout")
+
+			// Invalidate the user cache
+			_ = InvalidateUserCache(r.Context(), claims.UserID)
+		}
+	}
+
+	ClearAuthCookie(w)
+	writeSuccess(w, "Logout successful", nil)
 }
 
 // GetCurrentUser godoc
@@ -379,38 +328,11 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := GetUserFromContext(r.Context())
 	if !ok {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Unauthorized",
-			Message: "User not found in context",
-			Code:    http.StatusUnauthorized,
-		}
-		w.WriteHeader(http.StatusUnauthorized)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeUnauthorized(w, r, "User not found in context")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	response := models.SuccessResponse{
-		Success: true,
-		Message: "User retrieved successfully",
-		Data:    user.ToUserResponse(),
-	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to encode response",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
-		return
-	}
+	writeSuccess(w, "User retrieved successfully", user.ToUserResponse())
 }
 
 // VerifyEmail godoc
@@ -438,31 +360,13 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Bad Request",
-			Message: "Verification token is required",
-			Code:    http.StatusBadRequest,
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeBadRequest(w, r, "Verification token is required")
 		return
 	}
 
 	var user models.User
 	if err := database.DB.Where("verification_token = ?", token).First(&user).Error; err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Bad Request",
-			Message: "Invalid verification token",
-			Code:    http.StatusBadRequest,
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeBadRequest(w, r, "Invalid verification token")
 		return
 	}
 
@@ -470,16 +374,7 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	if user.VerificationExpires != "" {
 		expiresTime, err := time.Parse(time.RFC3339, user.VerificationExpires)
 		if err != nil || time.Now().After(expiresTime) {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Verification token has expired",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			if err := json.NewEncoder(w).Encode(response); err != nil {
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			}
+			writeTokenExpired(w, r, "Verification token has expired")
 			return
 		}
 	}
@@ -491,37 +386,11 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 
 	if err := database.DB.Save(&user).Error; err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to verify email",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to verify email")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	response := models.SuccessResponse{
-		Success: true,
-		Message: "Email verified successfully",
-	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to encode response",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
-		return
-	}
+	writeSuccess(w, "Email verified successfully", nil)
 }
 
 // RequestPasswordReset godoc
@@ -555,47 +424,21 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	var req models.PasswordResetRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Bad Request",
-			Message: "Invalid JSON",
-			Code:    http.StatusBadRequest,
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeBadRequest(w, r, "Invalid JSON")
 		return
 	}
 
 	var user models.User
 	if err := database.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
 		// Don't reveal if email exists or not for security
-		w.Header().Set("Content-Type", "application/json")
-		response := models.SuccessResponse{
-			Success: true,
-			Message: "If the email exists, a password reset link has been sent",
-		}
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeSuccess(w, "If the email exists, a password reset link has been sent", nil)
 		return
 	}
 
 	// Generate reset token
 	resetToken, err := GenerateVerificationToken()
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to generate reset token",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to generate reset token")
 		return
 	}
 
@@ -605,40 +448,18 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 
 	if err := database.DB.Save(&user).Error; err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to update user",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to update user")
 		return
 	}
 
-	// TODO: Send email with reset link
-	// For now, just return success message
+	// Queue password reset email (async via job queue)
+	if jobs.IsAvailable() {
+		if err := jobs.EnqueuePasswordResetEmail(r.Context(), user.ID, user.Email, user.Name, resetToken); err != nil {
+			log.Warn().Err(err).Uint("user_id", user.ID).Msg("failed to queue password reset email")
+		}
+	}
 
-	w.Header().Set("Content-Type", "application/json")
-	response := models.SuccessResponse{
-		Success: true,
-		Message: "If the email exists, a password reset link has been sent",
-	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to encode response",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
-		return
-	}
+	writeSuccess(w, "If the email exists, a password reset link has been sent", nil)
 }
 
 // ResetPassword godoc
@@ -672,46 +493,19 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var req models.PasswordResetConfirm
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Bad Request",
-			Message: "Invalid JSON",
-			Code:    http.StatusBadRequest,
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeBadRequest(w, r, "Invalid JSON")
 		return
 	}
 
 	// Validate password strength
 	if err := ValidatePassword(req.Password); err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Bad Request",
-			Message: err.Error(),
-			Code:    http.StatusBadRequest,
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeBadRequest(w, r, err.Error())
 		return
 	}
 
 	var user models.User
 	if err := database.DB.Where("verification_token = ?", req.Token).First(&user).Error; err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Unauthorized",
-			Message: "Invalid reset token",
-			Code:    http.StatusUnauthorized,
-		}
-		w.WriteHeader(http.StatusUnauthorized)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeUnauthorized(w, r, "Invalid reset token")
 		return
 	}
 
@@ -719,16 +513,7 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	if user.VerificationExpires != "" {
 		expiresTime, err := time.Parse(time.RFC3339, user.VerificationExpires)
 		if err != nil || time.Now().After(expiresTime) {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Unauthorized",
-				Message: "Reset token has expired",
-				Code:    http.StatusUnauthorized,
-			}
-			w.WriteHeader(http.StatusUnauthorized)
-			if err := json.NewEncoder(w).Encode(response); err != nil {
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			}
+			writeTokenExpired(w, r, "Reset token has expired")
 			return
 		}
 	}
@@ -736,16 +521,7 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	// Hash new password
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to hash password",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to hash password")
 		return
 	}
 
@@ -756,35 +532,98 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 
 	if err := database.DB.Save(&user).Error; err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to reset password",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+		writeInternalError(w, r, "Failed to reset password")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	response := models.SuccessResponse{
-		Success: true,
-		Message: "Password reset successfully",
-	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		response := models.ErrorResponse{
-			Error:   "Internal Server Error",
-			Message: "Failed to encode response",
-			Code:    http.StatusInternalServerError,
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
+	// Invalidate user cache after password change
+	_ = InvalidateUserCache(r.Context(), user.ID)
+
+	// Revoke all existing tokens to force re-login
+	_ = RevokeAllUserTokens(user.ID, "password_reset")
+
+	writeSuccess(w, "Password reset successfully", nil)
+}
+
+// RefreshToken godoc
+// @Summary Refresh access token
+// @Description Exchange a valid refresh token for a new access token. This allows maintaining sessions without re-authentication.
+// @Description The refresh token is long-lived (7 days by default) while access tokens are short-lived (15 minutes by default).
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body models.RefreshTokenRequest true "Refresh token request"
+// @Success 200 {object} models.AuthResponse "New access token generated successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid request body"
+// @Failure 401 {object} models.ErrorResponse "Invalid or expired refresh token"
+// @Failure 500 {object} models.ErrorResponse "Failed to generate new token"
+// @Router /auth/refresh [post]
+func RefreshAccessToken(w http.ResponseWriter, r *http.Request) {
+	var req models.RefreshTokenRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeBadRequest(w, r, "Invalid JSON")
 		return
 	}
+
+	if req.RefreshToken == "" {
+		writeBadRequest(w, r, "Refresh token is required")
+		return
+	}
+
+	// Find user by refresh token
+	var user models.User
+	if err := database.DB.Where("refresh_token = ?", req.RefreshToken).First(&user).Error; err != nil {
+		writeUnauthorized(w, r, "Invalid refresh token")
+		return
+	}
+
+	// Check if refresh token is expired
+	if user.RefreshTokenExpires != "" {
+		expiresTime, err := time.Parse(time.RFC3339, user.RefreshTokenExpires)
+		if err != nil || time.Now().After(expiresTime) {
+			writeTokenExpired(w, r, "Refresh token has expired")
+			return
+		}
+	}
+
+	// Check if account is active
+	if !user.IsActive {
+		writeAccountInactive(w, r, "Account is deactivated")
+		return
+	}
+
+	// Generate new access token
+	token, err := GenerateJWT(&user)
+	if err != nil {
+		writeInternalError(w, r, "Failed to generate token")
+		return
+	}
+
+	// Rotate refresh token for additional security
+	// This prevents stolen refresh tokens from being reused indefinitely
+	newRefreshToken, err := GenerateRefreshToken()
+	if err != nil {
+		writeInternalError(w, r, "Failed to generate refresh token")
+		return
+	}
+	user.RefreshToken = newRefreshToken
+	user.RefreshTokenExpires = time.Now().Add(GetRefreshTokenExpirationTime()).Format(time.RFC3339)
+	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	if err := database.DB.Save(&user).Error; err != nil {
+		writeInternalError(w, r, "Failed to save refresh token")
+		return
+	}
+
+	// Set new auth cookie
+	SetAuthCookie(w, token)
+
+	// Return response with rotated refresh token
+	response := models.AuthResponse{
+		User:         user.ToUserResponse(),
+		Token:        token,
+		RefreshToken: newRefreshToken, // Return the new rotated refresh token
+		ExpiresIn:    int64(GetAccessTokenExpirationTime().Seconds()),
+	}
+
+	writeJSON(w, http.StatusOK, response)
 }

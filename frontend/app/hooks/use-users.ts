@@ -32,7 +32,7 @@ export const useUsers = (): UseUsersResult => {
   }, []);
 
   useEffect(() => {
-    refreshUsers();
+    void refreshUsers();
   }, [refreshUsers]);
 
   const addUser = useCallback(async (name: string, email: string) => {

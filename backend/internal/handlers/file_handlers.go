@@ -2,14 +2,47 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/services"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
+
+// AllowedMimeTypes defines the MIME types allowed for file uploads
+var AllowedMimeTypes = map[string]bool{
+	// Images
+	"image/jpeg":    true,
+	"image/png":     true,
+	"image/gif":     true,
+	"image/webp":    true,
+	"image/svg+xml": true,
+	// Documents
+	"application/pdf":    true,
+	"text/plain":         true,
+	"text/csv":           true,
+	"application/json":   true,
+	"application/xml":    true,
+	"text/xml":           true,
+	"text/markdown":      true,
+	"application/msword": true,
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":   true,
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         true,
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": true,
+}
+
+// isAllowedMimeType checks if the given MIME type is in the allowed list
+func isAllowedMimeType(mimeType string) bool {
+	// Normalize MIME type (remove parameters like charset)
+	normalizedType := strings.Split(mimeType, ";")[0]
+	normalizedType = strings.TrimSpace(strings.ToLower(normalizedType))
+	return AllowedMimeTypes[normalizedType]
+}
 
 // FileHandler handles file-related HTTP requests
 type FileHandler struct {
@@ -73,6 +106,23 @@ func (fh *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate file type (MIME type)
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" {
+		// Try to detect from file extension as fallback
+		contentType = "application/octet-stream"
+	}
+	if !isAllowedMimeType(contentType) {
+		response := models.ErrorResponse{
+			Error:   "Bad Request",
+			Message: fmt.Sprintf("File type '%s' is not allowed. Allowed types: images (jpeg, png, gif, webp, svg), documents (pdf, txt, csv, json, xml, md, docx, xlsx, pptx)", contentType),
+			Code:    http.StatusBadRequest,
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	// Upload file using service
 	uploadedFile, err := fh.fileService.UploadFile(r.Context(), file, header)
 	if err != nil {
@@ -103,6 +153,7 @@ func (fh *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 // @Produce octet-stream
 // @Param id path int true "File ID"
 // @Success 200 {file} binary
+// @Failure 403 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /files/{id}/download [get]
@@ -116,6 +167,34 @@ func (fh *FileHandler) DownloadFile(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Check ownership - get user from context
+	userID, hasUser := auth.GetUserIDFromContext(r.Context())
+	user, _ := auth.GetUserFromContext(r.Context())
+	isAdmin := hasUser && user != nil && (user.Role == models.RoleAdmin || user.Role == models.RoleSuperAdmin)
+
+	// Verify ownership before allowing download
+	_, err = fh.fileService.GetFileByIDForUser(uint(fileID), userID, isAdmin)
+	if err != nil {
+		if errors.Is(err, services.ErrAccessDenied) {
+			response := models.ErrorResponse{
+				Error:   "Forbidden",
+				Message: "You do not have permission to access this file",
+				Code:    http.StatusForbidden,
+			}
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		response := models.ErrorResponse{
+			Error:   "Not Found",
+			Message: "File not found",
+			Code:    http.StatusNotFound,
+		}
+		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -175,6 +254,7 @@ func (fh *FileHandler) DownloadFile(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path int true "File ID"
 // @Success 200 {object} models.SuccessResponse{data=models.FileResponse}
+// @Failure 403 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /files/{id} [get]
@@ -192,8 +272,23 @@ func (fh *FileHandler) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := fh.fileService.GetFileByID(uint(fileID))
+	// Check ownership - get user from context
+	userID, hasUser := auth.GetUserIDFromContext(r.Context())
+	user, _ := auth.GetUserFromContext(r.Context())
+	isAdmin := hasUser && user != nil && (user.Role == models.RoleAdmin || user.Role == models.RoleSuperAdmin)
+
+	file, err := fh.fileService.GetFileByIDForUser(uint(fileID), userID, isAdmin)
 	if err != nil {
+		if errors.Is(err, services.ErrAccessDenied) {
+			response := models.ErrorResponse{
+				Error:   "Forbidden",
+				Message: "You do not have permission to access this file",
+				Code:    http.StatusForbidden,
+			}
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
 		response := models.ErrorResponse{
 			Error:   "Not Found",
 			Message: "File not found",
@@ -221,6 +316,7 @@ func (fh *FileHandler) GetFileInfo(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path int true "File ID"
 // @Success 200 {object} models.SuccessResponse{data=string}
+// @Failure 403 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /files/{id}/url [get]
@@ -234,6 +330,34 @@ func (fh *FileHandler) GetFileURL(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Check ownership - get user from context
+	userID, hasUser := auth.GetUserIDFromContext(r.Context())
+	user, _ := auth.GetUserFromContext(r.Context())
+	isAdmin := hasUser && user != nil && (user.Role == models.RoleAdmin || user.Role == models.RoleSuperAdmin)
+
+	// Verify ownership before allowing access
+	_, err = fh.fileService.GetFileByIDForUser(uint(fileID), userID, isAdmin)
+	if err != nil {
+		if errors.Is(err, services.ErrAccessDenied) {
+			response := models.ErrorResponse{
+				Error:   "Forbidden",
+				Message: "You do not have permission to access this file",
+				Code:    http.StatusForbidden,
+			}
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		response := models.ErrorResponse{
+			Error:   "Not Found",
+			Message: "File not found",
+			Code:    http.StatusNotFound,
+		}
+		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -267,6 +391,7 @@ func (fh *FileHandler) GetFileURL(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path int true "File ID"
 // @Success 200 {object} models.SuccessResponse
+// @Failure 403 {object} models.ErrorResponse
 // @Failure 404 {object} models.ErrorResponse
 // @Failure 500 {object} models.ErrorResponse
 // @Router /files/{id} [delete]
@@ -280,6 +405,34 @@ func (fh *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Check ownership - get user from context
+	userID, hasUser := auth.GetUserIDFromContext(r.Context())
+	user, _ := auth.GetUserFromContext(r.Context())
+	isAdmin := hasUser && user != nil && (user.Role == models.RoleAdmin || user.Role == models.RoleSuperAdmin)
+
+	// Verify ownership before allowing deletion
+	_, err = fh.fileService.GetFileByIDForUser(uint(fileID), userID, isAdmin)
+	if err != nil {
+		if errors.Is(err, services.ErrAccessDenied) {
+			response := models.ErrorResponse{
+				Error:   "Forbidden",
+				Message: "You do not have permission to delete this file",
+				Code:    http.StatusForbidden,
+			}
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		response := models.ErrorResponse{
+			Error:   "Not Found",
+			Message: "File not found",
+			Code:    http.StatusNotFound,
+		}
+		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(response)
 		return
 	}
@@ -308,7 +461,7 @@ func (fh *FileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 
 // ListFiles handles requests for listing files
 // @Summary List files
-// @Description Get a list of uploaded files with pagination
+// @Description Get a list of uploaded files with pagination. Users see only their own files unless admin.
 // @Tags files
 // @Produce json
 // @Param limit query int false "Number of files to return (default: 10)"
@@ -335,7 +488,12 @@ func (fh *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	files, err := fh.fileService.ListFiles(limit, offset)
+	// Get user from context for ownership filtering
+	userID, hasUser := auth.GetUserIDFromContext(r.Context())
+	user, _ := auth.GetUserFromContext(r.Context())
+	isAdmin := hasUser && user != nil && (user.Role == models.RoleAdmin || user.Role == models.RoleSuperAdmin)
+
+	files, err := fh.fileService.ListFilesForUser(userID, isAdmin, limit, offset)
 	if err != nil {
 		response := models.ErrorResponse{
 			Error:   "Internal Server Error",

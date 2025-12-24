@@ -1,20 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { logger } from "../../lib/logger";
 import { FileService, type FileResponse, type StorageStatus } from "../../services";
 import { useAuthStore } from "../../stores/auth-store";
 
 export function useFiles(limit?: number, offset?: number) {
-  const { accessToken } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   return useQuery({
     queryKey: ["files", limit, offset],
     queryFn: () => FileService.fetchFiles(limit, offset),
-    enabled: !!accessToken, // Only run query if authenticated
+    enabled: isAuthenticated, // Only run query if authenticated
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
     onError: (error: Error) => {
-      console.error("Files fetch error:", error);
+      logger.error("Files fetch error", error);
       toast.error("Failed to load files", {
         description: "Please try again later",
       });
@@ -30,7 +31,7 @@ export function useFileUrl(fileId: number) {
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 1,
     onError: (error: Error) => {
-      console.error("File URL fetch error:", error);
+      logger.error("File URL fetch error", error);
     },
   });
 }
@@ -42,7 +43,7 @@ export function useStorageStatus() {
     staleTime: 30 * 60 * 1000, // 30 minutes
     retry: 1,
     onError: (error: Error) => {
-      console.error("Storage status fetch error:", error);
+      logger.error("Storage status fetch error", error);
     },
   });
 }
@@ -66,7 +67,7 @@ export function useFileDownload() {
 
         toast.success("File downloaded successfully!");
       } catch (error) {
-        console.error("File download error:", error);
+        logger.error("File download error", error);
         toast.error("Download failed", {
           description: "Please try again later",
         });

@@ -1,24 +1,112 @@
-import {
-  API_BASE_URL,
-  apiFetch,
-  apiFetchWithParsing,
-  authenticatedFetch,
-  authenticatedFetchWithParsing,
-  createHeaders,
-  parseErrorResponse,
-} from "../api/client";
+import { logger } from "../../lib/logger";
+import { API_BASE_URL, apiFetch, authenticatedFetchWithParsing, parseErrorResponse } from "../api/client";
 import type { AuthResponse, LoginRequest, RegisterRequest, User } from "../types";
+
+// Token refresh configuration
+const REFRESH_BUFFER_SECONDS = 60; // Refresh token 60 seconds before expiry
+let tokenExpiresAt: number | null = null;
+let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+
+// Callback for updating auth state after token refresh
+let onTokenRefresh: ((authData: AuthResponse) => void) | null = null;
 
 export class AuthService {
   /**
+   * Set callback for when tokens are refreshed
+   */
+  static setTokenRefreshCallback(callback: (authData: AuthResponse) => void): void {
+    onTokenRefresh = callback;
+  }
+
+  /**
    * Validate that data can be safely stringified to JSON
    */
-  private static validateJsonData(data: any): boolean {
+  private static validateJsonData(data: unknown): boolean {
     try {
       JSON.stringify(data);
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Schedule automatic token refresh before expiry
+   */
+  private static scheduleTokenRefresh(expiresInSeconds: number): void {
+    // Clear any existing timeout
+    if (refreshTimeout) {
+      clearTimeout(refreshTimeout);
+      refreshTimeout = null;
+    }
+
+    // Calculate when to refresh (before expiry with buffer)
+    const refreshInMs = (expiresInSeconds - REFRESH_BUFFER_SECONDS) * 1000;
+
+    if (refreshInMs <= 0) {
+      // Token is already expired or about to expire, refresh immediately
+      this.refreshAccessToken().catch((error) => {
+        logger.warn("Immediate token refresh failed", { error });
+      });
+      return;
+    }
+
+    tokenExpiresAt = Date.now() + expiresInSeconds * 1000;
+
+    refreshTimeout = setTimeout(async () => {
+      try {
+        await this.refreshAccessToken();
+      } catch (error) {
+        logger.warn("Scheduled token refresh failed", { error });
+        // Token refresh failed, user will be logged out on next API call
+      }
+    }, refreshInMs);
+
+    logger.isDev() && logger.info(`Token refresh scheduled in ${Math.round(refreshInMs / 1000)}s`);
+  }
+
+  /**
+   * Refresh access token using refresh token
+   */
+  static async refreshAccessToken(): Promise<AuthResponse> {
+    const refreshToken = this.getRefreshToken();
+
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
+    }
+
+    const response = await apiFetch(`${API_BASE_URL}/api/auth/refresh`, {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      // Refresh token is invalid or expired, clear storage
+      this.clearStorage();
+      const errorMessage = await parseErrorResponse(response, "Token refresh failed");
+      throw new Error(errorMessage);
+    }
+
+    try {
+      const authData: AuthResponse = await response.json();
+
+      // Store the new auth data
+      this.storeAuthData(authData);
+
+      // Schedule next refresh
+      if (authData.expires_in) {
+        this.scheduleTokenRefresh(authData.expires_in);
+      }
+
+      // Notify callback if set
+      if (onTokenRefresh) {
+        onTokenRefresh(authData);
+      }
+
+      return authData;
+    } catch (parseError) {
+      logger.error("Failed to parse refresh response", parseError);
+      throw new Error("Invalid response format from server");
     }
   }
 
@@ -37,9 +125,16 @@ export class AuthService {
     }
 
     try {
-      return await response.json();
+      const authData: AuthResponse = await response.json();
+
+      // Schedule token refresh if expires_in is provided
+      if (authData.expires_in) {
+        this.scheduleTokenRefresh(authData.expires_in);
+      }
+
+      return authData;
     } catch (parseError) {
-      console.error("Failed to parse login response:", parseError);
+      logger.error("Failed to parse login response", parseError);
       throw new Error("Invalid response format from server");
     }
   }
@@ -59,9 +154,16 @@ export class AuthService {
     }
 
     try {
-      return await response.json();
+      const authData: AuthResponse = await response.json();
+
+      // Schedule token refresh if expires_in is provided
+      if (authData.expires_in) {
+        this.scheduleTokenRefresh(authData.expires_in);
+      }
+
+      return authData;
     } catch (parseError) {
-      console.error("Failed to parse registration response:", parseError);
+      logger.error("Failed to parse registration response", parseError);
       throw new Error("Invalid response format from server");
     }
   }
@@ -84,104 +186,103 @@ export class AuthService {
   }
 
   /**
-   * Logout user by clearing stored tokens
+   * Logout user by calling the logout API endpoint (clears httpOnly cookie)
    */
-  static logout(): void {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("auth_user");
+  static async logout(): Promise<void> {
+    // Clear the refresh timeout
+    if (refreshTimeout) {
+      clearTimeout(refreshTimeout);
+      refreshTimeout = null;
     }
+    tokenExpiresAt = null;
+
+    try {
+      // Call logout endpoint to clear the httpOnly cookie on the server
+      await apiFetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: "POST",
+      });
+    } catch (error) {
+      // Log but don't throw - we still want to clear local state even if API call fails
+      logger.warn("Logout API call failed", { error });
+    }
+
+    // Clear any remaining local storage data
+    this.clearStorage();
   }
 
   /**
-   * Check if user is authenticated by verifying token exists and is valid
+   * Check if user is authenticated by verifying session with the server
    */
   static async isAuthenticated(): Promise<boolean> {
     if (typeof window === "undefined") return false;
-
-    const token = localStorage.getItem("auth_token");
-    if (!token) return false;
 
     try {
       await this.getCurrentUser();
       return true;
     } catch {
-      // Token is invalid, clean up
-      this.logout();
+      // Session is invalid, clean up local state
+      this.clearStorage();
       return false;
     }
   }
 
   /**
-   * Get stored authentication token
+   * Get stored refresh token
    */
-  static getToken(): string | null {
+  static getRefreshToken(): string | null {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem("auth_token");
+    return localStorage.getItem("refresh_token");
+  }
+
+  /**
+   * Get time until token expires in seconds (or null if unknown)
+   */
+  static getTimeUntilExpiry(): number | null {
+    if (!tokenExpiresAt) return null;
+    return Math.max(0, Math.round((tokenExpiresAt - Date.now()) / 1000));
   }
 
   /**
    * Store authentication data in localStorage
+   * Only stores refresh token and minimal user data - access token is in httpOnly cookie
    */
   static storeAuthData(authData: AuthResponse): void {
     // Ensure we're on the client side
     if (typeof window === "undefined") {
-      console.warn("Cannot store auth data on server side");
+      logger.warn("Cannot store auth data on server side");
       return;
     }
 
-    // Validate data before storing
-    if (!authData.token || !authData.user) {
-      console.error("Invalid auth data provided:", authData);
+    // Validate user data before storing
+    if (!authData.user) {
+      logger.error("Invalid auth data provided", null, { authData });
       throw new Error("Invalid authentication data");
     }
 
     if (!this.validateJsonData(authData.user)) {
-      console.error("User data cannot be serialized to JSON:", authData.user);
+      logger.error("User data cannot be serialized to JSON", null, { user: authData.user });
       throw new Error("User data is not serializable");
     }
 
     try {
-      localStorage.setItem("auth_token", authData.token);
-      localStorage.setItem("auth_user", JSON.stringify(authData.user));
+      // Store minimal user data for UI purposes (non-sensitive fields only)
+      const minimalUser = {
+        id: authData.user.id,
+        name: authData.user.name,
+        email: authData.user.email,
+        role: authData.user.role,
+      };
+      localStorage.setItem("auth_user", JSON.stringify(minimalUser));
+
+      // Store refresh token (used to get new access tokens via API)
+      if (authData.refresh_token) {
+        localStorage.setItem("refresh_token", authData.refresh_token);
+      }
+      // Note: Access token is handled via httpOnly cookie set by the backend
     } catch (storageError) {
-      console.error("Failed to store auth data in localStorage:", storageError);
+      logger.error("Failed to store auth data in localStorage", storageError);
       throw new Error("Failed to store authentication data");
     }
-  }
-
-  /**
-   * Debug utility: Inspect current localStorage auth data
-   */
-  static debugInspectStorage(): void {
-    if (typeof window === "undefined") {
-      console.log("🔍 AuthService Debug: Running on server side, no localStorage available");
-      return;
-    }
-
-    const token = localStorage.getItem("auth_token");
-    const user = localStorage.getItem("auth_user");
-
-    console.group("🔍 AuthService Debug - localStorage Inspection");
-    console.log("auth_token:", token ? `${token.substring(0, 20)}...` : "null");
-    console.log("auth_user raw:", user);
-
-    if (user) {
-      try {
-        const parsed = JSON.parse(user);
-        console.log("auth_user parsed:", parsed);
-        console.log("Is valid JSON: ✅ Yes");
-      } catch (parseError) {
-        console.error("Is valid JSON: ❌ No - Parse error:", parseError);
-        console.log("Raw user data inspection:");
-        console.log("Length:", user.length);
-        console.log("First 50 chars:", user.substring(0, 50));
-        console.log("Position 4 char:", user.charAt(4), `(code: ${user.charCodeAt(4)})`);
-      }
-    } else {
-      console.log("auth_user: null");
-    }
-    console.groupEnd();
   }
 
   /**
@@ -189,57 +290,25 @@ export class AuthService {
    */
   static clearStorage(): void {
     if (typeof window === "undefined") {
-      console.log("🧹 AuthService: Cannot clear storage on server side");
       return;
     }
 
-    console.log("🧹 Clearing authentication data from localStorage");
-    localStorage.removeItem("auth_token");
     localStorage.removeItem("auth_user");
+    localStorage.removeItem("refresh_token");
+    // Note: Access token in httpOnly cookie is cleared by the backend logout endpoint
   }
 
   /**
-   * Debug utility: Test API connectivity and inspect raw responses
+   * Initialize token refresh from stored data
+   * Call this on app startup if user is authenticated
    */
-  static async debugApiResponse(endpoint: string, method: string = "GET", body?: any): Promise<void> {
-    try {
-      console.group(`🔍 AuthService Debug - ${method} ${endpoint}`);
-
-      const headers = createHeaders(method !== "GET");
-      const options: RequestInit = {
-        method,
-        headers,
-      };
-
-      if (body && method !== "GET") {
-        options.body = JSON.stringify(body);
-      }
-
-      console.log("Request options:", options);
-
-      const response = await fetch(`${API_BASE_URL}/api${endpoint}`, options);
-      console.log("Response status:", response.status);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
-
-      const responseText = await response.text();
-      console.log("Raw response text:", responseText);
-      console.log("Response text length:", responseText.length);
-
-      // Try to parse as JSON
-      try {
-        const jsonData = JSON.parse(responseText);
-        console.log("Parsed JSON:", jsonData);
-        console.log("✅ Response is valid JSON");
-      } catch (jsonError) {
-        console.log("❌ Response is not valid JSON:", jsonError);
-        console.log("First 100 chars:", responseText.substring(0, 100));
-        console.log("Last 100 chars:", responseText.substring(Math.max(0, responseText.length - 100)));
-      }
-
-      console.groupEnd();
-    } catch (error) {
-      console.error("❌ API Debug failed:", error);
-      console.groupEnd();
+  static initializeFromStorage(): void {
+    const refreshToken = this.getRefreshToken();
+    if (refreshToken) {
+      // Try to refresh the token to get a fresh access token
+      this.refreshAccessToken().catch((error) => {
+        logger.warn("Failed to refresh token on initialization", { error });
+      });
     }
   }
 }

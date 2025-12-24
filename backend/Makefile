@@ -1,4 +1,6 @@
-.PHONY: db-up db-down db-reset db-logs db-shell dev clean swagger
+.PHONY: db-up db-down db-reset db-logs db-shell dev clean swagger test test-v test-race test-cover \
+	migrate-install migrate-create migrate-up migrate-down migrate-reset migrate-version migrate-force \
+	seed seed-fresh
 
 # Database configuration
 DB_NAME=devdb
@@ -55,3 +57,91 @@ swagger:
 clean: db-down
 	@docker image rm postgres:15 2>/dev/null || true
 	@echo "Cleaned up Docker images"
+
+# Run all tests
+test:
+	@go test ./internal/...
+
+# Run tests with verbose output
+test-v:
+	@go test -v ./internal/...
+
+# Run tests with race detection
+test-race:
+	@go test -race ./internal/...
+
+# Run tests with coverage report
+test-cover:
+	@go test -coverprofile=coverage.out ./internal/...
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+# ============================================
+# DATABASE MIGRATIONS (golang-migrate)
+# ============================================
+
+MIGRATIONS_PATH=./migrations
+DB_URL=postgres://$(DB_USER):$(DB_PASS)@localhost:$(DB_PORT)/$(DB_NAME)?sslmode=disable
+
+# Install golang-migrate CLI
+migrate-install:
+	@echo "Installing golang-migrate..."
+	@go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	@echo "golang-migrate installed successfully"
+
+# Create a new migration (usage: make migrate-create name=add_users_table)
+migrate-create:
+	@if [ -z "$(name)" ]; then echo "Usage: make migrate-create name=migration_name"; exit 1; fi
+	@migrate create -ext sql -dir $(MIGRATIONS_PATH) -seq $(name)
+	@echo "Migration files created for: $(name)"
+
+# Run all pending migrations
+migrate-up:
+	@echo "Running migrations..."
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" up
+	@echo "Migrations applied successfully"
+
+# Rollback last migration
+migrate-down:
+	@echo "Rolling back last migration..."
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" down 1
+	@echo "Rolled back 1 migration"
+
+# Rollback all migrations
+migrate-reset:
+	@echo "Rolling back all migrations..."
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" down -all
+	@echo "All migrations rolled back"
+
+# Show current migration version
+migrate-version:
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" version
+
+# Force set migration version (use carefully!)
+# Usage: make migrate-force version=1
+migrate-force:
+	@if [ -z "$(version)" ]; then echo "Usage: make migrate-force version=N"; exit 1; fi
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" force $(version)
+	@echo "Forced migration version to: $(version)"
+
+# Validate migrations (run up then down then up)
+migrate-validate:
+	@echo "Validating migrations..."
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" up
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" down -all
+	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" up
+	@echo "Migration validation complete"
+
+# ============================================
+# SEED DATA
+# ============================================
+
+# Seed the database with test data
+seed:
+	@echo "Seeding database..."
+	@go run cmd/seed/main.go
+	@echo "Seeding complete"
+
+# Reset database and seed fresh
+seed-fresh: migrate-reset migrate-up seed
+	@echo "Fresh seed complete"

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,18 +12,8 @@ interface UserFormProps {
 }
 
 export const UserForm: React.FC<UserFormProps> = ({ onSubmit, initialData, isLoading }) => {
-  const [name, setName] = useState(initialData?.name || "");
-  const [email, setEmail] = useState(initialData?.email || "");
-
-  useEffect(() => {
-    if (initialData) {
-      setName(initialData.name);
-      setEmail(initialData.email);
-    } else {
-      setName("");
-      setEmail("");
-    }
-  }, [initialData]);
+  const [name, setName] = useState(initialData?.name ?? "");
+  const [email, setEmail] = useState(initialData?.email ?? "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

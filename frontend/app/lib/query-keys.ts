@@ -14,6 +14,10 @@ export const queryKeys = {
   health: {
     status: ["health", "status"] as const,
   },
+  featureFlags: {
+    all: ["featureFlags"] as const,
+    user: () => [...queryKeys.featureFlags.all, "user"] as const,
+  },
 } as const;
 
 // Type-safe query key inference
