@@ -1,18 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { useRegister } from "../../hooks/mutations/use-auth-mutations";
-import { useAuthStore } from "../../stores/auth-store";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { OAuthButtons, OAuthDivider } from "./OAuthButtons";
 
 const registerSchema = z
   .object({
@@ -32,7 +33,6 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isLoading } = useAuthStore();
   const registerMutation = useRegister();
   const navigate = useNavigate();
 
@@ -54,10 +54,17 @@ export function RegisterForm() {
       },
       {
         onSuccess: () => {
+          toast.success("Account created!", {
+            description: "Welcome! Your account has been created successfully.",
+          });
           navigate({ to: "/", search: undefined });
         },
         onError: (err) => {
-          setError(err instanceof Error ? err.message : "Registration failed");
+          const errorMessage = err instanceof Error ? err.message : "Registration failed";
+          setError(errorMessage);
+          toast.error("Registration failed", {
+            description: errorMessage,
+          });
         },
       }
     );
@@ -71,6 +78,12 @@ export function RegisterForm() {
           <CardDescription className="text-center">Enter your information to create your account</CardDescription>
         </CardHeader>
         <CardContent>
+          <OAuthButtons
+            mode="register"
+            disabled={registerMutation.isPending}
+            onError={(message) => setError(message)}
+          />
+          <OAuthDivider text="or register with email" />
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-4"
@@ -87,6 +100,7 @@ export function RegisterForm() {
                 id="name"
                 type="text"
                 placeholder="Enter your full name"
+                autoFocus
                 {...register("name")}
                 disabled={registerMutation.isPending}
               />
@@ -122,6 +136,7 @@ export function RegisterForm() {
                   className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={registerMutation.isPending}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
@@ -146,6 +161,7 @@ export function RegisterForm() {
                   className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   disabled={registerMutation.isPending}
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>

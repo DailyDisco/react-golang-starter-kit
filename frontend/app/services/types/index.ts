@@ -5,6 +5,7 @@ export interface User {
   email: string;
   email_verified: boolean;
   is_active: boolean;
+  role?: string;
   created_at: string;
   updated_at: string;
 }
@@ -13,6 +14,12 @@ export interface User {
 export interface AuthResponse {
   user: User;
   token: string;
+  refresh_token?: string;
+  expires_in?: number; // Access token expiration in seconds
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
 }
 
 export interface LoginRequest {
@@ -81,4 +88,48 @@ export interface ExampleData {
   name: string;
   email: string;
   age: number;
+}
+
+// Billing/Subscription types
+export interface BillingPlan {
+  id: string;
+  name: string;
+  description: string;
+  price_id: string;
+  amount: number; // Price in cents
+  currency: string;
+  interval: "month" | "year";
+  features?: string[];
+}
+
+export interface Subscription {
+  id: number;
+  user_id: number;
+  status: SubscriptionStatus;
+  stripe_price_id: string;
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  canceled_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SubscriptionStatus = "active" | "past_due" | "canceled" | "trialing" | "unpaid";
+
+export interface BillingConfig {
+  publishable_key: string;
+}
+
+export interface CheckoutSessionResponse {
+  session_id: string;
+  url: string;
+}
+
+export interface PortalSessionResponse {
+  url: string;
+}
+
+export interface CreateCheckoutRequest {
+  price_id: string;
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { logger } from "../../lib/logger";
 import { queryKeys } from "../../lib/query-keys";
 import { UserService, type User } from "../../services";
 import { useUserStore } from "../../stores/user-store";
@@ -21,7 +22,7 @@ export const useCreateUser = () => {
       toast.success("User created successfully");
     },
     onError: (error: Error) => {
-      console.error("User creation error:", error);
+      logger.error("User creation error", error);
 
       // Provide more specific error messages based on common backend responses
       if (error.message.includes("password must contain at least one uppercase")) {

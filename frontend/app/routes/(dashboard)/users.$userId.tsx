@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
+import { UserService } from "../../services/users/userService";
 
 export const Route = createFileRoute("/(dashboard)/users/$userId")({
   component: UserDetailPage,
@@ -9,30 +10,21 @@ export const Route = createFileRoute("/(dashboard)/users/$userId")({
   validateSearch: (search) => ({
     tab: search.tab as "profile" | "settings" | undefined,
   }),
-  // Loader with parameter validation
-  // Note: context.queryClient is now fully typed and accessible!
-  // Example: loader: async ({ params, context }) => {
-  //   return await context.queryClient.ensureQueryData({
-  //     queryKey: ['user', params.userId],
-  //     queryFn: () => fetchUser(params.userId),
-  //   })
-  // }
-  loader: async ({ params }) => {
+  // Loader with parameter validation using real API
+  loader: async ({ params, context }) => {
     const userId = Number(params.userId);
     if (isNaN(userId)) {
       throw new Error("Invalid user ID");
     }
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    return {
-      user: {
-        id: userId,
-        name: `User ${userId}`,
-        email: `user${userId}@example.com`,
-        role: userId === 1 ? "Admin" : "User",
-      },
-    };
+    // Fetch user from API using queryClient for caching
+    const user = await context.queryClient.ensureQueryData({
+      queryKey: ["user", userId],
+      queryFn: () => UserService.getUserById(userId),
+      staleTime: 60 * 1000, // 1 minute
+    });
+
+    return { user };
   },
 });
 

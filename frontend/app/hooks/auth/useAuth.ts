@@ -1,10 +1,11 @@
 import type { LoginRequest, RegisterRequest, User } from "../../services";
+import { AuthService } from "../../services/auth/authService";
 import { useAuthStore } from "../../stores/auth-store";
 import { useLogin, useRegister } from "../mutations/use-auth-mutations";
+import { useUpdateUser as useUpdateUserMutation } from "../mutations/use-user-mutations";
 
 interface AuthHookType {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
@@ -15,16 +16,22 @@ interface AuthHookType {
 }
 
 // Custom hook that provides auth functionality using Zustand store directly
+// Authentication is handled via httpOnly cookies - no tokens stored in JS
 export function useAuth(): AuthHookType {
   // Use Zustand store for state management
-  const { user, token, isLoading, setLoading, logout: storeLogout } = useAuthStore();
+  const { user, isLoading, logout: storeLogout, setUser } = useAuthStore();
 
-  // Only use mutations on client side to avoid SSR issues
-  const loginMutation = typeof window !== "undefined" ? useLogin() : null;
-  const registerMutation = typeof window !== "undefined" ? useRegister() : null;
+  // Always call hooks unconditionally (React hooks rule)
+  // The mutations will handle SSR gracefully internally
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+  const updateUserMutation = useUpdateUserMutation();
+
+  // Check if we're on client side for operations that need window
+  const isClient = typeof window !== "undefined";
 
   const login = async (credentials: LoginRequest): Promise<void> => {
-    if (!loginMutation) {
+    if (!isClient) {
       throw new Error("Login not available during server-side rendering");
     }
     return new Promise((resolve, reject) => {
@@ -36,7 +43,7 @@ export function useAuth(): AuthHookType {
   };
 
   const register = async (userData: RegisterRequest): Promise<void> => {
-    if (!registerMutation) {
+    if (!isClient) {
       throw new Error("Register not available during server-side rendering");
     }
     return new Promise((resolve, reject) => {
@@ -56,23 +63,42 @@ export function useAuth(): AuthHookType {
     if (!user) {
       throw new Error("Not authenticated");
     }
+    if (!isClient) {
+      throw new Error("Update not available during server-side rendering");
+    }
 
-    // This would need a mutation for updating user profile
-    // For now, we'll throw an error to indicate it's not implemented
-    throw new Error("User update not implemented in new system");
+    const updatedUser: User = { ...user, ...userData };
+    return new Promise((resolve, reject) => {
+      updateUserMutation.mutate(updatedUser, {
+        onSuccess: () => resolve(),
+        onError: (error) => reject(error),
+      });
+    });
   };
 
   const refreshUser = async (): Promise<void> => {
-    // This would need a query for refreshing current user
-    // For now, we'll throw an error to indicate it's not implemented
-    throw new Error("User refresh not implemented in new system");
+    if (!isClient) {
+      throw new Error("User refresh not available during server-side rendering");
+    }
+
+    try {
+      // Fetch the current user from the API
+      const freshUser = await AuthService.getCurrentUser();
+      // Update the Zustand store with the refreshed user data
+      setUser(freshUser);
+      // Also update localStorage for persistence
+      localStorage.setItem("auth_user", JSON.stringify(freshUser));
+    } catch (error) {
+      // If refresh fails (e.g., session expired), log out
+      storeLogout();
+      throw error;
+    }
   };
 
   return {
     user,
-    token,
     isLoading,
-    isAuthenticated: !!user && !!token,
+    isAuthenticated: !!user,
     login,
     register,
     logout,

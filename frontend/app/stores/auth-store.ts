@@ -1,20 +1,20 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 
+import { logger } from "../lib/logger";
 import type { User } from "../services";
+import { AuthService } from "../services/auth/authService";
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 
   // Actions
   setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;
   logout: () => void;
-  login: (user: User, token: string) => void;
+  login: (user: User) => void;
   initialize: () => void;
 }
 
@@ -23,49 +23,55 @@ export const useAuthStore = create<AuthState>()(
     persist(
       (set, get) => ({
         user: null,
-        token: null,
         isLoading: true,
         isAuthenticated: false,
 
         setUser: (user) =>
           set({
             user,
-            isAuthenticated: !!user && !!get().token,
-          }),
-        setToken: (token) =>
-          set({
-            token,
-            isAuthenticated: !!token && !!get().user,
+            isAuthenticated: !!user,
           }),
         setLoading: (isLoading) => set({ isLoading }),
-        logout: () =>
+        logout: () => {
+          // Clear auth state
           set({
             user: null,
-            token: null,
             isAuthenticated: false,
-          }),
-        login: (user, token) =>
+          });
+          // Clear localStorage
+          AuthService.clearStorage();
+        },
+        login: (user) =>
           set({
             user,
-            token,
             isAuthenticated: true,
           }),
         initialize: () => {
-          // This will be called when the app starts to load auth state from localStorage
-          const storedToken = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+          // Load cached user data from localStorage for faster UI rendering
+          // Actual authentication is validated via httpOnly cookie when making API calls
           const storedUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
 
-          if (storedToken && storedUser) {
+          if (storedUser) {
             try {
               const parsedUser = JSON.parse(storedUser);
               set({
                 user: parsedUser,
-                token: storedToken,
                 isAuthenticated: true,
                 isLoading: false,
               });
+
+              // Set up the token refresh callback to update the store
+              AuthService.setTokenRefreshCallback((authData) => {
+                set({
+                  user: authData.user,
+                  isAuthenticated: true,
+                });
+              });
+
+              // Initialize token refresh from stored refresh token
+              AuthService.initializeFromStorage();
             } catch (error) {
-              console.error("Auth state invalid:", error);
+              logger.error("Auth state invalid", error);
               get().logout();
               set({ isLoading: false });
             }
@@ -77,8 +83,15 @@ export const useAuthStore = create<AuthState>()(
       {
         name: "auth-storage",
         partialize: (state) => ({
-          user: state.user,
-          token: state.token,
+          // Only persist minimal user data for UI purposes
+          user: state.user
+            ? {
+                id: state.user.id,
+                name: state.user.name,
+                email: state.user.email,
+                role: state.user.role,
+              }
+            : null,
         }),
       }
     ),

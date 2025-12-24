@@ -3,8 +3,8 @@ export * from "./api/client";
 
 // Services
 export * from "./auth/authService";
-export * from "./users/userService";
 export * from "./files/fileService";
+export * from "./users/userService";
 
 // Validation
 export * from "./validation/schemas";

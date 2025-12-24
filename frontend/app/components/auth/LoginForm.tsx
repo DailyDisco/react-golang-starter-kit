@@ -1,18 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { useLogin } from "../../hooks/mutations/use-auth-mutations";
-import { useAuthStore } from "../../stores/auth-store";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { OAuthButtons, OAuthDivider } from "./OAuthButtons";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -24,7 +25,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isLoading } = useAuthStore();
   const loginMutation = useLogin();
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,10 +43,17 @@ export function LoginForm() {
     setError(null);
     loginMutation.mutate(data, {
       onSuccess: () => {
+        toast.success("Welcome back!", {
+          description: "You have successfully signed in.",
+        });
         navigate({ to: from, replace: true });
       },
       onError: (err) => {
-        setError(err instanceof Error ? err.message : "Login failed");
+        const errorMessage = err instanceof Error ? err.message : "Login failed";
+        setError(errorMessage);
+        toast.error("Sign in failed", {
+          description: errorMessage,
+        });
       },
     });
   };
@@ -61,6 +68,12 @@ export function LoginForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <OAuthButtons
+            mode="login"
+            disabled={loginMutation.isPending}
+            onError={(message) => setError(message)}
+          />
+          <OAuthDivider text="or continue with email" />
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-4"
@@ -102,6 +115,7 @@ export function LoginForm() {
                   className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loginMutation.isPending}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
