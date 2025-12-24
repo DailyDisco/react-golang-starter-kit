@@ -1,10 +1,129 @@
+# golangci-lint configuration
+# https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
 linters:
   enable:
-    - errcheck
+    # Default linters
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code
+    - govet         # Reports suspicious constructs
+    - ineffassign   # Detects unused variable assignments
+    - staticcheck   # Static analysis checks
+    - unused        # Checks for unused constants, variables, functions and types
+
+    # Additional recommended linters
+    - bodyclose     # Checks whether HTTP response body is closed
+    - dogsled       # Checks assignments with too many blank identifiers
+    - dupl          # Tool for code clone detection
+    - errname       # Checks that sentinel errors are prefixed with Err
+    - errorlint     # Find code that will cause problems with error wrapping
+    - exhaustive    # Check exhaustiveness of enum switch statements
+    - copyloopvar   # Detects places where loop variables are copied (replaces exportloopref)
+    - gochecknoinits # Checks that no init functions are present
+    - goconst       # Finds repeated strings that could be constants
+    - gocritic      # Provides diagnostics that check for bugs and style issues
+    - gocyclo       # Computes cyclomatic complexity
+    - gofmt         # Checks whether code was gofmt-ed
+    - goimports     # Check import statements are formatted
+    - gosec         # Inspects source code for security problems
+    - misspell      # Finds commonly misspelled English words
+    - nakedret      # Finds naked returns in large functions
+    - nilerr        # Finds code returning nil even if error is not nil
+    - noctx         # Finds HTTP requests without context.Context
+    - prealloc      # Finds slice declarations that could be preallocated
+    - predeclared   # Finds code that shadows predeclared identifiers
+    - revive        # Fast, configurable, extensible linter for Go
+    - sqlclosecheck # Checks that sql.Rows and sql.Stmt are closed
+    - unconvert     # Detects unnecessary type conversions
+    - unparam       # Reports unused function parameters
+    - whitespace    # Detects leading and trailing whitespace
 
 linters-settings:
   errcheck:
     # List of functions to exclude from checking
-    # These are intentionally ignored as we're already in an error state
     exclude-functions:
       - (*encoding/json.Encoder).Encode
+      - (io.Closer).Close
+      - (net/http.ResponseWriter).Write
+
+  gocyclo:
+    # Minimal code complexity to report
+    min-complexity: 15
+
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment # Too strict for starter project
+
+  gosec:
+    excludes:
+      - G104 # Audit errors not checked - covered by errcheck
+      - G304 # File path provided as taint input - acceptable for file upload feature
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: increment-decrement
+      - name: indent-error-flow
+      - name: package-comments
+        disabled: true  # Relaxed for starter project
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: var-declaration
+      - name: var-naming
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  dupl:
+    threshold: 150
+
+  nakedret:
+    max-func-lines: 30
+
+  misspell:
+    locale: US
+
+issues:
+  # Maximum issues count per one linter
+  max-issues-per-linter: 50
+
+  # Maximum count of issues with the same text
+  max-same-issues: 3
+
+  # Exclude some linters from running on test files
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - dupl
+        - gosec
+        - goconst
+        - gocyclo
+
+    # Exclude known issues in generated files
+    - path: routeTree\.gen\.go
+      linters:
+        - all
+
+    # Allow init functions in main package
+    - path: cmd/main\.go
+      linters:
+        - gochecknoinits
+
+  # Fix found issues (if supported by linter)
+  fix: false
