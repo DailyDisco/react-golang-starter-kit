@@ -1,0 +1,66 @@
+import { useEffect } from "react";
+
+import { AlertCircle, Home, RefreshCw } from "lucide-react";
+
+import { captureError } from "../../lib/sentry";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+
+export interface ErrorFallbackProps {
+  error: Error;
+  resetError?: () => void;
+  showStack?: boolean;
+}
+
+export function ErrorFallback({ error, resetError, showStack = false }: ErrorFallbackProps) {
+  const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
+
+  // Report error to Sentry when the component mounts
+  useEffect(() => {
+    captureError(error, {
+      componentStack: "ErrorFallback",
+      location: typeof window !== "undefined" ? window.location.href : "unknown",
+    });
+  }, [error]);
+
+  return (
+    <div className="bg-background flex min-h-[400px] items-center justify-center p-4">
+      <Card className="w-full max-w-lg">
+        <CardHeader className="text-center">
+          <div className="bg-destructive/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+            <AlertCircle className="text-destructive h-6 w-6" />
+          </div>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
+          <CardDescription className="mt-2">{error.message || "An unexpected error occurred"}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {showStack && isDev && error.stack && (
+            <div className="bg-muted max-h-48 overflow-auto rounded-md p-4">
+              <pre className="text-muted-foreground text-xs whitespace-pre-wrap">{error.stack}</pre>
+            </div>
+          )}
+          <div className="flex justify-center gap-2">
+            {resetError && (
+              <Button
+                onClick={resetError}
+                variant="default"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Try Again
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              asChild
+            >
+              <a href="/">
+                <Home className="mr-2 h-4 w-4" />
+                Go Home
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

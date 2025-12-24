@@ -3,6 +3,7 @@ import React from "react";
 import { Navigate, useLocation } from "@tanstack/react-router";
 
 import { useAuth } from "../../hooks/auth/useAuth";
+import { AuthLoadingSkeleton } from "../ui/skeletons";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,11 +15,7 @@ export function ProtectedRoute({ children, redirectTo = "/login" }: ProtectedRou
   const location = useLocation();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-gray-900"></div>
-      </div>
-    );
+    return <AuthLoadingSkeleton />;
   }
 
   if (!isAuthenticated) {

@@ -45,7 +45,7 @@ export function Demo() {
   // Client state - handled by Zustand
   const { formData: newUser, setFormData: setNewUser } = useUserStore();
   const { selectedFile, isDragOver, setSelectedFile, setIsDragOver, resetFileSelection } = useFileStore();
-  const { accessToken: authToken } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   // Local state for delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -442,7 +442,7 @@ export function Demo() {
                   </p>
 
                   {/* Storage Indicator */}
-                  {storageStatus && storageStatus.storage_type && (
+                  {storageStatus?.storage_type && (
                     <div className="mt-3 flex items-center justify-center space-x-2">
                       <div
                         className={`h-2 w-2 rounded-full ${
@@ -473,12 +473,12 @@ export function Demo() {
             {/* Upload Button */}
             <button
               onClick={handleFileUpload}
-              disabled={!selectedFile || fileUploadMutation.isPending || !authToken}
+              disabled={!selectedFile || fileUploadMutation.isPending || !isAuthenticated}
               className="w-full rounded-lg bg-green-600 px-4 py-3 font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300 dark:bg-green-700 dark:hover:bg-green-600 dark:disabled:bg-green-800"
             >
               {fileUploadMutation.isPending
                 ? "Uploading..."
-                : !authToken
+                : !isAuthenticated
                   ? "Please log in to upload files"
                   : selectedFile
                     ? `Upload ${selectedFile.name}`
@@ -486,7 +486,7 @@ export function Demo() {
             </button>
 
             {/* Storage Status */}
-            {storageStatus && storageStatus.storage_type && (
+            {storageStatus?.storage_type && (
               <div className="rounded-lg border border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
                 <div className="flex items-center space-x-2">
                   <div
@@ -625,66 +625,46 @@ export function Demo() {
                   </tr>
                 </thead>
                 <AnimatePresence>
-                  {(() => {
-                    console.log(
-                      "Demo - Users array before map:",
-                      users,
-                      "Type:",
-                      typeof users,
-                      "Is array:",
-                      Array.isArray(users)
-                    );
-                    return (users || []).map((user) => {
-                      const userUrl = `/users/${user.id}`;
-                      console.log("Demo - User data:", {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        generatedUrl: userUrl,
-                      });
-
-                      return (
-                        <motion.tr
-                          key={user.id}
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                  {(users || []).map((user) => (
+                    <motion.tr
+                      key={user.id}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700"
+                    >
+                      <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{user.id}</td>
+                      <td className="px-4 py-2">
+                        <Link
+                          to="/users/$userId"
+                          params={{ userId: user.id.toString() }}
+                          search={{ tab: undefined }}
+                          className="font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                         >
-                          <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{user.id}</td>
-                          <td className="px-4 py-2">
-                            <Link
-                              to="/users/$userId"
-                              params={{ userId: user.id.toString() }}
-                              search={{ tab: undefined }}
-                              className="font-medium text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                            >
-                              {user.name}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-2">
-                            <Link
-                              to="/users/$userId"
-                              params={{ userId: user.id.toString() }}
-                              search={{ tab: undefined }}
-                              className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                            >
-                              {user.email}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-2">
-                            <button
-                              onClick={() => openDeleteDialog(user.id, user.name)}
-                              className="rounded bg-red-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </motion.tr>
-                      );
-                    });
-                  })()}
+                          {user.name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2">
+                        <Link
+                          to="/users/$userId"
+                          params={{ userId: user.id.toString() }}
+                          search={{ tab: undefined }}
+                          className="text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          {user.email}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => openDeleteDialog(user.id, user.name)}
+                          className="rounded bg-red-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </motion.tr>
+                  ))}
                 </AnimatePresence>
               </table>
             </div>

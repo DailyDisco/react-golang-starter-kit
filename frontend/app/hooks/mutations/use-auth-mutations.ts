@@ -6,13 +6,12 @@ import { AuthService, type LoginRequest, type RegisterRequest } from "../../serv
 import { useAuthStore } from "../../stores/auth-store";
 
 export const useLogin = () => {
-  const { setUser, setToken, setLoading } = useAuthStore();
+  const { login, setLoading } = useAuthStore();
 
   return useMutation({
     mutationFn: (credentials: LoginRequest) => AuthService.login(credentials),
     onSuccess: (authData) => {
-      setUser(authData.user);
-      setToken(authData.token);
+      login(authData.user);
       AuthService.storeAuthData(authData);
       toast.success("Login successful");
     },
@@ -26,13 +25,12 @@ export const useLogin = () => {
 };
 
 export const useRegister = () => {
-  const { setUser, setToken, setLoading } = useAuthStore();
+  const { login, setLoading } = useAuthStore();
 
   return useMutation({
     mutationFn: (userData: RegisterRequest) => AuthService.register(userData),
     onSuccess: (authData) => {
-      setUser(authData.user);
-      setToken(authData.token);
+      login(authData.user);
       AuthService.storeAuthData(authData);
       toast.success("Registration successful");
     },

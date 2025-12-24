@@ -5,6 +5,8 @@ import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Toaster } from "sonner";
 
+import { ErrorFallback } from "../components/error";
+import { OfflineBanner } from "../components/ui/offline-banner";
 import { StandardLayout } from "../layouts";
 
 // HydrateFallback component for better SSR UX
@@ -40,6 +42,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     <>
       <ThemeProvider defaultTheme="system">
         {/* QueryClientProvider is handled by the SSR Query integration */}
+        <OfflineBanner />
         <Toaster />
         <RootLayout />
         <ReactQueryDevtools initialIsOpen={false} />
@@ -60,33 +63,18 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       </main>
     </div>
   ),
-  errorComponent: ({ error }: { error: Error }) => {
-    const message = "Oops!";
-    let details = "An unexpected error occurred.";
-    let stack: string | undefined;
-
-    if (import.meta.env.DEV && error && error instanceof Error) {
-      details = error.message;
-      stack = error.stack;
-    }
-
-    return (
-      <div className="bg-background flex min-h-screen flex-col">
-        <header className="bg-card text-card-foreground border-b p-4">
-          <h1 className="text-xl font-bold">Application Error</h1>
-        </header>
-        <main className="flex-1 p-4">
-          <div className="container mx-auto">
-            <h1 className="text-destructive mb-4 text-2xl font-bold">{message}</h1>
-            <p className="text-muted-foreground mb-4">{details}</p>
-            {stack && (
-              <pre className="bg-muted w-full overflow-x-auto rounded p-4">
-                <code className="text-muted-foreground">{stack}</code>
-              </pre>
-            )}
-          </div>
-        </main>
-      </div>
-    );
-  },
+  errorComponent: ({ error, reset }: { error: Error; reset?: () => void }) => (
+    <div className="bg-background flex min-h-screen flex-col">
+      <header className="bg-card text-card-foreground border-b p-4">
+        <h1 className="text-xl font-bold">Application Error</h1>
+      </header>
+      <main className="flex-1 p-4">
+        <ErrorFallback
+          error={error}
+          resetError={reset}
+          showStack={import.meta.env.DEV}
+        />
+      </main>
+    </div>
+  ),
 });

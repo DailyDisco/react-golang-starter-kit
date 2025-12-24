@@ -1,0 +1,3 @@
+-- Rollback initial schema
+DROP TABLE IF EXISTS files;
+DROP TABLE IF EXISTS users;
