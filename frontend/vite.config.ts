@@ -47,6 +47,33 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom', // Faster than jsdom
     setupFiles: ['./app/test/setup.tsx', './app/test/vitest.setup.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/e2e/**', // Exclude Playwright E2E tests
+      '**/*.e2e.ts',
+      '**/*.e2e.tsx',
+    ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'app/test/',
+        'app/routeTree.gen.ts',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/types/**',
+        '**/e2e/**',
+      ],
+      thresholds: {
+        // Set reasonable thresholds that can be incrementally increased
+        lines: 50,
+        functions: 50,
+        branches: 50,
+        statements: 50,
+      },
+    },
   },
   build: {
     rollupOptions: {

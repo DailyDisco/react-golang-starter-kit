@@ -27,8 +27,8 @@
       "npm run format"
     ],
     "backend/**/*.go": [
-      "npm run format:backend",
-      "npm run vet:backend"
+      "bash -c 'cd backend && go fmt ./...'",
+      "bash -c 'cd backend && go vet ./...'"
     ]
   },
   "comments": {

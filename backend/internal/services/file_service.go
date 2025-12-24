@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mime/multipart"
+	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/storage"
@@ -11,6 +13,9 @@ import (
 
 	"gorm.io/gorm"
 )
+
+// ErrAccessDenied is returned when a user attempts to access a file they don't own
+var ErrAccessDenied = errors.New("access denied")
 
 // FileService handles file operations using the appropriate storage backend
 type FileService struct {
@@ -51,6 +56,11 @@ func (fs *FileService) UploadFile(ctx context.Context, file multipart.File, head
 	fileModel, err := fs.activeStorage.UploadFile(ctx, file, header)
 	if err != nil {
 		return nil, fmt.Errorf("failed to upload file: %w", err)
+	}
+
+	// Set UserID from context if available
+	if userID, ok := auth.GetUserIDFromContext(ctx); ok {
+		fileModel.UserID = userID
 	}
 
 	// For S3 storage, save the metadata to database
@@ -169,10 +179,48 @@ func (fs *FileService) GetFileByID(fileID uint) (*models.File, error) {
 	return &file, nil
 }
 
+// GetFileByIDForUser retrieves file metadata by ID with ownership check
+// Returns error if file doesn't exist or user doesn't own it (unless admin)
+func (fs *FileService) GetFileByIDForUser(fileID uint, userID uint, isAdmin bool) (*models.File, error) {
+	file, err := fs.GetFileByID(fileID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Admins can access any file
+	if isAdmin {
+		return file, nil
+	}
+
+	// Check ownership - allow access if file has no owner (legacy files) or user owns it
+	if file.UserID != 0 && file.UserID != userID {
+		return nil, fmt.Errorf("%w: you do not own this file", ErrAccessDenied)
+	}
+
+	return file, nil
+}
+
 // ListFiles retrieves a list of files with pagination
 func (fs *FileService) ListFiles(limit, offset int) ([]models.File, error) {
 	var files []models.File
 	if err := fs.db.Limit(limit).Offset(offset).Find(&files).Error; err != nil {
+		return nil, fmt.Errorf("failed to list files: %w", err)
+	}
+	return files, nil
+}
+
+// ListFilesForUser retrieves a list of files for a specific user with pagination
+// Admins can see all files by passing isAdmin=true
+func (fs *FileService) ListFilesForUser(userID uint, isAdmin bool, limit, offset int) ([]models.File, error) {
+	var files []models.File
+	query := fs.db.Limit(limit).Offset(offset)
+
+	// Admins can see all files
+	if !isAdmin {
+		query = query.Where("user_id = ? OR user_id IS NULL OR user_id = 0", userID)
+	}
+
+	if err := query.Find(&files).Error; err != nil {
 		return nil, fmt.Errorf("failed to list files: %w", err)
 	}
 	return files, nil

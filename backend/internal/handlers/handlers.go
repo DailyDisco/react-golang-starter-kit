@@ -66,16 +66,74 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
+	"react-golang-starter/internal/jobs"
 	"react-golang-starter/internal/models"
+	"runtime"
 	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 )
+
+// Cache key prefixes
+const (
+	userCacheKeyPrefix = "user:"
+	userCacheTTL       = 2 * time.Minute
+)
+
+// getUserCacheKey generates a cache key for a user by ID
+func getUserCacheKey(userID uint) string {
+	return fmt.Sprintf("%s%d", userCacheKeyPrefix, userID)
+}
+
+// getCachedUser attempts to retrieve a user from cache
+func getCachedUser(ctx context.Context, userID uint) (*models.UserResponse, bool) {
+	if !cache.IsAvailable() {
+		return nil, false
+	}
+
+	var userResponse models.UserResponse
+	err := cache.GetJSON(ctx, getUserCacheKey(userID), &userResponse)
+	if err != nil {
+		return nil, false
+	}
+	return &userResponse, true
+}
+
+// cacheUser stores a user response in the cache
+func cacheUser(ctx context.Context, userID uint, userResponse *models.UserResponse) {
+	if !cache.IsAvailable() {
+		return
+	}
+	// Ignore cache errors - caching is best-effort
+	_ = cache.SetJSON(ctx, getUserCacheKey(userID), userResponse, userCacheTTL)
+}
+
+// invalidateUserCache removes a user from the cache
+func invalidateUserCache(ctx context.Context, userID uint) {
+	if !cache.IsAvailable() {
+		return
+	}
+	_ = cache.Delete(ctx, getUserCacheKey(userID))
+}
+
+// Build-time variables (set via ldflags)
+var (
+	Version   = "1.0.0"
+	BuildTime = ""
+	GitCommit = ""
+)
+
+// Application start time for uptime calculation
+var startTime = time.Now()
 
 // Service represents the application service with its dependencies
 type Service struct {
@@ -86,30 +144,46 @@ func NewService() *Service {
 	return &Service{}
 }
 
-// respondWithJSON sends a JSON response
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-	response, err := json.Marshal(payload)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`{"error": "Internal Server Error", "message": "Failed to marshal response"}`))
-		return
+// formatBytes formats bytes to human readable format
+func formatBytes(bytes uint64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	_, _ = w.Write(response)
+	div, exp := uint64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-// respondWithError sends an error response
-func respondWithError(w http.ResponseWriter, code int, message string) {
-	respondWithJSON(w, code, map[string]string{"error": message})
+// formatDuration formats duration to human readable format
+func formatDuration(d time.Duration) string {
+	days := int(d.Hours() / 24)
+	hours := int(d.Hours()) % 24
+	minutes := int(d.Minutes()) % 60
+	seconds := int(d.Seconds()) % 60
+
+	if days > 0 {
+		return fmt.Sprintf("%dd %dh %dm %ds", days, hours, minutes, seconds)
+	}
+	if hours > 0 {
+		return fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds)
+	}
+	if minutes > 0 {
+		return fmt.Sprintf("%dm %ds", minutes, seconds)
+	}
+	return fmt.Sprintf("%ds", seconds)
 }
 
 // HealthCheck godoc
 // @Summary Check server health status
-// @Description Get the health status of the server and its dependencies (database)
+// @Description Get the health status of the server and its dependencies (database, cache, jobs)
 // @Tags health
 // @Accept json
 // @Produce json
+// @Param verbose query bool false "Include runtime information"
 // @Success 200 {object} models.HealthStatus "Server and its dependencies are healthy"
 // @Failure 503 {object} models.HealthStatus "Server or one of its critical dependencies is unhealthy"
 // @Router /health [get]
@@ -117,28 +191,80 @@ func (s *Service) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	overallStatus := "healthy"
 	statusCode := http.StatusOK
 
+	// Check all components
 	dbStatus := database.CheckDatabaseHealth()
+	cacheStatus := cache.CheckCacheHealth()
 
-	var components []models.ComponentStatus
-	components = append(components, dbStatus)
+	components := []models.ComponentStatus{
+		dbStatus,
+		cacheStatus,
+	}
 
+	// Check job queue status if available
+	if jobs.IsAvailable() {
+		jobStatus := models.ComponentStatus{
+			Name:    "jobs",
+			Status:  "healthy",
+			Message: "Job queue is running",
+		}
+		components = append(components, jobStatus)
+	}
+
+	// Determine overall status based on component health
 	for _, comp := range components {
 		if comp.Status == "unhealthy" {
 			overallStatus = "unhealthy"
 			statusCode = http.StatusServiceUnavailable
 			break
 		}
+		// Degraded doesn't make overall unhealthy, but note it
+		if comp.Status == "degraded" && overallStatus == "healthy" {
+			overallStatus = "degraded"
+		}
 	}
+
+	// Build version info
+	versionInfo := models.VersionInfo{
+		Version:   Version,
+		BuildTime: BuildTime,
+		GitCommit: GitCommit,
+	}
+
+	// Calculate uptime
+	uptime := formatDuration(time.Since(startTime))
 
 	healthResponse := models.HealthStatus{
 		OverallStatus: overallStatus,
 		Timestamp:     time.Now().Format(time.RFC3339),
+		Uptime:        uptime,
+		Version:       versionInfo,
 		Components:    components,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(healthResponse)
+	// Include runtime info if verbose query param is set
+	verbose := r.URL.Query().Get("verbose") == "true"
+	if verbose {
+		var memStats runtime.MemStats
+		runtime.ReadMemStats(&memStats)
+
+		healthResponse.Runtime = &models.RuntimeInfo{
+			Goroutines:  runtime.NumGoroutine(),
+			MemoryAlloc: formatBytes(memStats.Alloc),
+			MemorySys:   formatBytes(memStats.Sys),
+			NumGC:       memStats.NumGC,
+			GoVersion:   runtime.Version(),
+			NumCPU:      runtime.NumCPU(),
+			GOOS:        runtime.GOOS,
+			GOARCH:      runtime.GOARCH,
+		}
+	}
+
+	// Add environment info header
+	if env := os.Getenv("GO_ENV"); env != "" {
+		w.Header().Set("X-Environment", env)
+	}
+
+	WriteJSON(w, statusCode, healthResponse)
 }
 
 // GetUsers godoc
@@ -197,11 +323,7 @@ func GetUsers() http.HandlerFunc {
 			if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
 				page = p
 			} else {
-				respondWithJSON(w, http.StatusBadRequest, models.ErrorResponse{
-					Error:   "Bad Request",
-					Message: "Invalid page parameter",
-					Code:    http.StatusBadRequest,
-				})
+				WriteBadRequest(w, r, "Invalid page parameter")
 				return
 			}
 		}
@@ -210,11 +332,7 @@ func GetUsers() http.HandlerFunc {
 			if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
 				limit = l
 			} else {
-				respondWithJSON(w, http.StatusBadRequest, models.ErrorResponse{
-					Error:   "Bad Request",
-					Message: "Invalid limit parameter (must be 1-100)",
-					Code:    http.StatusBadRequest,
-				})
+				WriteBadRequest(w, r, "Invalid limit parameter (must be 1-100)")
 				return
 			}
 		}
@@ -222,11 +340,7 @@ func GetUsers() http.HandlerFunc {
 		// Get total count
 		var total int64
 		if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
-			respondWithJSON(w, http.StatusInternalServerError, models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to count users",
-				Code:    http.StatusInternalServerError,
-			})
+			WriteInternalError(w, r, "Failed to count users")
 			return
 		}
 
@@ -237,14 +351,7 @@ func GetUsers() http.HandlerFunc {
 		// Get paginated users
 		var users []models.User
 		if err := database.DB.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to fetch users",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
+			WriteInternalError(w, r, "Failed to fetch users")
 			return
 		}
 
@@ -263,24 +370,7 @@ func GetUsers() http.HandlerFunc {
 			TotalPages: totalPages,
 		}
 
-		response := models.SuccessResponse{
-			Success: true,
-			Message: "Users retrieved successfully",
-			Data:    usersResponse,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to encode response",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
-		}
+		WriteSuccess(w, "Users retrieved successfully", usersResponse)
 	}
 }
 
@@ -325,70 +415,44 @@ func GetUser() http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+			WriteBadRequest(w, r, "Invalid user ID")
 			return
 		}
 
 		// Get the authenticated user from context
 		currentUser, ok := auth.GetUserFromContext(r.Context())
 		if !ok {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Unauthorized",
-				Message: "User not found in context",
-				Code:    http.StatusUnauthorized,
-			}
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteUnauthorized(w, r, "User not found in context")
 			return
 		}
 
 		// Users can only view their own profile unless they're admins
-		if currentUser.ID != uint(userID) {
-			// TODO: Add role checking for admin users
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Forbidden",
-				Message: "You can only view your own profile",
-				Code:    http.StatusForbidden,
-			}
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+		isAdmin := auth.HasRole(currentUser.Role, models.RoleAdmin, models.RoleSuperAdmin)
+		if currentUser.ID != uint(userID) && !isAdmin {
+			WriteForbidden(w, r, "You can only view your own profile")
+			return
+		}
+
+		// Try to get user from cache first
+		if cachedUser, found := getCachedUser(r.Context(), uint(userID)); found {
+			w.Header().Set("X-Cache", "HIT")
+			WriteSuccess(w, "User retrieved successfully", cachedUser)
 			return
 		}
 
 		var user models.User
 		if err := database.DB.First(&user, userID).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Not Found",
-				Message: "User not found",
-				Code:    http.StatusNotFound,
-			}
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteNotFound(w, r, "User not found")
 			return
 		}
 
 		userResponse := user.ToUserResponse()
 
-		w.Header().Set("Content-Type", "application/json")
-		response := models.SuccessResponse{
-			Success: true,
-			Message: "User retrieved successfully",
-			Data:    userResponse,
-		}
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to encode response",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
-		}
+		// Cache the user response for future requests
+		cacheUser(r.Context(), uint(userID), &userResponse)
+
+		w.Header().Set("X-Cache", "MISS")
+		WriteSuccess(w, "User retrieved successfully", userResponse)
 	}
 }
 
@@ -439,82 +503,40 @@ func CreateUser() http.HandlerFunc {
 
 		var req models.RegisterRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Invalid JSON",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteBadRequest(w, r, "Invalid JSON")
 			return
 		}
 
 		// Validate email format
 		if err := auth.ValidateEmail(req.Email); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: err.Error(),
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteBadRequest(w, r, err.Error())
 			return
 		}
 
 		// Validate password strength
 		if err := auth.ValidatePassword(req.Password); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: err.Error(),
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteBadRequest(w, r, err.Error())
 			return
 		}
 
 		// Check if user already exists
 		var existingUser models.User
 		if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Conflict",
-				Message: "User with this email already exists",
-				Code:    http.StatusConflict,
-			}
-			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteConflict(w, r, "User with this email already exists")
 			return
 		}
 
 		// Hash password
 		hashedPassword, err := auth.HashPassword(req.Password)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to hash password",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteInternalError(w, r, "Failed to hash password")
 			return
 		}
 
 		// Generate verification token
 		verificationToken, err := auth.GenerateVerificationToken()
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to generate verification token",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteInternalError(w, r, "Failed to generate verification token")
 			return
 		}
 
@@ -532,36 +554,16 @@ func CreateUser() http.HandlerFunc {
 		}
 
 		if err := database.DB.Create(&user).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to create user",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteInternalError(w, r, "Failed to create user")
 			return
 		}
 
 		userResponse := user.ToUserResponse()
-
-		w.Header().Set("Content-Type", "application/json")
-		response := models.SuccessResponse{
+		WriteJSON(w, http.StatusCreated, models.SuccessResponse{
 			Success: true,
 			Message: "User created successfully",
 			Data:    userResponse,
-		}
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to encode response",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
-		}
+		})
 	}
 }
 
@@ -613,55 +615,27 @@ func UpdateUser() http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Invalid user ID",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteBadRequest(w, r, "Invalid user ID")
 			return
 		}
 
 		// Get the authenticated user from context
 		currentUser, ok := auth.GetUserFromContext(r.Context())
 		if !ok {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Unauthorized",
-				Message: "User not found in context",
-				Code:    http.StatusUnauthorized,
-			}
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteUnauthorized(w, r, "User not found in context")
 			return
 		}
 
 		var user models.User
 		if err := database.DB.First(&user, userID).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Not Found",
-				Message: "User not found",
-				Code:    http.StatusNotFound,
-			}
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteNotFound(w, r, "User not found")
 			return
 		}
 
 		// Users can only update their own profile unless they're admins
-		if currentUser.ID != uint(userID) {
-			// TODO: Add role checking for admin users
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Forbidden",
-				Message: "You can only update your own profile",
-				Code:    http.StatusForbidden,
-			}
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+		isAdmin := auth.HasRole(currentUser.Role, models.RoleAdmin, models.RoleSuperAdmin)
+		if currentUser.ID != uint(userID) && !isAdmin {
+			WriteForbidden(w, r, "You can only update your own profile")
 			return
 		}
 
@@ -671,42 +645,21 @@ func UpdateUser() http.HandlerFunc {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Invalid JSON",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteBadRequest(w, r, "Invalid JSON")
 			return
 		}
 
 		// Validate email if provided
 		if updateData.Email != "" {
 			if err := auth.ValidateEmail(updateData.Email); err != nil {
-				w.Header().Set("Content-Type", "application/json")
-				response := models.ErrorResponse{
-					Error:   "Bad Request",
-					Message: err.Error(),
-					Code:    http.StatusBadRequest,
-				}
-				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+				WriteBadRequest(w, r, err.Error())
 				return
 			}
 
 			// Check if email is already taken by another user
 			var existingUser models.User
 			if err := database.DB.Where("email = ? AND id != ?", updateData.Email, userID).First(&existingUser).Error; err == nil {
-				w.Header().Set("Content-Type", "application/json")
-				response := models.ErrorResponse{
-					Error:   "Conflict",
-					Message: "Email is already taken",
-					Code:    http.StatusConflict,
-				}
-				w.WriteHeader(http.StatusConflict)
-				json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+				WriteConflict(w, r, "Email is already taken")
 				return
 			}
 
@@ -720,35 +673,15 @@ func UpdateUser() http.HandlerFunc {
 		user.UpdatedAt = time.Now().Format(time.RFC3339)
 
 		if err := database.DB.Save(&user).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to update user",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteInternalError(w, r, "Failed to update user")
 			return
 		}
+
+		// Invalidate user cache after update
+		invalidateUserCache(r.Context(), uint(userID))
 
 		userResponse := user.ToUserResponse()
-
-		w.Header().Set("Content-Type", "application/json")
-		response := models.SuccessResponse{
-			Success: true,
-			Message: "User updated successfully",
-			Data:    userResponse,
-		}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to encode response",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
-		}
+		WriteSuccess(w, "User updated successfully", userResponse)
 	}
 }
 
@@ -780,70 +713,38 @@ func DeleteUser() http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Invalid user ID",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteBadRequest(w, r, "Invalid user ID")
 			return
 		}
 
 		// Get the authenticated user from context
 		currentUser, ok := auth.GetUserFromContext(r.Context())
 		if !ok {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Unauthorized",
-				Message: "User not found in context",
-				Code:    http.StatusUnauthorized,
-			}
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteUnauthorized(w, r, "User not found in context")
 			return
 		}
 
 		// Check if user exists
 		var user models.User
 		if err := database.DB.First(&user, userID).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Not Found",
-				Message: "User not found",
-				Code:    http.StatusNotFound,
-			}
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+			WriteNotFound(w, r, "User not found")
 			return
 		}
 
 		// Users can only delete their own account unless they're admins
-		if currentUser.ID != uint(userID) {
-			// TODO: Add role checking for admin users
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Forbidden",
-				Message: "You can only delete your own account",
-				Code:    http.StatusForbidden,
-			}
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(response) // Error intentionally ignored as we're already in an error state
+		isAdmin := auth.HasRole(currentUser.Role, models.RoleAdmin, models.RoleSuperAdmin)
+		if currentUser.ID != uint(userID) && !isAdmin {
+			WriteForbidden(w, r, "You can only delete your own account")
 			return
 		}
 
 		if err := database.DB.Delete(&models.User{}, userID).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to delete user",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
+			WriteInternalError(w, r, "Failed to delete user")
 			return
 		}
+
+		// Invalidate user cache after deletion
+		invalidateUserCache(r.Context(), uint(userID))
 
 		w.WriteHeader(http.StatusNoContent)
 	}
@@ -870,27 +771,13 @@ func UpdateUserRole() http.HandlerFunc {
 		id := chi.URLParam(r, "id")
 		userID, err := strconv.Atoi(id)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Invalid user ID",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response)
+			WriteBadRequest(w, r, "Invalid user ID")
 			return
 		}
 
 		var req UpdateRoleRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Invalid request payload",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response)
+			WriteBadRequest(w, r, "Invalid request payload")
 			return
 		}
 
@@ -902,42 +789,21 @@ func UpdateUserRole() http.HandlerFunc {
 			models.RoleUser:       true,
 		}
 		if !validRoles[req.Role] {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Invalid role. Valid roles are: super_admin, admin, premium, user",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response)
+			WriteBadRequest(w, r, "Invalid role. Valid roles are: super_admin, admin, premium, user")
 			return
 		}
 
 		// Check if user exists
 		var user models.User
 		if err := database.DB.First(&user, userID).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Not Found",
-				Message: "User not found",
-				Code:    http.StatusNotFound,
-			}
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(response)
+			WriteNotFound(w, r, "User not found")
 			return
 		}
 
 		// Prevent users from modifying their own role (security measure)
 		currentUser, ok := auth.GetUserFromContext(r.Context())
 		if ok && currentUser.ID == uint(userID) {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Forbidden",
-				Message: "You cannot modify your own role",
-				Code:    http.StatusForbidden,
-			}
-			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(response)
+			WriteForbidden(w, r, "You cannot modify your own role")
 			return
 		}
 
@@ -945,27 +811,12 @@ func UpdateUserRole() http.HandlerFunc {
 		user.UpdatedAt = time.Now().Format(time.RFC3339)
 
 		if err := database.DB.Save(&user).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to update user role",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
+			WriteInternalError(w, r, "Failed to update user role")
 			return
 		}
 
 		userResponse := user.ToUserResponse()
-
-		w.Header().Set("Content-Type", "application/json")
-		response := models.SuccessResponse{
-			Success: true,
-			Message: "User role updated successfully",
-			Data:    userResponse,
-		}
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		WriteSuccess(w, "User role updated successfully", userResponse)
 	}
 }
 
@@ -981,22 +832,16 @@ func UpdateUserRole() http.HandlerFunc {
 // @Failure 403 {object} models.ErrorResponse "Forbidden - premium subscription required"
 // @Router /premium/content [get]
 func GetPremiumContent(w http.ResponseWriter, r *http.Request) {
-	response := models.SuccessResponse{
-		Success: true,
-		Message: "Welcome to the exclusive premium content!",
-		Data: PremiumContentResponse{
-			Content: "This is premium content only available to our valued subscribers and administrators.",
-			Features: []string{
-				"Exclusive articles and tutorials",
-				"Priority customer support",
-				"Advanced features and tools",
-				"Early access to new features",
-			},
-			AccessLevel: "premium",
+	WriteSuccess(w, "Welcome to the exclusive premium content!", PremiumContentResponse{
+		Content: "This is premium content only available to our valued subscribers and administrators.",
+		Features: []string{
+			"Exclusive articles and tutorials",
+			"Priority customer support",
+			"Advanced features and tools",
+			"Early access to new features",
 		},
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+		AccessLevel: "premium",
+	})
 }
 
 // GetCurrentUser godoc
@@ -1015,27 +860,12 @@ func GetCurrentUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		currentUser, ok := auth.GetUserFromContext(r.Context())
 		if !ok {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Unauthorized",
-				Message: "User not found in context",
-				Code:    http.StatusUnauthorized,
-			}
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response)
+			WriteUnauthorized(w, r, "User not found in context")
 			return
 		}
 
 		userResponse := currentUser.ToUserResponse()
-
-		w.Header().Set("Content-Type", "application/json")
-		response := models.SuccessResponse{
-			Success: true,
-			Message: "User profile retrieved successfully",
-			Data:    userResponse,
-		}
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		WriteSuccess(w, "User profile retrieved successfully", userResponse)
 	}
 }
 
@@ -1058,55 +888,27 @@ func UpdateCurrentUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		currentUser, ok := auth.GetUserFromContext(r.Context())
 		if !ok {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Unauthorized",
-				Message: "User not found in context",
-				Code:    http.StatusUnauthorized,
-			}
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(response)
+			WriteUnauthorized(w, r, "User not found in context")
 			return
 		}
 
 		var req models.RegisterRequest // Reuse for update
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Bad Request",
-				Message: "Invalid JSON",
-				Code:    http.StatusBadRequest,
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(response)
+			WriteBadRequest(w, r, "Invalid JSON")
 			return
 		}
 
 		// Validate email format if provided
 		if req.Email != "" && req.Email != currentUser.Email {
 			if err := auth.ValidateEmail(req.Email); err != nil {
-				w.Header().Set("Content-Type", "application/json")
-				response := models.ErrorResponse{
-					Error:   "Bad Request",
-					Message: err.Error(),
-					Code:    http.StatusBadRequest,
-				}
-				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(response)
+				WriteBadRequest(w, r, err.Error())
 				return
 			}
 
 			// Check if email is already taken by another user
 			var existingUser models.User
 			if err := database.DB.Where("email = ? AND id != ?", req.Email, currentUser.ID).First(&existingUser).Error; err == nil {
-				w.Header().Set("Content-Type", "application/json")
-				response := models.ErrorResponse{
-					Error:   "Conflict",
-					Message: "Email already taken",
-					Code:    http.StatusConflict,
-				}
-				w.WriteHeader(http.StatusConflict)
-				json.NewEncoder(w).Encode(response)
+				WriteConflict(w, r, "Email already taken")
 				return
 			}
 		}
@@ -1121,27 +923,12 @@ func UpdateCurrentUser() http.HandlerFunc {
 		currentUser.UpdatedAt = time.Now().Format(time.RFC3339)
 
 		if err := database.DB.Save(&currentUser).Error; err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			response := models.ErrorResponse{
-				Error:   "Internal Server Error",
-				Message: "Failed to update user",
-				Code:    http.StatusInternalServerError,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
+			WriteInternalError(w, r, "Failed to update user")
 			return
 		}
 
 		userResponse := currentUser.ToUserResponse()
-
-		w.Header().Set("Content-Type", "application/json")
-		response := models.SuccessResponse{
-			Success: true,
-			Message: "User profile updated successfully",
-			Data:    userResponse,
-		}
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
+		WriteSuccess(w, "User profile updated successfully", userResponse)
 	}
 }
 
