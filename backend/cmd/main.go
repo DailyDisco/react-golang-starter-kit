@@ -143,6 +143,11 @@ func main() {
 	// Initialize database
 	database.ConnectDB()
 
+	// Seed initial feature flags (idempotent - only creates if not exist)
+	if err := database.SeedFeatureFlags(); err != nil {
+		zerologlog.Warn().Err(err).Msg("Feature flag seeding failed")
+	}
+
 	// Initialize cache
 	cacheConfig := cache.LoadConfig()
 	if err := cache.Initialize(cacheConfig); err != nil {

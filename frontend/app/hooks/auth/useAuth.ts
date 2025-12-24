@@ -3,6 +3,7 @@ import { AuthService } from "../../services/auth/authService";
 import { useAuthStore } from "../../stores/auth-store";
 import { useLogin, useRegister } from "../mutations/use-auth-mutations";
 import { useUpdateUser as useUpdateUserMutation } from "../mutations/use-user-mutations";
+import { useClearFeatureFlags } from "../queries/use-feature-flags";
 
 interface AuthHookType {
   user: User | null;
@@ -26,6 +27,7 @@ export function useAuth(): AuthHookType {
   const loginMutation = useLogin();
   const registerMutation = useRegister();
   const updateUserMutation = useUpdateUserMutation();
+  const clearFeatureFlags = useClearFeatureFlags();
 
   // Check if we're on client side for operations that need window
   const isClient = typeof window !== "undefined";
@@ -55,6 +57,8 @@ export function useAuth(): AuthHookType {
   };
 
   const logout = () => {
+    // Clear feature flags cache before logging out
+    clearFeatureFlags();
     // Use Zustand store logout method
     storeLogout();
   };
