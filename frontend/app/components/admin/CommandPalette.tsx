@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
-import { Activity, BarChart3, Bell, FileText, Flag, Mail, Search, Settings, Shield, Users } from "lucide-react";
+import { Activity, BarChart3, Bell, FileText, Flag, Mail, Settings, Users } from "lucide-react";
 
 import {
   CommandDialog,
@@ -11,7 +11,6 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-  CommandShortcut,
 } from "../ui/command";
 
 const adminRoutes = [
@@ -93,20 +92,20 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const handleSelect = (href: string) => {
     onOpenChange(false);
-    navigate({ to: href });
+    void navigate({ to: href });
   };
 
   const handleAction = (action: string) => {
     onOpenChange(false);
     switch (action) {
       case "create-user":
-        navigate({ to: "/admin/users" });
+        void navigate({ to: "/admin/users" });
         break;
       case "create-flag":
-        navigate({ to: "/admin/feature-flags" });
+        void navigate({ to: "/admin/feature-flags" });
         break;
       case "create-announcement":
-        navigate({ to: "/admin/announcements" });
+        void navigate({ to: "/admin/announcements" });
         break;
     }
   };

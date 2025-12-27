@@ -1,7 +1,8 @@
+import { useState } from "react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Globe, Lock, Mail, Shield, Trash2 } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 
 import { AdminPageHeader, ConfirmDialog } from "../../components/admin";
@@ -13,11 +14,7 @@ import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Textarea } from "../../components/ui/textarea";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "../../components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip";
 import { requireAdmin } from "../../lib/guards";
 import {
   AdminSettingsService,
@@ -42,22 +39,37 @@ function AdminSettingsPage() {
         breadcrumbs={[{ label: "Settings" }]}
       />
 
-      <Tabs defaultValue="email" className="space-y-6">
+      <Tabs
+        defaultValue="email"
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-4">
-          <TabsTrigger value="email" className="gap-2">
+          <TabsTrigger
+            value="email"
+            className="gap-2"
+          >
             <Mail className="h-4 w-4" />
             <span className="hidden sm:inline">Email/SMTP</span>
             <span className="sm:hidden">Email</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
+          <TabsTrigger
+            value="security"
+            className="gap-2"
+          >
             <Lock className="h-4 w-4" />
             <span>Security</span>
           </TabsTrigger>
-          <TabsTrigger value="site" className="gap-2">
+          <TabsTrigger
+            value="site"
+            className="gap-2"
+          >
             <Globe className="h-4 w-4" />
             <span>Site</span>
           </TabsTrigger>
-          <TabsTrigger value="ip-blocklist" className="gap-2">
+          <TabsTrigger
+            value="ip-blocklist"
+            className="gap-2"
+          >
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">IP Blocklist</span>
             <span className="sm:hidden">IPs</span>
@@ -136,13 +148,19 @@ function EmailSettingsTab() {
         <CardDescription>Configure the SMTP server for sending transactional emails</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
+        >
           <div className="flex items-center justify-between rounded-lg border p-4 dark:border-gray-700">
             <div className="space-y-0.5">
-              <Label htmlFor="smtp_enabled" className="text-base">Enable Email Sending</Label>
-              <p className="text-sm text-muted-foreground">
-                When enabled, the system will send transactional emails
-              </p>
+              <Label
+                htmlFor="smtp_enabled"
+                className="text-base"
+              >
+                Enable Email Sending
+              </Label>
+              <p className="text-muted-foreground text-sm">When enabled, the system will send transactional emails</p>
             </div>
             <Switch
               id="smtp_enabled"
@@ -226,7 +244,10 @@ function EmailSettingsTab() {
             >
               {testMutation.isPending ? "Sending..." : "Send Test Email"}
             </Button>
-            <Button type="submit" disabled={updateMutation.isPending}>
+            <Button
+              type="submit"
+              disabled={updateMutation.isPending}
+            >
               {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
@@ -274,10 +295,15 @@ function SecuritySettingsTab() {
     <Card>
       <CardHeader>
         <CardTitle>Security Settings</CardTitle>
-        <CardDescription>Configure password policies, session settings, and authentication requirements</CardDescription>
+        <CardDescription>
+          Configure password policies, session settings, and authentication requirements
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-8"
+        >
           {/* Password Requirements */}
           <div className="space-y-4">
             <h4 className="font-medium">Password Requirements</h4>
@@ -296,7 +322,12 @@ function SecuritySettingsTab() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex items-center justify-between rounded-lg border p-3 dark:border-gray-700">
-                <Label htmlFor="require_uppercase" className="cursor-pointer">Require uppercase</Label>
+                <Label
+                  htmlFor="require_uppercase"
+                  className="cursor-pointer"
+                >
+                  Require uppercase
+                </Label>
                 <Switch
                   id="require_uppercase"
                   checked={formData.password_require_uppercase ?? false}
@@ -304,7 +335,12 @@ function SecuritySettingsTab() {
                 />
               </div>
               <div className="flex items-center justify-between rounded-lg border p-3 dark:border-gray-700">
-                <Label htmlFor="require_lowercase" className="cursor-pointer">Require lowercase</Label>
+                <Label
+                  htmlFor="require_lowercase"
+                  className="cursor-pointer"
+                >
+                  Require lowercase
+                </Label>
                 <Switch
                   id="require_lowercase"
                   checked={formData.password_require_lowercase ?? false}
@@ -312,7 +348,12 @@ function SecuritySettingsTab() {
                 />
               </div>
               <div className="flex items-center justify-between rounded-lg border p-3 dark:border-gray-700">
-                <Label htmlFor="require_number" className="cursor-pointer">Require number</Label>
+                <Label
+                  htmlFor="require_number"
+                  className="cursor-pointer"
+                >
+                  Require number
+                </Label>
                 <Switch
                   id="require_number"
                   checked={formData.password_require_number ?? false}
@@ -320,7 +361,12 @@ function SecuritySettingsTab() {
                 />
               </div>
               <div className="flex items-center justify-between rounded-lg border p-3 dark:border-gray-700">
-                <Label htmlFor="require_special" className="cursor-pointer">Require special character</Label>
+                <Label
+                  htmlFor="require_special"
+                  className="cursor-pointer"
+                >
+                  Require special character
+                </Label>
                 <Switch
                   id="require_special"
                   checked={formData.password_require_special ?? false}
@@ -380,8 +426,13 @@ function SecuritySettingsTab() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex items-center justify-between rounded-lg border p-3 dark:border-gray-700">
                 <div>
-                  <Label htmlFor="require_2fa" className="cursor-pointer">Require 2FA for admins</Label>
-                  <p className="text-xs text-muted-foreground">Admin accounts must use two-factor auth</p>
+                  <Label
+                    htmlFor="require_2fa"
+                    className="cursor-pointer"
+                  >
+                    Require 2FA for admins
+                  </Label>
+                  <p className="text-muted-foreground text-xs">Admin accounts must use two-factor auth</p>
                 </div>
                 <Switch
                   id="require_2fa"
@@ -391,8 +442,13 @@ function SecuritySettingsTab() {
               </div>
               <div className="flex items-center justify-between rounded-lg border p-3 dark:border-gray-700">
                 <div>
-                  <Label htmlFor="allow_registration" className="cursor-pointer">Allow registration</Label>
-                  <p className="text-xs text-muted-foreground">New users can create accounts</p>
+                  <Label
+                    htmlFor="allow_registration"
+                    className="cursor-pointer"
+                  >
+                    Allow registration
+                  </Label>
+                  <p className="text-muted-foreground text-xs">New users can create accounts</p>
                 </div>
                 <Switch
                   id="allow_registration"
@@ -404,7 +460,10 @@ function SecuritySettingsTab() {
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={updateMutation.isPending}>
+            <Button
+              type="submit"
+              disabled={updateMutation.isPending}
+            >
               {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
@@ -455,7 +514,10 @@ function SiteSettingsTab() {
         <CardDescription>Configure site branding and general settings</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="site_name">Site Name</Label>
@@ -516,12 +578,13 @@ function SiteSettingsTab() {
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                 <div>
-                  <Label htmlFor="maintenance_mode" className="cursor-pointer font-medium text-yellow-800 dark:text-yellow-200">
+                  <Label
+                    htmlFor="maintenance_mode"
+                    className="cursor-pointer font-medium text-yellow-800 dark:text-yellow-200"
+                  >
                     Maintenance Mode
                   </Label>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    Temporarily disable access to the site
-                  </p>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">Temporarily disable access to the site</p>
                 </div>
               </div>
               <Switch
@@ -532,7 +595,10 @@ function SiteSettingsTab() {
             </div>
             {formData.maintenance_mode && (
               <div className="mt-4 space-y-2">
-                <Label htmlFor="maintenance_message" className="text-yellow-800 dark:text-yellow-200">
+                <Label
+                  htmlFor="maintenance_message"
+                  className="text-yellow-800 dark:text-yellow-200"
+                >
                   Maintenance Message
                 </Label>
                 <Textarea
@@ -548,7 +614,10 @@ function SiteSettingsTab() {
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={updateMutation.isPending}>
+            <Button
+              type="submit"
+              disabled={updateMutation.isPending}
+            >
               {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
@@ -644,7 +713,10 @@ function IPBlocklistTab() {
                 </div>
               </div>
               <div className="mt-4 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAddForm(false)}
+                >
                   Cancel
                 </Button>
                 <Button
@@ -674,7 +746,10 @@ function IPBlocklistTab() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono font-medium">{block.ip_address}</span>
                       {block.ip_range && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge
+                          variant="outline"
+                          className="text-xs"
+                        >
                           Range: {block.ip_range}
                         </Badge>
                       )}
@@ -682,8 +757,8 @@ function IPBlocklistTab() {
                         {block.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">{block.reason}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="text-muted-foreground mt-1 text-sm">{block.reason}</p>
+                    <p className="text-muted-foreground mt-1 text-xs">
                       Added: {new Date(block.created_at).toLocaleString()} | Hits: {block.hit_count}
                     </p>
                   </div>
@@ -731,7 +806,10 @@ function SettingsSkeleton() {
       <CardContent>
         <div className="space-y-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-10 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+            <div
+              key={i}
+              className="h-10 animate-pulse rounded bg-gray-100 dark:bg-gray-800"
+            />
           ))}
         </div>
       </CardContent>

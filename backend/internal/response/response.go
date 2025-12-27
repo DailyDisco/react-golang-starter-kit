@@ -99,6 +99,19 @@ func ValidationError(w http.ResponseWriter, r *http.Request, message string) {
 	Error(w, r, http.StatusBadRequest, ErrCodeValidation, message)
 }
 
+// ValidationErrorWithDetails writes a 400 Bad Request response with field-level error details.
+// This provides structured validation errors that clients can use for field-specific error handling.
+func ValidationErrorWithDetails(w http.ResponseWriter, r *http.Request, message string, details []models.FieldError) {
+	requestID := getRequestID(r)
+	JSON(w, http.StatusBadRequest, models.ErrorResponse{
+		Error:     ErrCodeValidation,
+		Message:   message,
+		Code:      http.StatusBadRequest,
+		RequestID: requestID,
+		Details:   details,
+	})
+}
+
 // RateLimited writes a 429 Too Many Requests response
 func RateLimited(w http.ResponseWriter, r *http.Request) {
 	Error(w, r, http.StatusTooManyRequests, ErrCodeRateLimited, "Too many requests. Please try again later.")

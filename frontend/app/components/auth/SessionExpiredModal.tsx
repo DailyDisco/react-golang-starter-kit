@@ -38,7 +38,7 @@ export function SessionExpiredModal() {
     localStorage.removeItem("auth_user");
     localStorage.removeItem("refresh_token");
     // Navigate to login
-    navigate({ to: "/login" });
+    void navigate({ to: "/login" });
   };
 
   return (

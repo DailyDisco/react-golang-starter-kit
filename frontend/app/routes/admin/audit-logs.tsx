@@ -11,21 +11,8 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { requireAdmin } from "../../lib/guards";
 import { AdminService, type AuditLogFilter, type AuditLogsResponse } from "../../services/admin";
 
@@ -75,10 +62,7 @@ function AuditLogsPage() {
       log.ip_address || "-",
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
-    ].join("\n");
+    const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(","))].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -123,16 +107,27 @@ function AuditLogsPage() {
               <Filter className="h-4 w-4" />
               <span className="hidden sm:inline">Filters</span>
               {hasActiveFilters && (
-                <Badge variant="secondary" className="ml-1">
+                <Badge
+                  variant="secondary"
+                  className="ml-1"
+                >
                   Active
                 </Badge>
               )}
             </Button>
-            <Button variant="outline" onClick={exportToCSV} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={exportToCSV}
+              className="gap-2"
+            >
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">Export</span>
             </Button>
-            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              className="gap-2"
+            >
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
@@ -147,7 +142,12 @@ function AuditLogsPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Filters</CardTitle>
               {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="gap-2"
+                >
                   <X className="h-4 w-4" />
                   Clear all
                 </Button>
@@ -259,7 +259,10 @@ function AuditLogsPage() {
               <TableBody>
                 {data.logs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell
+                      colSpan={5}
+                      className="h-24 text-center"
+                    >
                       <div className="flex flex-col items-center justify-center text-gray-500">
                         <FileText className="mb-2 h-8 w-8" />
                         <p>No audit logs found</p>
@@ -270,33 +273,25 @@ function AuditLogsPage() {
                 ) : (
                   data.logs.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell className="text-muted-foreground">
-                        {formatDate(log.created_at)}
-                      </TableCell>
+                      <TableCell className="text-muted-foreground">{formatDate(log.created_at)}</TableCell>
                       <TableCell>
                         {log.user_name ? (
                           <div>
                             <p className="font-medium">{log.user_name}</p>
-                            <p className="text-sm text-muted-foreground">{log.user_email}</p>
+                            <p className="text-muted-foreground text-sm">{log.user_email}</p>
                           </div>
                         ) : (
                           <span className="text-muted-foreground">System</span>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getActionBadgeVariant(log.action)}>
-                          {log.action}
-                        </Badge>
+                        <Badge variant={getActionBadgeVariant(log.action)}>{log.action}</Badge>
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">{log.target_type}</span>
-                        {log.target_id && (
-                          <span className="ml-1 text-muted-foreground">#{log.target_id}</span>
-                        )}
+                        {log.target_id && <span className="text-muted-foreground ml-1">#{log.target_id}</span>}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {log.ip_address || "-"}
-                      </TableCell>
+                      <TableCell className="text-muted-foreground">{log.ip_address || "-"}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -307,7 +302,7 @@ function AuditLogsPage() {
           {/* Pagination */}
           {data.total_pages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Showing {(data.page - 1) * data.limit + 1} to {Math.min(data.page * data.limit, data.total)} of{" "}
                 {data.total} results
               </p>

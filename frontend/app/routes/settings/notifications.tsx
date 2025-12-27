@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Bell, Loader2, Mail, Megaphone, Save, Shield, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "../../components/ui/button";
@@ -9,10 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch";
 import { requireAuth } from "../../lib/guards";
-import {
-  SettingsService,
-  type EmailNotificationSettings,
-} from "../../services/settings/settingsService";
+import { SettingsService, type EmailNotificationSettings } from "../../services/settings/settingsService";
 
 export const Route = createFileRoute("/settings/notifications")({
   beforeLoad: () => requireAuth(),
@@ -42,8 +40,7 @@ function NotificationsSettingsPage() {
   }, [preferences]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: EmailNotificationSettings) =>
-      SettingsService.updatePreferences({ email_notifications: data }),
+    mutationFn: (data: EmailNotificationSettings) => SettingsService.updatePreferences({ email_notifications: data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-preferences"] });
       toast.success("Notification preferences have been saved.");
@@ -86,12 +83,13 @@ function NotificationsSettingsPage() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
-        <p className="text-sm text-gray-500">
-          Manage your email notification preferences
-        </p>
+        <p className="text-sm text-gray-500">Manage your email notification preferences</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
         {/* Email Notifications */}
         <Card>
           <CardHeader>
@@ -99,9 +97,7 @@ function NotificationsSettingsPage() {
               <Mail className="h-5 w-5" />
               Email Notifications
             </CardTitle>
-            <CardDescription>
-              Choose which emails you'd like to receive
-            </CardDescription>
+            <CardDescription>Choose which emails you'd like to receive</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Security Alerts */}
@@ -149,9 +145,7 @@ function NotificationsSettingsPage() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium">Quick Actions</p>
-                <p className="text-xs text-gray-500">
-                  Quickly enable or disable all optional notifications
-                </p>
+                <p className="text-xs text-gray-500">Quickly enable or disable all optional notifications</p>
               </div>
               <div className="flex gap-2">
                 <Button

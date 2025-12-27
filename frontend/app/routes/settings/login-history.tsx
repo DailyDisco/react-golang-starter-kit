@@ -1,17 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  AlertTriangle,
-  Check,
-  Chrome,
-  Clock,
-  Globe,
-  MapPin,
-  Monitor,
-  RefreshCw,
-  Smartphone,
-  X,
-} from "lucide-react";
+import { AlertTriangle, Check, Chrome, Clock, Globe, MapPin, Monitor, RefreshCw, Smartphone, X } from "lucide-react";
 
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -77,9 +66,7 @@ function LoginHistoryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Login History</h2>
-          <p className="text-sm text-gray-500">
-            Review your recent login activity and detect suspicious access
-          </p>
+          <p className="text-sm text-gray-500">Review your recent login activity and detect suspicious access</p>
         </div>
         <Button
           variant="outline"
@@ -101,9 +88,7 @@ function LoginHistoryPage() {
                 <Check className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">
-                  {loginHistory?.filter((l) => l.success).length || 0}
-                </p>
+                <p className="text-2xl font-bold">{loginHistory?.filter((l) => l.success).length || 0}</p>
                 <p className="text-sm text-gray-500">Successful Logins</p>
               </div>
             </div>
@@ -117,9 +102,7 @@ function LoginHistoryPage() {
                 <X className="h-5 w-5 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">
-                  {loginHistory?.filter((l) => !l.success).length || 0}
-                </p>
+                <p className="text-2xl font-bold">{loginHistory?.filter((l) => !l.success).length || 0}</p>
                 <p className="text-sm text-gray-500">Failed Attempts</p>
               </div>
             </div>
@@ -133,9 +116,7 @@ function LoginHistoryPage() {
                 <Globe className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">
-                  {new Set(loginHistory?.map((l) => l.location)).size || 0}
-                </p>
+                <p className="text-2xl font-bold">{new Set(loginHistory?.map((l) => l.location)).size || 0}</p>
                 <p className="text-sm text-gray-500">Unique Locations</p>
               </div>
             </div>
@@ -153,7 +134,10 @@ function LoginHistoryPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-20 animate-pulse rounded-lg bg-gray-100" />
+                <div
+                  key={i}
+                  className="h-20 animate-pulse rounded-lg bg-gray-100"
+                />
               ))}
             </div>
           ) : !loginHistory || loginHistory.length === 0 ? (
@@ -176,21 +160,18 @@ function LoginHistoryPage() {
                       entry.success ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
                     }`}
                   >
-                    {entry.success ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4" />
-                    )}
+                    {entry.success ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
                   </div>
 
                   {/* Main Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium">
-                        {entry.success ? "Successful login" : "Failed login attempt"}
-                      </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{entry.success ? "Successful login" : "Failed login attempt"}</span>
                       {!entry.success && entry.failure_reason && (
-                        <Badge variant="destructive" className="text-xs">
+                        <Badge
+                          variant="destructive"
+                          className="text-xs"
+                        >
                           {entry.failure_reason}
                         </Badge>
                       )}
@@ -233,12 +214,8 @@ function LoginHistoryPage() {
 
                   {/* Time */}
                   <div className="shrink-0 text-right">
-                    <div className="text-sm font-medium text-gray-900">
-                      {formatDate(entry.created_at)}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      {new Date(entry.created_at).toLocaleTimeString()}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900">{formatDate(entry.created_at)}</div>
+                    <div className="text-xs text-gray-400">{new Date(entry.created_at).toLocaleTimeString()}</div>
                   </div>
                 </div>
               ))}

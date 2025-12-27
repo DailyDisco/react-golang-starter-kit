@@ -99,20 +99,20 @@ export function Demo() {
   const [currentStep, setCurrentStep] = useState(0);
 
   // Server state
-  const { data: users, isLoading: usersLoading } = useUsers();
+  const { data: _users, isLoading: _usersLoading } = useUsers();
   const { data: healthStatus, isLoading: healthLoading } = useHealthCheck();
   const { data: files, isLoading: filesLoading } = useFiles();
   const { data: storageStatus } = useStorageStatus();
   const { downloadFile } = useFileDownload();
 
   // Mutations
-  const createUserMutation = useCreateUser();
+  const _createUserMutation = useCreateUser();
   const deleteUserMutation = useDeleteUser();
   const fileUploadMutation = useFileUpload();
   const fileDeleteMutation = useFileDelete();
 
   // Client state
-  const { formData: newUser, setFormData: setNewUser } = useUserStore();
+  const { formData: newUser, setFormData: _setNewUser } = useUserStore();
   const { selectedFile, isDragOver, setSelectedFile, setIsDragOver, resetFileSelection } = useFileStore();
   const { isAuthenticated } = useAuthStore();
 
@@ -122,32 +122,19 @@ export function Demo() {
 
   // Password validation
   const passwordValidation = {
-    length: newUser.password?.length >= 8,
-    uppercase: /[A-Z]/.test(newUser.password || ""),
-    lowercase: /[a-z]/.test(newUser.password || ""),
+    length: newUser.password.length >= 8,
+    uppercase: /[A-Z]/.test(newUser.password),
+    lowercase: /[a-z]/.test(newUser.password),
   };
-  const isPasswordValid = passwordValidation.length && passwordValidation.uppercase && passwordValidation.lowercase;
+  const _isPasswordValid = passwordValidation.length && passwordValidation.uppercase && passwordValidation.lowercase;
 
   // Handlers
   const testHealthCheck = () => {
     if (healthStatus) {
       toast.success("Health check successful!", {
-        description: `Overall: ${healthStatus.overall_status.toUpperCase()}`,
+        description: `Overall: ${String(healthStatus.overall_status).toUpperCase()}`,
       });
     }
-  };
-
-  const handleCreateUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUser.name.trim() || !newUser.email.trim() || !newUser.password.trim()) {
-      toast.error("Validation Error", { description: "Please fill in all fields" });
-      return;
-    }
-    if (!isPasswordValid) {
-      toast.error("Password validation failed");
-      return;
-    }
-    createUserMutation.mutate({ name: newUser.name, email: newUser.email, password: newUser.password });
   };
 
   const handleDeleteUser = () => {
@@ -178,7 +165,7 @@ export function Demo() {
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
     setIsDragOver(false);
-    const file = event.dataTransfer.files?.[0];
+    const file = event.dataTransfer.files[0];
     if (file) setSelectedFile(file);
   };
 
@@ -199,9 +186,7 @@ export function Demo() {
       <div className="border-b border-gray-200 bg-white px-4 py-8 dark:border-gray-700 dark:bg-gray-800">
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">Interactive Feature Tour</h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Explore all the features built into this starter kit
-          </p>
+          <p className="text-gray-600 dark:text-gray-300">Explore all the features built into this starter kit</p>
         </div>
       </div>
 
@@ -322,12 +307,15 @@ export function Demo() {
       </div>
 
       {/* Delete Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete user "{userToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete user &quot;{userToDelete?.name}&quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -375,7 +363,12 @@ function AuthStep() {
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/50">
         <p className="text-sm text-blue-700 dark:text-blue-300">
           <strong>Try it:</strong> Create an account using the Register page, then explore your security settings at{" "}
-          <Link to="/settings/security" className="underline">/settings/security</Link>
+          <Link
+            to="/settings/security"
+            className="underline"
+          >
+            /settings/security
+          </Link>
         </p>
       </div>
     </div>
@@ -401,20 +394,45 @@ function BillingStep() {
         <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">How It Works</h3>
         <ol className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
           <li className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">1</span>
-            <span>Users browse pricing plans on the <Link to="/pricing" className="text-blue-600 underline dark:text-blue-400">/pricing</Link> page</span>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">
+              1
+            </span>
+            <span>
+              Users browse pricing plans on the{" "}
+              <Link
+                to="/pricing"
+                className="text-blue-600 underline dark:text-blue-400"
+              >
+                /pricing
+              </Link>{" "}
+              page
+            </span>
           </li>
           <li className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">2</span>
-            <span>Clicking "Subscribe" creates a Stripe Checkout session</span>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">
+              2
+            </span>
+            <span>Clicking &quot;Subscribe&quot; creates a Stripe Checkout session</span>
           </li>
           <li className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">3</span>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">
+              3
+            </span>
             <span>Stripe webhooks update subscription status in your database</span>
           </li>
           <li className="flex gap-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">4</span>
-            <span>Users manage billing via the Customer Portal at <Link to="/billing" className="text-blue-600 underline dark:text-blue-400">/billing</Link></span>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900 dark:text-blue-400">
+              4
+            </span>
+            <span>
+              Users manage billing via the Customer Portal at{" "}
+              <Link
+                to="/billing"
+                className="text-blue-600 underline dark:text-blue-400"
+              >
+                /billing
+              </Link>
+            </span>
           </li>
         </ol>
       </div>
@@ -460,7 +478,13 @@ function AdminStep() {
       <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-950/50">
         <p className="text-sm text-purple-700 dark:text-purple-300">
           <strong>Admin Access:</strong> The admin panel is available at{" "}
-          <Link to="/admin" className="underline">/admin</Link> for users with admin or super_admin roles.
+          <Link
+            to="/admin"
+            className="underline"
+          >
+            /admin
+          </Link>{" "}
+          for users with admin or super_admin roles.
         </p>
       </div>
     </div>
@@ -475,7 +499,7 @@ function FileStorageStep({
   isDragOver,
   isAuthenticated,
   fileUploadMutation,
-  fileDeleteMutation,
+  fileDeleteMutation: _fileDeleteMutation,
   handleFileSelect,
   handleDragOver,
   handleDragLeave,
@@ -483,8 +507,25 @@ function FileStorageStep({
   handleFileUpload,
   handleFileDownload,
   handleFileDelete,
-  resetFileSelection,
-}: any) {
+  resetFileSelection: _resetFileSelection,
+}: {
+  files: Array<{ id: number; file_name: string; file_size: number }> | undefined;
+  filesLoading: boolean;
+  storageStatus: { storage_type?: string } | undefined;
+  selectedFile: File | null;
+  isDragOver: boolean;
+  isAuthenticated: boolean;
+  fileUploadMutation: { isPending: boolean };
+  fileDeleteMutation: { mutate: (id: number) => void };
+  handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  handleDragOver: (event: React.DragEvent) => void;
+  handleDragLeave: (event: React.DragEvent) => void;
+  handleDrop: (event: React.DragEvent) => void;
+  handleFileUpload: () => void;
+  handleFileDownload: (id: number, name: string) => void;
+  handleFileDelete: (id: number) => void;
+  resetFileSelection: () => void;
+}) {
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
@@ -508,9 +549,7 @@ function FileStorageStep({
             <p className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
               {selectedFile ? selectedFile.name : "Drop files or click to browse"}
             </p>
-            {selectedFile && (
-              <p className="text-xs text-gray-500">{(selectedFile.size / 1024).toFixed(2)} KB</p>
-            )}
+            {selectedFile && <p className="text-xs text-gray-500">{(selectedFile.size / 1024).toFixed(2)} KB</p>}
             {storageStatus?.storage_type && (
               <p className="mt-2 text-xs text-gray-500">
                 Storage: <span className="font-medium">{storageStatus.storage_type.toUpperCase()}</span>
@@ -534,7 +573,10 @@ function FileStorageStep({
               <p className="text-center text-sm text-gray-500">No files uploaded</p>
             ) : (
               files.map((file: any) => (
-                <div key={file.id} className="flex items-center justify-between rounded bg-gray-50 p-2 dark:bg-gray-800">
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between rounded bg-gray-50 p-2 dark:bg-gray-800"
+                >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{file.file_name}</p>
                     <p className="text-xs text-gray-500">{(file.file_size / 1024).toFixed(1)} KB</p>
@@ -563,7 +605,26 @@ function FileStorageStep({
   );
 }
 
-function HealthStep({ healthStatus, healthLoading, testHealthCheck }: any) {
+interface HealthComponent {
+  name: string;
+  status: string;
+  message?: string;
+}
+
+interface HealthStatus {
+  overall_status: string;
+  components?: HealthComponent[];
+}
+
+function HealthStep({
+  healthStatus,
+  healthLoading,
+  testHealthCheck,
+}: {
+  healthStatus: HealthStatus | undefined;
+  healthLoading: boolean;
+  testHealthCheck: () => void;
+}) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -575,17 +636,19 @@ function HealthStep({ healthStatus, healthLoading, testHealthCheck }: any) {
           {healthLoading ? "Checking..." : "Run Health Check"}
         </button>
         {healthStatus && (
-          <span className={`rounded-full px-3 py-1 text-sm font-medium ${
-            healthStatus.overall_status === "healthy"
-              ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-              : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-          }`}>
+          <span
+            className={`rounded-full px-3 py-1 text-sm font-medium ${
+              healthStatus.overall_status === "healthy"
+                ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+            }`}
+          >
             {healthStatus.overall_status.toUpperCase()}
           </span>
         )}
       </div>
 
-      {healthStatus && healthStatus.components && (
+      {healthStatus?.components && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {healthStatus.components.map((component: any, index: number) => (
             <div
@@ -597,7 +660,7 @@ function HealthStep({ healthStatus, healthLoading, testHealthCheck }: any) {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-medium capitalize text-gray-900 dark:text-white">{component.name}</span>
+                <span className="font-medium text-gray-900 capitalize dark:text-white">{component.name}</span>
                 <span className={component.status === "healthy" ? "text-green-600" : "text-red-600"}>
                   {component.status === "healthy" ? "Healthy" : "Unhealthy"}
                 </span>
@@ -650,7 +713,14 @@ function SettingsStep() {
       </div>
       <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/50">
         <p className="text-sm text-green-700 dark:text-green-300">
-          <strong>Try it:</strong> Visit <Link to="/settings" className="underline">/settings</Link> to explore all user preferences and account options.
+          <strong>Try it:</strong> Visit{" "}
+          <Link
+            to="/settings"
+            className="underline"
+          >
+            /settings
+          </Link>{" "}
+          to explore all user preferences and account options.
         </p>
       </div>
     </div>

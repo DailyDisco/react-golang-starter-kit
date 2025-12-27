@@ -9,3 +9,9 @@ const RequestIDKey RequestIDKeyType = "request_id"
 
 // RequestIDHeader is the HTTP header name for request ID
 const RequestIDHeader = "X-Request-ID"
+
+// UserIDKeyType is the context key type for user ID
+type UserIDKeyType string
+
+// UserIDKey is the context key for storing the authenticated user's ID
+const UserIDKey UserIDKeyType = "user_id"

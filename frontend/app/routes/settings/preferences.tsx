@@ -1,20 +1,16 @@
+import { useEffect, useState } from "react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Calendar, Clock, Globe, Loader2, Moon, Palette, Save, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Label } from "../../components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { requireAuth } from "../../lib/guards";
+import { cn } from "../../lib/utils";
 import {
   DATE_FORMATS,
   LANGUAGES,
@@ -23,7 +19,6 @@ import {
   type UpdatePreferencesRequest,
   type UserPreferences,
 } from "../../services/settings/settingsService";
-import { cn } from "../../lib/utils";
 
 export const Route = createFileRoute("/settings/preferences")({
   beforeLoad: () => requireAuth(),
@@ -104,12 +99,13 @@ function PreferencesSettingsPage() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Preferences</h2>
-        <p className="text-sm text-gray-500">
-          Customize your experience with theme, language, and display settings
-        </p>
+        <p className="text-sm text-gray-500">Customize your experience with theme, language, and display settings</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
         {/* Theme Settings */}
         <Card>
           <CardHeader>
@@ -117,9 +113,7 @@ function PreferencesSettingsPage() {
               <Palette className="h-5 w-5" />
               Appearance
             </CardTitle>
-            <CardDescription>
-              Choose your preferred color theme
-            </CardDescription>
+            <CardDescription>Choose your preferred color theme</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-3">
@@ -160,9 +154,7 @@ function PreferencesSettingsPage() {
               <Globe className="h-5 w-5" />
               Regional Settings
             </CardTitle>
-            <CardDescription>
-              Set your timezone and language preferences
-            </CardDescription>
+            <CardDescription>Set your timezone and language preferences</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
@@ -178,7 +170,10 @@ function PreferencesSettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {TIMEZONES.map((tz) => (
-                      <SelectItem key={tz} value={tz}>
+                      <SelectItem
+                        key={tz}
+                        value={tz}
+                      >
                         {tz.replace(/_/g, " ")}
                       </SelectItem>
                     ))}
@@ -201,7 +196,10 @@ function PreferencesSettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
+                      <SelectItem
+                        key={lang.code}
+                        value={lang.code}
+                      >
                         {lang.name}
                       </SelectItem>
                     ))}
@@ -219,9 +217,7 @@ function PreferencesSettingsPage() {
               <Calendar className="h-5 w-5" />
               Date & Time Format
             </CardTitle>
-            <CardDescription>
-              Choose how dates and times are displayed
-            </CardDescription>
+            <CardDescription>Choose how dates and times are displayed</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
@@ -237,7 +233,10 @@ function PreferencesSettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {DATE_FORMATS.map((format) => (
-                      <SelectItem key={format.value} value={format.value}>
+                      <SelectItem
+                        key={format.value}
+                        value={format.value}
+                      >
                         {format.label}
                       </SelectItem>
                     ))}
@@ -322,22 +321,13 @@ function ThemeOption({
       onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-3 rounded-lg border-2 p-6 transition-all",
-        selected
-          ? "border-blue-500 bg-blue-50"
-          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+        selected ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
       )}
     >
-      <div
-        className={cn(
-          "rounded-full p-3",
-          selected ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"
-        )}
-      >
+      <div className={cn("rounded-full p-3", selected ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600")}>
         {icon}
       </div>
-      <span className={cn("font-medium", selected ? "text-blue-700" : "text-gray-700")}>
-        {label}
-      </span>
+      <span className={cn("font-medium", selected ? "text-blue-700" : "text-gray-700")}>{label}</span>
     </button>
   );
 }

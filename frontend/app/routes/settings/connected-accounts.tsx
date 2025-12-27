@@ -7,8 +7,8 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { requireAuth } from "../../lib/guards";
-import { SettingsService, type ConnectedAccount } from "../../services/settings/settingsService";
 import { API_BASE_URL } from "../../services/api/client";
+import { SettingsService, type ConnectedAccount } from "../../services/settings/settingsService";
 
 export const Route = createFileRoute("/settings/connected-accounts")({
   beforeLoad: () => requireAuth(),
@@ -54,7 +54,7 @@ function ConnectedAccountsPage() {
 
   const handleConnect = (providerId: string) => {
     // Redirect to OAuth flow
-    window.location.href = `${API_BASE_URL}/api/auth/${providerId}?link=true`;
+    window.location.assign(`${API_BASE_URL}/api/auth/${providerId}?link=true`);
   };
 
   const isConnected = (providerId: string) => {
@@ -70,9 +70,7 @@ function ConnectedAccountsPage() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Connected Accounts</h2>
-        <p className="text-sm text-gray-500">
-          Link third-party accounts for easier sign-in
-        </p>
+        <p className="text-sm text-gray-500">Link third-party accounts for easier sign-in</p>
       </div>
 
       {/* Providers List */}
@@ -82,15 +80,16 @@ function ConnectedAccountsPage() {
             <Link2 className="h-5 w-5" />
             OAuth Providers
           </CardTitle>
-          <CardDescription>
-            Connect your accounts to enable single sign-on
-          </CardDescription>
+          <CardDescription>Connect your accounts to enable single sign-on</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2].map((i) => (
-                <div key={i} className="h-20 animate-pulse rounded-lg bg-gray-100" />
+                <div
+                  key={i}
+                  className="h-20 animate-pulse rounded-lg bg-gray-100"
+                />
               ))}
             </div>
           ) : (
@@ -110,9 +109,7 @@ function ConnectedAccountsPage() {
                     <div className="flex items-center gap-4">
                       <div
                         className={`flex h-12 w-12 items-center justify-center rounded-lg ${
-                          provider.id === "github"
-                            ? "bg-gray-900 text-white"
-                            : "border bg-white"
+                          provider.id === "github" ? "bg-gray-900 text-white" : "border bg-white"
                         }`}
                       >
                         <Icon className="h-6 w-6" />
@@ -121,21 +118,21 @@ function ConnectedAccountsPage() {
                         <div className="flex items-center gap-2">
                           <p className="font-medium">{provider.name}</p>
                           {connected && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-700">
+                            <Badge
+                              variant="secondary"
+                              className="bg-green-100 text-green-700"
+                            >
                               <Check className="mr-1 h-3 w-3" />
                               Connected
                             </Badge>
                           )}
                         </div>
                         <p className="text-sm text-gray-500">
-                          {connected && account
-                            ? account.email
-                            : provider.description}
+                          {connected && account ? account.email : provider.description}
                         </p>
                         {connected && account && (
                           <p className="text-xs text-gray-400">
-                            Connected on{" "}
-                            {new Date(account.connected_at).toLocaleDateString()}
+                            Connected on {new Date(account.connected_at).toLocaleDateString()}
                           </p>
                         )}
                       </div>
@@ -216,9 +213,8 @@ function ConnectedAccountsPage() {
             <div>
               <p className="font-medium text-amber-900">Security Note</p>
               <p className="mt-1 text-sm text-amber-700">
-                Disconnecting an account won't delete any data from that service.
-                You can always reconnect later. We only store your email and unique
-                identifier from connected accounts.
+                Disconnecting an account won't delete any data from that service. You can always reconnect later. We
+                only store your email and unique identifier from connected accounts.
               </p>
             </div>
           </div>
@@ -231,7 +227,10 @@ function ConnectedAccountsPage() {
 // Google icon component
 function GoogleIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24">
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+    >
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

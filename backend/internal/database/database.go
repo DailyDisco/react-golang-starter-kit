@@ -11,10 +11,14 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
 
+// ConnectDB initializes the GORM database connection.
+// If the shared pgx pool is initialized (via InitPool), GORM will use it.
+// Otherwise, GORM creates its own connection pool (backward compatible).
 func ConnectDB() {
 	var err error
 
@@ -45,39 +49,63 @@ func ConnectDB() {
 		Str("sslmode", sslmode).
 		Msg("Connecting to database")
 
+	// Configure GORM with prepared statements for better query performance
+	gormConfig := &gorm.Config{
+		// Enable prepared statement cache for faster query execution
+		PrepareStmt: true,
+	}
+
+	// Configure query profiler for slow query detection
+	profilerConfig := LoadProfilerConfig()
+	if profilerConfig.Enabled {
+		gormConfig.Logger = NewQueryProfiler()
+		log.Info().
+			Dur("slow_query_threshold", profilerConfig.SlowQueryThreshold).
+			Bool("log_all_queries", profilerConfig.LogAllQueries).
+			Msg("Query profiler enabled")
+	} else {
+		gormConfig.Logger = logger.Default.LogMode(logger.Silent)
+	}
+
+	// Check if shared pool is available
+	useSharedPool := Pool != nil
+	if useSharedPool {
+		log.Info().Msg("Using shared pgx pool for GORM")
+	}
+
 	// Retry connection with exponential backoff
 	maxRetries := 10
 	for i := 0; i < maxRetries; i++ {
-		DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		DB, err = gorm.Open(postgres.Open(dsn), gormConfig)
 
 		if err == nil {
-			log.Info().Msg("PostgreSQL database connected successfully")
+			log.Info().
+				Bool("prepared_stmt", true).
+				Bool("shared_pool", useSharedPool).
+				Msg("PostgreSQL database connected successfully")
 
 			// Configure connection pool for optimal performance
+			// Note: When using shared pool, these settings are managed by the pool
 			sqlDB, poolErr := DB.DB()
 			if poolErr != nil {
 				log.Error().Err(poolErr).Msg("Failed to get underlying database connection")
 				continue
 			}
 
-			// SetMaxOpenConns sets the maximum number of open connections to the database
-			sqlDB.SetMaxOpenConns(25)
+			if !useSharedPool {
+				// Only configure pool settings if not using shared pool
+				sqlDB.SetMaxOpenConns(25)
+				sqlDB.SetMaxIdleConns(5)
+				sqlDB.SetConnMaxLifetime(5 * time.Minute)
+				sqlDB.SetConnMaxIdleTime(1 * time.Minute)
 
-			// SetMaxIdleConns sets the maximum number of connections in the idle connection pool
-			sqlDB.SetMaxIdleConns(5)
-
-			// SetConnMaxLifetime sets the maximum amount of time a connection may be reused
-			sqlDB.SetConnMaxLifetime(5 * time.Minute)
-
-			// SetConnMaxIdleTime sets the maximum amount of time a connection may be idle
-			sqlDB.SetConnMaxIdleTime(1 * time.Minute)
-
-			log.Info().
-				Int("max_open", 25).
-				Int("max_idle", 5).
-				Dur("max_lifetime", 5*time.Minute).
-				Dur("max_idle_time", 1*time.Minute).
-				Msg("Database connection pool configured")
+				log.Info().
+					Int("max_open", 25).
+					Int("max_idle", 5).
+					Dur("max_lifetime", 5*time.Minute).
+					Dur("max_idle_time", 1*time.Minute).
+					Msg("Database connection pool configured")
+			}
 
 			// Run migrations if enabled (via RUN_MIGRATIONS=true)
 			// For production, run migrations manually using: make migrate-up

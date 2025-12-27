@@ -63,7 +63,7 @@ export function RegisterForm() {
           toast.success("Account created!", {
             description: "Welcome! Your account has been created successfully.",
           });
-          navigate({ to: "/", search: undefined });
+          void navigate({ to: "/", search: undefined });
         },
         onError: (err) => {
           setError(err);
@@ -99,7 +99,10 @@ export function RegisterForm() {
                 <Alert variant="destructive">
                   <AlertDescription>{error.message}</AlertDescription>
                 </Alert>
-                <AuthErrorGuidance error={error} context="register" />
+                <AuthErrorGuidance
+                  error={error}
+                  context="register"
+                />
               </>
             )}
 

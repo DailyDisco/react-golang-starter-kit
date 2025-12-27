@@ -1,10 +1,14 @@
-import { Suspense, lazy, useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import type { RouterContext } from "@/router";
 import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 
+import { SessionExpiredModal } from "../components/auth/SessionExpiredModal";
+import { ErrorFallback } from "../components/error";
+import { OfflineBanner } from "../components/ui/offline-banner";
+import { StandardLayout } from "../layouts";
 import { initCSRFToken } from "../services/api/client";
 
 // Lazy load devtools to exclude from production bundle
@@ -23,11 +27,6 @@ const TanStackRouterDevtools = import.meta.env.DEV
       }))
     )
   : () => null;
-
-import { SessionExpiredModal } from "../components/auth/SessionExpiredModal";
-import { ErrorFallback } from "../components/error";
-import { OfflineBanner } from "../components/ui/offline-banner";
-import { StandardLayout } from "../layouts";
 
 /**
  * Initialize CSRF token on app load.

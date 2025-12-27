@@ -231,6 +231,25 @@ type PasswordResetConfirm struct {
 	Password string `json:"password" binding:"required,min=8" example:"NewSecurePass123!"`
 }
 
+// FieldError represents a validation error for a single field.
+// swagger:model FieldError
+type FieldError struct {
+	// The field name that failed validation
+	// example: email
+	Field string `json:"field"`
+
+	// Human-readable error message
+	// example: Invalid email format
+	Message string `json:"message"`
+
+	// Error code for programmatic handling
+	// example: email
+	Code string `json:"code,omitempty"`
+
+	// The rejected value (excluded for sensitive fields)
+	Value any `json:"value,omitempty"`
+}
+
 // ErrorResponse represents an error response
 // swagger:model ErrorResponse
 type ErrorResponse struct {
@@ -249,6 +268,9 @@ type ErrorResponse struct {
 	// Request ID for tracing and debugging
 	// example: 550e8400-e29b-41d4-a716-446655440000
 	RequestID string `json:"request_id,omitempty" example:"550e8400-e29b-41d4-a716-446655440000"`
+
+	// Field-level validation error details (for validation errors)
+	Details []FieldError `json:"details,omitempty"`
 }
 
 // SuccessResponse represents a success response

@@ -14,11 +14,7 @@ import { Label } from "../../components/ui/label";
 import { Progress } from "../../components/ui/progress";
 import { Slider } from "../../components/ui/slider";
 import { Switch } from "../../components/ui/switch";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "../../components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip";
 import { requireAdmin } from "../../lib/guards";
 import {
   AdminService,
@@ -49,11 +45,18 @@ function FeatureFlagsPage() {
         breadcrumbs={[{ label: "Feature Flags" }]}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              className="gap-2"
+            >
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button onClick={() => setShowCreate(true)} className="gap-2">
+            <Button
+              onClick={() => setShowCreate(true)}
+              className="gap-2"
+            >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Create Flag</span>
             </Button>
@@ -110,7 +113,12 @@ function FeatureFlagsPage() {
               </CardContent>
             </Card>
           ) : (
-            data.flags.map((flag) => <FeatureFlagCard key={flag.id} flag={flag} />)
+            data.flags.map((flag) => (
+              <FeatureFlagCard
+                key={flag.id}
+                flag={flag}
+              />
+            ))
           )}
         </div>
       )}
@@ -149,13 +157,20 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Create Feature Flag</CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="key">Key</Label>
@@ -168,7 +183,7 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
                 }
                 required
               />
-              <p className="text-xs text-muted-foreground">Lowercase letters, numbers, and underscores only</p>
+              <p className="text-muted-foreground text-xs">Lowercase letters, numbers, and underscores only</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -202,8 +217,13 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
             </div>
             <div className="flex items-center justify-between rounded-lg border p-4 dark:border-gray-700">
               <div>
-                <Label htmlFor="enabled" className="cursor-pointer">Enabled</Label>
-                <p className="text-xs text-muted-foreground">Turn this flag on immediately</p>
+                <Label
+                  htmlFor="enabled"
+                  className="cursor-pointer"
+                >
+                  Enabled
+                </Label>
+                <p className="text-muted-foreground text-xs">Turn this flag on immediately</p>
               </div>
               <Switch
                 id="enabled"
@@ -213,15 +233,19 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={createMutation.isPending} className="gap-2">
-              {createMutation.isPending ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
+            <Button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="gap-2"
+            >
+              {createMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Create
             </Button>
           </div>
@@ -284,17 +308,13 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
             <div className="min-w-0 flex-1 space-y-3">
               {/* Header with key and toggle */}
               <div className="flex flex-wrap items-center gap-3">
-                <code className="rounded bg-gray-100 px-2 py-1 font-mono text-sm dark:bg-gray-800">
-                  {flag.key}
-                </code>
+                <code className="rounded bg-gray-100 px-2 py-1 font-mono text-sm dark:bg-gray-800">{flag.key}</code>
                 <Switch
                   checked={flag.enabled}
                   onCheckedChange={(checked) => toggleMutation.mutate(checked)}
                   disabled={toggleMutation.isPending}
                 />
-                <Badge variant={flag.enabled ? "default" : "secondary"}>
-                  {flag.enabled ? "Enabled" : "Disabled"}
-                </Badge>
+                <Badge variant={flag.enabled ? "default" : "secondary"}>{flag.enabled ? "Enabled" : "Disabled"}</Badge>
               </div>
 
               {isEditing ? (
@@ -327,7 +347,11 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+                    <Button
+                      size="sm"
+                      onClick={() => updateMutation.mutate()}
+                      disabled={updateMutation.isPending}
+                    >
                       {updateMutation.isPending ? "Saving..." : "Save"}
                     </Button>
                     <Button
@@ -351,24 +375,29 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
                 <>
                   <div>
                     <h3 className="font-medium">{flag.name}</h3>
-                    {flag.description && (
-                      <p className="mt-1 text-sm text-muted-foreground">{flag.description}</p>
-                    )}
+                    {flag.description && <p className="text-muted-foreground mt-1 text-sm">{flag.description}</p>}
                   </div>
                   <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Rollout:</span>
+                      <span className="text-muted-foreground text-sm">Rollout:</span>
                       <div className="flex items-center gap-2">
-                        <Progress value={flag.rollout_percentage} className="h-2 w-20" />
+                        <Progress
+                          value={flag.rollout_percentage}
+                          className="h-2 w-20"
+                        />
                         <span className="text-sm font-medium">{flag.rollout_percentage}%</span>
                       </div>
                     </div>
                     {flag.allowed_roles && flag.allowed_roles.length > 0 && (
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Roles:</span>
+                        <span className="text-muted-foreground text-sm">Roles:</span>
                         <div className="flex gap-1">
                           {flag.allowed_roles.map((role) => (
-                            <Badge key={role} variant="outline" className="text-xs">
+                            <Badge
+                              key={role}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {role}
                             </Badge>
                           ))}
@@ -384,7 +413,11 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
               <div className="flex gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

@@ -1,24 +1,14 @@
+import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import {
-  Bell,
-  ChevronRight,
-  Globe,
-  History,
-  Key,
-  Link2,
-  Palette,
-  Search,
-  Shield,
-  User,
-} from "lucide-react";
-import { useState } from "react";
+import { Bell, ChevronRight, Globe, History, Key, Link2, Palette, Search, Shield, User } from "lucide-react";
 
 import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { requireAuth } from "../../lib/guards";
-import { AuthService } from "../../services/auth/authService";
 import { cn } from "../../lib/utils";
+import { AuthService } from "../../services/auth/authService";
 
 export const Route = createFileRoute("/settings/")({
   beforeLoad: () => requireAuth(),
@@ -114,7 +104,7 @@ function SettingsLayout() {
         <aside className="w-full shrink-0 lg:w-64">
           {/* Search */}
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               type="text"
               placeholder="Search settings..."
@@ -136,18 +126,13 @@ function SettingsLayout() {
                   to={item.href}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    isActive ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   )}
                 >
                   <Icon className={cn("h-5 w-5", isActive ? "text-blue-600" : "text-gray-400")} />
                   <span className="flex-1">{item.title}</span>
                   <ChevronRight
-                    className={cn(
-                      "h-4 w-4 transition-transform",
-                      isActive ? "text-blue-600" : "text-gray-300"
-                    )}
+                    className={cn("h-4 w-4 transition-transform", isActive ? "text-blue-600" : "text-gray-300")}
                   />
                 </Link>
               );
@@ -159,7 +144,7 @@ function SettingsLayout() {
             <Card className="mt-6">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white font-medium">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 font-medium text-white">
                     {user.name?.charAt(0).toUpperCase() || "U"}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -180,7 +165,10 @@ function SettingsLayout() {
               {filteredNavItems.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Link key={item.href} to={item.href}>
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                  >
                     <Card className="h-full transition-all hover:border-blue-200 hover:shadow-md">
                       <CardContent className="p-6">
                         <div className="flex items-start gap-4">

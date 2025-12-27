@@ -26,7 +26,7 @@ export function AuthErrorGuidance({ error, context }: AuthErrorGuidanceProps) {
           </p>
           <div className="flex flex-col gap-1 pl-5">
             <p className="text-muted-foreground">
-              Double-check your email and password, or create a new account if you don't have one yet.
+              Double-check your email and password, or create a new account if you don&apos;t have one yet.
             </p>
             <Link
               to="/register"

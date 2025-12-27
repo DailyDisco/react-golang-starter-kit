@@ -9,7 +9,7 @@ import {
   BreadcrumbSeparator,
 } from "../ui/breadcrumb";
 
-interface BreadcrumbItem {
+interface BreadcrumbItemData {
   label: string;
   href?: string;
 }
@@ -17,7 +17,7 @@ interface BreadcrumbItem {
 interface AdminPageHeaderProps {
   title: string;
   description?: string;
-  breadcrumbs?: BreadcrumbItem[];
+  breadcrumbs?: BreadcrumbItemData[];
   actions?: React.ReactNode;
 }
 
@@ -36,7 +36,7 @@ export function AdminPageHeader({ title, description, breadcrumbs = [], actions 
                 <BreadcrumbPage>{item.label}</BreadcrumbPage>
               ) : (
                 <BreadcrumbLink asChild>
-                  <Link to={item.href || "#"}>{item.label}</Link>
+                  <Link to={item.href ?? "#"}>{item.label}</Link>
                 </BreadcrumbLink>
               )}
             </BreadcrumbItem>

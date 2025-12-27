@@ -1,17 +1,8 @@
+import { useState } from "react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  AlertTriangle,
-  Download,
-  Eye,
-  EyeOff,
-  FileArchive,
-  Loader2,
-  ShieldAlert,
-  Trash2,
-  X,
-} from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, Download, Eye, EyeOff, FileArchive, Loader2, ShieldAlert, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "../../components/ui/badge";
@@ -34,9 +25,7 @@ function PrivacySettingsPage() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Privacy</h2>
-        <p className="text-sm text-gray-500">
-          Manage your data and account privacy settings
-        </p>
+        <p className="text-sm text-gray-500">Manage your data and account privacy settings</p>
       </div>
 
       {/* Data Export */}
@@ -80,9 +69,23 @@ function DataExportCard() {
       case "pending":
         return <Badge variant="secondary">Pending</Badge>;
       case "processing":
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-700">Processing</Badge>;
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-blue-100 text-blue-700"
+          >
+            Processing
+          </Badge>
+        );
       case "completed":
-        return <Badge variant="default" className="bg-green-500">Ready</Badge>;
+        return (
+          <Badge
+            variant="default"
+            className="bg-green-500"
+          >
+            Ready
+          </Badge>
+        );
       case "failed":
         return <Badge variant="destructive">Failed</Badge>;
       default:
@@ -97,9 +100,7 @@ function DataExportCard() {
           <FileArchive className="h-5 w-5" />
           Export Your Data
         </CardTitle>
-        <CardDescription>
-          Download a copy of all your personal data stored in our system
-        </CardDescription>
+        <CardDescription>Download a copy of all your personal data stored in our system</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-lg bg-gray-50 p-4">
@@ -128,8 +129,7 @@ function DataExportCard() {
                   {getStatusBadge(exportStatus.status)}
                 </div>
                 <p className="text-sm text-gray-500">
-                  Requested on{" "}
-                  {new Date(exportStatus.created_at).toLocaleDateString()}
+                  Requested on {new Date(exportStatus.created_at).toLocaleDateString()}
                 </p>
                 {exportStatus.expires_at && exportStatus.status === "completed" && (
                   <p className="text-xs text-amber-600">
@@ -140,7 +140,10 @@ function DataExportCard() {
             </div>
             {exportStatus.status === "completed" && exportStatus.download_url && (
               <Button asChild>
-                <a href={exportStatus.download_url} download>
+                <a
+                  href={exportStatus.download_url}
+                  download
+                >
                   <Download className="mr-2 h-4 w-4" />
                   Download
                 </a>
@@ -170,8 +173,8 @@ function DataExportCard() {
         )}
 
         <p className="text-xs text-gray-500">
-          Your data will be prepared as a downloadable archive. This process may take a few minutes.
-          You'll receive an email notification when your data is ready.
+          Your data will be prepared as a downloadable archive. This process may take a few minutes. You'll receive an
+          email notification when your data is ready.
         </p>
       </CardContent>
     </Card>
@@ -218,9 +221,7 @@ function AccountDeletionCard() {
           <ShieldAlert className="h-5 w-5" />
           Delete Account
         </CardTitle>
-        <CardDescription>
-          Permanently delete your account and all associated data
-        </CardDescription>
+        <CardDescription>Permanently delete your account and all associated data</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!showConfirm ? (
@@ -252,7 +253,10 @@ function AccountDeletionCard() {
             </Button>
           </>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
             {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="delete-password">Enter your password to confirm</Label>
@@ -267,7 +271,7 @@ function AccountDeletionCard() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -277,9 +281,7 @@ function AccountDeletionCard() {
 
             {/* Reason (optional) */}
             <div className="space-y-2">
-              <Label htmlFor="delete-reason">
-                Why are you leaving? (optional)
-              </Label>
+              <Label htmlFor="delete-reason">Why are you leaving? (optional)</Label>
               <Textarea
                 id="delete-reason"
                 value={reason}
@@ -321,11 +323,7 @@ function AccountDeletionCard() {
               <Button
                 type="submit"
                 variant="destructive"
-                disabled={
-                  !password ||
-                  confirmText !== "DELETE" ||
-                  requestDeletionMutation.isPending
-                }
+                disabled={!password || confirmText !== "DELETE" || requestDeletionMutation.isPending}
               >
                 {requestDeletionMutation.isPending ? (
                   <>
@@ -342,8 +340,8 @@ function AccountDeletionCard() {
             </div>
 
             <p className="text-xs text-gray-500">
-              After requesting deletion, you'll have a 14-day grace period to cancel.
-              After that, your account and all data will be permanently deleted.
+              After requesting deletion, you'll have a 14-day grace period to cancel. After that, your account and all
+              data will be permanently deleted.
             </p>
           </form>
         )}

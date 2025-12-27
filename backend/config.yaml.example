@@ -1,0 +1,77 @@
+# React Go Starter Kit - Configuration
+# Copy to config.yaml and modify as needed
+# Environment variables ALWAYS override these settings
+#
+# SECURITY NOTE: Never commit secrets (passwords, keys) to config.yaml
+# Use environment variables for: JWT_SECRET, DB_PASSWORD, AWS credentials
+
+server:
+  port: "8080"
+  host: "0.0.0.0"
+  env: development  # development, staging, production
+  debug: false
+  timeout: 30s
+
+database:
+  host: localhost
+  port: "5432"
+  user: devuser
+  name: devdb
+  sslmode: disable  # disable, require, verify-full
+  # password: Set via PGPASSWORD or DB_PASSWORD env var
+
+jwt:
+  expiration_hours: 24
+  # secret: Set via JWT_SECRET env var (required)
+
+rate_limit:
+  enabled: true
+  # IP-based limits (applies to all requests)
+  ip_per_minute: 60
+  ip_per_hour: 1000
+  ip_burst: 10
+  # User-based limits (authenticated requests)
+  user_per_minute: 100
+  user_per_hour: 2000
+  user_burst: 20
+  # Auth endpoint limits (login, register)
+  auth_per_minute: 5
+  auth_per_hour: 100
+  auth_burst: 2
+  # API endpoint limits
+  api_per_minute: 100
+  api_per_hour: 2000
+  api_burst: 20
+
+logging:
+  level: info  # debug, info, warn, error, fatal
+  pretty: true  # Human-readable format (dev only)
+  enabled: true
+  include_user_context: false
+  include_request_body: false
+  include_response_body: false
+  max_request_body_size: 1024
+  max_response_body_size: 1024
+  sampling_rate: 1.0  # 1.0 = log all requests
+  async: false
+  sanitize_headers: true
+  filter_sensitive: true
+  allowed_headers:
+    - Authorization
+    - Content-Type
+    - X-Request-ID
+
+cors:
+  allowed_origins:
+    - http://localhost:3000
+    - http://localhost:5173
+    - http://localhost:8080
+
+file_upload:
+  max_file_size_mb: 10
+
+aws:
+  region: us-east-1
+  s3_bucket: my-bucket
+  # access_key_id: Set via AWS_ACCESS_KEY_ID env var
+  # secret_access_key: Set via AWS_SECRET_ACCESS_KEY env var

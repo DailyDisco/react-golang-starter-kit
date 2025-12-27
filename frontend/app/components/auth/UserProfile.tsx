@@ -34,8 +34,8 @@ export function UserProfile() {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: user?.name || "",
-      email: user?.email || "",
+      name: user?.name ?? "",
+      email: user?.email ?? "",
     },
   });
 
@@ -53,8 +53,8 @@ export function UserProfile() {
 
   const handleCancel = () => {
     reset({
-      name: user?.name || "",
-      email: user?.email || "",
+      name: user?.name ?? "",
+      email: user?.email ?? "",
     });
     setIsEditing(false);
     setError(null);

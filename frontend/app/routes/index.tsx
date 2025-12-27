@@ -57,7 +57,11 @@ const featureCategories: FeatureCategory[] = [
     iconColor: "text-green-600 dark:text-green-400",
     features: [
       { icon: <CreditCard className="h-4 w-4" />, name: "Stripe Integration", description: "Complete billing system" },
-      { icon: <FileText className="h-4 w-4" />, name: "Subscription Plans", description: "Dynamic pricing from Stripe" },
+      {
+        icon: <FileText className="h-4 w-4" />,
+        name: "Subscription Plans",
+        description: "Dynamic pricing from Stripe",
+      },
       { icon: <Settings className="h-4 w-4" />, name: "Customer Portal", description: "Self-service management" },
     ],
   },
@@ -98,8 +102,8 @@ function Home() {
             <span className="block text-blue-600 dark:text-blue-400">React + Go Starter Kit</span>
           </h1>
           <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-600 md:text-xl dark:text-gray-300">
-            Launch your SaaS faster with authentication, billing, admin panel, and more built-in.
-            Everything you need to go from idea to production.
+            Launch your SaaS faster with authentication, billing, admin panel, and more built-in. Everything you need to
+            go from idea to production.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
@@ -142,7 +146,10 @@ function Home() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {category.features.map((feature) => (
-                    <div key={feature.name} className="flex items-start gap-2">
+                    <div
+                      key={feature.name}
+                      className="flex items-start gap-2"
+                    >
                       <div className="mt-0.5 text-gray-400">{feature.icon}</div>
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">{feature.name}</p>
@@ -217,9 +224,7 @@ function Home() {
         <div className="mx-auto max-w-4xl">
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white">Get Started in Minutes</h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Clone, configure, and start building your next project.
-            </p>
+            <p className="text-gray-600 dark:text-gray-400">Clone, configure, and start building your next project.</p>
           </div>
 
           <div className="rounded-xl bg-white p-8 shadow-md dark:bg-gray-800">

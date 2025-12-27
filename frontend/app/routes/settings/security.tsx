@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -15,7 +17,6 @@ import {
   Smartphone,
   X,
 } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "../../components/ui/badge";
@@ -55,9 +56,7 @@ function SecuritySettingsPage() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Security</h2>
-        <p className="text-sm text-gray-500">
-          Manage your password, two-factor authentication, and active sessions
-        </p>
+        <p className="text-sm text-gray-500">Manage your password, two-factor authentication, and active sessions</p>
       </div>
 
       {/* Password Change */}
@@ -67,7 +66,10 @@ function SecuritySettingsPage() {
       <TwoFactorCard />
 
       {/* Active Sessions */}
-      <SessionsCard sessions={sessions || []} isLoading={sessionsLoading} />
+      <SessionsCard
+        sessions={sessions || []}
+        isLoading={sessionsLoading}
+      />
     </div>
   );
 }
@@ -81,8 +83,7 @@ function PasswordChangeCard() {
   });
 
   const changePasswordMutation = useMutation({
-    mutationFn: (data: { current_password: string; new_password: string }) =>
-      SettingsService.changePassword(data),
+    mutationFn: (data: { current_password: string; new_password: string }) => SettingsService.changePassword(data),
     onSuccess: () => {
       toast.success("Your password has been changed successfully.");
       setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -118,12 +119,13 @@ function PasswordChangeCard() {
           <Lock className="h-5 w-5" />
           Change Password
         </CardTitle>
-        <CardDescription>
-          Update your password to keep your account secure
-        </CardDescription>
+        <CardDescription>Update your password to keep your account secure</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="currentPassword">Current Password</Label>
             <div className="relative">
@@ -131,14 +133,12 @@ function PasswordChangeCard() {
                 id="currentPassword"
                 type={showPasswords ? "text" : "password"}
                 value={formData.currentPassword}
-                onChange={(e) =>
-                  setFormData({ ...formData, currentPassword: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
                 placeholder="Enter your current password"
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 onClick={() => setShowPasswords(!showPasswords)}
               >
                 {showPasswords ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -163,9 +163,7 @@ function PasswordChangeCard() {
                 id="confirmPassword"
                 type={showPasswords ? "text" : "password"}
                 value={formData.confirmPassword}
-                onChange={(e) =>
-                  setFormData({ ...formData, confirmPassword: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 placeholder="Confirm new password"
               />
             </div>
@@ -267,9 +265,7 @@ function TwoFactorCard() {
           <Shield className="h-5 w-5" />
           Two-Factor Authentication
         </CardTitle>
-        <CardDescription>
-          Add an extra layer of security to your account
-        </CardDescription>
+        <CardDescription>Add an extra layer of security to your account</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!is2FAEnabled && !setupData && (
@@ -278,17 +274,14 @@ function TwoFactorCard() {
               <AlertTriangle className="h-5 w-5 text-amber-600" />
               <div>
                 <p className="font-medium text-amber-900">2FA Not Enabled</p>
-                <p className="text-sm text-amber-700">
-                  Protect your account with two-factor authentication
-                </p>
+                <p className="text-sm text-amber-700">Protect your account with two-factor authentication</p>
               </div>
             </div>
-            <Button onClick={() => setup2FAMutation.mutate()} disabled={setup2FAMutation.isPending}>
-              {setup2FAMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Enable 2FA"
-              )}
+            <Button
+              onClick={() => setup2FAMutation.mutate()}
+              disabled={setup2FAMutation.isPending}
+            >
+              {setup2FAMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enable 2FA"}
             </Button>
           </div>
         )}
@@ -315,9 +308,7 @@ function TwoFactorCard() {
               {/* Manual Entry Secret */}
               <div className="text-center">
                 <p className="text-xs text-gray-500">Or enter this code manually:</p>
-                <code className="mt-1 block rounded bg-gray-100 px-3 py-1 text-sm font-mono">
-                  {setupData.secret}
-                </code>
+                <code className="mt-1 block rounded bg-gray-100 px-3 py-1 font-mono text-sm">{setupData.secret}</code>
               </div>
             </div>
 
@@ -337,16 +328,16 @@ function TwoFactorCard() {
                   onClick={() => verify2FAMutation.mutate(verifyCode)}
                   disabled={verifyCode.length !== 6 || verify2FAMutation.isPending}
                 >
-                  {verify2FAMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Verify"
-                  )}
+                  {verify2FAMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
                 </Button>
               </div>
             </div>
 
-            <Button variant="ghost" onClick={() => setSetupData(null)} className="w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setSetupData(null)}
+              className="w-full"
+            >
               Cancel Setup
             </Button>
           </div>
@@ -358,12 +349,13 @@ function TwoFactorCard() {
               <Check className="h-5 w-5 text-green-600" />
               <div>
                 <p className="font-medium text-green-900">2FA Enabled</p>
-                <p className="text-sm text-green-700">
-                  Your account is protected with two-factor authentication
-                </p>
+                <p className="text-sm text-green-700">Your account is protected with two-factor authentication</p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => setShowDisable(true)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowDisable(true)}
+            >
               Disable 2FA
             </Button>
           </div>
@@ -391,13 +383,12 @@ function TwoFactorCard() {
                 onClick={() => disable2FAMutation.mutate(disableCode)}
                 disabled={disableCode.length !== 6 || disable2FAMutation.isPending}
               >
-                {disable2FAMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Disable"
-                )}
+                {disable2FAMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Disable"}
               </Button>
-              <Button variant="ghost" onClick={() => setShowDisable(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => setShowDisable(false)}
+              >
                 Cancel
               </Button>
             </div>
@@ -419,17 +410,27 @@ function TwoFactorCard() {
               </p>
               <div className="grid grid-cols-2 gap-2 rounded-lg bg-gray-50 p-4 font-mono text-sm">
                 {backupCodes.map((code, i) => (
-                  <div key={i} className="rounded bg-white px-2 py-1 text-center">
+                  <div
+                    key={i}
+                    className="rounded bg-white px-2 py-1 text-center"
+                  >
                     {code}
                   </div>
                 ))}
               </div>
               <div className="mt-4 flex gap-2">
-                <Button onClick={copyBackupCodes} variant="outline" className="flex-1">
+                <Button
+                  onClick={copyBackupCodes}
+                  variant="outline"
+                  className="flex-1"
+                >
                   <Copy className="mr-2 h-4 w-4" />
                   Copy Codes
                 </Button>
-                <Button onClick={() => setShowBackupCodes(false)} className="flex-1">
+                <Button
+                  onClick={() => setShowBackupCodes(false)}
+                  className="flex-1"
+                >
                   Done
                 </Button>
               </div>
@@ -441,13 +442,7 @@ function TwoFactorCard() {
   );
 }
 
-function SessionsCard({
-  sessions,
-  isLoading,
-}: {
-  sessions: UserSession[];
-  isLoading: boolean;
-}) {
+function SessionsCard({ sessions, isLoading }: { sessions: UserSession[]; isLoading: boolean }) {
   const queryClient = useQueryClient();
 
   const revokeSessionMutation = useMutation({
@@ -489,9 +484,7 @@ function SessionsCard({
               <Key className="h-5 w-5" />
               Active Sessions
             </CardTitle>
-            <CardDescription>
-              Manage your active sessions and sign out from other devices
-            </CardDescription>
+            <CardDescription>Manage your active sessions and sign out from other devices</CardDescription>
           </div>
           {sessions.length > 1 && (
             <Button
@@ -510,7 +503,10 @@ function SessionsCard({
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-lg bg-gray-100" />
+              <div
+                key={i}
+                className="h-20 animate-pulse rounded-lg bg-gray-100"
+              />
             ))}
           </div>
         ) : sessions.length === 0 ? (
@@ -530,7 +526,10 @@ function SessionsCard({
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{session.device_info || "Unknown Device"}</span>
                       {session.is_current && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs"
+                        >
                           Current
                         </Badge>
                       )}
@@ -539,8 +538,7 @@ function SessionsCard({
                       {session.location || "Unknown Location"} • {session.ip_address}
                     </div>
                     <div className="text-xs text-gray-400">
-                      Last active:{" "}
-                      {new Date(session.last_active_at).toLocaleString()}
+                      Last active: {new Date(session.last_active_at).toLocaleString()}
                     </div>
                   </div>
                 </div>

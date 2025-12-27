@@ -24,13 +24,7 @@ import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../../components/ui/chart";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "../../components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../../components/ui/sheet";
 import { requireAdmin } from "../../lib/guards";
 import { AdminService, type AdminStats } from "../../services/admin";
 
@@ -47,26 +41,35 @@ function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Command Palette */}
-      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+      <CommandPalette
+        open={commandOpen}
+        onOpenChange={setCommandOpen}
+      />
 
       <div className="flex">
         {/* Desktop Sidebar */}
-        <nav className="hidden min-h-screen w-64 bg-white p-4 shadow-sm dark:bg-gray-800 lg:block">
+        <nav className="hidden min-h-screen w-64 bg-white p-4 shadow-sm lg:block dark:bg-gray-800">
           <SidebarContent onCommandOpen={() => setCommandOpen(true)} />
         </nav>
 
         {/* Main content */}
         <main className="flex-1">
           {/* Mobile Header */}
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-4 dark:bg-gray-800 lg:hidden">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-4 lg:hidden dark:bg-gray-800">
             <div className="flex items-center gap-2">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                  >
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-64 p-0">
+                <SheetContent
+                  side="left"
+                  className="w-64 p-0"
+                >
                   <SheetHeader className="border-b p-4">
                     <SheetTitle className="flex items-center gap-2">
                       <Shield className="h-5 w-5" />
@@ -91,15 +94,13 @@ function AdminDashboard() {
             >
               <Search className="h-4 w-4" />
               <span className="hidden sm:inline">Search</span>
-              <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+              <kbd className="bg-muted pointer-events-none hidden h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none sm:flex">
                 <span className="text-xs">⌘</span>K
               </kbd>
             </Button>
           </div>
 
-          <div className="p-4 lg:p-8">
-            {isIndex ? <DashboardStats /> : <Outlet />}
-          </div>
+          <div className="p-4 lg:p-8">{isIndex ? <DashboardStats /> : <Outlet />}</div>
         </main>
       </div>
     </div>
@@ -123,22 +124,35 @@ function SidebarContent({ onCommandOpen }: { onCommandOpen: () => void }) {
       >
         <Search className="h-4 w-4" />
         <span className="flex-1 text-left">Search...</span>
-        <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-white px-1.5 font-mono text-[10px] font-medium dark:bg-gray-900 sm:flex">
+        <kbd className="pointer-events-none hidden h-5 items-center gap-1 rounded border bg-white px-1.5 font-mono text-[10px] font-medium select-none sm:flex dark:bg-gray-900">
           <span className="text-xs">⌘</span>K
         </kbd>
       </button>
 
       <ul className="space-y-1">
-        <NavLink to="/admin" icon={<BarChart3 className="h-4 w-4" />} exact>
+        <NavLink
+          to="/admin"
+          icon={<BarChart3 className="h-4 w-4" />}
+          exact
+        >
           Dashboard
         </NavLink>
-        <NavLink to="/admin/users" icon={<Users className="h-4 w-4" />}>
+        <NavLink
+          to="/admin/users"
+          icon={<Users className="h-4 w-4" />}
+        >
           Users
         </NavLink>
-        <NavLink to="/admin/audit-logs" icon={<FileText className="h-4 w-4" />}>
+        <NavLink
+          to="/admin/audit-logs"
+          icon={<FileText className="h-4 w-4" />}
+        >
           Audit Logs
         </NavLink>
-        <NavLink to="/admin/feature-flags" icon={<Flag className="h-4 w-4" />}>
+        <NavLink
+          to="/admin/feature-flags"
+          icon={<Flag className="h-4 w-4" />}
+        >
           Feature Flags
         </NavLink>
 
@@ -147,16 +161,28 @@ function SidebarContent({ onCommandOpen }: { onCommandOpen: () => void }) {
           <div className="border-t border-gray-200 dark:border-gray-700" />
         </li>
 
-        <NavLink to="/admin/health" icon={<Activity className="h-4 w-4" />}>
+        <NavLink
+          to="/admin/health"
+          icon={<Activity className="h-4 w-4" />}
+        >
           System Health
         </NavLink>
-        <NavLink to="/admin/announcements" icon={<Bell className="h-4 w-4" />}>
+        <NavLink
+          to="/admin/announcements"
+          icon={<Bell className="h-4 w-4" />}
+        >
           Announcements
         </NavLink>
-        <NavLink to="/admin/email-templates" icon={<Mail className="h-4 w-4" />}>
+        <NavLink
+          to="/admin/email-templates"
+          icon={<Mail className="h-4 w-4" />}
+        >
           Email Templates
         </NavLink>
-        <NavLink to="/admin/settings" icon={<Settings className="h-4 w-4" />}>
+        <NavLink
+          to="/admin/settings"
+          icon={<Settings className="h-4 w-4" />}
+        >
           Settings
         </NavLink>
       </ul>
@@ -234,9 +260,7 @@ function DashboardStats() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const activationRate = stats.total_users > 0
-    ? Math.round((stats.active_users / stats.total_users) * 100)
-    : 0;
+  const activationRate = stats.total_users > 0 ? Math.round((stats.active_users / stats.total_users) * 100) : 0;
 
   // Mock chart data - in production, this would come from the API
   const chartData = [
@@ -266,7 +290,10 @@ function DashboardStats() {
             Welcome back! Here's what's happening with your platform.
           </p>
         </div>
-        <Button variant="outline" className="hidden gap-2 sm:flex">
+        <Button
+          variant="outline"
+          className="hidden gap-2 sm:flex"
+        >
           <Download className="h-4 w-4" />
           Export Report
         </Button>
@@ -303,7 +330,11 @@ function DashboardStats() {
         <MetricCard
           title="Active Subscriptions"
           value={stats.active_subscriptions}
-          change={stats.total_subscriptions > 0 ? Math.round((stats.active_subscriptions / stats.total_subscriptions) * 100) : 0}
+          change={
+            stats.total_subscriptions > 0
+              ? Math.round((stats.active_subscriptions / stats.total_subscriptions) * 100)
+              : 0
+          }
           changeLabel="of total"
           trend="up"
           suffix="%"
@@ -320,15 +351,35 @@ function DashboardStats() {
             <CardDescription>New user registrations over the past week</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[200px] w-full">
+            <ChartContainer
+              config={chartConfig}
+              className="h-[200px] w-full"
+            >
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="fillUsers" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-users)" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="var(--color-users)" stopOpacity={0.1} />
+                  <linearGradient
+                    id="fillUsers"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor="var(--color-users)"
+                      stopOpacity={0.8}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--color-users)"
+                      stopOpacity={0.1}
+                    />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                />
                 <XAxis
                   dataKey="date"
                   tickLine={false}
@@ -369,7 +420,10 @@ function DashboardStats() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">Verified Users</p>
-                    <p className="text-xs text-gray-500">{stats.total_users > 0 ? Math.round((stats.verified_users / stats.total_users) * 100) : 0}% of total</p>
+                    <p className="text-xs text-gray-500">
+                      {stats.total_users > 0 ? Math.round((stats.verified_users / stats.total_users) * 100) : 0}% of
+                      total
+                    </p>
                   </div>
                 </div>
                 <p className="text-lg font-bold">{stats.verified_users}</p>
@@ -433,14 +487,10 @@ function DashboardStats() {
                   className="flex items-center gap-3 rounded-lg border p-3 dark:border-gray-700"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-xs">
-                      {role.charAt(0).toUpperCase()}
-                    </AvatarFallback>
+                    <AvatarFallback className="text-xs">{role.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-medium capitalize">
-                      {role.replace("_", " ")}
-                    </p>
+                    <p className="text-sm font-medium capitalize">{role.replace("_", " ")}</p>
                     <p className="text-lg font-bold">{count}</p>
                   </div>
                 </div>
@@ -478,20 +528,33 @@ function MetricCard({
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
           {icon && (
-            <div className={`rounded-full p-1.5 ${highlight ? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}>
+            <div
+              className={`rounded-full p-1.5 ${highlight ? "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}
+            >
               {icon}
             </div>
           )}
         </div>
-        <p className={`mt-2 text-2xl font-bold ${highlight ? "text-blue-600 dark:text-blue-400" : "text-gray-900 dark:text-white"}`}>
+        <p
+          className={`mt-2 text-2xl font-bold ${highlight ? "text-blue-600 dark:text-blue-400" : "text-gray-900 dark:text-white"}`}
+        >
           {value}
         </p>
         {change !== undefined && (
           <div className="mt-1 flex items-center gap-1 text-xs">
             {trend === "up" && <ArrowUpRight className="h-3 w-3 text-green-500" />}
             {trend === "down" && <ArrowDownRight className="h-3 w-3 text-red-500" />}
-            <span className={trend === "up" ? "text-green-600 dark:text-green-400" : trend === "down" ? "text-red-600 dark:text-red-400" : "text-gray-500"}>
-              {change}{suffix}
+            <span
+              className={
+                trend === "up"
+                  ? "text-green-600 dark:text-green-400"
+                  : trend === "down"
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-gray-500"
+              }
+            >
+              {change}
+              {suffix}
             </span>
             <span className="text-gray-500 dark:text-gray-400">{changeLabel}</span>
           </div>

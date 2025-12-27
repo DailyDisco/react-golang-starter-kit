@@ -1,13 +1,25 @@
 package auth
 
 import (
+	"context"
 	"os"
 	"time"
 
+	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
 
 	"github.com/rs/zerolog/log"
+)
+
+// Blacklist cache configuration
+const (
+	// blacklistCacheTTL is how long a blacklisted token is cached.
+	// Should be shorter than token expiry to avoid stale cache issues.
+	blacklistCacheTTL = 15 * time.Minute
+
+	// blacklistCachePrefix is the cache key prefix for blacklisted tokens.
+	blacklistCachePrefix = "blacklist:"
 )
 
 // getBlacklistFailMode returns the configured fail mode for token blacklist checks.
@@ -33,8 +45,9 @@ func BlacklistToken(token string, userID uint, expiresAt time.Time, reason strin
 		reason = "logout"
 	}
 
+	tokenHash := HashToken(token)
 	entry := models.TokenBlacklist{
-		TokenHash: HashToken(token),
+		TokenHash: tokenHash,
 		UserID:    userID,
 		ExpiresAt: expiresAt.Format(time.RFC3339),
 		RevokedAt: time.Now().Format(time.RFC3339),
@@ -47,10 +60,22 @@ func BlacklistToken(token string, userID uint, expiresAt time.Time, reason strin
 		return nil
 	}
 
+	// Cache the blacklisted token for faster lookups
+	// Use first 16 chars of hash as cache key (sufficient for uniqueness)
+	cacheKey := blacklistCachePrefix + tokenHash[:16]
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := cache.Set(ctx, cacheKey, []byte("1"), blacklistCacheTTL); err != nil {
+		// Cache failure is non-critical, just log it
+		log.Debug().Err(err).Str("key", cacheKey).Msg("failed to cache blacklisted token")
+	}
+
 	return nil
 }
 
 // IsTokenBlacklisted checks if a token has been revoked.
+// It first checks the cache for faster lookups, then falls back to the database.
 // On database error, behavior is controlled by TOKEN_BLACKLIST_FAIL_MODE:
 // - "closed" (default): Deny request on error (security-first)
 // - "open": Allow request on error (availability-first)
@@ -61,7 +86,18 @@ func IsTokenBlacklisted(token string) bool {
 	}
 
 	tokenHash := HashToken(token)
+	cacheKey := blacklistCachePrefix + tokenHash[:16]
 
+	// Check cache first (fast path)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	if cache.Exists(ctx, cacheKey) {
+		// Token is cached as blacklisted
+		return true
+	}
+
+	// Cache miss - check database
 	var count int64
 	if err := database.DB.Model(&models.TokenBlacklist{}).
 		Where("token_hash = ?", tokenHash).
@@ -81,7 +117,19 @@ func IsTokenBlacklisted(token string) bool {
 		return false
 	}
 
-	return count > 0
+	isBlacklisted := count > 0
+
+	// Cache the result if blacklisted (positive caching)
+	// We don't cache negative results to avoid memory bloat
+	if isBlacklisted {
+		cacheCtx, cacheCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		defer cacheCancel()
+		if err := cache.Set(cacheCtx, cacheKey, []byte("1"), blacklistCacheTTL); err != nil {
+			log.Debug().Err(err).Str("key", cacheKey).Msg("failed to cache blacklist result")
+		}
+	}
+
+	return isBlacklisted
 }
 
 // CleanupExpiredBlacklistEntries removes expired entries from the blacklist

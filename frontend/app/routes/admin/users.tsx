@@ -24,19 +24,8 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "../../components/ui/tooltip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip";
 import { requireAdmin } from "../../lib/guards";
 import { AdminService } from "../../services/admin";
 import { apiClient } from "../../services/api/client";
@@ -59,6 +48,29 @@ export const Route = createFileRoute("/admin/users")({
 
 type SortField = "name" | "email" | "role" | "created_at";
 type SortDirection = "asc" | "desc";
+
+// Extracted outside to prevent recreation during render
+function SortHeader({
+  field,
+  children,
+  onSort,
+}: {
+  field: SortField;
+  children: React.ReactNode;
+  onSort: (field: SortField) => void;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="-ml-3 h-8 font-medium"
+      onClick={() => onSort(field)}
+    >
+      {children}
+      <ArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
+}
 
 function AdminUsersPage() {
   const [page, setPage] = useState(1);
@@ -98,7 +110,7 @@ function AdminUsersPage() {
         (user) =>
           user.name.toLowerCase().includes(searchLower) ||
           user.email.toLowerCase().includes(searchLower) ||
-          (user.role && user.role.toLowerCase().includes(searchLower))
+          user.role?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -235,10 +247,7 @@ function AdminUsersPage() {
       new Date(user.created_at).toISOString(),
     ]);
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
-    ].join("\n");
+    const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(","))].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -263,18 +272,6 @@ function AdminUsersPage() {
     }
   };
 
-  const SortHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="-ml-3 h-8 font-medium"
-      onClick={() => handleSort(field)}
-    >
-      {children}
-      <ArrowUpDown className="ml-2 h-4 w-4" />
-    </Button>
-  );
-
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -283,11 +280,19 @@ function AdminUsersPage() {
         breadcrumbs={[{ label: "Users" }]}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportToCSV} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={exportToCSV}
+              className="gap-2"
+            >
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">Export</span>
             </Button>
-            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              className="gap-2"
+            >
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
@@ -300,7 +305,7 @@ function AdminUsersPage() {
         <CardContent className="py-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative flex-1 sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <Input
                 placeholder="Search users..."
                 value={search}
@@ -319,7 +324,7 @@ function AdminUsersPage() {
                       open: true,
                       title: "Deactivate Users",
                       description: `Are you sure you want to deactivate ${selectedUsers.size} users? They will no longer be able to access the platform.`,
-                      action: () => bulkDeactivateMutation.mutate(Array.from(selectedUsers)),
+                      action: () => bulkDeactivateMutation.mutate([...selectedUsers]),
                       variant: "destructive",
                     })
                   }
@@ -336,7 +341,7 @@ function AdminUsersPage() {
                       open: true,
                       title: "Reactivate Users",
                       description: `Are you sure you want to reactivate ${selectedUsers.size} users?`,
-                      action: () => bulkReactivateMutation.mutate(Array.from(selectedUsers)),
+                      action: () => bulkReactivateMutation.mutate([...selectedUsers]),
                       variant: "default",
                     })
                   }
@@ -385,21 +390,35 @@ function AdminUsersPage() {
                   <TableHead className="w-12">
                     <Checkbox
                       checked={
-                        filteredAndSortedUsers.length > 0 &&
-                        selectedUsers.size === filteredAndSortedUsers.length
+                        filteredAndSortedUsers.length > 0 && selectedUsers.size === filteredAndSortedUsers.length
                       }
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
                   <TableHead>
-                    <SortHeader field="name">User</SortHeader>
+                    <SortHeader
+                      field="name"
+                      onSort={handleSort}
+                    >
+                      User
+                    </SortHeader>
                   </TableHead>
                   <TableHead>
-                    <SortHeader field="role">Role</SortHeader>
+                    <SortHeader
+                      field="role"
+                      onSort={handleSort}
+                    >
+                      Role
+                    </SortHeader>
                   </TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>
-                    <SortHeader field="created_at">Created</SortHeader>
+                    <SortHeader
+                      field="created_at"
+                      onSort={handleSort}
+                    >
+                      Created
+                    </SortHeader>
                   </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -407,7 +426,10 @@ function AdminUsersPage() {
               <TableBody>
                 {filteredAndSortedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center"
+                    >
                       <div className="flex flex-col items-center justify-center text-gray-500">
                         <UsersIcon className="mb-2 h-8 w-8" />
                         <p>No users found</p>
@@ -417,7 +439,10 @@ function AdminUsersPage() {
                   </TableRow>
                 ) : (
                   filteredAndSortedUsers.map((user) => (
-                    <TableRow key={user.id} data-state={selectedUsers.has(user.id) && "selected"}>
+                    <TableRow
+                      key={user.id}
+                      data-state={selectedUsers.has(user.id) && "selected"}
+                    >
                       <TableCell>
                         <Checkbox
                           checked={selectedUsers.has(user.id)}
@@ -427,36 +452,41 @@ function AdminUsersPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
-                            <AvatarFallback>
-                              {user.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
+                            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-medium">{user.name}</p>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                            <p className="text-muted-foreground text-sm">{user.email}</p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role)}>
-                          {user.role || "user"}
-                        </Badge>
+                        <Badge variant={getRoleBadgeVariant(user.role)}>{user.role || "user"}</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {user.is_active ? (
-                            <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-400">
+                            <Badge
+                              variant="outline"
+                              className="border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-400"
+                            >
                               <CheckCircle className="mr-1 h-3 w-3" />
                               Active
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
+                            <Badge
+                              variant="outline"
+                              className="border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400"
+                            >
                               <Ban className="mr-1 h-3 w-3" />
                               Inactive
                             </Badge>
                           )}
                           {user.email_verified && (
-                            <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400">
+                            <Badge
+                              variant="outline"
+                              className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400"
+                            >
                               Verified
                             </Badge>
                           )}
@@ -552,12 +582,17 @@ function AdminUsersPage() {
           {/* Pagination */}
           {data.total_pages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Showing {(data.page - 1) * data.limit + 1} to {Math.min(data.page * data.limit, data.total)} of{" "}
                 {data.total} users
               </p>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
                   <ChevronLeft className="mr-1 h-4 w-4" />
                   Previous
                 </Button>

@@ -21,18 +21,8 @@ const staticPlans = [
     amount: 0,
     currency: "usd",
     interval: "month",
-    features: [
-      "Up to 3 projects",
-      "Basic analytics",
-      "Community support",
-      "1GB storage",
-      "API access (100 req/day)",
-    ],
-    limitations: [
-      "No priority support",
-      "No custom branding",
-      "No team members",
-    ],
+    features: ["Up to 3 projects", "Basic analytics", "Community support", "1GB storage", "API access (100 req/day)"],
+    limitations: ["No priority support", "No custom branding", "No team members"],
   },
   {
     id: "pro",
@@ -51,9 +41,7 @@ const staticPlans = [
       "Up to 5 team members",
       "Two-factor authentication",
     ],
-    limitations: [
-      "No dedicated support",
-    ],
+    limitations: ["No dedicated support"],
     popular: true,
   },
   {
@@ -159,9 +147,7 @@ function PricingPage() {
                 }
               }}
               actionLabel={
-                plan.id === "free" ? "Get Started" :
-                plan.id === "enterprise" ? "Contact Sales" :
-                "Start Free Trial"
+                plan.id === "free" ? "Get Started" : plan.id === "enterprise" ? "Contact Sales" : "Start Free Trial"
               }
               variant={plan.id === "free" ? "outline" : "default"}
             />
@@ -184,17 +170,72 @@ function PricingPage() {
                 </tr>
               </thead>
               <tbody>
-                <ComparisonRow feature="Projects" free="3" pro="Unlimited" enterprise="Unlimited" />
-                <ComparisonRow feature="Storage" free="1GB" pro="25GB" enterprise="Unlimited" />
-                <ComparisonRow feature="API Requests" free="100/day" pro="10,000/day" enterprise="Unlimited" />
-                <ComparisonRow feature="Team Members" free={false} pro="5" enterprise="Unlimited" />
-                <ComparisonRow feature="Custom Branding" free={false} pro={true} enterprise={true} />
-                <ComparisonRow feature="Priority Support" free={false} pro={true} enterprise={true} />
-                <ComparisonRow feature="Two-Factor Auth" free={true} pro={true} enterprise={true} />
-                <ComparisonRow feature="SSO/SAML" free={false} pro={false} enterprise={true} />
-                <ComparisonRow feature="Audit Logs" free={false} pro={false} enterprise={true} />
-                <ComparisonRow feature="SLA Guarantee" free={false} pro={false} enterprise={true} />
-                <ComparisonRow feature="Dedicated Support" free={false} pro={false} enterprise={true} />
+                <ComparisonRow
+                  feature="Projects"
+                  free="3"
+                  pro="Unlimited"
+                  enterprise="Unlimited"
+                />
+                <ComparisonRow
+                  feature="Storage"
+                  free="1GB"
+                  pro="25GB"
+                  enterprise="Unlimited"
+                />
+                <ComparisonRow
+                  feature="API Requests"
+                  free="100/day"
+                  pro="10,000/day"
+                  enterprise="Unlimited"
+                />
+                <ComparisonRow
+                  feature="Team Members"
+                  free={false}
+                  pro="5"
+                  enterprise="Unlimited"
+                />
+                <ComparisonRow
+                  feature="Custom Branding"
+                  free={false}
+                  pro={true}
+                  enterprise={true}
+                />
+                <ComparisonRow
+                  feature="Priority Support"
+                  free={false}
+                  pro={true}
+                  enterprise={true}
+                />
+                <ComparisonRow
+                  feature="Two-Factor Auth"
+                  free={true}
+                  pro={true}
+                  enterprise={true}
+                />
+                <ComparisonRow
+                  feature="SSO/SAML"
+                  free={false}
+                  pro={false}
+                  enterprise={true}
+                />
+                <ComparisonRow
+                  feature="Audit Logs"
+                  free={false}
+                  pro={false}
+                  enterprise={true}
+                />
+                <ComparisonRow
+                  feature="SLA Guarantee"
+                  free={false}
+                  pro={false}
+                  enterprise={true}
+                />
+                <ComparisonRow
+                  feature="Dedicated Support"
+                  free={false}
+                  pro={false}
+                  enterprise={true}
+                />
               </tbody>
             </table>
           </div>
@@ -371,7 +412,11 @@ function StaticPlanCard({ plan, onAction, actionLabel, variant = "default" }: St
         </ul>
       )}
 
-      <Button onClick={onAction} variant={variant} className="w-full">
+      <Button
+        onClick={onAction}
+        variant={variant}
+        className="w-full"
+      >
         {actionLabel}
       </Button>
     </div>

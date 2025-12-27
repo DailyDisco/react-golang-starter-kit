@@ -1,7 +1,6 @@
-import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { renderWithProviders, screen, waitFor } from "../../test/test-utils";
+import { renderWithProviders, screen } from "../../test/test-utils";
 import { RegisterForm } from "./RegisterForm";
 
 // Mock the hooks

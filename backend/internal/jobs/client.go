@@ -15,40 +15,63 @@ import (
 
 // Client wraps the River client with our configuration
 type Client struct {
-	river  *river.Client[pgx.Tx]
-	pool   *pgxpool.Pool
-	config *Config
+	river    *river.Client[pgx.Tx]
+	pool     *pgxpool.Pool
+	ownsPool bool // Whether this client owns the pool (should close it on Stop)
+	config   *Config
 }
 
 var instance *Client
 
-// Initialize sets up the River job client
+// Initialize sets up the River job client with its own connection pool.
+// Deprecated: Use InitializeWithPool for better resource sharing.
 func Initialize(config *Config) error {
+	return InitializeWithPool(config, nil)
+}
+
+// InitializeWithPool sets up the River job client with an optional shared pool.
+// If pool is nil, a new pool is created (backward compatible behavior).
+// If pool is provided, it will be used and NOT closed when Stop is called.
+func InitializeWithPool(config *Config, pool *pgxpool.Pool) error {
 	if !config.Enabled {
 		log.Info().Msg("job system disabled")
 		instance = nil
 		return nil
 	}
 
-	// Build database URL from environment (same vars as GORM uses)
-	dbURL := buildDatabaseURL()
+	var err error
+	ownsPool := false
 
-	// Create pgx pool for River
-	pool, err := pgxpool.New(context.Background(), dbURL)
-	if err != nil {
-		return fmt.Errorf("failed to create pgx pool: %w", err)
+	// Use provided pool or create a new one
+	if pool == nil {
+		// Build database URL from environment (same vars as GORM uses)
+		dbURL := buildDatabaseURL()
+
+		// Create pgx pool for River
+		pool, err = pgxpool.New(context.Background(), dbURL)
+		if err != nil {
+			return fmt.Errorf("failed to create pgx pool: %w", err)
+		}
+		ownsPool = true
+		log.Info().Msg("Created dedicated pgx pool for River jobs")
+	} else {
+		log.Info().Msg("Using shared pgx pool for River jobs")
 	}
 
 	// Run River's migrations to ensure schema is up to date
 	migrator, err := rivermigrate.New(riverpgxv5.New(pool), nil)
 	if err != nil {
-		pool.Close()
+		if ownsPool {
+			pool.Close()
+		}
 		return fmt.Errorf("failed to create River migrator: %w", err)
 	}
 
 	_, err = migrator.Migrate(context.Background(), rivermigrate.DirectionUp, nil)
 	if err != nil {
-		pool.Close()
+		if ownsPool {
+			pool.Close()
+		}
 		return fmt.Errorf("failed to run River migrations: %w", err)
 	}
 	log.Info().Msg("River schema migrations completed")
@@ -73,18 +96,22 @@ func Initialize(config *Config) error {
 		RescueStuckJobsAfter: config.RescueStuckJobsAfter,
 	})
 	if err != nil {
-		pool.Close()
+		if ownsPool {
+			pool.Close()
+		}
 		return fmt.Errorf("failed to create River client: %w", err)
 	}
 
 	instance = &Client{
-		river:  riverClient,
-		pool:   pool,
-		config: config,
+		river:    riverClient,
+		pool:     pool,
+		ownsPool: ownsPool,
+		config:   config,
 	}
 
 	log.Info().
 		Int("workers", config.WorkerCount).
+		Bool("shared_pool", !ownsPool).
 		Msg("River job client initialized")
 
 	return nil
@@ -114,8 +141,11 @@ func Stop(ctx context.Context) error {
 		return fmt.Errorf("failed to stop River client: %w", err)
 	}
 
-	// Close the pgx pool
-	instance.pool.Close()
+	// Only close the pool if we created it (not using shared pool)
+	if instance.ownsPool && instance.pool != nil {
+		instance.pool.Close()
+		log.Info().Msg("River job pool closed")
+	}
 
 	log.Info().Msg("job processing stopped")
 	return nil

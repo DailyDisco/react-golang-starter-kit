@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState } from "react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  Bell,
   Camera,
   Github,
   Globe,
@@ -14,9 +17,7 @@ import {
   Trash2,
   Twitter,
   User,
-  Bell,
 } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -93,13 +94,8 @@ function ProfileSettingsPage() {
   }, [user]);
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data: {
-      name?: string;
-      email?: string;
-      bio?: string;
-      location?: string;
-      social_links?: string;
-    }) => SettingsService.updateProfile(data),
+    mutationFn: (data: { name?: string; email?: string; bio?: string; location?: string; social_links?: string }) =>
+      SettingsService.updateProfile(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
       toast.success("Your profile has been updated successfully.");
@@ -207,8 +203,11 @@ function ProfileSettingsPage() {
         <div className="relative flex flex-col items-center gap-6 md:flex-row md:items-start">
           {/* Avatar with upload */}
           <div className="relative">
-            <Avatar className="h-28 w-28 ring-4 ring-white/30 shadow-xl">
-              <AvatarImage src={user?.avatar_url || ""} alt={user?.name} />
+            <Avatar className="h-28 w-28 shadow-xl ring-4 ring-white/30">
+              <AvatarImage
+                src={user?.avatar_url || ""}
+                alt={user?.name}
+              />
               <AvatarFallback className="bg-white/20 text-3xl font-bold text-white">
                 {getUserInitials(user?.name || "U")}
               </AvatarFallback>
@@ -221,7 +220,7 @@ function ProfileSettingsPage() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 rounded-full bg-white p-2 shadow-lg transition-transform hover:scale-110"
+              className="absolute right-0 bottom-0 rounded-full bg-white p-2 shadow-lg transition-transform hover:scale-110"
               disabled={uploadAvatarMutation.isPending}
             >
               <Camera className="h-4 w-4 text-gray-700" />
@@ -240,13 +239,9 @@ function ProfileSettingsPage() {
             <h1 className="text-3xl font-bold text-white">{user?.name}</h1>
             <p className="mt-1 text-blue-100">{user?.email}</p>
             <div className="mt-3 flex flex-wrap justify-center gap-2 md:justify-start">
-              <Badge className="bg-white/20 text-white hover:bg-white/30 capitalize">
-                {user?.role || "User"}
-              </Badge>
+              <Badge className="bg-white/20 text-white capitalize hover:bg-white/30">{user?.role || "User"}</Badge>
               {user?.email_verified && (
-                <Badge className="bg-green-500/80 text-white hover:bg-green-500">
-                  Verified
-                </Badge>
+                <Badge className="bg-green-500/80 text-white hover:bg-green-500">Verified</Badge>
               )}
             </div>
             <p className="mt-3 text-sm text-blue-100">
@@ -290,7 +285,10 @@ function ProfileSettingsPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
         {/* Bio Section */}
         <Card>
           <CardHeader>
@@ -311,14 +309,12 @@ function ProfileSettingsPage() {
                 rows={4}
                 className="resize-none"
               />
-              <p className="text-xs text-gray-500">
-                Brief description for your profile. URLs are hyperlinked.
-              </p>
+              <p className="text-xs text-gray-500">Brief description for your profile. URLs are hyperlinked.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <MapPin className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
                   id="location"
                   placeholder="San Francisco, CA"
@@ -361,9 +357,7 @@ function ProfileSettingsPage() {
                   placeholder="Enter your email"
                 />
                 {formData.email !== user?.email && (
-                  <p className="text-xs text-amber-600">
-                    Changing your email will require verification
-                  </p>
+                  <p className="text-xs text-amber-600">Changing your email will require verification</p>
                 )}
               </div>
             </div>
@@ -384,7 +378,7 @@ function ProfileSettingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="twitter">Twitter / X</Label>
                 <div className="relative">
-                  <Twitter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Twitter className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
                     id="twitter"
                     placeholder="username"
@@ -397,7 +391,7 @@ function ProfileSettingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="github">GitHub</Label>
                 <div className="relative">
-                  <Github className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Github className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
                     id="github"
                     placeholder="username"
@@ -410,7 +404,7 @@ function ProfileSettingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="linkedin">LinkedIn</Label>
                 <div className="relative">
-                  <Linkedin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Linkedin className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
                     id="linkedin"
                     placeholder="username"
@@ -423,7 +417,7 @@ function ProfileSettingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="website">Website</Label>
                 <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Globe className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
                     id="website"
                     placeholder="https://example.com"
@@ -439,7 +433,10 @@ function ProfileSettingsPage() {
 
         {/* Save Button */}
         <div className="flex justify-end">
-          <Button type="submit" disabled={!hasChanges || updateProfileMutation.isPending}>
+          <Button
+            type="submit"
+            disabled={!hasChanges || updateProfileMutation.isPending}
+          >
             {updateProfileMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -481,7 +478,10 @@ function ProfileSettingsPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Account Role</p>
-                <Badge variant="outline" className="capitalize">
+                <Badge
+                  variant="outline"
+                  className="capitalize"
+                >
                   {user?.role || "User"}
                 </Badge>
               </div>

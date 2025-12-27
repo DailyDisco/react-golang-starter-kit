@@ -266,7 +266,7 @@ export interface CreateAnnouncementRequest {
   ends_at?: string;
 }
 
-export interface UpdateAnnouncementRequest extends Partial<CreateAnnouncementRequest> {}
+export type UpdateAnnouncementRequest = Partial<CreateAnnouncementRequest>;
 
 // Email Templates
 export interface EmailTemplate {

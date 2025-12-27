@@ -31,7 +31,7 @@ export function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || "/";
+  const from = (location.state as { from?: { pathname?: string } } | undefined)?.from?.pathname ?? "/";
 
   const {
     register,
@@ -48,7 +48,7 @@ export function LoginForm() {
         toast.success("Welcome back!", {
           description: "You have successfully signed in.",
         });
-        navigate({ to: from, replace: true });
+        void navigate({ to: from, replace: true });
       },
       onError: (err) => {
         setError(err);
@@ -86,7 +86,10 @@ export function LoginForm() {
                 <Alert variant="destructive">
                   <AlertDescription>{error.message}</AlertDescription>
                 </Alert>
-                <AuthErrorGuidance error={error} context="login" />
+                <AuthErrorGuidance
+                  error={error}
+                  context="login"
+                />
               </>
             )}
 
@@ -139,7 +142,7 @@ export function LoginForm() {
           </form>
 
           <div className="mt-4 text-center text-sm">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
               to="/register"
               className="text-primary hover:underline"

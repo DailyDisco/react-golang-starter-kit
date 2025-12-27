@@ -1,5 +1,5 @@
 .PHONY: db-up db-down db-reset db-logs db-shell dev clean swagger swagger-check swagger-validate swagger-install \
-	test test-v test-race test-cover \
+	test test-v test-race test-cover test-cover-check test-cover-show \
 	migrate-install migrate-create migrate-up migrate-down migrate-reset migrate-version migrate-force \
 	seed seed-fresh
 
@@ -100,6 +100,27 @@ test-cover:
 	@go test -coverprofile=coverage.out ./internal/...
 	@go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
+
+# Coverage threshold (default 70%)
+COVERAGE_THRESHOLD ?= 70
+
+# Run tests with coverage and fail if below threshold
+test-cover-check:
+	@echo "Running tests with coverage threshold $(COVERAGE_THRESHOLD)%..."
+	@go test -coverprofile=coverage.out ./internal/...
+	@coverage=$$(go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
+	echo "Total coverage: $${coverage}%"; \
+	if [ $$(echo "$$coverage < $(COVERAGE_THRESHOLD)" | bc -l) -eq 1 ]; then \
+		echo "ERROR: Coverage $${coverage}% is below threshold $(COVERAGE_THRESHOLD)%"; \
+		exit 1; \
+	else \
+		echo "OK: Coverage meets threshold"; \
+	fi
+
+# Show current coverage percentage
+test-cover-show:
+	@go test -coverprofile=coverage.out ./internal/... 2>/dev/null
+	@go tool cover -func=coverage.out | grep total
 
 # ============================================
 # DATABASE MIGRATIONS (golang-migrate)
