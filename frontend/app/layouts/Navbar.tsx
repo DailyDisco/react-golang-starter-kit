@@ -12,7 +12,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Link, useLocation } from "@tanstack/react-router";
-import { LogOut, Menu, Settings, User } from "lucide-react";
+import { CreditCard, DollarSign, LogOut, Menu, Settings, Shield, User } from "lucide-react";
 
 import { useAuth } from "../hooks/auth/useAuth";
 import { API_BASE_URL } from "../services";
@@ -21,10 +21,12 @@ export function Navbar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   const navigation = [
     { name: "Home", href: "/" },
     { name: "Demo", href: "/demo" },
+    { name: "Pricing", href: "/pricing" },
     {
       name: "API Docs",
       href: `${API_BASE_URL}/swagger/`,
@@ -84,6 +86,35 @@ export function Navbar() {
                   </Link>
                 )
               )}
+              {/* Authenticated nav links */}
+              {isAuthenticated && (
+                <>
+                  <Link
+                    to="/settings"
+                    search={{}}
+                    className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none ${
+                      isActive("/settings")
+                        ? "border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                    }`}
+                  >
+                    Settings
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      search={{}}
+                      className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none ${
+                        isActive("/admin")
+                          ? "border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                      }`}
+                    >
+                      Admin
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
           </div>
           {/* User Controls */}
@@ -126,7 +157,7 @@ export function Navbar() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link
-                      to="/profile"
+                      to="/settings/profile"
                       search={{}}
                       className="cursor-pointer"
                     >
@@ -134,6 +165,48 @@ export function Navbar() {
                       <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/settings"
+                      search={{}}
+                      className="cursor-pointer"
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/billing"
+                      search={{}}
+                      className="cursor-pointer"
+                    >
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      <span>Billing</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/pricing"
+                      search={{}}
+                      className="cursor-pointer"
+                    >
+                      <DollarSign className="mr-2 h-4 w-4" />
+                      <span>Pricing</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link
+                        to="/admin"
+                        search={{}}
+                        className="cursor-pointer"
+                      >
+                        <Shield className="mr-2 h-4 w-4" />
+                        <span>Admin Panel</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
@@ -264,7 +337,7 @@ export function Navbar() {
                             Account
                           </p>
                           <Link
-                            to="/profile"
+                            to="/settings/profile"
                             search={{}}
                             onClick={() => setIsOpen(false)}
                             role="menuitem"
@@ -283,6 +356,38 @@ export function Navbar() {
                             <Settings className="mr-3 h-4 w-4" />
                             Settings
                           </Link>
+                          <Link
+                            to="/billing"
+                            search={{}}
+                            onClick={() => setIsOpen(false)}
+                            role="menuitem"
+                            className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                          >
+                            <CreditCard className="mr-3 h-4 w-4" />
+                            Billing
+                          </Link>
+                          <Link
+                            to="/pricing"
+                            search={{}}
+                            onClick={() => setIsOpen(false)}
+                            role="menuitem"
+                            className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                          >
+                            <DollarSign className="mr-3 h-4 w-4" />
+                            Pricing
+                          </Link>
+                          {isAdmin && (
+                            <Link
+                              to="/admin"
+                              search={{}}
+                              onClick={() => setIsOpen(false)}
+                              role="menuitem"
+                              className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                            >
+                              <Shield className="mr-3 h-4 w-4" />
+                              Admin Panel
+                            </Link>
+                          )}
                           <button
                             onClick={() => {
                               handleLogout();

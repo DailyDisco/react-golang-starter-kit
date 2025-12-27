@@ -8,8 +8,8 @@ export class UserService {
   static async fetchUsers(): Promise<User[]> {
     const response = await authenticatedFetch(`${API_BASE_URL}/api/users`);
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to fetch users");
-      throw new Error(errorMessage);
+      const apiError = await parseErrorResponse(response, "Failed to fetch users");
+      throw apiError;
     }
 
     try {
@@ -39,8 +39,8 @@ export class UserService {
     });
 
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to create user");
-      throw new Error(errorMessage);
+      const apiError = await parseErrorResponse(response, "Failed to create user");
+      throw apiError;
     }
 
     try {
@@ -75,8 +75,8 @@ export class UserService {
     });
 
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to delete user");
-      throw new Error(errorMessage);
+      const apiError = await parseErrorResponse(response, "Failed to delete user");
+      throw apiError;
     }
   }
 

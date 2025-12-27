@@ -9,6 +9,7 @@ export interface NavItem {
 export const navigation: NavItem[] = [
   { name: "Home", href: "/" },
   { name: "Demo", href: "/demo" },
+  { name: "Pricing", href: "/pricing" },
   {
     name: "API Docs",
     href: `${API_BASE_URL}/swagger/`,

@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link } from "@tanstack/react-router";
-import { LogOut, Menu, Settings, User } from "lucide-react";
+import { CreditCard, DollarSign, LogOut, Menu, Settings, Shield, User } from "lucide-react";
 
 import type { User as UserType } from "../../services";
 import { NavLink } from "./NavLink";
@@ -19,6 +19,7 @@ interface MobileNavProps {
 
 export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, onLogout }: MobileNavProps) {
   const closeMenu = () => setIsOpen(false);
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   return (
     <Sheet
@@ -98,7 +99,7 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                 <div className="space-y-1">
                   <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">Account</p>
                   <Link
-                    to="/profile"
+                    to="/settings/profile"
                     search={{}}
                     onClick={closeMenu}
                     role="menuitem"
@@ -117,6 +118,38 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                     <Settings className="mr-3 h-4 w-4" />
                     Settings
                   </Link>
+                  <Link
+                    to="/billing"
+                    search={{}}
+                    onClick={closeMenu}
+                    role="menuitem"
+                    className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                  >
+                    <CreditCard className="mr-3 h-4 w-4" />
+                    Billing
+                  </Link>
+                  <Link
+                    to="/pricing"
+                    search={{}}
+                    onClick={closeMenu}
+                    role="menuitem"
+                    className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                  >
+                    <DollarSign className="mr-3 h-4 w-4" />
+                    Pricing
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      search={{}}
+                      onClick={closeMenu}
+                      role="menuitem"
+                      className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                    >
+                      <Shield className="mr-3 h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
                       onLogout();

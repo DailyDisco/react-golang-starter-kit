@@ -83,8 +83,8 @@ export class AuthService {
     if (!response.ok) {
       // Refresh token is invalid or expired, clear storage
       this.clearStorage();
-      const errorMessage = await parseErrorResponse(response, "Token refresh failed");
-      throw new Error(errorMessage);
+      const apiError = await parseErrorResponse(response, "Token refresh failed");
+      throw apiError;
     }
 
     try {
@@ -120,8 +120,8 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Login failed");
-      throw new Error(errorMessage);
+      const apiError = await parseErrorResponse(response, "Login failed");
+      throw apiError;
     }
 
     try {
@@ -149,8 +149,8 @@ export class AuthService {
     });
 
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Registration failed");
-      throw new Error(errorMessage);
+      const apiError = await parseErrorResponse(response, "Registration failed");
+      throw apiError;
     }
 
     try {
@@ -301,14 +301,73 @@ export class AuthService {
   /**
    * Initialize token refresh from stored data
    * Call this on app startup if user is authenticated
+   * Returns true if session is valid, false otherwise
    */
-  static initializeFromStorage(): void {
+  static async initializeFromStorage(): Promise<boolean> {
     const refreshToken = this.getRefreshToken();
-    if (refreshToken) {
-      // Try to refresh the token to get a fresh access token
-      this.refreshAccessToken().catch((error) => {
-        logger.warn("Failed to refresh token on initialization", { error });
-      });
+    if (!refreshToken) {
+      return false;
+    }
+
+    try {
+      await this.refreshAccessToken();
+      return true;
+    } catch (error) {
+      logger.warn("Failed to refresh token on initialization", { error });
+      this.clearStorage();
+      return false;
+    }
+  }
+
+  /**
+   * Validate current session by checking with the server
+   * Returns true if session is valid, false otherwise
+   */
+  static async validateSession(): Promise<boolean> {
+    try {
+      await this.getCurrentUser();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Start periodic session heartbeat
+   * Validates session every intervalMs and calls onInvalid if session expires
+   */
+  private static heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+
+  static startSessionHeartbeat(
+    intervalMs: number = 5 * 60 * 1000, // Default: 5 minutes
+    onInvalid?: () => void
+  ): void {
+    // Clear any existing heartbeat
+    this.stopSessionHeartbeat();
+
+    this.heartbeatInterval = setInterval(async () => {
+      const isValid = await this.validateSession();
+      if (!isValid) {
+        logger.warn("Session heartbeat detected invalid session");
+        this.stopSessionHeartbeat();
+        if (onInvalid) {
+          onInvalid();
+        } else {
+          // Default behavior: dispatch session-expired event
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("session-expired"));
+          }
+        }
+      }
+    }, intervalMs);
+
+    logger.isDev() && logger.info(`Session heartbeat started (interval: ${intervalMs / 1000}s)`);
+  }
+
+  static stopSessionHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
     }
   }
 }

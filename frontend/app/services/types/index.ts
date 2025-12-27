@@ -1,3 +1,11 @@
+// Social links for user profiles
+export interface SocialLinks {
+  twitter?: string;
+  github?: string;
+  linkedin?: string;
+  website?: string;
+}
+
 // User-related types
 export interface User {
   id: number;
@@ -8,6 +16,10 @@ export interface User {
   role?: string;
   created_at: string;
   updated_at: string;
+  avatar_url?: string;
+  bio?: string;
+  location?: string;
+  social_links?: string; // JSON string from backend
 }
 
 // Authentication types

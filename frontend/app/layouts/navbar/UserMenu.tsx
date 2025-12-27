@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link } from "@tanstack/react-router";
-import { LogOut, User } from "lucide-react";
+import { CreditCard, DollarSign, LogOut, Settings, Shield, User } from "lucide-react";
 
 import type { User as UserType } from "../../services";
 import { getUserInitials } from "./types";
@@ -19,6 +19,8 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ user, onLogout }: UserMenuProps) {
+  const isAdmin = user.role === "admin" || user.role === "super_admin";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -49,7 +51,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link
-            to="/profile"
+            to="/settings/profile"
             search={{}}
             className="cursor-pointer"
           >
@@ -57,6 +59,48 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
             <span>Profile</span>
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link
+            to="/settings"
+            search={{}}
+            className="cursor-pointer"
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link
+            to="/billing"
+            search={{}}
+            className="cursor-pointer"
+          >
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Billing</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link
+            to="/pricing"
+            search={{}}
+            className="cursor-pointer"
+          >
+            <DollarSign className="mr-2 h-4 w-4" />
+            <span>Pricing</span>
+          </Link>
+        </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem asChild>
+            <Link
+              to="/admin"
+              search={{}}
+              className="cursor-pointer"
+            >
+              <Shield className="mr-2 h-4 w-4" />
+              <span>Admin Panel</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={onLogout}

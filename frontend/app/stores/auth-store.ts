@@ -9,13 +9,14 @@ interface AuthState {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isInitialized: boolean;
 
   // Actions
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
   logout: () => void;
   login: (user: User) => void;
-  initialize: () => void;
+  initialize: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -25,6 +26,7 @@ export const useAuthStore = create<AuthState>()(
         user: null,
         isLoading: true,
         isAuthenticated: false,
+        isInitialized: false,
 
         setUser: (user) =>
           set({
@@ -33,6 +35,8 @@ export const useAuthStore = create<AuthState>()(
           }),
         setLoading: (isLoading) => set({ isLoading }),
         logout: () => {
+          // Stop session heartbeat
+          AuthService.stopSessionHeartbeat();
           // Clear auth state
           set({
             user: null,
@@ -46,37 +50,61 @@ export const useAuthStore = create<AuthState>()(
             user,
             isAuthenticated: true,
           }),
-        initialize: () => {
+        initialize: async () => {
+          // Prevent double initialization
+          if (get().isInitialized) {
+            return;
+          }
+
           // Load cached user data from localStorage for faster UI rendering
-          // Actual authentication is validated via httpOnly cookie when making API calls
           const storedUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
 
-          if (storedUser) {
-            try {
-              const parsedUser = JSON.parse(storedUser);
+          if (!storedUser) {
+            set({ isLoading: false, isInitialized: true });
+            return;
+          }
+
+          try {
+            const parsedUser = JSON.parse(storedUser);
+
+            // Show cached user data immediately for better UX
+            set({
+              user: parsedUser,
+              isAuthenticated: true,
+            });
+
+            // Set up the token refresh callback to update the store
+            AuthService.setTokenRefreshCallback((authData) => {
               set({
-                user: parsedUser,
+                user: authData.user,
                 isAuthenticated: true,
-                isLoading: false,
+              });
+            });
+
+            // Actually validate the session with the server
+            const isValid = await AuthService.initializeFromStorage();
+
+            if (isValid) {
+              // Session is valid - start heartbeat to detect future expiration
+              AuthService.startSessionHeartbeat(5 * 60 * 1000, () => {
+                // Session expired - logout the user
+                get().logout();
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("session-expired"));
+                }
               });
 
-              // Set up the token refresh callback to update the store
-              AuthService.setTokenRefreshCallback((authData) => {
-                set({
-                  user: authData.user,
-                  isAuthenticated: true,
-                });
-              });
-
-              // Initialize token refresh from stored refresh token
-              AuthService.initializeFromStorage();
-            } catch (error) {
-              logger.error("Auth state invalid", error);
+              set({ isLoading: false, isInitialized: true });
+            } else {
+              // Session is invalid - clear auth state
+              logger.warn("Session validation failed during initialization");
               get().logout();
-              set({ isLoading: false });
+              set({ isLoading: false, isInitialized: true });
             }
-          } else {
-            set({ isLoading: false });
+          } catch (error) {
+            logger.error("Auth state invalid", error);
+            get().logout();
+            set({ isLoading: false, isInitialized: true });
           }
         },
       }),

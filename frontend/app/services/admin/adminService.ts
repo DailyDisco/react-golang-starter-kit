@@ -178,3 +178,296 @@ export const FeatureFlagService = {
     return apiClient.get<Record<string, boolean>>("/feature-flags");
   },
 };
+
+// ============ Admin Settings Types ============
+
+// System Settings
+export interface EmailSettings {
+  smtp_host: string;
+  smtp_port: number;
+  smtp_username: string;
+  smtp_password: string;
+  smtp_from_email: string;
+  smtp_from_name: string;
+  smtp_enabled: boolean;
+}
+
+export interface SecuritySettings {
+  password_min_length: number;
+  password_require_uppercase: boolean;
+  password_require_lowercase: boolean;
+  password_require_number: boolean;
+  password_require_special: boolean;
+  session_timeout_minutes: number;
+  max_login_attempts: number;
+  lockout_duration_minutes: number;
+  require_2fa_for_admin: boolean;
+  allow_registration: boolean;
+}
+
+export interface SiteSettings {
+  site_name: string;
+  site_description: string;
+  site_logo_url: string;
+  maintenance_mode: boolean;
+  maintenance_message: string;
+  contact_email: string;
+  support_url: string;
+}
+
+// IP Blocklist
+export interface IPBlock {
+  id: number;
+  ip_address: string;
+  ip_range?: string;
+  reason: string;
+  block_type: string;
+  hit_count: number;
+  is_active: boolean;
+  expires_at?: string;
+  created_at: string;
+}
+
+export interface CreateIPBlockRequest {
+  ip_address: string;
+  ip_range?: string;
+  reason: string;
+  block_type?: string;
+  expires_in_hours?: number;
+}
+
+// Announcements
+export interface Announcement {
+  id: number;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "success" | "error";
+  link_url?: string;
+  link_text?: string;
+  is_dismissible: boolean;
+  priority: number;
+  is_active: boolean;
+  target_roles?: string[];
+  starts_at?: string;
+  ends_at?: string;
+}
+
+export interface CreateAnnouncementRequest {
+  title: string;
+  message: string;
+  type?: "info" | "warning" | "success" | "error";
+  link_url?: string;
+  link_text?: string;
+  is_dismissible?: boolean;
+  priority?: number;
+  is_active?: boolean;
+  target_roles?: string[];
+  starts_at?: string;
+  ends_at?: string;
+}
+
+export interface UpdateAnnouncementRequest extends Partial<CreateAnnouncementRequest> {}
+
+// Email Templates
+export interface EmailTemplate {
+  id: number;
+  key: string;
+  name: string;
+  description?: string;
+  subject: string;
+  body_html: string;
+  body_text?: string;
+  available_variables: TemplateVariable[];
+  is_active: boolean;
+  is_system: boolean;
+  send_count: number;
+  last_sent_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateVariable {
+  name: string;
+  description: string;
+}
+
+export interface UpdateEmailTemplateRequest {
+  name?: string;
+  description?: string;
+  subject?: string;
+  body_html?: string;
+  body_text?: string;
+  is_active?: boolean;
+}
+
+export interface PreviewEmailTemplateResponse {
+  subject: string;
+  body_html: string;
+  body_text: string;
+}
+
+// System Health
+export interface SystemHealth {
+  status: "healthy" | "degraded" | "unhealthy";
+  timestamp: string;
+  components: HealthComponent[];
+  metrics?: SystemMetrics;
+}
+
+export interface HealthComponent {
+  name: string;
+  status: "healthy" | "degraded" | "unhealthy" | "unavailable";
+  message?: string;
+  latency?: string;
+  last_check?: string;
+  details?: Record<string, unknown>;
+}
+
+export interface SystemMetrics {
+  database?: DatabaseMetrics;
+  cache?: CacheMetrics;
+  storage?: StorageMetrics;
+  api?: APIMetrics;
+}
+
+export interface DatabaseMetrics {
+  status: string;
+  connections_active: number;
+  connections_idle: number;
+  connections_max: number;
+  avg_query_time: string;
+  slow_queries: number;
+  uptime: string;
+}
+
+export interface CacheMetrics {
+  status: string;
+  memory_used: string;
+  memory_max: string;
+  hit_rate: number;
+  keys: number;
+  connections: number;
+}
+
+export interface StorageMetrics {
+  status: string;
+  used: string;
+  available: string;
+  total: string;
+  used_pct: number;
+  file_count: number;
+}
+
+export interface APIMetrics {
+  requests_per_minute: number;
+  avg_response_time: string;
+  p50_response_time: string;
+  p95_response_time: string;
+  p99_response_time: string;
+  error_rate: number;
+}
+
+// Admin Settings Service
+export const AdminSettingsService = {
+  // Email Settings
+  async getEmailSettings(): Promise<EmailSettings> {
+    return apiClient.get<EmailSettings>("/admin/settings/email");
+  },
+
+  async updateEmailSettings(settings: Partial<EmailSettings>): Promise<void> {
+    await apiClient.put("/admin/settings/email", settings);
+  },
+
+  async testEmailSettings(): Promise<{ success: boolean; message: string }> {
+    return apiClient.post("/admin/settings/email/test", {});
+  },
+
+  // Security Settings
+  async getSecuritySettings(): Promise<SecuritySettings> {
+    return apiClient.get<SecuritySettings>("/admin/settings/security");
+  },
+
+  async updateSecuritySettings(settings: Partial<SecuritySettings>): Promise<void> {
+    await apiClient.put("/admin/settings/security", settings);
+  },
+
+  // Site Settings
+  async getSiteSettings(): Promise<SiteSettings> {
+    return apiClient.get<SiteSettings>("/admin/settings/site");
+  },
+
+  async updateSiteSettings(settings: Partial<SiteSettings>): Promise<void> {
+    await apiClient.put("/admin/settings/site", settings);
+  },
+
+  // IP Blocklist
+  async getIPBlocklist(): Promise<IPBlock[]> {
+    return apiClient.get<IPBlock[]>("/admin/ip-blocklist");
+  },
+
+  async blockIP(request: CreateIPBlockRequest): Promise<IPBlock> {
+    return apiClient.post<IPBlock>("/admin/ip-blocklist", request);
+  },
+
+  async unblockIP(id: number): Promise<void> {
+    await apiClient.delete(`/admin/ip-blocklist/${id}`);
+  },
+
+  // Announcements
+  async getAnnouncements(): Promise<Announcement[]> {
+    return apiClient.get<Announcement[]>("/admin/announcements");
+  },
+
+  async createAnnouncement(request: CreateAnnouncementRequest): Promise<Announcement> {
+    return apiClient.post<Announcement>("/admin/announcements", request);
+  },
+
+  async updateAnnouncement(id: number, request: UpdateAnnouncementRequest): Promise<Announcement> {
+    return apiClient.put<Announcement>(`/admin/announcements/${id}`, request);
+  },
+
+  async deleteAnnouncement(id: number): Promise<void> {
+    await apiClient.delete(`/admin/announcements/${id}`);
+  },
+
+  // Email Templates
+  async getEmailTemplates(): Promise<EmailTemplate[]> {
+    return apiClient.get<EmailTemplate[]>("/admin/email-templates");
+  },
+
+  async getEmailTemplate(id: number): Promise<EmailTemplate> {
+    return apiClient.get<EmailTemplate>(`/admin/email-templates/${id}`);
+  },
+
+  async updateEmailTemplate(id: number, request: UpdateEmailTemplateRequest): Promise<EmailTemplate> {
+    return apiClient.put<EmailTemplate>(`/admin/email-templates/${id}`, request);
+  },
+
+  async previewEmailTemplate(id: number, variables: Record<string, string>): Promise<PreviewEmailTemplateResponse> {
+    return apiClient.post<PreviewEmailTemplateResponse>(`/admin/email-templates/${id}/preview`, { variables });
+  },
+
+  // System Health
+  async getSystemHealth(): Promise<SystemHealth> {
+    return apiClient.get<SystemHealth>("/admin/health");
+  },
+
+  async getDatabaseHealth(): Promise<Record<string, unknown>> {
+    return apiClient.get<Record<string, unknown>>("/admin/health/database");
+  },
+
+  async getCacheHealth(): Promise<Record<string, unknown>> {
+    return apiClient.get<Record<string, unknown>>("/admin/health/cache");
+  },
+};
+
+// Public Announcements Service
+export const AnnouncementService = {
+  async getActiveAnnouncements(): Promise<Announcement[]> {
+    return apiClient.get<Announcement[]>("/announcements");
+  },
+
+  async dismissAnnouncement(id: number): Promise<void> {
+    await apiClient.post(`/announcements/${id}/dismiss`, {});
+  },
+};

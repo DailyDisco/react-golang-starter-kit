@@ -1,12 +1,30 @@
 import { logger } from "../../lib/logger";
 
-// Create API_BASE_URL safely for SSR
+/**
+ * Custom error class that preserves API error codes for contextual handling
+ */
+export class ApiError extends Error {
+  code: string;
+  statusCode: number;
+
+  constructor(message: string, code: string, statusCode: number) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
+// Create API_BASE_URL safely for SSR and remote development
 const getApiBaseUrl = () => {
-  // In SSR, import.meta.env might not be available or populated
+  // In SSR, use absolute URL for server-side API calls
   if (typeof window === "undefined") {
     return "http://localhost:8080";
   }
-  return import.meta.env.VITE_API_URL || "http://localhost:8080";
+  // In browser, use empty string for relative URLs (goes through Vite proxy)
+  // This enables remote development where localhost:8080 isn't accessible
+  // Set VITE_API_URL to an absolute URL only if you need to bypass the proxy
+  return import.meta.env.VITE_API_URL || "";
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -77,9 +95,10 @@ const isStateChangingMethod = (method?: string): boolean => {
 };
 
 // Enhanced fetch with auth (uses httpOnly cookies via credentials: "include")
+// Includes automatic retry on CSRF token errors
 export const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const needsCSRF = isStateChangingMethod(options.method);
-  const headers = createHeaders(needsCSRF);
+  let headers = createHeaders(needsCSRF);
 
   const response = await fetch(url, {
     ...options,
@@ -90,16 +109,34 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
     },
   });
 
+  // Retry once if CSRF token was missing or invalid (auto-refresh)
+  if (response.status === 403 && needsCSRF) {
+    try {
+      const clonedResponse = response.clone();
+      const errorData = (await clonedResponse.json()) as { error?: string };
+      if (errorData.error === "CSRF_ERROR") {
+        // Refresh CSRF token and retry
+        await initCSRFToken();
+        headers = createHeaders(true);
+        return fetch(url, {
+          ...options,
+          credentials: "include",
+          headers: {
+            ...headers,
+            ...options.headers,
+          },
+        });
+      }
+    } catch {
+      // If we can't parse the error, just return the original response
+    }
+  }
+
   // Handle 401 Unauthorized - session might be expired
   if (response.status === 401) {
-    // Clear auth data from localStorage (user info for UI)
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_user");
-      localStorage.removeItem("refresh_token");
-      // Redirect to login if on a protected page
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+      // Dispatch session-expired event for the modal to handle
+      window.dispatchEvent(new CustomEvent("session-expired"));
     }
   }
 
@@ -107,11 +144,12 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
 };
 
 // Simple fetch for auth endpoints (login/register) - includes credentials for cookie handling
+// Includes automatic retry on CSRF token errors
 export const apiFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const needsCSRF = isStateChangingMethod(options.method);
-  const headers = createHeaders(needsCSRF);
+  let headers = createHeaders(needsCSRF);
 
-  return fetch(url, {
+  const response = await fetch(url, {
     ...options,
     credentials: "include", // Include httpOnly cookies
     headers: {
@@ -119,6 +157,31 @@ export const apiFetch = async (url: string, options: RequestInit = {}): Promise<
       ...options.headers,
     },
   });
+
+  // Retry once if CSRF token was missing or invalid (auto-refresh)
+  if (response.status === 403 && needsCSRF) {
+    try {
+      const clonedResponse = response.clone();
+      const errorData = (await clonedResponse.json()) as { error?: string };
+      if (errorData.error === "CSRF_ERROR") {
+        // Refresh CSRF token and retry
+        await initCSRFToken();
+        headers = createHeaders(true);
+        return fetch(url, {
+          ...options,
+          credentials: "include",
+          headers: {
+            ...headers,
+            ...options.headers,
+          },
+        });
+      }
+    } catch {
+      // If we can't parse the error, just return the original response
+    }
+  }
+
+  return response;
 };
 
 // Types for API responses
@@ -138,9 +201,9 @@ export interface ApiErrorResponse {
 export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 /**
- * Safely parse error response from server
+ * Safely parse error response from server and return ApiError
  */
-export const parseErrorResponse = async (response: Response, defaultMessage: string): Promise<string> => {
+export const parseErrorResponse = async (response: Response, defaultMessage: string): Promise<ApiError> => {
   try {
     // Get response as text first, then try to parse as JSON
     const responseText = await response.text();
@@ -148,15 +211,18 @@ export const parseErrorResponse = async (response: Response, defaultMessage: str
     // Try to parse as JSON if it looks like JSON
     if (responseText.trim().startsWith("{") || responseText.trim().startsWith("[")) {
       const errorData = JSON.parse(responseText) as ApiErrorResponse;
-      return errorData.error || errorData.message || defaultMessage;
+      const message = errorData.message || errorData.error || defaultMessage;
+      const code = errorData.error || "UNKNOWN_ERROR";
+      return new ApiError(message, code, response.status);
     } else {
       // Not JSON, use the text directly
-      return responseText || `${defaultMessage} with status ${response.status}`;
+      const message = responseText || `${defaultMessage} with status ${response.status}`;
+      return new ApiError(message, "UNKNOWN_ERROR", response.status);
     }
   } catch (parseError) {
     // If anything fails, use a generic error message
     logger.error("Failed to parse error response", parseError);
-    return `${defaultMessage} with status ${response.status}`;
+    return new ApiError(`${defaultMessage} with status ${response.status}`, "UNKNOWN_ERROR", response.status);
   }
 };
 
