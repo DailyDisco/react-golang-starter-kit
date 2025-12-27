@@ -1,5 +1,7 @@
+import type { UseMutationResult } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AuthResponse, LoginRequest } from "../../services";
 import { renderWithProviders, screen } from "../../test/test-utils";
 import { LoginForm } from "./LoginForm";
 
@@ -112,7 +114,7 @@ describe("LoginForm - Pending State", () => {
       isPaused: false,
       context: undefined,
       submittedAt: 0,
-    });
+    } as unknown as UseMutationResult<AuthResponse, Error, LoginRequest, unknown>);
 
     renderWithProviders(<LoginForm />);
 

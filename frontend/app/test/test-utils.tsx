@@ -1,16 +1,13 @@
 import React, { type ReactElement } from "react";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, type UseMutationResult } from "@tanstack/react-query";
 // Import router functions after the mock is set up. These imports will now
 // get the mocked versions for useNavigate and useLocation, and the mocked
 // implementations for others.
 import {
   createMemoryHistory,
   createRootRoute,
-  createRoute,
   createRouter,
-  Link,
-  Outlet,
   RouterProvider,
   useLocation,
   useNavigate,
@@ -25,7 +22,7 @@ vi.mock("@tanstack/react-router", () => {
   const navigateMock = vi.fn();
   const locationMock = {
     pathname: "/",
-    search: {}, // Ensure search is an object
+    search: {},
     hash: "",
     state: null,
     key: "default",
@@ -46,17 +43,18 @@ vi.mock("@tanstack/react-router", () => {
       push: vi.fn(),
       replace: vi.fn(),
     })),
-    createRootRoute: vi.fn((config: any) => ({
+    createRootRoute: vi.fn((config: Record<string, unknown>) => ({
       ...config,
       addChildren: vi.fn(() => config),
     })),
-    createRoute: vi.fn((config: any) => config),
-    createRouter: vi.fn((config: any) => ({
+    createRoute: vi.fn((config: Record<string, unknown>) => config),
+    createRouter: vi.fn((config: Record<string, unknown>) => ({
       ...config,
       navigate: navigateMock,
       location: locationMock,
     })),
-    Link: ({ to, children, ...props }: any) => React.createElement("a", { href: to, ...props }, children),
+    Link: ({ to, children, ...props }: { to: string; children: React.ReactNode; [key: string]: unknown }) =>
+      React.createElement("a", { href: to, ...props }, children),
     Outlet: ({ children }: { children?: React.ReactNode }) =>
       React.createElement("div", { "data-testid": "router-outlet" }, children),
   };
@@ -119,37 +117,36 @@ export const renderWithProviders = (
   ui: ReactElement,
   { queryClient = createTestQueryClient(), router, initialPath = "/", ...renderOptions }: CustomRenderOptions = {}
 ) => {
-  try {
-    const testRouter = router || createTestRouter(initialPath);
-    let Wrapper: React.ComponentType<{ children: React.ReactNode }>;
+  const testRouter = router ?? createTestRouter(initialPath);
 
-    Wrapper = ({ children }: { children: React.ReactNode }) => (
-      <RouterProvider router={testRouter}>
-        <QueryClientProvider client={queryClient}>
-          {children} {/* Only render children, not the ui directly */}
-        </QueryClientProvider>
-      </RouterProvider>
-    );
+  const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+    <RouterProvider router={testRouter}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </RouterProvider>
+  );
+  TestWrapper.displayName = "TestWrapper";
 
-    return render(ui, { wrapper: Wrapper, ...renderOptions });
-  } catch (error) {
-    console.error("Error in renderWithProviders:", error);
-    throw error;
-  }
+  return render(ui, { wrapper: TestWrapper, ...renderOptions });
 };
 
-// Simple render without providers for debugging (use renderWithProviders for router-dependent components)
-export const renderSimple = (ui: ReactElement, options?: RenderOptions) => {
-  try {
-    return render(ui, options);
-  } catch (error) {
-    console.error("Error in renderSimple:", error);
-    throw error;
-  }
-};
+// Simple render without providers (use renderWithProviders for router-dependent components)
+export const renderSimple = (ui: ReactElement, options?: RenderOptions) => render(ui, options);
 
 // Mock implementations for hooks
-export const createMockAuthStore = (overrides?: any) => ({
+interface MockAuthStore {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  setUser: ReturnType<typeof vi.fn>;
+  setToken: ReturnType<typeof vi.fn>;
+  setLoading: ReturnType<typeof vi.fn>;
+  logout: ReturnType<typeof vi.fn>;
+  login: ReturnType<typeof vi.fn>;
+  initialize: ReturnType<typeof vi.fn>;
+}
+
+export const createMockAuthStore = (overrides?: Partial<MockAuthStore>): MockAuthStore => ({
   user: null,
   token: null,
   isLoading: false,
@@ -163,28 +160,44 @@ export const createMockAuthStore = (overrides?: any) => ({
   ...overrides,
 });
 
-export const createMockMutation = (overrides?: any) => ({
-  mutate: vi.fn(),
-  mutateAsync: vi.fn(),
-  isPending: false,
-  isError: false,
-  isSuccess: false,
-  error: null,
-  data: null,
-  reset: vi.fn(),
-  ...overrides,
-});
+/**
+ * Creates a properly typed mock for UseMutationResult.
+ * Use generic types to match your mutation's TData, TError, TVariables, TContext.
+ */
+export const createMockMutation = <TData = unknown, TError = Error, TVariables = void, TContext = unknown>(
+  overrides?: Partial<UseMutationResult<TData, TError, TVariables, TContext>>
+): UseMutationResult<TData, TError, TVariables, TContext> =>
+  ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isError: false,
+    isSuccess: false,
+    isIdle: true,
+    isPaused: false,
+    status: "idle",
+    error: null,
+    data: undefined as TData | undefined,
+    variables: undefined as TVariables | undefined,
+    context: undefined as TContext | undefined,
+    failureCount: 0,
+    failureReason: null,
+    reset: vi.fn(),
+    submittedAt: 0,
+    ...overrides,
+  }) as UseMutationResult<TData, TError, TVariables, TContext>;
 
 export const createMockNavigate = () => vi.fn();
 
-// Add this to help debug rendering issues
-export const renderWithDebug = (ui: ReactElement) => {
-  const result = renderWithProviders(ui);
-  console.log("Rendered HTML:", result.container.innerHTML);
-  return result;
-};
+interface MockLocation {
+  pathname: string;
+  search: string;
+  hash: string;
+  state: unknown;
+  key: string;
+}
 
-export const createMockLocation = (overrides?: any) => ({
+export const createMockLocation = (overrides?: Partial<MockLocation>): MockLocation => ({
   pathname: "/",
   search: "",
   hash: "",

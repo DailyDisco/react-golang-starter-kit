@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
-import { BarChart3, Home, LogOut, Settings, User, Users } from "lucide-react";
+import { CreditCard, Home, LogOut, Settings, User } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../hooks/auth/useAuth";
@@ -37,15 +37,10 @@ function ProtectedLayout() {
   const location = useLocation();
 
   const dashboardNav = [
-    {
-      name: "Dashboard",
-      href: "/dashboard",
-      icon: Home,
-    },
-    { name: "Users", href: "/users", icon: Users },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "Dashboard", href: "/dashboard", icon: Home },
+    { name: "Billing", href: "/billing", icon: CreditCard },
     { name: "Settings", href: "/settings", icon: Settings },
-    { name: "Profile", href: "/profile", icon: User },
+    { name: "Profile", href: "/settings/profile", icon: User },
   ];
 
   const isActive = (href: string) => {
@@ -55,7 +50,7 @@ function ProtectedLayout() {
   return (
     <div className="bg-background flex min-h-screen">
       {/* Sidebar Navigation */}
-      <aside className="bg-card border-border w-64 border-r">
+      <aside className="bg-card border-border relative w-64 border-r">
         <div className="border-border border-b p-6">
           <div className="flex items-center gap-3">
             <div className="bg-primary flex h-10 w-10 items-center justify-center rounded-lg">
@@ -129,7 +124,9 @@ function ProtectedLayout() {
           </div>
         </div>
         <main className="flex-1 overflow-auto p-6">
-          <Outlet />
+          <div className="mx-auto max-w-7xl">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

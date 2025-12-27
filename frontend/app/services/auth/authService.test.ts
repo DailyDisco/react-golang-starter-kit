@@ -1,11 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { apiFetch, authenticatedFetchWithParsing, parseErrorResponse } from "../api/client";
+import { ApiError, apiFetch, authenticatedFetchWithParsing, parseErrorResponse } from "../api/client";
 import { AuthService } from "./authService";
 
 // Mock the API client module
 vi.mock("../api/client", () => ({
   API_BASE_URL: "http://localhost:8080",
+  ApiError: class ApiError extends Error {
+    code: string;
+    statusCode: number;
+    constructor(message: string, code: string, statusCode: number) {
+      super(message);
+      this.name = "ApiError";
+      this.code = code;
+      this.statusCode = statusCode;
+    }
+  },
   apiFetch: vi.fn(),
   authenticatedFetchWithParsing: vi.fn(),
   createHeaders: vi.fn(() => ({ "Content-Type": "application/json" })),
@@ -75,7 +85,9 @@ describe("AuthService", () => {
         ok: false,
         status: 401,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Invalid credentials");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(
+        new ApiError("Invalid credentials", "INVALID_CREDENTIALS", 401)
+      );
 
       await expect(
         AuthService.login({
@@ -91,7 +103,7 @@ describe("AuthService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as Response);
+      } as unknown as Response);
 
       await expect(
         AuthService.login({
@@ -134,7 +146,7 @@ describe("AuthService", () => {
         ok: false,
         status: 400,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Email already exists");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Email already exists", "EMAIL_EXISTS", 400));
 
       await expect(
         AuthService.register({
@@ -226,22 +238,6 @@ describe("AuthService", () => {
       expect(result).toBe(false);
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_token");
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_user");
-    });
-  });
-
-  describe("getToken", () => {
-    it("should return token from localStorage", () => {
-      localStorageMock.setItem("auth_token", "stored-token");
-
-      const result = AuthService.getToken();
-
-      expect(result).toBe("stored-token");
-    });
-
-    it("should return null when no token exists", () => {
-      const result = AuthService.getToken();
-
-      expect(result).toBeNull();
     });
   });
 

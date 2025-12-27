@@ -1,5 +1,8 @@
+import type { UseMutationResult } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AuthResponse, LoginRequest, RegisterRequest } from "../../services";
+import { createMockUser } from "../../test/test-utils";
 // Import the mocked hooks
 import { useLogin, useRegister } from "./use-auth-mutations";
 
@@ -35,7 +38,7 @@ describe("useLogin mock", () => {
       isPaused: false,
       context: undefined,
       submittedAt: 0,
-    });
+    } as unknown as UseMutationResult<AuthResponse, Error, LoginRequest, unknown>);
 
     const result = useLogin();
     expect(result.mutate).toBe(mockMutate);
@@ -60,7 +63,7 @@ describe("useLogin mock", () => {
       isPaused: false,
       context: undefined,
       submittedAt: Date.now(),
-    });
+    } as unknown as UseMutationResult<AuthResponse, Error, LoginRequest, unknown>);
 
     const result = useLogin();
     expect(result.isPending).toBe(true);
@@ -85,7 +88,7 @@ describe("useLogin mock", () => {
       isPaused: false,
       context: undefined,
       submittedAt: 0,
-    });
+    } as unknown as UseMutationResult<AuthResponse, Error, LoginRequest, unknown>);
 
     const result = useLogin();
     expect(result.isError).toBe(true);
@@ -112,7 +115,7 @@ describe("useRegister mock", () => {
       isError: false,
       isSuccess: true,
       error: null,
-      data: { user: { id: 1, name: "Test" }, token: "token" },
+      data: { user: createMockUser({ id: 1, name: "Test" }), token: "token" },
       reset: vi.fn(),
       variables: undefined,
       status: "success",
@@ -122,7 +125,7 @@ describe("useRegister mock", () => {
       isPaused: false,
       context: undefined,
       submittedAt: 0,
-    });
+    } as unknown as UseMutationResult<AuthResponse, Error, RegisterRequest, unknown>);
 
     const result = useRegister();
     expect(result.mutate).toBe(mockMutate);

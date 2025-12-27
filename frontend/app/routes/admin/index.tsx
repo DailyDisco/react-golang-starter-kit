@@ -100,7 +100,7 @@ function AdminDashboard() {
             </Button>
           </div>
 
-          <div className="p-4 lg:p-8">{isIndex ? <DashboardStats /> : <Outlet />}</div>
+          <div className="mx-auto max-w-7xl p-4 lg:p-8">{isIndex ? <DashboardStats /> : <Outlet />}</div>
         </main>
       </div>
     </div>

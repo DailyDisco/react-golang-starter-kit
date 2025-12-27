@@ -28,7 +28,7 @@ import { useCreateUser, useDeleteUser } from "../../hooks/mutations/use-user-mut
 import { useFileDownload, useFiles, useStorageStatus } from "../../hooks/queries/use-files";
 import { useHealthCheck } from "../../hooks/queries/use-health";
 import { useUsers } from "../../hooks/queries/use-users";
-import { API_BASE_URL } from "../../services";
+import { API_BASE_URL, type FileResponse, type StorageStatus } from "../../services";
 import { useAuthStore } from "../../stores/auth-store";
 import { useFileStore } from "../../stores/file-store";
 import { useUserStore } from "../../stores/user-store";
@@ -509,9 +509,9 @@ function FileStorageStep({
   handleFileDelete,
   resetFileSelection: _resetFileSelection,
 }: {
-  files: Array<{ id: number; file_name: string; file_size: number }> | undefined;
+  files: FileResponse[] | undefined;
   filesLoading: boolean;
-  storageStatus: { storage_type?: string } | undefined;
+  storageStatus: StorageStatus | undefined;
   selectedFile: File | null;
   isDragOver: boolean;
   isAuthenticated: boolean;

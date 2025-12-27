@@ -1,5 +1,7 @@
+import type { UseMutationResult } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AuthResponse, RegisterRequest } from "../../services";
 import { renderWithProviders, screen } from "../../test/test-utils";
 import { RegisterForm } from "./RegisterForm";
 
@@ -113,7 +115,7 @@ describe("RegisterForm - Pending State", () => {
       isPaused: false,
       context: undefined,
       submittedAt: 0,
-    });
+    } as unknown as UseMutationResult<AuthResponse, Error, RegisterRequest, unknown>);
 
     renderWithProviders(<RegisterForm />);
 

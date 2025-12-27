@@ -1,12 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { authenticatedFetch, parseErrorResponse } from "../api/client";
+import { ApiError, authenticatedFetch, parseErrorResponse } from "../api/client";
 import type { Subscription } from "../types";
 import { BillingService } from "./billingService";
 
 // Mock the API client module
 vi.mock("../api/client", () => ({
   API_BASE_URL: "http://localhost:8080",
+  ApiError: class ApiError extends Error {
+    code: string;
+    statusCode: number;
+    constructor(message: string, code: string, statusCode: number) {
+      super(message);
+      this.name = "ApiError";
+      this.code = code;
+      this.statusCode = statusCode;
+    }
+  },
   authenticatedFetch: vi.fn(),
   parseErrorResponse: vi.fn(),
 }));
@@ -52,7 +62,7 @@ describe("BillingService", () => {
         ok: false,
         status: 500,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Config not found");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Config not found", "NOT_FOUND", 500));
 
       await expect(BillingService.getConfig()).rejects.toThrow("Config not found");
     });
@@ -92,7 +102,7 @@ describe("BillingService", () => {
         ok: false,
         status: 500,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Server error");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Server error", "SERVER_ERROR", 500));
 
       await expect(BillingService.getPlans()).rejects.toThrow("Server error");
     });
@@ -128,7 +138,7 @@ describe("BillingService", () => {
         ok: false,
         status: 400,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Invalid price ID");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Invalid price ID", "INVALID_PRICE", 400));
 
       await expect(BillingService.createCheckoutSession({ price_id: "invalid" })).rejects.toThrow("Invalid price ID");
     });
@@ -156,7 +166,7 @@ describe("BillingService", () => {
         ok: false,
         status: 404,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("No subscription found");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("No subscription found", "NOT_FOUND", 404));
 
       await expect(BillingService.createPortalSession()).rejects.toThrow("No subscription found");
     });
@@ -201,7 +211,7 @@ describe("BillingService", () => {
         ok: false,
         status: 500,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Server error");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Server error", "SERVER_ERROR", 500));
 
       await expect(BillingService.getSubscription()).rejects.toThrow("Server error");
     });

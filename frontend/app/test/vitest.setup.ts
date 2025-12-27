@@ -1,6 +1,5 @@
 import React from "react";
 
-import { Outlet } from "@tanstack/react-router";
 import { vi } from "vitest";
 
 // A more explicit and robust mock for @tanstack/react-router
@@ -31,17 +30,18 @@ vi.mock("@tanstack/react-router", () => {
       push: vi.fn(),
       replace: vi.fn(),
     })),
-    createRootRoute: vi.fn((config: any) => ({
+    createRootRoute: vi.fn((config: Record<string, unknown>) => ({
       ...config,
       addChildren: vi.fn(() => config),
     })),
-    createRoute: vi.fn((config: any) => config),
-    createRouter: vi.fn((config: any) => ({
+    createRoute: vi.fn((config: Record<string, unknown>) => config),
+    createRouter: vi.fn((config: Record<string, unknown>) => ({
       ...config,
       navigate: navigateMock,
       location: locationMock,
     })),
-    Link: ({ to, children, ...props }: any) => React.createElement("a", { href: to, ...props }, children),
+    Link: ({ to, children, ...props }: { to: string; children: React.ReactNode; [key: string]: unknown }) =>
+      React.createElement("a", { href: to, ...props }, children),
     Outlet: ({ children }: { children: React.ReactNode }) =>
       React.createElement("div", { "data-testid": "router-outlet" }, children),
 

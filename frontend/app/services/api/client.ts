@@ -94,8 +94,18 @@ const isStateChangingMethod = (method?: string): boolean => {
   return stateChangingMethods.includes((method || "GET").toUpperCase());
 };
 
+// Track if we're currently refreshing to prevent concurrent refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+// Import AuthService dynamically to avoid circular dependency
+const getAuthService = async () => {
+  const { AuthService } = await import("../auth/authService");
+  return AuthService;
+};
+
 // Enhanced fetch with auth (uses httpOnly cookies via credentials: "include")
-// Includes automatic retry on CSRF token errors
+// Includes automatic retry on CSRF token errors and 401 token refresh
 export const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const needsCSRF = isStateChangingMethod(options.method);
   let headers = createHeaders(needsCSRF);
@@ -132,10 +142,45 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
     }
   }
 
-  // Handle 401 Unauthorized - session might be expired
+  // Handle 401 Unauthorized - try to refresh token and retry once
   if (response.status === 401) {
+    // Don't try to refresh on login/refresh endpoints to avoid infinite loops
+    if (url.includes("/auth/login") || url.includes("/auth/refresh") || url.includes("/auth/register")) {
+      return response;
+    }
+
+    try {
+      // Use a single refresh promise to prevent concurrent refresh attempts
+      if (!isRefreshing) {
+        isRefreshing = true;
+        const AuthService = await getAuthService();
+        refreshPromise = AuthService.initializeFromStorage();
+      }
+
+      const refreshed = await refreshPromise;
+      isRefreshing = false;
+      refreshPromise = null;
+
+      if (refreshed) {
+        // Token refreshed successfully, retry the original request
+        headers = createHeaders(needsCSRF);
+        return fetch(url, {
+          ...options,
+          credentials: "include",
+          headers: {
+            ...headers,
+            ...options.headers,
+          },
+        });
+      }
+    } catch (refreshError) {
+      isRefreshing = false;
+      refreshPromise = null;
+      logger.warn("Token refresh failed during 401 recovery", { error: refreshError });
+    }
+
+    // Refresh failed or wasn't possible - dispatch session-expired event
     if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-      // Dispatch session-expired event for the modal to handle
       window.dispatchEvent(new CustomEvent("session-expired"));
     }
   }

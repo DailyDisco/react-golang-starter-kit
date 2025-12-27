@@ -1,11 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { authenticatedFetch, authenticatedFetchWithParsing, parseErrorResponse } from "../api/client";
+import { ApiError, authenticatedFetch, authenticatedFetchWithParsing, parseErrorResponse } from "../api/client";
 import { UserService } from "./userService";
 
 // Mock the API client module
 vi.mock("../api/client", () => ({
   API_BASE_URL: "http://localhost:8080",
+  ApiError: class ApiError extends Error {
+    code: string;
+    statusCode: number;
+    constructor(message: string, code: string, statusCode: number) {
+      super(message);
+      this.name = "ApiError";
+      this.code = code;
+      this.statusCode = statusCode;
+    }
+  },
   authenticatedFetch: vi.fn(),
   authenticatedFetchWithParsing: vi.fn(),
   parseErrorResponse: vi.fn(),
@@ -67,7 +77,7 @@ describe("UserService", () => {
         ok: false,
         status: 500,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Server error");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Server error", "SERVER_ERROR", 500));
 
       await expect(UserService.fetchUsers()).rejects.toThrow("Server error");
     });
@@ -78,7 +88,7 @@ describe("UserService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as Response);
+      } as unknown as Response);
 
       await expect(UserService.fetchUsers()).rejects.toThrow("Invalid response format from server");
     });
@@ -143,7 +153,7 @@ describe("UserService", () => {
         ok: false,
         status: 400,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Email already exists");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Email already exists", "EMAIL_EXISTS", 400));
 
       await expect(UserService.createUser("Test", "existing@example.com")).rejects.toThrow("Email already exists");
     });
@@ -154,7 +164,7 @@ describe("UserService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as Response);
+      } as unknown as Response);
 
       await expect(UserService.createUser("Test", "test@example.com")).rejects.toThrow(
         "Invalid response format from server"
@@ -204,7 +214,7 @@ describe("UserService", () => {
         ok: false,
         status: 404,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("User not found");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("User not found", "NOT_FOUND", 404));
 
       await expect(UserService.deleteUser(999)).rejects.toThrow("User not found");
     });

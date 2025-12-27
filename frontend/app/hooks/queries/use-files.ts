@@ -5,46 +5,36 @@ import { logger } from "../../lib/logger";
 import { FileService, type FileResponse, type StorageStatus } from "../../services";
 import { useAuthStore } from "../../stores/auth-store";
 
+// Note: Error handling moved to components - use the `error` return value from these hooks
+
 export function useFiles(limit?: number, offset?: number) {
   const { isAuthenticated } = useAuthStore();
 
-  return useQuery({
+  return useQuery<FileResponse[], Error>({
     queryKey: ["files", limit, offset],
     queryFn: () => FileService.fetchFiles(limit, offset),
-    enabled: isAuthenticated, // Only run query if authenticated
+    enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
-    onError: (error: Error) => {
-      logger.error("Files fetch error", error);
-      toast.error("Failed to load files", {
-        description: "Please try again later",
-      });
-    },
   });
 }
 
 export function useFileUrl(fileId: number) {
-  return useQuery({
+  return useQuery<string, Error>({
     queryKey: ["file-url", fileId],
     queryFn: () => FileService.getFileUrl(fileId),
     enabled: !!fileId && fileId > 0,
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 1,
-    onError: (error: Error) => {
-      logger.error("File URL fetch error", error);
-    },
   });
 }
 
 export function useStorageStatus() {
-  return useQuery({
+  return useQuery<StorageStatus, Error>({
     queryKey: ["storage-status"],
     queryFn: () => FileService.getStorageStatus(),
     staleTime: 30 * 60 * 1000, // 30 minutes
     retry: 1,
-    onError: (error: Error) => {
-      logger.error("Storage status fetch error", error);
-    },
   });
 }
 

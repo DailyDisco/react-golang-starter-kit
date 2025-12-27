@@ -1,3 +1,5 @@
+import type React from "react";
+
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { cleanup } from "@testing-library/react";
 import { afterEach, expect, vi } from "vitest";
@@ -12,10 +14,10 @@ afterEach(() => {
 
 // Mock router hooks
 vi.mock("@tanstack/react-router", async () => ({
-  ...((await vi.importActual("@tanstack/react-router")) as any),
+  ...((await vi.importActual("@tanstack/react-router")) as Record<string, unknown>),
   useNavigate: vi.fn(),
   useLocation: vi.fn(),
-  Link: ({ to, children, ...props }: any) => ({
+  Link: ({ to, children, ...props }: { to: string; children: React.ReactNode; [key: string]: unknown }) => ({
     type: "a",
     props: { href: to, ...props, children },
   }),

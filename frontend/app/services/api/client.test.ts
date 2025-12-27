@@ -186,7 +186,7 @@ describe("API Client", () => {
       } as Response;
 
       const result = await parseErrorResponse(mockResponse, "Default error");
-      expect(result).toBe("Bad Request");
+      expect(result.message).toBe("Bad Request");
     });
 
     it("should return message if error field is missing", async () => {
@@ -196,7 +196,7 @@ describe("API Client", () => {
       } as Response;
 
       const result = await parseErrorResponse(mockResponse, "Default error");
-      expect(result).toBe("Validation failed");
+      expect(result.message).toBe("Validation failed");
     });
 
     it("should handle non-JSON response", async () => {
@@ -206,7 +206,7 @@ describe("API Client", () => {
       } as Response;
 
       const result = await parseErrorResponse(mockResponse, "Default error");
-      expect(result).toBe("Internal Server Error");
+      expect(result.message).toBe("Internal Server Error");
     });
 
     it("should use default message with status on empty response", async () => {
@@ -216,7 +216,7 @@ describe("API Client", () => {
       } as Response;
 
       const result = await parseErrorResponse(mockResponse, "Not found");
-      expect(result).toBe("Not found with status 404");
+      expect(result.message).toBe("Not found with status 404");
     });
 
     it("should handle parse errors gracefully", async () => {
@@ -225,10 +225,10 @@ describe("API Client", () => {
         text: async () => {
           throw new Error("Network error");
         },
-      } as Response;
+      } as unknown as Response;
 
       const result = await parseErrorResponse(mockResponse, "Request failed");
-      expect(result).toBe("Request failed with status 500");
+      expect(result.message).toBe("Request failed with status 500");
     });
   });
 
@@ -278,7 +278,7 @@ describe("API Client", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as Response;
+      } as unknown as Response;
 
       await expect(parseApiResponse(mockResponse)).rejects.toThrow("Invalid response format from server");
     });

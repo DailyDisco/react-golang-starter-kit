@@ -1,13 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { authenticatedFetch, parseErrorResponse } from "../api/client";
+import { ApiError, authenticatedFetch, parseErrorResponse } from "../api/client";
 import { FileService } from "./fileService";
 
 // Mock the API client module
 vi.mock("../api/client", () => ({
   API_BASE_URL: "http://localhost:8080",
+  ApiError: class ApiError extends Error {
+    code: string;
+    statusCode: number;
+    constructor(message: string, code: string, statusCode: number) {
+      super(message);
+      this.name = "ApiError";
+      this.code = code;
+      this.statusCode = statusCode;
+    }
+  },
   authenticatedFetch: vi.fn(),
   parseErrorResponse: vi.fn(),
+  generateRequestId: () => "test-request-id",
 }));
 
 // Mock global fetch
@@ -39,14 +50,13 @@ describe("FileService", () => {
         json: async () => ({ success: true, data: mockResponse }),
       } as Response);
 
-      const result = await FileService.uploadFile(mockFile, "test-token");
+      const result = await FileService.uploadFile(mockFile);
 
       expect(result).toEqual(mockResponse);
       expect(mockFetch).toHaveBeenCalledWith(
         "http://localhost:8080/api/files/upload",
         expect.objectContaining({
           method: "POST",
-          headers: { Authorization: "Bearer test-token" },
         })
       );
 
@@ -64,7 +74,7 @@ describe("FileService", () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await FileService.uploadFile(mockFile, "test-token");
+      const result = await FileService.uploadFile(mockFile);
 
       expect(result).toEqual(mockResponse);
     });
@@ -76,9 +86,9 @@ describe("FileService", () => {
         ok: false,
         status: 413,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("File too large");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("File too large", "FILE_TOO_LARGE", 413));
 
-      await expect(FileService.uploadFile(mockFile, "test-token")).rejects.toThrow("File too large");
+      await expect(FileService.uploadFile(mockFile)).rejects.toThrow("File too large");
     });
 
     it("should throw error on invalid JSON response", async () => {
@@ -89,11 +99,9 @@ describe("FileService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as Response);
+      } as unknown as Response);
 
-      await expect(FileService.uploadFile(mockFile, "test-token")).rejects.toThrow(
-        "Invalid response format from server"
-      );
+      await expect(FileService.uploadFile(mockFile)).rejects.toThrow("Invalid response format from server");
     });
   });
 
@@ -143,7 +151,7 @@ describe("FileService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as Response);
+      } as unknown as Response);
 
       const result = await FileService.fetchFiles();
 
@@ -168,7 +176,7 @@ describe("FileService", () => {
         ok: false,
         status: 500,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Server error");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Server error", "SERVER_ERROR", 500));
 
       // fetchFiles catches errors and returns empty array
       const result = await FileService.fetchFiles();
@@ -205,7 +213,7 @@ describe("FileService", () => {
         ok: false,
         status: 404,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("File not found");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("File not found", "NOT_FOUND", 404));
 
       await expect(FileService.getFileUrl(999)).rejects.toThrow("File not found");
     });
@@ -216,7 +224,7 @@ describe("FileService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as Response);
+      } as unknown as Response);
 
       await expect(FileService.getFileUrl(1)).rejects.toThrow("Invalid response format from server");
     });
@@ -224,25 +232,24 @@ describe("FileService", () => {
 
   describe("deleteFile", () => {
     it("should delete file successfully", async () => {
-      mockFetch.mockResolvedValueOnce({
+      vi.mocked(authenticatedFetch).mockResolvedValueOnce({
         ok: true,
       } as Response);
 
-      await expect(FileService.deleteFile(1, "test-token")).resolves.toBeUndefined();
-      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/files/1", {
+      await expect(FileService.deleteFile(1)).resolves.toBeUndefined();
+      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/files/1", {
         method: "DELETE",
-        headers: { Authorization: "Bearer test-token" },
       });
     });
 
     it("should throw error on delete failure", async () => {
-      mockFetch.mockResolvedValueOnce({
+      vi.mocked(authenticatedFetch).mockResolvedValueOnce({
         ok: false,
         status: 404,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("File not found");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("File not found", "NOT_FOUND", 404));
 
-      await expect(FileService.deleteFile(999, "test-token")).rejects.toThrow("File not found");
+      await expect(FileService.deleteFile(999)).rejects.toThrow("File not found");
     });
   });
 
@@ -279,7 +286,7 @@ describe("FileService", () => {
         ok: false,
         status: 500,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("Storage unavailable");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Storage unavailable", "STORAGE_ERROR", 500));
 
       await expect(FileService.getStorageStatus()).rejects.toThrow("Storage unavailable");
     });
@@ -290,7 +297,7 @@ describe("FileService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as Response);
+      } as unknown as Response);
 
       await expect(FileService.getStorageStatus()).rejects.toThrow("Invalid response format from server");
     });
@@ -316,7 +323,7 @@ describe("FileService", () => {
         ok: false,
         status: 404,
       } as Response);
-      vi.mocked(parseErrorResponse).mockResolvedValueOnce("File not found");
+      vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("File not found", "NOT_FOUND", 404));
 
       await expect(FileService.downloadFile(999)).rejects.toThrow("File not found");
     });

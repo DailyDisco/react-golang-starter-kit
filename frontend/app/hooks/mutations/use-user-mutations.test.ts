@@ -56,7 +56,15 @@ describe("useCreateUser", () => {
   });
 
   it("should create user successfully", async () => {
-    const mockUser = { id: 1, name: "Test User", email: "test@example.com" };
+    const mockUser = {
+      id: 1,
+      name: "Test User",
+      email: "test@example.com",
+      email_verified: false,
+      is_active: true,
+      created_at: "2024-01-01",
+      updated_at: "2024-01-01",
+    };
     vi.mocked(UserService.createUser).mockResolvedValueOnce(mockUser);
 
     const { result } = renderHook(() => useCreateUser(), {
@@ -73,7 +81,15 @@ describe("useCreateUser", () => {
   });
 
   it("should create user with password", async () => {
-    const mockUser = { id: 1, name: "Test User", email: "test@example.com" };
+    const mockUser = {
+      id: 1,
+      name: "Test User",
+      email: "test@example.com",
+      email_verified: false,
+      is_active: true,
+      created_at: "2024-01-01",
+      updated_at: "2024-01-01",
+    };
     vi.mocked(UserService.createUser).mockResolvedValueOnce(mockUser);
 
     const { result } = renderHook(() => useCreateUser(), {

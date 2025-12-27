@@ -44,11 +44,20 @@ export function LoginForm() {
   const onSubmit = (data: LoginFormData) => {
     setError(null);
     loginMutation.mutate(data, {
-      onSuccess: () => {
+      onSuccess: (authData) => {
         toast.success("Welcome back!", {
           description: "You have successfully signed in.",
         });
-        void navigate({ to: from, replace: true });
+
+        // If user was trying to access a specific page, honor that
+        if (from && from !== "/") {
+          void navigate({ to: from, replace: true });
+          return;
+        }
+
+        // Otherwise, redirect based on role
+        const isAdmin = authData.user.role === "admin" || authData.user.role === "super_admin";
+        void navigate({ to: isAdmin ? "/admin" : "/dashboard", replace: true });
       },
       onError: (err) => {
         setError(err);

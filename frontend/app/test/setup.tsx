@@ -56,29 +56,31 @@ vi.mock("@hookform/resolvers/zod", () => ({
 }));
 
 // Mock shadcn UI components
+type MockComponentProps = React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode };
+
 vi.mock("../components/ui/button", () => ({
-  Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+  Button: ({ children, ...props }: MockComponentProps) => <button {...props}>{children}</button>,
 }));
 
 vi.mock("../components/ui/input", () => ({
-  Input: (props: any) => <input {...props} />,
+  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
 }));
 
 vi.mock("../components/ui/label", () => ({
-  Label: ({ children, ...props }: any) => <label {...props}>{children}</label>,
+  Label: ({ children, ...props }: MockComponentProps) => <label {...props}>{children}</label>,
 }));
 
 vi.mock("../components/ui/card", () => ({
-  Card: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  CardContent: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  CardDescription: ({ children, ...props }: any) => <p {...props}>{children}</p>,
-  CardHeader: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  CardTitle: ({ children, ...props }: any) => <h2 {...props}>{children}</h2>,
+  Card: ({ children, ...props }: MockComponentProps) => <div {...props}>{children}</div>,
+  CardContent: ({ children, ...props }: MockComponentProps) => <div {...props}>{children}</div>,
+  CardDescription: ({ children, ...props }: MockComponentProps) => <p {...props}>{children}</p>,
+  CardHeader: ({ children, ...props }: MockComponentProps) => <div {...props}>{children}</div>,
+  CardTitle: ({ children, ...props }: MockComponentProps) => <h2 {...props}>{children}</h2>,
 }));
 
 vi.mock("../components/ui/alert", () => ({
-  Alert: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  AlertDescription: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  Alert: ({ children, ...props }: MockComponentProps) => <div {...props}>{children}</div>,
+  AlertDescription: ({ children, ...props }: MockComponentProps) => <div {...props}>{children}</div>,
 }));
 
 // Mock lucide-react icons
