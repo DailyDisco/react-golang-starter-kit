@@ -5,6 +5,7 @@ import (
 
 	"react-golang-starter/internal/models"
 
+	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 )
 
@@ -20,6 +21,7 @@ func SeedFeatureFlags() error {
 			Description:       "Enable dark mode theme toggle",
 			Enabled:           true,
 			RolloutPercentage: 100,
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -29,7 +31,8 @@ func SeedFeatureFlags() error {
 			Description:       "Access to beta features for testing",
 			Enabled:           true,
 			RolloutPercentage: 0,
-			AllowedRoles:      "admin,super_admin",
+			AllowedRoles:      pq.StringArray{"admin", "super_admin"},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -39,7 +42,8 @@ func SeedFeatureFlags() error {
 			Description:       "Premium tier features for paid subscribers",
 			Enabled:           true,
 			RolloutPercentage: 100,
-			AllowedRoles:      "premium,admin,super_admin",
+			AllowedRoles:      pq.StringArray{"premium", "admin", "super_admin"},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -49,7 +53,8 @@ func SeedFeatureFlags() error {
 			Description:       "Experimental new dashboard UI",
 			Enabled:           true,
 			RolloutPercentage: 0,
-			AllowedRoles:      "admin,super_admin",
+			AllowedRoles:      pq.StringArray{"admin", "super_admin"},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -59,6 +64,7 @@ func SeedFeatureFlags() error {
 			Description:       "Enable file preview in file manager",
 			Enabled:           true,
 			RolloutPercentage: 100,
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -68,6 +74,7 @@ func SeedFeatureFlags() error {
 			Description:       "Enable OAuth social login options",
 			Enabled:           true,
 			RolloutPercentage: 100,
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -77,7 +84,8 @@ func SeedFeatureFlags() error {
 			Description:       "Allow admins to impersonate users for support",
 			Enabled:           true,
 			RolloutPercentage: 100,
-			AllowedRoles:      "admin,super_admin",
+			AllowedRoles:      pq.StringArray{"admin", "super_admin"},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -87,7 +95,8 @@ func SeedFeatureFlags() error {
 			Description:       "Advanced analytics dashboard",
 			Enabled:           true,
 			RolloutPercentage: 100,
-			AllowedRoles:      "admin,super_admin",
+			AllowedRoles:      pq.StringArray{"admin", "super_admin"},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},

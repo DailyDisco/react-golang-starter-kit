@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/sanitize"
 	"react-golang-starter/internal/services"
 	"strconv"
 	"strings"
@@ -106,22 +108,60 @@ func (fh *FileHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate file type (MIME type)
-	contentType := header.Header.Get("Content-Type")
-	if contentType == "" {
-		// Try to detect from file extension as fallback
-		contentType = "application/octet-stream"
-	}
-	if !isAllowedMimeType(contentType) {
+	// Validate file type using magic bytes (content sniffing)
+	// Read first 512 bytes to detect actual content type
+	buf := make([]byte, 512)
+	n, err := file.Read(buf)
+	if err != nil && err != io.EOF {
 		response := models.ErrorResponse{
 			Error:   "Bad Request",
-			Message: fmt.Sprintf("File type '%s' is not allowed. Allowed types: images (jpeg, png, gif, webp, svg), documents (pdf, txt, csv, json, xml, md, docx, xlsx, pptx)", contentType),
+			Message: "Failed to read file content",
 			Code:    http.StatusBadRequest,
 		}
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(response)
 		return
 	}
+
+	// Detect actual content type from file content (magic bytes)
+	detectedType := http.DetectContentType(buf[:n])
+
+	// Reset file reader for subsequent operations
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		response := models.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to process file",
+			Code:    http.StatusInternalServerError,
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Get claimed content type from header
+	claimedType := header.Header.Get("Content-Type")
+	if claimedType == "" {
+		claimedType = detectedType
+	}
+
+	// Use detected type for validation (more secure than trusting headers)
+	if !isAllowedMimeType(detectedType) {
+		response := models.ErrorResponse{
+			Error:   "Bad Request",
+			Message: fmt.Sprintf("File type '%s' is not allowed. Detected type: '%s'. Allowed types: images (jpeg, png, gif, webp, svg), documents (pdf, txt, csv, json, xml, md, docx, xlsx, pptx)", claimedType, detectedType),
+			Code:    http.StatusBadRequest,
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Sanitize filename to prevent path traversal and other attacks
+	sanitizedFilename := sanitize.Filename(header.Filename)
+	if sanitizedFilename == "" || sanitizedFilename == "unnamed" {
+		sanitizedFilename = fmt.Sprintf("file_%d", header.Size)
+	}
+	header.Filename = sanitizedFilename
 
 	// Upload file using service
 	uploadedFile, err := fh.fileService.UploadFile(r.Context(), file, header)

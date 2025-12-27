@@ -10,6 +10,7 @@ import (
 	"react-golang-starter/internal/models"
 
 	"github.com/joho/godotenv"
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -144,7 +145,7 @@ func seedFeatureFlags() error {
 			Description:       "Enable dark mode theme",
 			Enabled:           true,
 			RolloutPercentage: 100,
-			AllowedRoles:      "{}",
+			AllowedRoles:      pq.StringArray{},
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -154,7 +155,7 @@ func seedFeatureFlags() error {
 			Description:       "Enable the redesigned dashboard UI",
 			Enabled:           true,
 			RolloutPercentage: 50, // 50% rollout
-			AllowedRoles:      "{}",
+			AllowedRoles:      pq.StringArray{},
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -164,7 +165,7 @@ func seedFeatureFlags() error {
 			Description:       "Access to beta features",
 			Enabled:           true,
 			RolloutPercentage: 100,
-			AllowedRoles:      "{premium,admin,super_admin}", // Only premium and admin
+			AllowedRoles:      pq.StringArray{"premium", "admin", "super_admin"},
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -174,7 +175,7 @@ func seedFeatureFlags() error {
 			Description:       "Show advanced analytics dashboard",
 			Enabled:           false,
 			RolloutPercentage: 0,
-			AllowedRoles:      "{admin,super_admin}",
+			AllowedRoles:      pq.StringArray{"admin", "super_admin"},
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -184,7 +185,7 @@ func seedFeatureFlags() error {
 			Description:       "Enable file sharing functionality",
 			Enabled:           true,
 			RolloutPercentage: 100,
-			AllowedRoles:      "{}",
+			AllowedRoles:      pq.StringArray{},
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},

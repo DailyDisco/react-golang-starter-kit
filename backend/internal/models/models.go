@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"github.com/lib/pq"
+	"gorm.io/gorm"
+)
 
 // User represents a user in the system
 // swagger:model User
@@ -34,11 +37,17 @@ type User struct {
 	// Whether the user's email has been verified
 	EmailVerified bool `json:"email_verified" gorm:"default:false;index"`
 
-	// Email verification token (indexed for fast lookups during verification/password reset)
+	// Email verification token (indexed for fast lookups during verification)
 	VerificationToken string `json:"-" gorm:"uniqueIndex"`
 
-	// Token expiration time
+	// Verification token expiration time
 	VerificationExpires string `json:"-"`
+
+	// Password reset token (separate from verification token for security)
+	PasswordResetToken string `json:"-" gorm:"uniqueIndex"`
+
+	// Password reset token expiration time
+	PasswordResetExpires string `json:"-"`
 
 	// Refresh token for obtaining new access tokens
 	RefreshToken string `json:"-" gorm:"index"`
@@ -65,6 +74,15 @@ type User struct {
 
 	// User's avatar URL (from OAuth provider or uploaded)
 	AvatarURL string `json:"avatar_url,omitempty" gorm:"type:varchar(500)"`
+
+	// User's bio/about text
+	Bio string `json:"bio,omitempty" gorm:"type:text"`
+
+	// User's location
+	Location string `json:"location,omitempty" gorm:"type:varchar(255)"`
+
+	// User's social links (stored as JSON)
+	SocialLinks string `json:"social_links,omitempty" gorm:"type:jsonb;default:'{}'"`
 }
 
 // TokenBlacklist stores revoked JWT tokens to prevent reuse
@@ -102,6 +120,9 @@ type UserResponse struct {
 	Role          string `json:"role"`
 	OAuthProvider string `json:"oauth_provider,omitempty"`
 	AvatarURL     string `json:"avatar_url,omitempty"`
+	Bio           string `json:"bio,omitempty"`
+	Location      string `json:"location,omitempty"`
+	SocialLinks   string `json:"social_links,omitempty"`
 }
 
 // ToUserResponse converts a User to UserResponse (removes sensitive fields)
@@ -117,6 +138,9 @@ func (u *User) ToUserResponse() UserResponse {
 		Role:          u.Role,
 		OAuthProvider: u.OAuthProvider,
 		AvatarURL:     u.AvatarURL,
+		Bio:           u.Bio,
+		Location:      u.Location,
+		SocialLinks:   u.SocialLinks,
 	}
 }
 
@@ -776,7 +800,7 @@ type FeatureFlag struct {
 	RolloutPercentage int `json:"rollout_percentage" gorm:"default:0"`
 
 	// Roles that have access regardless of rollout
-	AllowedRoles string `json:"allowed_roles,omitempty" gorm:"type:text[]"`
+	AllowedRoles pq.StringArray `json:"allowed_roles,omitempty" gorm:"type:text[]"`
 
 	// Additional configuration metadata (JSON)
 	Metadata string `json:"metadata,omitempty" gorm:"type:jsonb"`

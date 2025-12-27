@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 // CSRFConfig holds CSRF protection configuration
@@ -49,18 +51,28 @@ func DefaultCSRFConfig() *CSRFConfig {
 		TokenName:      "csrf_token",
 		CookiePath:     "/",
 		CookieDomain:   "",
-		CookieSecure:   false, // PRODUCTION: Set CSRF_COOKIE_SECURE=true with HTTPS
-		CookieHTTPOnly: false, // Must be false for double-submit pattern (by design)
-		CookieSameSite: http.SameSiteStrictMode,
-		CookieMaxAge:   86400, // 24 hours
+		CookieSecure:   false,                // PRODUCTION: Set CSRF_COOKIE_SECURE=true with HTTPS
+		CookieHTTPOnly: false,                // Must be false for double-submit pattern (by design)
+		CookieSameSite: http.SameSiteLaxMode, // Lax for better cross-port dev compatibility
+		CookieMaxAge:   86400,                // 24 hours
 		ExemptPaths: []string{
 			"/api/webhooks/",
 			"/api/v1/webhooks/",
+			"/api/csrf-token", // Exempt - handler sets its own cookie
 			"/health",
 			"/test",
 		},
 		SafeMethods: []string{"GET", "HEAD", "OPTIONS", "TRACE"},
 	}
+}
+
+// isProductionEnv checks if the application is running in production mode
+func isProductionEnv() bool {
+	env := strings.ToLower(os.Getenv("GO_ENV"))
+	if env == "" {
+		env = strings.ToLower(os.Getenv("APP_ENV"))
+	}
+	return env == "production" || env == "prod"
 }
 
 // LoadCSRFConfig loads CSRF configuration from environment variables
@@ -72,7 +84,13 @@ func LoadCSRFConfig() *CSRFConfig {
 		config.Enabled = strings.ToLower(enabled) == "true"
 	}
 
-	// Cookie secure flag
+	// Auto-enable Secure flag in production (unless explicitly disabled)
+	isProduction := isProductionEnv()
+	if isProduction {
+		config.CookieSecure = true // Default to secure in production
+	}
+
+	// Cookie secure flag - explicit setting overrides auto-detection
 	if secure := os.Getenv("CSRF_COOKIE_SECURE"); secure != "" {
 		config.CookieSecure = strings.ToLower(secure) == "true"
 	}
@@ -91,6 +109,17 @@ func LoadCSRFConfig() *CSRFConfig {
 			config.CookieSameSite = http.SameSiteLaxMode
 		case "none":
 			config.CookieSameSite = http.SameSiteNoneMode
+		}
+	}
+
+	// Log production security status
+	if isProduction {
+		if config.CookieSecure {
+			log.Info().Msg("CSRF: Secure cookie flag enabled (production mode)")
+		} else {
+			log.Warn().
+				Str("setting", "CSRF_COOKIE_SECURE").
+				Msg("SECURITY WARNING: CSRF cookie Secure flag is explicitly disabled in production. This is insecure without HTTPS.")
 		}
 	}
 
@@ -153,7 +182,7 @@ func CSRFProtection(config *CSRFConfig) func(next http.Handler) http.Handler {
 
 			// For safe methods, just ensure a token exists in the cookie
 			if isSafeMethod(r.Method, config.SafeMethods) {
-				ensureCSRFToken(w, r, config)
+				ensureCSRFToken(w, r, config, false)
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -161,7 +190,7 @@ func CSRFProtection(config *CSRFConfig) func(next http.Handler) http.Handler {
 			// For state-changing methods, validate the token
 			cookie, err := r.Cookie(config.TokenName)
 			if err != nil || cookie.Value == "" {
-				writeCSRFError(w, "CSRF token missing", http.StatusForbidden)
+				writeCSRFError(w, r, "CSRF token missing", http.StatusForbidden)
 				return
 			}
 
@@ -173,30 +202,34 @@ func CSRFProtection(config *CSRFConfig) func(next http.Handler) http.Handler {
 			}
 
 			if headerToken == "" {
-				writeCSRFError(w, "CSRF token not provided in header", http.StatusForbidden)
+				writeCSRFError(w, r, "CSRF token not provided in header", http.StatusForbidden)
 				return
 			}
 
 			// Constant-time comparison to prevent timing attacks
 			if subtle.ConstantTimeCompare([]byte(cookie.Value), []byte(headerToken)) != 1 {
-				writeCSRFError(w, "CSRF token mismatch", http.StatusForbidden)
+				writeCSRFError(w, r, "CSRF token mismatch", http.StatusForbidden)
 				return
 			}
 
 			// Token is valid, proceed with request
-			// Optionally rotate the token after validation for extra security
-			ensureCSRFToken(w, r, config)
+			// Rotate the token after successful validation for extra security
+			// This prevents token reuse and reduces the window for CSRF attacks
+			ensureCSRFToken(w, r, config, true)
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-// ensureCSRFToken ensures a CSRF token exists in the response cookie
-func ensureCSRFToken(w http.ResponseWriter, r *http.Request, config *CSRFConfig) {
-	// Check if token already exists
-	if cookie, err := r.Cookie(config.TokenName); err == nil && cookie.Value != "" {
-		// Token exists, no need to set a new one
-		return
+// ensureCSRFToken ensures a CSRF token exists in the response cookie.
+// If forceRotate is true, always generates a new token (for post-validation rotation).
+func ensureCSRFToken(w http.ResponseWriter, r *http.Request, config *CSRFConfig, forceRotate bool) {
+	// Check if token already exists and we're not forcing rotation
+	if !forceRotate {
+		if cookie, err := r.Cookie(config.TokenName); err == nil && cookie.Value != "" {
+			// Token exists, no need to set a new one
+			return
+		}
 	}
 
 	// Generate new token
@@ -220,7 +253,9 @@ func ensureCSRFToken(w http.ResponseWriter, r *http.Request, config *CSRFConfig)
 }
 
 // writeCSRFError writes a JSON error response for CSRF failures
-func writeCSRFError(w http.ResponseWriter, message string, code int) {
+func writeCSRFError(w http.ResponseWriter, r *http.Request, message string, code int) {
+	// Set CORS headers so the browser can read the error response
+	SetCORSErrorHeaders(w, r)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 

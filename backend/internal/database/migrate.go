@@ -77,7 +77,9 @@ func RunMigrations(migrationsPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create migrator: %w", err)
 	}
-	defer m.Close()
+	// NOTE: Do NOT call m.Close() here - it closes the underlying *sql.DB connection
+	// which is managed by GORM and shared across the application. The migrate driver
+	// uses postgres.WithInstance() which takes ownership of the connection.
 
 	err = m.Up()
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
@@ -104,7 +106,7 @@ func MigrateDown(migrationsPath string, steps int) error {
 	if err != nil {
 		return fmt.Errorf("failed to create migrator: %w", err)
 	}
-	defer m.Close()
+	// NOTE: Do NOT call m.Close() - it closes the shared GORM connection
 
 	if err := m.Steps(-steps); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("rollback failed: %w", err)
@@ -125,7 +127,7 @@ func GetMigrationVersion(migrationsPath string) (uint, bool, error) {
 	if err != nil {
 		return 0, false, fmt.Errorf("failed to create migrator: %w", err)
 	}
-	defer m.Close()
+	// NOTE: Do NOT call m.Close() - it closes the shared GORM connection
 
 	version, dirty, err := m.Version()
 	if err != nil && !errors.Is(err, migrate.ErrNilVersion) {
@@ -146,7 +148,7 @@ func MigrateToVersion(migrationsPath string, version uint) error {
 	if err != nil {
 		return fmt.Errorf("failed to create migrator: %w", err)
 	}
-	defer m.Close()
+	// NOTE: Do NOT call m.Close() - it closes the shared GORM connection
 
 	if err := m.Migrate(version); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("migration to version %d failed: %w", version, err)

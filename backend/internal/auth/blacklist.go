@@ -52,8 +52,8 @@ func BlacklistToken(token string, userID uint, expiresAt time.Time, reason strin
 
 // IsTokenBlacklisted checks if a token has been revoked.
 // On database error, behavior is controlled by TOKEN_BLACKLIST_FAIL_MODE:
-// - "open" (default): Allow request on error (availability-first)
-// - "closed": Deny request on error (security-first)
+// - "closed" (default): Deny request on error (security-first)
+// - "open": Allow request on error (availability-first)
 func IsTokenBlacklisted(token string) bool {
 	// Skip if database is not initialized (for testing)
 	if database.DB == nil {
@@ -77,7 +77,7 @@ func IsTokenBlacklisted(token string) bool {
 		if failMode == "closed" {
 			return true
 		}
-		// In open mode (default), allow the request for availability
+		// In open mode, allow the request for availability
 		return false
 	}
 

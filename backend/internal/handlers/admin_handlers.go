@@ -29,24 +29,74 @@ func GetAdminStats(w http.ResponseWriter, r *http.Request) {
 	weekAgo := now.AddDate(0, 0, -7).Format("2006-01-02")
 	monthAgo := now.AddDate(0, -1, 0).Format("2006-01-02")
 
-	// User stats
-	database.DB.Model(&models.User{}).Count(&stats.TotalUsers)
-	database.DB.Model(&models.User{}).Where("is_active = ?", true).Count(&stats.ActiveUsers)
-	database.DB.Model(&models.User{}).Where("email_verified = ?", true).Count(&stats.VerifiedUsers)
-	database.DB.Model(&models.User{}).Where("DATE(created_at) = ?", today).Count(&stats.NewUsersToday)
-	database.DB.Model(&models.User{}).Where("DATE(created_at) >= ?", weekAgo).Count(&stats.NewUsersThisWeek)
-	database.DB.Model(&models.User{}).Where("DATE(created_at) >= ?", monthAgo).Count(&stats.NewUsersThisMonth)
+	// Consolidated user stats query using PostgreSQL FILTER clauses
+	// This reduces 6 separate queries to 1
+	type userStats struct {
+		TotalUsers        int64
+		ActiveUsers       int64
+		VerifiedUsers     int64
+		NewUsersToday     int64
+		NewUsersThisWeek  int64
+		NewUsersThisMonth int64
+	}
+	var us userStats
+	database.DB.Raw(`
+		SELECT
+			COUNT(*) as total_users,
+			COUNT(*) FILTER (WHERE is_active = true) as active_users,
+			COUNT(*) FILTER (WHERE email_verified = true) as verified_users,
+			COUNT(*) FILTER (WHERE DATE(created_at) = ?) as new_users_today,
+			COUNT(*) FILTER (WHERE DATE(created_at) >= ?) as new_users_this_week,
+			COUNT(*) FILTER (WHERE DATE(created_at) >= ?) as new_users_this_month
+		FROM users
+		WHERE deleted_at IS NULL
+	`, today, weekAgo, monthAgo).Scan(&us)
 
-	// Subscription stats
-	database.DB.Model(&models.Subscription{}).Count(&stats.TotalSubscriptions)
-	database.DB.Model(&models.Subscription{}).Where("status IN ?", []string{"active", "trialing"}).Count(&stats.ActiveSubscriptions)
-	database.DB.Model(&models.Subscription{}).Where("status = ?", "canceled").Count(&stats.CanceledSubscriptions)
+	stats.TotalUsers = us.TotalUsers
+	stats.ActiveUsers = us.ActiveUsers
+	stats.VerifiedUsers = us.VerifiedUsers
+	stats.NewUsersToday = us.NewUsersToday
+	stats.NewUsersThisWeek = us.NewUsersThisWeek
+	stats.NewUsersThisMonth = us.NewUsersThisMonth
 
-	// File stats
-	database.DB.Model(&models.File{}).Count(&stats.TotalFiles)
-	database.DB.Model(&models.File{}).Select("COALESCE(SUM(file_size), 0)").Scan(&stats.TotalFileSize)
+	// Consolidated subscription stats query (3 queries to 1)
+	type subStats struct {
+		TotalSubscriptions    int64
+		ActiveSubscriptions   int64
+		CanceledSubscriptions int64
+	}
+	var ss subStats
+	database.DB.Raw(`
+		SELECT
+			COUNT(*) as total_subscriptions,
+			COUNT(*) FILTER (WHERE status IN ('active', 'trialing')) as active_subscriptions,
+			COUNT(*) FILTER (WHERE status = 'canceled') as canceled_subscriptions
+		FROM subscriptions
+		WHERE deleted_at IS NULL
+	`).Scan(&ss)
 
-	// Users by role
+	stats.TotalSubscriptions = ss.TotalSubscriptions
+	stats.ActiveSubscriptions = ss.ActiveSubscriptions
+	stats.CanceledSubscriptions = ss.CanceledSubscriptions
+
+	// Consolidated file stats query (2 queries to 1)
+	type fileStats struct {
+		TotalFiles    int64
+		TotalFileSize int64
+	}
+	var fs fileStats
+	database.DB.Raw(`
+		SELECT
+			COUNT(*) as total_files,
+			COALESCE(SUM(file_size), 0) as total_file_size
+		FROM files
+		WHERE deleted_at IS NULL
+	`).Scan(&fs)
+
+	stats.TotalFiles = fs.TotalFiles
+	stats.TotalFileSize = fs.TotalFileSize
+
+	// Users by role (already efficient - single query with GROUP BY)
 	stats.UsersByRole = make(map[string]int64)
 	rows, err := database.DB.Model(&models.User{}).Select("role, COUNT(*) as count").Group("role").Rows()
 	if err == nil {
@@ -114,7 +164,7 @@ func GetAuditLogs(w http.ResponseWriter, r *http.Request) {
 
 	logs, total, err := audit.GetAuditLogs(filter)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to fetch audit logs"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to fetch audit logs")
 		return
 	}
 
@@ -154,52 +204,56 @@ func ImpersonateUser(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context
 	userCtx := r.Context().Value(auth.UserContextKey)
 	if userCtx == nil {
-		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
-	claims := userCtx.(*auth.Claims)
+	claims, ok := userCtx.(*auth.Claims)
+	if !ok {
+		WriteInternalError(w, r, "Invalid user context")
+		return
+	}
 
 	// Only super_admin can impersonate
 	if claims.Role != models.RoleSuperAdmin {
-		http.Error(w, `{"error":"Only super admins can impersonate users"}`, http.StatusForbidden)
+		WriteForbidden(w, r, "Only super admins can impersonate users")
 		return
 	}
 
 	// Already impersonating?
 	if claims.OriginalUserID != 0 {
-		http.Error(w, `{"error":"Already impersonating a user. Stop impersonation first."}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Already impersonating a user. Stop impersonation first.")
 		return
 	}
 
 	var req models.ImpersonateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"Invalid request body"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid request body")
 		return
 	}
 
 	// Cannot impersonate yourself
 	if req.UserID == claims.UserID {
-		http.Error(w, `{"error":"Cannot impersonate yourself"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Cannot impersonate yourself")
 		return
 	}
 
 	// Find target user
 	var targetUser models.User
 	if err := database.DB.First(&targetUser, req.UserID).Error; err != nil {
-		http.Error(w, `{"error":"User not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "User not found")
 		return
 	}
 
 	// Cannot impersonate another super_admin
 	if targetUser.Role == models.RoleSuperAdmin {
-		http.Error(w, `{"error":"Cannot impersonate other super admins"}`, http.StatusForbidden)
+		WriteForbidden(w, r, "Cannot impersonate other super admins")
 		return
 	}
 
 	// Generate impersonation token
 	token, err := auth.GenerateImpersonationToken(&targetUser, claims.UserID)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to generate token"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to generate token")
 		return
 	}
 
@@ -228,28 +282,32 @@ func StopImpersonation(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context
 	userCtx := r.Context().Value(auth.UserContextKey)
 	if userCtx == nil {
-		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
-	claims := userCtx.(*auth.Claims)
+	claims, ok := userCtx.(*auth.Claims)
+	if !ok {
+		WriteInternalError(w, r, "Invalid user context")
+		return
+	}
 
 	// Not impersonating?
 	if claims.OriginalUserID == 0 {
-		http.Error(w, `{"error":"Not currently impersonating anyone"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Not currently impersonating anyone")
 		return
 	}
 
 	// Find original admin user
 	var adminUser models.User
 	if err := database.DB.First(&adminUser, claims.OriginalUserID).Error; err != nil {
-		http.Error(w, `{"error":"Original user not found"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Original user not found")
 		return
 	}
 
 	// Generate new token for original user
 	token, err := auth.GenerateToken(&adminUser)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to generate token"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to generate token")
 		return
 	}
 
@@ -281,14 +339,18 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context
 	userCtx := r.Context().Value(auth.UserContextKey)
 	if userCtx == nil {
-		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
-	claims := userCtx.(*auth.Claims)
+	claims, ok := userCtx.(*auth.Claims)
+	if !ok {
+		WriteInternalError(w, r, "Invalid user context")
+		return
+	}
 
 	// Only super_admin can change roles
 	if claims.Role != models.RoleSuperAdmin {
-		http.Error(w, `{"error":"Only super admins can change user roles"}`, http.StatusForbidden)
+		WriteForbidden(w, r, "Only super admins can change user roles")
 		return
 	}
 
@@ -296,7 +358,7 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	userIDStr := chi.URLParam(r, "id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid user ID"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid user ID")
 		return
 	}
 
@@ -305,7 +367,7 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		Role string `json:"role"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"Invalid request body"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid request body")
 		return
 	}
 
@@ -317,20 +379,20 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		models.RoleUser:       true,
 	}
 	if !validRoles[req.Role] {
-		http.Error(w, `{"error":"Invalid role"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid role")
 		return
 	}
 
 	// Find user
 	var user models.User
 	if err := database.DB.First(&user, userID).Error; err != nil {
-		http.Error(w, `{"error":"User not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "User not found")
 		return
 	}
 
 	// Cannot change own role
 	if uint(userID) == claims.UserID {
-		http.Error(w, `{"error":"Cannot change your own role"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Cannot change your own role")
 		return
 	}
 
@@ -344,7 +406,7 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	user.Role = req.Role
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 	if err := database.DB.Save(&user).Error; err != nil {
-		http.Error(w, `{"error":"Failed to update user role"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to update user role")
 		return
 	}
 
@@ -367,14 +429,18 @@ func DeactivateUser(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context
 	userCtx := r.Context().Value(auth.UserContextKey)
 	if userCtx == nil {
-		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
-	claims := userCtx.(*auth.Claims)
+	claims, ok := userCtx.(*auth.Claims)
+	if !ok {
+		WriteInternalError(w, r, "Invalid user context")
+		return
+	}
 
 	// Only admin or super_admin can deactivate
 	if claims.Role != models.RoleSuperAdmin && claims.Role != models.RoleAdmin {
-		http.Error(w, `{"error":"Insufficient permissions"}`, http.StatusForbidden)
+		WriteForbidden(w, r, "Insufficient permissions")
 		return
 	}
 
@@ -382,26 +448,26 @@ func DeactivateUser(w http.ResponseWriter, r *http.Request) {
 	userIDStr := chi.URLParam(r, "id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid user ID"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid user ID")
 		return
 	}
 
 	// Cannot deactivate yourself
 	if uint(userID) == claims.UserID {
-		http.Error(w, `{"error":"Cannot deactivate yourself"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Cannot deactivate yourself")
 		return
 	}
 
 	// Find user
 	var user models.User
 	if err := database.DB.First(&user, userID).Error; err != nil {
-		http.Error(w, `{"error":"User not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "User not found")
 		return
 	}
 
 	// Admins cannot deactivate super_admins
 	if claims.Role == models.RoleAdmin && user.Role == models.RoleSuperAdmin {
-		http.Error(w, `{"error":"Cannot deactivate super admin"}`, http.StatusForbidden)
+		WriteForbidden(w, r, "Cannot deactivate super admin")
 		return
 	}
 
@@ -409,7 +475,7 @@ func DeactivateUser(w http.ResponseWriter, r *http.Request) {
 	user.IsActive = false
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 	if err := database.DB.Save(&user).Error; err != nil {
-		http.Error(w, `{"error":"Failed to deactivate user"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to deactivate user")
 		return
 	}
 
@@ -440,14 +506,18 @@ func ReactivateUser(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context
 	userCtx := r.Context().Value(auth.UserContextKey)
 	if userCtx == nil {
-		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
-	claims := userCtx.(*auth.Claims)
+	claims, ok := userCtx.(*auth.Claims)
+	if !ok {
+		WriteInternalError(w, r, "Invalid user context")
+		return
+	}
 
 	// Only admin or super_admin can reactivate
 	if claims.Role != models.RoleSuperAdmin && claims.Role != models.RoleAdmin {
-		http.Error(w, `{"error":"Insufficient permissions"}`, http.StatusForbidden)
+		WriteForbidden(w, r, "Insufficient permissions")
 		return
 	}
 
@@ -455,14 +525,14 @@ func ReactivateUser(w http.ResponseWriter, r *http.Request) {
 	userIDStr := chi.URLParam(r, "id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid user ID"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid user ID")
 		return
 	}
 
 	// Find user
 	var user models.User
 	if err := database.DB.First(&user, userID).Error; err != nil {
-		http.Error(w, `{"error":"User not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "User not found")
 		return
 	}
 
@@ -470,7 +540,7 @@ func ReactivateUser(w http.ResponseWriter, r *http.Request) {
 	user.IsActive = true
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 	if err := database.DB.Save(&user).Error; err != nil {
-		http.Error(w, `{"error":"Failed to reactivate user"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to reactivate user")
 		return
 	}
 
@@ -501,14 +571,18 @@ func RestoreUser(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context
 	userCtx := r.Context().Value(auth.UserContextKey)
 	if userCtx == nil {
-		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
-	claims := userCtx.(*auth.Claims)
+	claims, ok := userCtx.(*auth.Claims)
+	if !ok {
+		WriteInternalError(w, r, "Invalid user context")
+		return
+	}
 
 	// Only super_admin can restore deleted users
 	if claims.Role != models.RoleSuperAdmin {
-		http.Error(w, `{"error":"Only super admins can restore deleted users"}`, http.StatusForbidden)
+		WriteForbidden(w, r, "Only super admins can restore deleted users")
 		return
 	}
 
@@ -516,26 +590,26 @@ func RestoreUser(w http.ResponseWriter, r *http.Request) {
 	userIDStr := chi.URLParam(r, "id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid user ID"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid user ID")
 		return
 	}
 
 	// Find soft-deleted user (including deleted records)
 	var user models.User
 	if err := database.DB.Unscoped().First(&user, userID).Error; err != nil {
-		http.Error(w, `{"error":"User not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "User not found")
 		return
 	}
 
 	// Check if user is actually deleted
 	if !user.DeletedAt.Valid {
-		http.Error(w, `{"error":"User is not deleted"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "User is not deleted")
 		return
 	}
 
 	// Restore user by setting DeletedAt to null
 	if err := database.DB.Unscoped().Model(&user).Update("deleted_at", nil).Error; err != nil {
-		http.Error(w, `{"error":"Failed to restore user"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to restore user")
 		return
 	}
 
@@ -566,14 +640,18 @@ func GetDeletedUsers(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context
 	userCtx := r.Context().Value(auth.UserContextKey)
 	if userCtx == nil {
-		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
-	claims := userCtx.(*auth.Claims)
+	claims, ok := userCtx.(*auth.Claims)
+	if !ok {
+		WriteInternalError(w, r, "Invalid user context")
+		return
+	}
 
 	// Only super_admin can view deleted users
 	if claims.Role != models.RoleSuperAdmin {
-		http.Error(w, `{"error":"Only super admins can view deleted users"}`, http.StatusForbidden)
+		WriteForbidden(w, r, "Only super admins can view deleted users")
 		return
 	}
 

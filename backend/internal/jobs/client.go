@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"github.com/riverqueue/river/rivermigrate"
 	"github.com/rs/zerolog/log"
 )
 
@@ -37,6 +38,20 @@ func Initialize(config *Config) error {
 	if err != nil {
 		return fmt.Errorf("failed to create pgx pool: %w", err)
 	}
+
+	// Run River's migrations to ensure schema is up to date
+	migrator, err := rivermigrate.New(riverpgxv5.New(pool), nil)
+	if err != nil {
+		pool.Close()
+		return fmt.Errorf("failed to create River migrator: %w", err)
+	}
+
+	_, err = migrator.Migrate(context.Background(), rivermigrate.DirectionUp, nil)
+	if err != nil {
+		pool.Close()
+		return fmt.Errorf("failed to run River migrations: %w", err)
+	}
+	log.Info().Msg("River schema migrations completed")
 
 	// Create workers registry
 	workers := river.NewWorkers()

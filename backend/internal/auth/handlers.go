@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"react-golang-starter/internal/audit"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/jobs"
 	"react-golang-starter/internal/models"
@@ -109,6 +110,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		writeInternalError(w, r, "Failed to create user")
 		return
 	}
+
+	// Audit log user registration
+	audit.LogUserCreate(nil, user.ID, r)
 
 	// Queue verification email (async via job queue)
 	if jobs.IsAvailable() {
@@ -243,6 +247,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	// Set auth cookie
 	SetAuthCookie(w, token)
 
+	// Audit log successful login
+	audit.LogLogin(user.ID, r, nil)
+
 	// Return response with refresh token
 	response := models.AuthResponse{
 		User:         user.ToUserResponse(),
@@ -286,6 +293,9 @@ func LogoutUser(w http.ResponseWriter, r *http.Request) {
 
 			// Invalidate the user cache
 			_ = InvalidateUserCache(r.Context(), claims.UserID)
+
+			// Audit log logout
+			audit.LogLogout(claims.UserID, r)
 		}
 	}
 
@@ -435,16 +445,16 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate reset token
+	// Generate reset token (using dedicated password reset token field)
 	resetToken, err := GenerateVerificationToken()
 	if err != nil {
 		writeInternalError(w, r, "Failed to generate reset token")
 		return
 	}
 
-	// Update user with reset token
-	user.VerificationToken = resetToken
-	user.VerificationExpires = time.Now().Add(1 * time.Hour).Format(time.RFC3339)
+	// Update user with reset token (separate from email verification token)
+	user.PasswordResetToken = resetToken
+	user.PasswordResetExpires = time.Now().Add(1 * time.Hour).Format(time.RFC3339)
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 
 	if err := database.DB.Save(&user).Error; err != nil {
@@ -504,14 +514,14 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	if err := database.DB.Where("verification_token = ?", req.Token).First(&user).Error; err != nil {
+	if err := database.DB.Where("password_reset_token = ?", req.Token).First(&user).Error; err != nil {
 		writeUnauthorized(w, r, "Invalid reset token")
 		return
 	}
 
 	// Check if token is expired
-	if user.VerificationExpires != "" {
-		expiresTime, err := time.Parse(time.RFC3339, user.VerificationExpires)
+	if user.PasswordResetExpires != "" {
+		expiresTime, err := time.Parse(time.RFC3339, user.PasswordResetExpires)
 		if err != nil || time.Now().After(expiresTime) {
 			writeTokenExpired(w, r, "Reset token has expired")
 			return
@@ -527,14 +537,17 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	// Update user password and clear reset token
 	user.Password = hashedPassword
-	user.VerificationToken = ""
-	user.VerificationExpires = ""
+	user.PasswordResetToken = ""
+	user.PasswordResetExpires = ""
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 
 	if err := database.DB.Save(&user).Error; err != nil {
 		writeInternalError(w, r, "Failed to reset password")
 		return
 	}
+
+	// Audit log password reset
+	audit.LogUserUpdate(user.ID, user.ID, map[string]interface{}{"password": "changed"}, r)
 
 	// Invalidate user cache after password change
 	_ = InvalidateUserCache(r.Context(), user.ID)

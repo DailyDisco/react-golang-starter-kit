@@ -78,10 +78,14 @@ import (
 // @tag.name health
 // @tag.description System health monitoring and status endpoints for checking server availability
 func main() {
-	// Load environment variables from .env file
-	err := godotenv.Load()
+	// Load environment variables - try multiple locations
+	err := godotenv.Load(".env.local")
 	if err != nil {
-		zerologlog.Info().Msg("No .env file found, using system environment variables")
+		// Try .env as fallback (for when running from backend/ directory)
+		err = godotenv.Load(".env")
+		if err != nil {
+			zerologlog.Info().Msg("No .env.local or .env file found, using system environment variables")
+		}
 	}
 
 	// Initialize Sentry for error tracking (optional - controlled by SENTRY_DSN env var)
@@ -193,6 +197,14 @@ func main() {
 			Msg("job system initialized")
 	}
 
+	// Initialize metrics retention cleanup (runs on startup and every 24 hours)
+	retentionConfig := jobs.LoadMetricsRetentionConfig()
+	if retentionConfig.Enabled {
+		zerologlog.Info().
+			Int("retention_days", retentionConfig.RetentionDays).
+			Msg("metrics retention cleanup enabled")
+	}
+
 	// Create Chi router
 	r := chi.NewRouter()
 
@@ -209,18 +221,18 @@ func main() {
 	r.Use(middleware.StructuredLoggerWithConfig(logConfig))
 	r.Use(chimiddleware.Recoverer)
 
-	// Apply IP-based rate limiting globally
-	r.Use(ratelimit.NewIPRateLimitMiddleware(rateLimitConfig))
-
-	// CORS middleware for React frontend
+	// CORS middleware for React frontend (MUST be before rate limiting so preflight OPTIONS requests work)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   getAllowedOrigins(),
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Requested-With", "X-Request-ID", "Origin"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+
+	// Apply IP-based rate limiting globally (after CORS to allow preflight requests)
+	r.Use(ratelimit.NewIPRateLimitMiddleware(rateLimitConfig))
 
 	// Security headers middleware
 	securityConfig := middleware.LoadSecurityConfig()
@@ -235,6 +247,10 @@ func main() {
 	if csrfConfig.Enabled {
 		zerologlog.Info().Msg("CSRF protection enabled")
 	}
+
+	// Request body size limit middleware (prevents memory exhaustion attacks)
+	r.Use(middleware.MaxBodySize(middleware.DefaultMaxBodySize))
+	zerologlog.Info().Int64("max_bytes", middleware.DefaultMaxBodySize).Msg("request body size limit enabled")
 
 	// Initialize OAuth
 	auth.InitOAuth()
@@ -275,6 +291,9 @@ func main() {
 			zerologlog.Fatal().Err(err).Msg("failed to start job processing")
 		}
 	}
+
+	// Start periodic metrics retention cleanup
+	jobs.StartPeriodicRetention(ctx, retentionConfig)
 
 	// Graceful shutdown handling
 	go func() {
@@ -411,6 +430,35 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 
 			r.Get("/me", handlers.GetCurrentUser())    // GET /api/users/me - Get current user
 			r.Put("/me", handlers.UpdateCurrentUser()) // PUT /api/users/me - Update current user
+
+			// User preferences
+			r.Get("/me/preferences", handlers.GetUserPreferences)    // GET /api/users/me/preferences
+			r.Put("/me/preferences", handlers.UpdateUserPreferences) // PUT /api/users/me/preferences
+
+			// Session management
+			r.Get("/me/sessions", handlers.GetUserSessions)       // GET /api/users/me/sessions
+			r.Delete("/me/sessions", handlers.RevokeAllSessions)  // DELETE /api/users/me/sessions - Revoke all other sessions
+			r.Delete("/me/sessions/{id}", handlers.RevokeSession) // DELETE /api/users/me/sessions/{id}
+
+			// Login history
+			r.Get("/me/login-history", handlers.GetLoginHistory) // GET /api/users/me/login-history
+
+			// Password change
+			r.Put("/me/password", handlers.ChangePassword) // PUT /api/users/me/password
+
+			// Two-factor authentication
+			r.Get("/me/2fa/status", handlers.Get2FAStatus)                 // GET /api/users/me/2fa/status
+			r.Post("/me/2fa/setup", handlers.Setup2FA)                     // POST /api/users/me/2fa/setup
+			r.Post("/me/2fa/verify", handlers.Verify2FA)                   // POST /api/users/me/2fa/verify
+			r.Post("/me/2fa/disable", handlers.Disable2FA)                 // POST /api/users/me/2fa/disable
+			r.Post("/me/2fa/backup-codes", handlers.RegenerateBackupCodes) // POST /api/users/me/2fa/backup-codes
+
+			// Account deletion
+			r.Post("/me/delete", handlers.RequestAccountDeletion)       // POST /api/users/me/delete
+			r.Post("/me/delete/cancel", handlers.CancelAccountDeletion) // POST /api/users/me/delete/cancel
+
+			// Data export
+			r.Post("/me/export", handlers.RequestDataExport) // POST /api/users/me/export
 		})
 
 		// Specific user routes
@@ -498,10 +546,9 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 		r.Get("/", handlers.GetFeatureFlagsForUser) // GET /api/feature-flags - Get flags for current user
 	})
 
-	// Admin routes - require super_admin role
+	// Admin routes - require admin or super_admin role
 	r.Route("/admin", func(r chi.Router) {
-		r.Use(auth.AuthMiddleware)
-		r.Use(auth.SuperAdminMiddleware) // Only super_admin can access admin routes
+		r.Use(auth.AdminMiddleware) // Requires admin or super_admin role (includes AuthMiddleware)
 
 		// Dashboard stats
 		r.Get("/stats", handlers.GetAdminStats) // GET /api/admin/stats
@@ -533,6 +580,67 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 			r.Put("/{key}", handlers.UpdateFeatureFlag)    // PUT /api/admin/feature-flags/{key}
 			r.Delete("/{key}", handlers.DeleteFeatureFlag) // DELETE /api/admin/feature-flags/{key}
 		})
+
+		// System settings management
+		r.Route("/settings", func(r chi.Router) {
+			r.Get("/", handlers.GetAllSettings)                  // GET /api/admin/settings
+			r.Get("/{category}", handlers.GetSettingsByCategory) // GET /api/admin/settings/{category}
+			r.Put("/{key}", handlers.UpdateSetting)              // PUT /api/admin/settings/{key}
+
+			// Email settings
+			r.Get("/email", handlers.GetEmailSettings)        // GET /api/admin/settings/email
+			r.Put("/email", handlers.UpdateEmailSettings)     // PUT /api/admin/settings/email
+			r.Post("/email/test", handlers.TestEmailSettings) // POST /api/admin/settings/email/test
+
+			// Security settings
+			r.Get("/security", handlers.GetSecuritySettings)    // GET /api/admin/settings/security
+			r.Put("/security", handlers.UpdateSecuritySettings) // PUT /api/admin/settings/security
+
+			// Site settings
+			r.Get("/site", handlers.GetSiteSettings)    // GET /api/admin/settings/site
+			r.Put("/site", handlers.UpdateSiteSettings) // PUT /api/admin/settings/site
+		})
+
+		// IP blocklist management
+		r.Route("/ip-blocklist", func(r chi.Router) {
+			r.Get("/", handlers.GetIPBlocklist)   // GET /api/admin/ip-blocklist
+			r.Post("/", handlers.BlockIP)         // POST /api/admin/ip-blocklist
+			r.Delete("/{id}", handlers.UnblockIP) // DELETE /api/admin/ip-blocklist/{id}
+		})
+
+		// Announcements management
+		r.Route("/announcements", func(r chi.Router) {
+			r.Get("/", handlers.GetAnnouncements)          // GET /api/admin/announcements
+			r.Post("/", handlers.CreateAnnouncement)       // POST /api/admin/announcements
+			r.Put("/{id}", handlers.UpdateAnnouncement)    // PUT /api/admin/announcements/{id}
+			r.Delete("/{id}", handlers.DeleteAnnouncement) // DELETE /api/admin/announcements/{id}
+		})
+
+		// Email templates management
+		r.Route("/email-templates", func(r chi.Router) {
+			r.Get("/", handlers.GetEmailTemplates)                 // GET /api/admin/email-templates
+			r.Get("/{id}", handlers.GetEmailTemplate)              // GET /api/admin/email-templates/{id}
+			r.Put("/{id}", handlers.UpdateEmailTemplate)           // PUT /api/admin/email-templates/{id}
+			r.Post("/{id}/preview", handlers.PreviewEmailTemplate) // POST /api/admin/email-templates/{id}/preview
+		})
+
+		// System health monitoring
+		r.Route("/health", func(r chi.Router) {
+			r.Get("/", handlers.GetSystemHealth)           // GET /api/admin/health
+			r.Get("/database", handlers.GetDatabaseHealth) // GET /api/admin/health/database
+			r.Get("/cache", handlers.GetCacheHealth)       // GET /api/admin/health/cache
+		})
+	})
+
+	// Public announcements
+	r.Route("/announcements", func(r chi.Router) {
+		r.Get("/", handlers.GetActiveAnnouncements) // GET /api/announcements - Get active announcements
+
+		// Authenticated users can dismiss announcements
+		r.Group(func(r chi.Router) {
+			r.Use(auth.AuthMiddleware)
+			r.Post("/{id}/dismiss", handlers.DismissAnnouncement) // POST /api/announcements/{id}/dismiss
+		})
 	})
 }
 
@@ -552,6 +660,7 @@ func getAllowedOrigins() []string {
 		"http://localhost:5173",
 		"http://localhost:5174",
 		"http://localhost:5175",
+		"http://localhost:5193",
 		"http://localhost:8080",
 		"http://localhost:8081",
 		"http://localhost:8082",

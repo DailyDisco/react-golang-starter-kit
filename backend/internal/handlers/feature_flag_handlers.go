@@ -27,7 +27,7 @@ import (
 func GetFeatureFlags(w http.ResponseWriter, r *http.Request) {
 	var flags []models.FeatureFlag
 	if err := database.DB.Order("key ASC").Find(&flags).Error; err != nil {
-		http.Error(w, `{"error":"Failed to fetch feature flags"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to fetch feature flags")
 		return
 	}
 
@@ -59,19 +59,19 @@ func GetFeatureFlags(w http.ResponseWriter, r *http.Request) {
 func CreateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateFeatureFlagRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"Invalid request body"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid request body")
 		return
 	}
 
 	// Validate key format (lowercase, underscores only)
 	if !isValidFlagKey(req.Key) {
-		http.Error(w, `{"error":"Invalid key format. Use lowercase letters and underscores only."}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid key format. Use lowercase letters and underscores only.")
 		return
 	}
 
 	// Validate rollout percentage
 	if req.RolloutPercentage < 0 || req.RolloutPercentage > 100 {
-		http.Error(w, `{"error":"Rollout percentage must be between 0 and 100"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Rollout percentage must be between 0 and 100")
 		return
 	}
 
@@ -82,17 +82,17 @@ func CreateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 		Description:       req.Description,
 		Enabled:           req.Enabled,
 		RolloutPercentage: req.RolloutPercentage,
-		AllowedRoles:      strings.Join(req.AllowedRoles, ","),
+		AllowedRoles:      pq.StringArray(req.AllowedRoles),
 		CreatedAt:         now,
 		UpdatedAt:         now,
 	}
 
 	if err := database.DB.Create(&flag).Error; err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
-			http.Error(w, `{"error":"Feature flag with this key already exists"}`, http.StatusConflict)
+			WriteConflict(w, r, "Feature flag with this key already exists")
 			return
 		}
-		http.Error(w, `{"error":"Failed to create feature flag"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to create feature flag")
 		return
 	}
 
@@ -118,13 +118,13 @@ func UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 
 	var flag models.FeatureFlag
 	if err := database.DB.Where("key = ?", key).First(&flag).Error; err != nil {
-		http.Error(w, `{"error":"Feature flag not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "Feature flag not found")
 		return
 	}
 
 	var req models.UpdateFeatureFlagRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"Invalid request body"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid request body")
 		return
 	}
 
@@ -140,18 +140,18 @@ func UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.RolloutPercentage != nil {
 		if *req.RolloutPercentage < 0 || *req.RolloutPercentage > 100 {
-			http.Error(w, `{"error":"Rollout percentage must be between 0 and 100"}`, http.StatusBadRequest)
+			WriteBadRequest(w, r, "Rollout percentage must be between 0 and 100")
 			return
 		}
 		flag.RolloutPercentage = *req.RolloutPercentage
 	}
 	if req.AllowedRoles != nil {
-		flag.AllowedRoles = strings.Join(*req.AllowedRoles, ",")
+		flag.AllowedRoles = pq.StringArray(*req.AllowedRoles)
 	}
 	flag.UpdatedAt = time.Now().Format(time.RFC3339)
 
 	if err := database.DB.Save(&flag).Error; err != nil {
-		http.Error(w, `{"error":"Failed to update feature flag"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to update feature flag")
 		return
 	}
 
@@ -174,11 +174,11 @@ func DeleteFeatureFlag(w http.ResponseWriter, r *http.Request) {
 
 	result := database.DB.Where("key = ?", key).Delete(&models.FeatureFlag{})
 	if result.Error != nil {
-		http.Error(w, `{"error":"Failed to delete feature flag"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to delete feature flag")
 		return
 	}
 	if result.RowsAffected == 0 {
-		http.Error(w, `{"error":"Feature flag not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "Feature flag not found")
 		return
 	}
 
@@ -205,7 +205,7 @@ func GetFeatureFlagsForUser(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context
 	userCtx := r.Context().Value(auth.UserContextKey)
 	if userCtx == nil {
-		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
 	claims := userCtx.(*auth.Claims)
@@ -213,7 +213,7 @@ func GetFeatureFlagsForUser(w http.ResponseWriter, r *http.Request) {
 	// Get all feature flags
 	var flags []models.FeatureFlag
 	if err := database.DB.Find(&flags).Error; err != nil {
-		http.Error(w, `{"error":"Failed to fetch feature flags"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to fetch feature flags")
 		return
 	}
 
@@ -260,7 +260,7 @@ func SetUserFeatureFlagOverride(w http.ResponseWriter, r *http.Request) {
 	userIDStr := chi.URLParam(r, "userId")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid user ID"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid user ID")
 		return
 	}
 
@@ -269,14 +269,14 @@ func SetUserFeatureFlagOverride(w http.ResponseWriter, r *http.Request) {
 	// Find the feature flag
 	var flag models.FeatureFlag
 	if err := database.DB.Where("key = ?", key).First(&flag).Error; err != nil {
-		http.Error(w, `{"error":"Feature flag not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "Feature flag not found")
 		return
 	}
 
 	// Verify user exists
 	var user models.User
 	if err := database.DB.First(&user, userID).Error; err != nil {
-		http.Error(w, `{"error":"User not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "User not found")
 		return
 	}
 
@@ -284,7 +284,7 @@ func SetUserFeatureFlagOverride(w http.ResponseWriter, r *http.Request) {
 		Enabled bool `json:"enabled"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"Invalid request body"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid request body")
 		return
 	}
 
@@ -301,7 +301,7 @@ func SetUserFeatureFlagOverride(w http.ResponseWriter, r *http.Request) {
 	if err := database.DB.Where("user_id = ? AND feature_flag_id = ?", userID, flag.ID).
 		Assign(models.UserFeatureFlag{Enabled: req.Enabled, UpdatedAt: now}).
 		FirstOrCreate(&override).Error; err != nil {
-		http.Error(w, `{"error":"Failed to set override"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to set override")
 		return
 	}
 
@@ -330,7 +330,7 @@ func DeleteUserFeatureFlagOverride(w http.ResponseWriter, r *http.Request) {
 	userIDStr := chi.URLParam(r, "userId")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid user ID"}`, http.StatusBadRequest)
+		WriteBadRequest(w, r, "Invalid user ID")
 		return
 	}
 
@@ -339,13 +339,13 @@ func DeleteUserFeatureFlagOverride(w http.ResponseWriter, r *http.Request) {
 	// Find the feature flag
 	var flag models.FeatureFlag
 	if err := database.DB.Where("key = ?", key).First(&flag).Error; err != nil {
-		http.Error(w, `{"error":"Feature flag not found"}`, http.StatusNotFound)
+		WriteNotFound(w, r, "Feature flag not found")
 		return
 	}
 
 	result := database.DB.Where("user_id = ? AND feature_flag_id = ?", userID, flag.ID).Delete(&models.UserFeatureFlag{})
 	if result.Error != nil {
-		http.Error(w, `{"error":"Failed to delete override"}`, http.StatusInternalServerError)
+		WriteInternalError(w, r, "Failed to delete override")
 		return
 	}
 
@@ -361,11 +361,6 @@ func DeleteUserFeatureFlagOverride(w http.ResponseWriter, r *http.Request) {
 // Helper functions
 
 func toFeatureFlagResponse(flag models.FeatureFlag) models.FeatureFlagResponse {
-	var allowedRoles []string
-	if flag.AllowedRoles != "" {
-		allowedRoles = strings.Split(flag.AllowedRoles, ",")
-	}
-
 	return models.FeatureFlagResponse{
 		ID:                flag.ID,
 		Key:               flag.Key,
@@ -373,7 +368,7 @@ func toFeatureFlagResponse(flag models.FeatureFlag) models.FeatureFlagResponse {
 		Description:       flag.Description,
 		Enabled:           flag.Enabled,
 		RolloutPercentage: flag.RolloutPercentage,
-		AllowedRoles:      allowedRoles,
+		AllowedRoles:      []string(flag.AllowedRoles),
 		CreatedAt:         flag.CreatedAt,
 		UpdatedAt:         flag.UpdatedAt,
 	}
@@ -398,10 +393,9 @@ func isFeatureEnabledForUser(flag models.FeatureFlag, userID uint, userRole stri
 	}
 
 	// Check if user's role is in allowed roles
-	if flag.AllowedRoles != "" {
-		allowedRoles := strings.Split(flag.AllowedRoles, ",")
-		for _, role := range allowedRoles {
-			if strings.TrimSpace(role) == userRole {
+	if len(flag.AllowedRoles) > 0 {
+		for _, role := range flag.AllowedRoles {
+			if role == userRole {
 				return true
 			}
 		}
@@ -423,6 +417,3 @@ func isFeatureEnabledForUser(flag models.FeatureFlag, userID uint, userRole stri
 
 	return (hash % 100) < uint32(flag.RolloutPercentage)
 }
-
-// Suppress unused import warning
-var _ = pq.Array

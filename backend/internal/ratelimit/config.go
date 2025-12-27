@@ -1,8 +1,10 @@
 package ratelimit
 
 import (
+	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -10,6 +12,15 @@ import (
 type Config struct {
 	// General rate limiting settings
 	Enabled bool
+
+	// TrustedProxies is a list of IP addresses or CIDR ranges that are trusted
+	// to provide the real client IP via X-Forwarded-For header.
+	// If empty, X-Forwarded-For is ignored and only RemoteAddr is used.
+	// Example: ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.1"]
+	TrustedProxies []string
+
+	// parsedTrustedProxies holds the parsed CIDR networks for efficient checking
+	parsedTrustedProxies []*net.IPNet
 
 	// IP-based rate limiting
 	IPRequestsPerMinute int
@@ -133,7 +144,69 @@ func LoadConfig() *Config {
 		}
 	}
 
+	// Load trusted proxies from environment (comma-separated)
+	// Example: RATE_LIMIT_TRUSTED_PROXIES="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.1"
+	if val := os.Getenv("RATE_LIMIT_TRUSTED_PROXIES"); val != "" {
+		proxies := strings.Split(val, ",")
+		for _, proxy := range proxies {
+			proxy = strings.TrimSpace(proxy)
+			if proxy != "" {
+				config.TrustedProxies = append(config.TrustedProxies, proxy)
+			}
+		}
+	}
+
+	// Parse trusted proxies into CIDR networks
+	config.parseTrustedProxies()
+
 	return config
+}
+
+// parseTrustedProxies parses the TrustedProxies slice into net.IPNet for efficient checking
+func (c *Config) parseTrustedProxies() {
+	for _, proxy := range c.TrustedProxies {
+		// Try parsing as CIDR first
+		_, network, err := net.ParseCIDR(proxy)
+		if err == nil {
+			c.parsedTrustedProxies = append(c.parsedTrustedProxies, network)
+			continue
+		}
+
+		// Try parsing as single IP
+		ip := net.ParseIP(proxy)
+		if ip != nil {
+			// Convert single IP to /32 or /128 CIDR
+			var mask net.IPMask
+			if ip.To4() != nil {
+				mask = net.CIDRMask(32, 32)
+			} else {
+				mask = net.CIDRMask(128, 128)
+			}
+			c.parsedTrustedProxies = append(c.parsedTrustedProxies, &net.IPNet{
+				IP:   ip,
+				Mask: mask,
+			})
+		}
+	}
+}
+
+// IsTrustedProxy checks if the given IP is in the trusted proxy list
+func (c *Config) IsTrustedProxy(ipStr string) bool {
+	if len(c.parsedTrustedProxies) == 0 {
+		return false
+	}
+
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+
+	for _, network := range c.parsedTrustedProxies {
+		if network.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetIPWindow returns the rate limiting window duration for IP-based limits

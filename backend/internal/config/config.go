@@ -111,9 +111,9 @@ type AWSConfig struct {
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
-	// Try to load .env file (optional)
-	if err := godotenv.Load(); err != nil {
-		log.Info().Msg("No .env file found, using system environment variables")
+	// Try to load .env.local file (optional)
+	if err := godotenv.Load(".env.local"); err != nil {
+		log.Info().Msg("No .env.local file found, using system environment variables")
 	}
 
 	config := &Config{
