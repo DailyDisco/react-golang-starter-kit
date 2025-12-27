@@ -172,7 +172,7 @@ jobs:
           cache: true
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6 # Upgrade to v6
+        uses: golangci/golangci-lint-action@v9 # Upgrade to v6
         with:
           version: latest
           working-directory: ${{ env.BACKEND_DIR }}
