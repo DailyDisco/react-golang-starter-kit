@@ -4,6 +4,9 @@
 
 .PHONY: help dev prod build rebuild stop clean logs shell backend-logs frontend-logs db-logs format-backend
 
+# Environment file
+ENV_FILE := .env.local
+
 # Default target
 help: ## Show this help message
 	@echo "Available commands:"
@@ -11,77 +14,77 @@ help: ## Show this help message
 
 # Development commands
 dev: ## Start development environment with hot reload
-	docker compose up -d
+	docker compose --env-file $(ENV_FILE) up -d
 
 dev-logs: ## View development logs
-	docker compose logs -f
+	docker compose --env-file $(ENV_FILE) logs -f
 
 dev-stop: ## Stop development environment
-	docker compose down
+	docker compose --env-file $(ENV_FILE) down
 
 # Production commands
 prod: ## Start production environment
-	docker compose -f docker-compose.prod.yml up -d
+	docker compose --env-file $(ENV_FILE) -f docker-compose.prod.yml up -d
 
 prod-logs: ## View production logs
-	docker compose -f docker-compose.prod.yml logs -f
+	docker compose --env-file $(ENV_FILE) -f docker-compose.prod.yml logs -f
 
 prod-stop: ## Stop production environment
-	docker compose -f docker-compose.prod.yml down
+	docker compose --env-file $(ENV_FILE) -f docker-compose.prod.yml down
 
 # Build commands
 build: ## Build all services
-	docker compose build
+	docker compose --env-file $(ENV_FILE) build
 
 rebuild: ## Rebuild all services without cache
-	docker compose build --no-cache
+	docker compose --env-file $(ENV_FILE) build --no-cache
 
 prod-build: ## Build production images
-	docker compose -f docker-compose.prod.yml build
+	docker compose --env-file $(ENV_FILE) -f docker-compose.prod.yml build
 
 # Utility commands
 stop: ## Stop all running containers
-	docker compose down
-	docker compose -f docker-compose.prod.yml down
+	docker compose --env-file $(ENV_FILE) down
+	docker compose --env-file $(ENV_FILE) -f docker-compose.prod.yml down
 
 clean: ## Clean up containers, volumes, and images
-	docker compose down -v
-	docker compose -f docker-compose.prod.yml down -v
+	docker compose --env-file $(ENV_FILE) down -v
+	docker compose --env-file $(ENV_FILE) -f docker-compose.prod.yml down -v
 	docker system prune -f
 
 logs: ## View logs from all services
-	docker compose logs -f
+	docker compose --env-file $(ENV_FILE) logs -f
 
 # Service-specific logs
 backend-logs: ## View backend service logs
-	docker compose logs -f backend
+	docker compose --env-file $(ENV_FILE) logs -f backend
 
 frontend-logs: ## View frontend service logs
-	docker compose logs -f frontend
+	docker compose --env-file $(ENV_FILE) logs -f frontend
 
 db-logs: ## View database logs
-	docker compose logs -f postgres
+	docker compose --env-file $(ENV_FILE) logs -f postgres
 
 # Shell access
 shell-backend: ## Access backend container shell
-	docker compose exec backend sh
+	docker compose --env-file $(ENV_FILE) exec backend sh
 
 shell-frontend: ## Access frontend container shell
-	docker compose exec frontend sh
+	docker compose --env-file $(ENV_FILE) exec frontend sh
 
 shell-db: ## Access database container shell
-	docker compose exec postgres psql -U $(DB_USER) -d $(DB_NAME)
+	docker compose --env-file $(ENV_FILE) exec postgres psql -U $(DB_USER) -d $(DB_NAME)
 
 # Database operations
 db-reset: ## Reset database (WARNING: This will delete all data)
-	docker compose down -v
-	docker compose up -d postgres
+	docker compose --env-file $(ENV_FILE) down -v
+	docker compose --env-file $(ENV_FILE) up -d postgres
 	@echo "Database reset complete. Run 'make dev' to start all services."
 
 # Environment setup
 setup: ## Initial setup - copy env file and start services
-	cp .env.example .env
-	@echo "Please edit .env file with your configuration, then run 'make dev'"
+	cp .env.example .env.local
+	@echo "Please edit .env.local file with your configuration, then run 'make dev'"
 
 # Health checks
 health: ## Check health of all services
@@ -90,7 +93,7 @@ health: ## Check health of all services
 	@echo "Checking frontend health..."
 	curl -f http://localhost:5173 || echo "Frontend not healthy"
 	@echo "Checking database..."
-	docker compose exec postgres pg_isready -U $(DB_USER) -d $(DB_NAME) || echo "Database not ready"
+	docker compose --env-file $(ENV_FILE) exec postgres pg_isready -U $(DB_USER) -d $(DB_NAME) || echo "Database not ready"
 
 # Code formatting
 format-backend: ## Format backend Go code

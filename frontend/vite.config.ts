@@ -29,12 +29,12 @@ export default defineConfig({
   ],
   server: {
     host: '0.0.0.0',
-    allowedHosts: ['localhost', '127.0.0.1'],
+    allowedHosts: true, // Allow all hosts for remote development
     proxy: {
       '/api': {
         target: 'http://backend:8080',
         changeOrigin: true,
-        rewrite: path => path.replace(/^\/api/, ''),
+        // Don't rewrite - backend expects /api prefix
       },
     },
   },

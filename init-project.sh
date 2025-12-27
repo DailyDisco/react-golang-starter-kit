@@ -271,10 +271,10 @@ if [ -f "backend/go.mod" ]; then
     print_success "Updated Go module name"
 fi
 
-# Create .env file
-print_info "Creating .env file..."
+# Create .env.local file
+print_info "Creating .env.local file..."
 
-cat > .env << EOF
+cat > .env.local << EOF
 # ============================================
 # ${PROJECT_NAME_UPPER} - Environment Configuration
 # ============================================
@@ -331,7 +331,7 @@ RATE_LIMIT_ENABLED=true
 # 4. Review optional features below for additional capabilities
 EOF
 
-print_success "Created .env file with secure configuration"
+print_success "Created .env.local file with secure configuration"
 
 # Update README.md
 print_info "Updating README.md..."
@@ -484,7 +484,7 @@ ${GREEN}Configuration Summary:${NC}
 ✓ Project renamed throughout codebase
 ✓ Secure JWT secret generated
 ✓ Database password generated
-✓ .env file created with your configuration
+✓ .env.local file created with your configuration
 ✓ Docker compose files updated
 ✓ README.md customized
 ✓ Go module name updated
@@ -493,17 +493,17 @@ $([ -d ".git" ] && echo "✓ Git repository initialized")
 
 ${BLUE}Important Security Information:${NC}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${YELLOW}⚠${NC}  Your .env file contains sensitive information!
+${YELLOW}⚠${NC}  Your .env.local file contains sensitive information!
 ${YELLOW}⚠${NC}  JWT Secret: $JWT_SECRET
 ${YELLOW}⚠${NC}  DB Password: $DB_PASSWORD
 
-${RED}DO NOT commit the .env file to git!${NC}
+${RED}DO NOT commit the .env.local file to git!${NC}
 It's already in .gitignore, but be careful.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${BLUE}Next Steps:${NC}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. Review your .env file
+1. Review your .env.local file
 2. Start development:
    ${GREEN}make dev${NC}  or  ${GREEN}docker compose up -d${NC}
 

@@ -15,7 +15,7 @@ services:
       - postgres_logs:/var/log/postgresql
       - ./postgres.conf:/etc/postgresql/postgresql.conf:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-devuser} -d ${DB_NAME:-devdb}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,7 +50,7 @@ services:
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:4173}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5193,http://localhost:4193}
       API_PORT: ${API_PORT:-8080}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
       RATE_LIMIT_GENERAL_REQUESTS: ${RATE_LIMIT_GENERAL_REQUESTS:-100}
@@ -75,15 +75,15 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-noreply@localhost}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-App}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5193}
       # Stripe payments
       STRIPE_ENABLED: ${STRIPE_ENABLED:-false}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:5173/billing/success}
-      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:5173/billing/cancel}
-      STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:-http://localhost:5173/billing}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:5193/billing/success}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:5193/billing/cancel}
+      STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:-http://localhost:5193/billing}
     volumes:
       - ./backend:/app:cached
       - go_modules:/go/pkg/mod:cached
@@ -118,11 +118,13 @@ services:
     restart: unless-stopped
     working_dir: /app
     ports:
-      - "5173:5173"
-      - "4173:4173" # Preview server port
+      - "5193:5193"
+      - "4193:4193" # Preview server port
     environment:
       NODE_ENV: development
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+      # VITE_API_URL: Leave empty to use Vite proxy (required for remote development)
+      # The Vite dev server proxies /api requests to http://backend:8080
+      VITE_API_URL: ""
       CI: false
       # Better file watching in Docker on some systems (Mac/Windows)
       CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-false}
@@ -136,7 +138,7 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      test: ["CMD", "curl", "-f", "http://localhost:5193"]
       interval: 30s
       timeout: 10s
       retries: 3
