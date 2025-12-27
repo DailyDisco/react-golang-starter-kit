@@ -1,34 +1,42 @@
+import { useEffect, useState } from "react";
+
 import { WifiOff } from "lucide-react";
 
-import { useOnlineStatus } from "../../hooks/useOnlineStatus";
-
 /**
- * Banner that displays when the user is offline
- * Shows at the top of the page with a warning message
+ * OfflineBanner displays a notification when the user loses network connectivity.
+ * It automatically shows/hides based on the browser's online/offline status.
  */
 export function OfflineBanner() {
-  const { isOnline, wasOffline } = useOnlineStatus();
+  const [isOffline, setIsOffline] = useState(false);
 
-  // Show reconnected message briefly
-  if (wasOffline && isOnline) {
-    return (
-      <div className="bg-green-600 px-4 py-2 text-center text-sm text-white">
-        <span className="font-medium">Back online!</span> Your connection has been restored.
-      </div>
-    );
-  }
+  useEffect(() => {
+    // Check initial status (only in browser)
+    if (typeof window !== "undefined") {
+      setIsOffline(!navigator.onLine);
+    }
 
-  // Show offline banner when not connected
-  if (!isOnline) {
-    return (
-      <div className="bg-yellow-600 px-4 py-2 text-center text-sm text-white">
-        <span className="inline-flex items-center gap-2">
-          <WifiOff className="h-4 w-4" />
-          <span className="font-medium">You're offline.</span> Some features may not be available.
-        </span>
-      </div>
-    );
-  }
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
 
-  return null;
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  if (!isOffline) return null;
+
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      className="bg-destructive text-destructive-foreground fixed left-0 right-0 top-0 z-50 flex items-center justify-center gap-2 p-2 text-center text-sm font-medium shadow-md"
+    >
+      <WifiOff className="h-4 w-4" aria-hidden="true" />
+      <span>You are offline. Some features may not work until you reconnect.</span>
+    </div>
+  );
 }

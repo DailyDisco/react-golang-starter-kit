@@ -1,13 +1,47 @@
+import { Suspense, lazy, useEffect } from "react";
+
 import { ThemeProvider } from "@/providers/theme-provider";
 import type { RouterContext } from "@/router";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { Toaster } from "sonner";
 
+import { initCSRFToken } from "../services/api/client";
+
+// Lazy load devtools to exclude from production bundle
+const ReactQueryDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import("@tanstack/react-query-devtools").then((m) => ({
+        default: m.ReactQueryDevtools,
+      }))
+    )
+  : () => null;
+
+const TanStackRouterDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import("@tanstack/react-router-devtools").then((m) => ({
+        default: m.TanStackRouterDevtools,
+      }))
+    )
+  : () => null;
+
+import { SessionExpiredModal } from "../components/auth/SessionExpiredModal";
 import { ErrorFallback } from "../components/error";
 import { OfflineBanner } from "../components/ui/offline-banner";
 import { StandardLayout } from "../layouts";
+
+/**
+ * Initialize CSRF token on app load.
+ * This ensures the CSRF cookie is set before any state-changing requests.
+ */
+function CSRFInitializer() {
+  useEffect(() => {
+    // Initialize CSRF token on app mount
+    // This ensures we have a valid CSRF token before making POST/PUT/DELETE requests
+    void initCSRFToken();
+  }, []);
+
+  return null;
+}
 
 // HydrateFallback component for better SSR UX
 function HydrateFallback() {
@@ -42,12 +76,22 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     <>
       <ThemeProvider defaultTheme="system">
         {/* QueryClientProvider is handled by the SSR Query integration */}
+        <CSRFInitializer />
         <OfflineBanner />
         <Toaster />
+        <SessionExpiredModal />
         <RootLayout />
-        <ReactQueryDevtools initialIsOpen={false} />
+        {import.meta.env.DEV && (
+          <Suspense fallback={null}>
+            <ReactQueryDevtools initialIsOpen={false} />
+          </Suspense>
+        )}
       </ThemeProvider>
-      <TanStackRouterDevtools />
+      {import.meta.env.DEV && (
+        <Suspense fallback={null}>
+          <TanStackRouterDevtools />
+        </Suspense>
+      )}
     </>
   ),
   notFoundComponent: () => (

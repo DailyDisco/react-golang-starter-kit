@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 import { AlertCircle, Home, RefreshCw } from "lucide-react";
 
+import { queryClient } from "../../lib/query-client";
 import { captureError } from "../../lib/sentry";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
@@ -23,6 +24,16 @@ export function ErrorFallback({ error, resetError, showStack = false }: ErrorFal
     });
   }, [error]);
 
+  // Handle retry: invalidate query cache to ensure fresh data, then reset
+  const handleRetry = useCallback(() => {
+    // Invalidate all queries to ensure fresh data on retry
+    // This helps recover from stale data issues
+    void queryClient.invalidateQueries();
+
+    // Call the reset function to re-render the error boundary's children
+    resetError?.();
+  }, [resetError]);
+
   return (
     <div className="bg-background flex min-h-[400px] items-center justify-center p-4">
       <Card className="w-full max-w-lg">
@@ -42,7 +53,7 @@ export function ErrorFallback({ error, resetError, showStack = false }: ErrorFal
           <div className="flex justify-center gap-2">
             {resetError && (
               <Button
-                onClick={resetError}
+                onClick={handleRetry}
                 variant="default"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
