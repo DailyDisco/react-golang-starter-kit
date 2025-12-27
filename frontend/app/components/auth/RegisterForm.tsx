@@ -8,12 +8,15 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { useRegister } from "../../hooks/mutations/use-auth-mutations";
+import { ApiError } from "../../services/api/client";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { AuthErrorGuidance } from "./AuthErrorGuidance";
 import { OAuthButtons, OAuthDivider } from "./OAuthButtons";
+import { PasswordStrengthMeter } from "./PasswordStrengthMeter";
 
 const registerSchema = z
   .object({
@@ -32,17 +35,20 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiError | Error | null>(null);
   const registerMutation = useRegister();
   const navigate = useNavigate();
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
+
+  const passwordValue = watch("password", "");
 
   const onSubmit = (data: RegisterFormData) => {
     setError(null);
@@ -60,8 +66,8 @@ export function RegisterForm() {
           navigate({ to: "/", search: undefined });
         },
         onError: (err) => {
+          setError(err);
           const errorMessage = err instanceof Error ? err.message : "Registration failed";
-          setError(errorMessage);
           toast.error("Registration failed", {
             description: errorMessage,
           });
@@ -81,7 +87,7 @@ export function RegisterForm() {
           <OAuthButtons
             mode="register"
             disabled={registerMutation.isPending}
-            onError={(message) => setError(message)}
+            onError={(message) => setError(new Error(message))}
           />
           <OAuthDivider text="or register with email" />
           <form
@@ -89,9 +95,12 @@ export function RegisterForm() {
             className="space-y-4"
           >
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <>
+                <Alert variant="destructive">
+                  <AlertDescription>{error.message}</AlertDescription>
+                </Alert>
+                <AuthErrorGuidance error={error} context="register" />
+              </>
             )}
 
             <div className="space-y-2">
@@ -142,6 +151,7 @@ export function RegisterForm() {
                 </Button>
               </div>
               {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+              <PasswordStrengthMeter password={passwordValue} />
             </div>
 
             <div className="space-y-2">

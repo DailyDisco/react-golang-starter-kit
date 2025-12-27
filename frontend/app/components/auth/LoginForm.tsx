@@ -8,11 +8,13 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { useLogin } from "../../hooks/mutations/use-auth-mutations";
+import { ApiError } from "../../services/api/client";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { AuthErrorGuidance } from "./AuthErrorGuidance";
 import { OAuthButtons, OAuthDivider } from "./OAuthButtons";
 
 const loginSchema = z.object({
@@ -24,7 +26,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ApiError | Error | null>(null);
   const loginMutation = useLogin();
   const navigate = useNavigate();
   const location = useLocation();
@@ -49,8 +51,8 @@ export function LoginForm() {
         navigate({ to: from, replace: true });
       },
       onError: (err) => {
+        setError(err);
         const errorMessage = err instanceof Error ? err.message : "Login failed";
-        setError(errorMessage);
         toast.error("Sign in failed", {
           description: errorMessage,
         });
@@ -71,7 +73,7 @@ export function LoginForm() {
           <OAuthButtons
             mode="login"
             disabled={loginMutation.isPending}
-            onError={(message) => setError(message)}
+            onError={(message) => setError(new Error(message))}
           />
           <OAuthDivider text="or continue with email" />
           <form
@@ -80,9 +82,12 @@ export function LoginForm() {
             role="form"
           >
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <>
+                <Alert variant="destructive">
+                  <AlertDescription>{error.message}</AlertDescription>
+                </Alert>
+                <AuthErrorGuidance error={error} context="login" />
+              </>
             )}
 
             <div className="space-y-2">
