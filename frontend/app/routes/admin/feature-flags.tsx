@@ -2,13 +2,23 @@ import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Flag, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
+import { Flag, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { AdminPageHeader, ConfirmDialog } from "../../components/admin";
+import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { Progress } from "../../components/ui/progress";
+import { Slider } from "../../components/ui/slider";
+import { Switch } from "../../components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "../../components/ui/tooltip";
 import { requireAdmin } from "../../lib/guards";
 import {
   AdminService,
@@ -33,22 +43,23 @@ function FeatureFlagsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Feature Flags</h2>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Flag
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Feature Flags"
+        description="Control feature rollouts and A/B testing"
+        breadcrumbs={[{ label: "Feature Flags" }]}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
+            <Button onClick={() => setShowCreate(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Create Flag</span>
+            </Button>
+          </div>
+        }
+      />
 
       {/* Create Form */}
       {showCreate && (
@@ -75,10 +86,10 @@ function FeatureFlagsPage() {
 
       {/* Error State */}
       {error && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950">
           <CardHeader>
-            <CardTitle className="text-red-600">Error</CardTitle>
-            <CardDescription className="text-red-500">
+            <CardTitle className="text-red-600 dark:text-red-400">Error</CardTitle>
+            <CardDescription className="text-red-500 dark:text-red-400">
               {error instanceof Error ? error.message : "Failed to load feature flags"}
             </CardDescription>
           </CardHeader>
@@ -90,21 +101,16 @@ function FeatureFlagsPage() {
         <div className="space-y-4">
           {data.flags.length === 0 ? (
             <Card>
-              <CardContent className="py-8">
-                <div className="text-center">
-                  <Flag className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-                  <p className="text-gray-500">No feature flags created yet.</p>
-                  <p className="mt-1 text-sm text-gray-400">Click "Create Flag" to add your first feature flag.</p>
+              <CardContent className="py-12">
+                <div className="flex flex-col items-center justify-center text-center">
+                  <Flag className="mb-4 h-12 w-12 text-gray-300" />
+                  <p className="font-medium text-gray-900 dark:text-gray-100">No feature flags created yet</p>
+                  <p className="mt-1 text-sm text-gray-500">Click "Create Flag" to add your first feature flag.</p>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            data.flags.map((flag) => (
-              <FeatureFlagCard
-                key={flag.id}
-                flag={flag}
-              />
-            ))
+            data.flags.map((flag) => <FeatureFlagCard key={flag.id} flag={flag} />)
           )}
         </div>
       )}
@@ -143,22 +149,15 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Create Feature Flag</CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-          >
+          <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4"
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
               <Label htmlFor="key">Key</Label>
               <Input
                 id="key"
@@ -169,9 +168,9 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
                 }
                 required
               />
-              <p className="mt-1 text-xs text-gray-500">Lowercase letters, numbers, and underscores only</p>
+              <p className="text-xs text-muted-foreground">Lowercase letters, numbers, and underscores only</p>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
@@ -182,7 +181,7 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
               />
             </div>
           </div>
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Input
               id="description"
@@ -191,45 +190,37 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="rollout">Rollout Percentage</Label>
-              <Input
-                id="rollout"
-                type="number"
-                min={0}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-4">
+              <Label>Rollout Percentage: {formData.rollout_percentage}%</Label>
+              <Slider
+                value={[formData.rollout_percentage || 0]}
+                onValueChange={([value]) => setFormData({ ...formData, rollout_percentage: value })}
                 max={100}
-                value={formData.rollout_percentage}
-                onChange={(e) => setFormData({ ...formData, rollout_percentage: parseInt(e.target.value) || 0 })}
+                step={1}
               />
             </div>
-            <div className="flex items-center gap-2 pt-6">
-              <input
-                type="checkbox"
+            <div className="flex items-center justify-between rounded-lg border p-4 dark:border-gray-700">
+              <div>
+                <Label htmlFor="enabled" className="cursor-pointer">Enabled</Label>
+                <p className="text-xs text-muted-foreground">Turn this flag on immediately</p>
+              </div>
+              <Switch
                 id="enabled"
                 checked={formData.enabled}
-                onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300"
+                onCheckedChange={(checked) => setFormData({ ...formData, enabled: checked })}
               />
-              <Label htmlFor="enabled">Enabled</Label>
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-            >
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={createMutation.isPending}
-            >
+            <Button type="submit" disabled={createMutation.isPending} className="gap-2">
               {createMutation.isPending ? (
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                <RefreshCw className="h-4 w-4 animate-spin" />
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="h-4 w-4" />
               )}
               Create
             </Button>
@@ -248,6 +239,7 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
     enabled: flag.enabled,
     rollout_percentage: flag.rollout_percentage,
   });
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
@@ -277,6 +269,7 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
     mutationFn: (enabled: boolean) => AdminService.updateFeatureFlag(flag.key, { enabled }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "feature-flags"] });
+      toast.success(flag.enabled ? "Feature flag disabled" : "Feature flag enabled");
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to toggle");
@@ -284,111 +277,149 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
   });
 
   return (
-    <Card>
-      <CardContent className="py-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <code className="rounded bg-gray-100 px-2 py-1 font-mono text-sm">{flag.key}</code>
-              <button
-                onClick={() => toggleMutation.mutate(!flag.enabled)}
-                disabled={toggleMutation.isPending}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  flag.enabled ? "bg-blue-600" : "bg-gray-200"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    flag.enabled ? "translate-x-6" : "translate-x-1"
-                  }`}
+    <>
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1 space-y-3">
+              {/* Header with key and toggle */}
+              <div className="flex flex-wrap items-center gap-3">
+                <code className="rounded bg-gray-100 px-2 py-1 font-mono text-sm dark:bg-gray-800">
+                  {flag.key}
+                </code>
+                <Switch
+                  checked={flag.enabled}
+                  onCheckedChange={(checked) => toggleMutation.mutate(checked)}
+                  disabled={toggleMutation.isPending}
                 />
-              </button>
-              <span className={`text-sm ${flag.enabled ? "text-green-600" : "text-gray-500"}`}>
-                {flag.enabled ? "Enabled" : "Disabled"}
-              </span>
-            </div>
-            {isEditing ? (
-              <div className="mt-4 space-y-3">
-                <Input
-                  value={editData.name}
-                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                  placeholder="Name"
-                />
-                <Input
-                  value={editData.description}
-                  onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                  placeholder="Description"
-                />
-                <div className="flex items-center gap-2">
-                  <Label>Rollout:</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    className="w-24"
-                    value={editData.rollout_percentage}
-                    onChange={(e) => setEditData({ ...editData, rollout_percentage: parseInt(e.target.value) || 0 })}
-                  />
-                  <span className="text-sm text-gray-500">%</span>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => updateMutation.mutate()}
-                    disabled={updateMutation.isPending}
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditing(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <Badge variant={flag.enabled ? "default" : "secondary"}>
+                  {flag.enabled ? "Enabled" : "Disabled"}
+                </Badge>
               </div>
-            ) : (
-              <>
-                <h3 className="mt-2 font-medium text-gray-900">{flag.name}</h3>
-                {flag.description && <p className="mt-1 text-sm text-gray-500">{flag.description}</p>}
-                <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-                  <span>Rollout: {flag.rollout_percentage}%</span>
-                  {flag.allowed_roles && flag.allowed_roles.length > 0 && (
-                    <span>Roles: {flag.allowed_roles.join(", ")}</span>
-                  )}
+
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Name</Label>
+                      <Input
+                        value={editData.name}
+                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                        placeholder="Name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Input
+                        value={editData.description}
+                        onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                        placeholder="Description"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Rollout Percentage: {editData.rollout_percentage}%</Label>
+                    <Slider
+                      value={[editData.rollout_percentage]}
+                      onValueChange={([value]) => setEditData({ ...editData, rollout_percentage: value })}
+                      max={100}
+                      step={1}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+                      {updateMutation.isPending ? "Saving..." : "Save"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditData({
+                          name: flag.name,
+                          description: flag.description || "",
+                          enabled: flag.enabled,
+                          rollout_percentage: flag.rollout_percentage,
+                        });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
-              </>
-            )}
-          </div>
-          <div className="flex gap-2">
+              ) : (
+                <>
+                  <div>
+                    <h3 className="font-medium">{flag.name}</h3>
+                    {flag.description && (
+                      <p className="mt-1 text-sm text-muted-foreground">{flag.description}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Rollout:</span>
+                      <div className="flex items-center gap-2">
+                        <Progress value={flag.rollout_percentage} className="h-2 w-20" />
+                        <span className="text-sm font-medium">{flag.rollout_percentage}%</span>
+                      </div>
+                    </div>
+                    {flag.allowed_roles && flag.allowed_roles.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Roles:</span>
+                        <div className="flex gap-1">
+                          {flag.allowed_roles.map((role) => (
+                            <Badge key={role} variant="outline" className="text-xs">
+                              {role}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
             {!isEditing && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 hover:text-red-700"
-                  onClick={() => {
-                    if (confirm(`Delete feature flag "${flag.key}"?`)) {
-                      deleteMutation.mutate();
-                    }
-                  }}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </>
+              <div className="flex gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit flag</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => setDeleteConfirm(true)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Delete flag</TooltipContent>
+                </Tooltip>
+              </div>
             )}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <ConfirmDialog
+        open={deleteConfirm}
+        onOpenChange={setDeleteConfirm}
+        title="Delete Feature Flag"
+        description={`Are you sure you want to delete the feature flag "${flag.key}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => deleteMutation.mutate()}
+        loading={deleteMutation.isPending}
+      />
+    </>
   );
 }

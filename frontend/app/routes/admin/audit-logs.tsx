@@ -2,12 +2,30 @@ import { useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Filter, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, FileText, Filter, RefreshCw, X } from "lucide-react";
+import { toast } from "sonner";
 
+import { AdminPageHeader } from "../../components/admin";
+import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../components/ui/table";
 import { requireAdmin } from "../../lib/guards";
 import { AdminService, type AuditLogFilter, type AuditLogsResponse } from "../../services/admin";
 
@@ -32,97 +50,152 @@ function AuditLogsPage() {
     setFilter((prev) => ({
       ...prev,
       [key]: value,
-      page: key !== "page" ? 1 : (value as number), // Reset to page 1 when filter changes
+      page: key !== "page" ? 1 : (value as number),
     }));
+  };
+
+  const clearFilters = () => {
+    setFilter({ page: 1, limit: 20 });
+  };
+
+  const hasActiveFilters = filter.target_type || filter.action || filter.start_date || filter.end_date;
+
+  const exportToCSV = () => {
+    if (!data?.logs) return;
+
+    const headers = ["ID", "Time", "User", "Email", "Action", "Target Type", "Target ID", "IP Address"];
+    const rows = data.logs.map((log) => [
+      log.id,
+      new Date(log.created_at).toISOString(),
+      log.user_name || "System",
+      log.user_email || "-",
+      log.action,
+      log.target_type,
+      log.target_id || "-",
+      log.ip_address || "-",
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `audit-logs-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Audit logs exported to CSV");
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
 
-  const getActionColor = (action: string) => {
+  const getActionBadgeVariant = (action: string): "default" | "secondary" | "outline" | "destructive" => {
     switch (action) {
       case "create":
-        return "bg-green-100 text-green-800";
-      case "update":
-        return "bg-blue-100 text-blue-800";
+        return "default";
       case "delete":
-        return "bg-red-100 text-red-800";
-      case "login":
-        return "bg-purple-100 text-purple-800";
-      case "logout":
-        return "bg-gray-100 text-gray-800";
-      case "impersonate":
-        return "bg-yellow-100 text-yellow-800";
+        return "destructive";
+      case "update":
+        return "secondary";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "outline";
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Audit Logs</h2>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="mr-2 h-4 w-4" />
-            Filters
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Audit Logs"
+        description="Track all system activity and user actions"
+        breadcrumbs={[{ label: "Audit Logs" }]}
+        actions={
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">Filters</span>
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="ml-1">
+                  Active
+                </Badge>
+              )}
+            </Button>
+            <Button variant="outline" onClick={exportToCSV} className="gap-2">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
+            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">Refresh</span>
+            </Button>
+          </div>
+        }
+      />
 
       {/* Filters */}
       {showFilters && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Filters</CardTitle>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Filters</CardTitle>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-2">
+                  <X className="h-4 w-4" />
+                  Clear all
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div>
-                <Label htmlFor="target_type">Target Type</Label>
-                <select
-                  id="target_type"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                  value={filter.target_type || ""}
-                  onChange={(e) => handleFilterChange("target_type", e.target.value || undefined)}
+              <div className="space-y-2">
+                <Label>Target Type</Label>
+                <Select
+                  value={filter.target_type || "all"}
+                  onValueChange={(value) => handleFilterChange("target_type", value === "all" ? undefined : value)}
                 >
-                  <option value="">All</option>
-                  <option value="user">User</option>
-                  <option value="subscription">Subscription</option>
-                  <option value="file">File</option>
-                  <option value="feature_flag">Feature Flag</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="subscription">Subscription</SelectItem>
+                    <SelectItem value="file">File</SelectItem>
+                    <SelectItem value="feature_flag">Feature Flag</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <Label htmlFor="action">Action</Label>
-                <select
-                  id="action"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                  value={filter.action || ""}
-                  onChange={(e) => handleFilterChange("action", e.target.value || undefined)}
+              <div className="space-y-2">
+                <Label>Action</Label>
+                <Select
+                  value={filter.action || "all"}
+                  onValueChange={(value) => handleFilterChange("action", value === "all" ? undefined : value)}
                 >
-                  <option value="">All</option>
-                  <option value="create">Create</option>
-                  <option value="update">Update</option>
-                  <option value="delete">Delete</option>
-                  <option value="login">Login</option>
-                  <option value="logout">Logout</option>
-                  <option value="impersonate">Impersonate</option>
-                  <option value="role_change">Role Change</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All actions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="create">Create</SelectItem>
+                    <SelectItem value="update">Update</SelectItem>
+                    <SelectItem value="delete">Delete</SelectItem>
+                    <SelectItem value="login">Login</SelectItem>
+                    <SelectItem value="logout">Logout</SelectItem>
+                    <SelectItem value="impersonate">Impersonate</SelectItem>
+                    <SelectItem value="role_change">Role Change</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="start_date">Start Date</Label>
                 <Input
                   id="start_date"
@@ -131,7 +204,7 @@ function AuditLogsPage() {
                   onChange={(e) => handleFilterChange("start_date", e.target.value || undefined)}
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="end_date">End Date</Label>
                 <Input
                   id="end_date"
@@ -159,10 +232,10 @@ function AuditLogsPage() {
 
       {/* Error State */}
       {error && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950">
           <CardHeader>
-            <CardTitle className="text-red-600">Error</CardTitle>
-            <CardDescription className="text-red-500">
+            <CardTitle className="text-red-600 dark:text-red-400">Error</CardTitle>
+            <CardDescription className="text-red-500 dark:text-red-400">
               {error instanceof Error ? error.message : "Failed to load audit logs"}
             </CardDescription>
           </CardHeader>
@@ -173,88 +246,89 @@ function AuditLogsPage() {
       {data && (
         <>
           <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="border-b bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Time</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">User</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Action</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Target</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">IP Address</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {data.logs.map((log) => (
-                      <tr
-                        key={log.id}
-                        className="hover:bg-gray-50"
-                      >
-                        <td className="px-4 py-3 text-sm text-gray-500">{formatDate(log.created_at)}</td>
-                        <td className="px-4 py-3">
-                          {log.user_name ? (
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{log.user_name}</p>
-                              <p className="text-xs text-gray-500">{log.user_email}</p>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-400">System</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getActionColor(log.action)}`}
-                          >
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className="text-gray-900">{log.target_type}</span>
-                          {log.target_id && <span className="ml-1 text-gray-500">#{log.target_id}</span>}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{log.ip_address || "-"}</td>
-                      </tr>
-                    ))}
-                    {data.logs.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-4 py-8 text-center text-gray-500"
-                        >
-                          No audit logs found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Target</TableHead>
+                  <TableHead>IP Address</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.logs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-500">
+                        <FileText className="mb-2 h-8 w-8" />
+                        <p>No audit logs found</p>
+                        {hasActiveFilters && <p className="text-sm">Try adjusting your filters</p>}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  data.logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(log.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        {log.user_name ? (
+                          <div>
+                            <p className="font-medium">{log.user_name}</p>
+                            <p className="text-sm text-muted-foreground">{log.user_email}</p>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">System</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getActionBadgeVariant(log.action)}>
+                          {log.action}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{log.target_type}</span>
+                        {log.target_id && (
+                          <span className="ml-1 text-muted-foreground">#{log.target_id}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {log.ip_address || "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </Card>
 
           {/* Pagination */}
           {data.total_pages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Showing {(data.page - 1) * data.limit + 1} to {Math.min(data.page * data.limit, data.total)} of{" "}
                 {data.total} results
               </p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
+                  size="sm"
                   disabled={data.page <= 1}
                   onClick={() => handleFilterChange("page", data.page - 1)}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="mr-1 h-4 w-4" />
                   Previous
                 </Button>
                 <Button
                   variant="outline"
+                  size="sm"
                   disabled={data.page >= data.total_pages}
                   onClick={() => handleFilterChange("page", data.page + 1)}
                 >
                   Next
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               </div>
             </div>
