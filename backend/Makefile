@@ -1,4 +1,5 @@
-.PHONY: db-up db-down db-reset db-logs db-shell dev clean swagger test test-v test-race test-cover \
+.PHONY: db-up db-down db-reset db-logs db-shell dev clean swagger swagger-check swagger-validate swagger-install \
+	test test-v test-race test-cover \
 	migrate-install migrate-create migrate-up migrate-down migrate-reset migrate-version migrate-force \
 	seed seed-fresh
 
@@ -46,12 +47,36 @@ dev: db-up
 	@sleep 3
 	@air
 
+# Check if swag is installed
+swagger-check:
+	@which swag > /dev/null 2>&1 || (echo "Error: swag not installed. Run: make swagger-install" && exit 1)
+
 # Generate Swagger documentation
-swagger:
+swagger: swagger-check
 	@echo "Generating Swagger documentation..."
 	@swag init -g cmd/main.go -o docs
 	@sed -i '/LeftDelim:/d; /RightDelim:/d' docs/docs.go
 	@echo "Swagger documentation generated in docs/"
+
+# Validate Swagger docs are up-to-date
+swagger-validate: swagger-check
+	@echo "Validating Swagger documentation..."
+	@mkdir -p /tmp/swagger-validate
+	@swag init -g cmd/main.go -o /tmp/swagger-validate 2>/dev/null
+	@sed -i '/LeftDelim:/d; /RightDelim:/d' /tmp/swagger-validate/docs.go 2>/dev/null || true
+	@if ! diff -q docs/swagger.json /tmp/swagger-validate/swagger.json > /dev/null 2>&1; then \
+		echo "Error: Swagger docs outdated! Run 'make swagger' and commit."; \
+		rm -rf /tmp/swagger-validate; \
+		exit 1; \
+	fi
+	@rm -rf /tmp/swagger-validate
+	@echo "Swagger documentation is up-to-date."
+
+# Install swag CLI
+swagger-install:
+	@echo "Installing swag v1.16.6..."
+	@go install github.com/swaggo/swag/cmd/swag@v1.16.6
+	@echo "Done. Ensure \$$(go env GOPATH)/bin is in PATH."
 
 # Clean up everything
 clean: db-down

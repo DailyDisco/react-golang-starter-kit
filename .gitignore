@@ -37,7 +37,7 @@ debug
 *.mod.bak
 
 # Generated documentation
-/backend/docs/
+# /backend/docs/  # Tracked - swagger docs validated against code
 
 # Development and cache directories
 .vite/

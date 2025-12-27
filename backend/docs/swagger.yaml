@@ -1,0 +1,3746 @@
+basePath: /api
+definitions:
+  handlers.PremiumContentResponse:
+    properties:
+      access_level:
+        type: string
+      content:
+        type: string
+      features:
+        items:
+          type: string
+        type: array
+    type: object
+  handlers.UpdateRoleRequest:
+    properties:
+      role:
+        example: premium
+        type: string
+    required:
+    - role
+    type: object
+  models.APIMetrics:
+    properties:
+      avg_response_time:
+        type: string
+      error_rate:
+        type: number
+      p50_response_time:
+        type: string
+      p95_response_time:
+        type: string
+      p99_response_time:
+        type: string
+      requests_per_minute:
+        type: integer
+    type: object
+  models.AdminStatsResponse:
+    properties:
+      active_subscriptions:
+        type: integer
+      active_users:
+        type: integer
+      canceled_subscriptions:
+        type: integer
+      new_users_this_month:
+        type: integer
+      new_users_this_week:
+        type: integer
+      new_users_today:
+        type: integer
+      total_file_size:
+        description: in bytes
+        type: integer
+      total_files:
+        type: integer
+      total_subscriptions:
+        type: integer
+      total_users:
+        type: integer
+      users_by_role:
+        additionalProperties:
+          format: int64
+          type: integer
+        type: object
+      verified_users:
+        type: integer
+    type: object
+  models.AnnouncementBannerResponse:
+    properties:
+      ends_at:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_dismissible:
+        type: boolean
+      link_text:
+        type: string
+      link_url:
+        type: string
+      message:
+        type: string
+      priority:
+        type: integer
+      starts_at:
+        type: string
+      target_roles:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  models.AuditLogResponse:
+    properties:
+      action:
+        type: string
+      changes: {}
+      created_at:
+        type: string
+      id:
+        type: integer
+      ip_address:
+        type: string
+      metadata: {}
+      target_id:
+        type: integer
+      target_type:
+        type: string
+      user_agent:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
+  models.AuditLogsResponse:
+    properties:
+      count:
+        type: integer
+      limit:
+        type: integer
+      logs:
+        items:
+          $ref: '#/definitions/models.AuditLogResponse'
+        type: array
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  models.AuthResponse:
+    properties:
+      expires_in:
+        description: |-
+          Access token expiration time in seconds
+          example: 900
+        example: 900
+        type: integer
+      refresh_token:
+        description: |-
+          Refresh token for obtaining new access tokens (longer-lived)
+          example: abc123def456...
+        example: abc123def456...
+        type: string
+      token:
+        description: |-
+          JWT access token for subsequent API requests
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/models.UserResponse'
+        description: Authenticated user information
+    type: object
+  models.BillingConfigResponse:
+    properties:
+      publishable_key:
+        type: string
+    type: object
+  models.BillingPlan:
+    properties:
+      amount:
+        description: Price in cents
+        type: integer
+      currency:
+        description: e.g., "usd"
+        type: string
+      description:
+        type: string
+      features:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      interval:
+        description: e.g., "month", "year"
+        type: string
+      name:
+        type: string
+      price_id:
+        type: string
+    type: object
+  models.CacheMetrics:
+    properties:
+      connections:
+        type: integer
+      hit_rate:
+        type: number
+      keys:
+        type: integer
+      memory_max:
+        type: string
+      memory_used:
+        type: string
+      status:
+        type: string
+    type: object
+  models.ChangePasswordRequest:
+    properties:
+      confirm_password:
+        type: string
+      current_password:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - confirm_password
+    - current_password
+    - new_password
+    type: object
+  models.CheckoutSessionResponse:
+    properties:
+      session_id:
+        type: string
+      url:
+        type: string
+    type: object
+  models.ComponentStatus:
+    properties:
+      latency:
+        type: string
+      message:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+    type: object
+  models.CreateAnnouncementRequest:
+    properties:
+      ends_at:
+        type: string
+      is_dismissible:
+        type: boolean
+      link_text:
+        type: string
+      link_url:
+        type: string
+      message:
+        type: string
+      priority:
+        type: integer
+      show_on_pages:
+        items:
+          type: string
+        type: array
+      starts_at:
+        type: string
+      target_roles:
+        items:
+          type: string
+        type: array
+      title:
+        maxLength: 255
+        type: string
+      type:
+        enum:
+        - info
+        - warning
+        - error
+        - success
+        - maintenance
+        type: string
+    required:
+    - message
+    - title
+    type: object
+  models.CreateCheckoutRequest:
+    properties:
+      price_id:
+        type: string
+    required:
+    - price_id
+    type: object
+  models.CreateFeatureFlagRequest:
+    properties:
+      allowed_roles:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      enabled:
+        type: boolean
+      key:
+        type: string
+      name:
+        type: string
+      rollout_percentage:
+        type: integer
+    required:
+    - key
+    - name
+    type: object
+  models.CreateIPBlockRequest:
+    properties:
+      expires_at:
+        description: ISO 8601 format, null for permanent
+        type: string
+      ip_address:
+        type: string
+      ip_range:
+        type: string
+      reason:
+        type: string
+    required:
+    - ip_address
+    type: object
+  models.DatabaseMetrics:
+    properties:
+      avg_query_time:
+        type: string
+      connections_active:
+        type: integer
+      connections_idle:
+        type: integer
+      connections_max:
+        type: integer
+      slow_queries:
+        type: integer
+      status:
+        type: string
+      uptime:
+        type: string
+    type: object
+  models.DeviceInfo:
+    properties:
+      browser:
+        type: string
+      browser_version:
+        type: string
+      device_name:
+        type: string
+      device_type:
+        description: desktop, mobile, tablet
+        type: string
+      os:
+        type: string
+      os_version:
+        type: string
+    type: object
+  models.EmailNotificationSettings:
+    properties:
+      marketing:
+        type: boolean
+      security:
+        type: boolean
+      updates:
+        type: boolean
+      weekly_digest:
+        type: boolean
+    type: object
+  models.EmailSettings:
+    properties:
+      enabled:
+        type: boolean
+      from_email:
+        type: string
+      from_name:
+        type: string
+      smtp_host:
+        type: string
+      smtp_password:
+        description: Only set on update, never returned
+        type: string
+      smtp_port:
+        type: integer
+      smtp_user:
+        type: string
+    type: object
+  models.EmailTemplateResponse:
+    properties:
+      available_variables:
+        items:
+          $ref: '#/definitions/models.TemplateVariable'
+        type: array
+      body_html:
+        type: string
+      body_text:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_system:
+        type: boolean
+      key:
+        type: string
+      name:
+        type: string
+      send_count:
+        type: integer
+      subject:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.ErrorResponse:
+    properties:
+      code:
+        description: |-
+          HTTP status code
+          example: 400
+        example: 400
+        type: integer
+      details:
+        description: Field-level validation error details (for validation errors)
+        items:
+          $ref: '#/definitions/models.FieldError'
+        type: array
+      error:
+        description: |-
+          Error type/category
+          example: Bad Request
+        example: Bad Request
+        type: string
+      message:
+        description: |-
+          Detailed error message
+          example: Invalid email format
+        example: Invalid email format
+        type: string
+      request_id:
+        description: |-
+          Request ID for tracing and debugging
+          example: 550e8400-e29b-41d4-a716-446655440000
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  models.FeatureFlagResponse:
+    properties:
+      allowed_roles:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      key:
+        type: string
+      name:
+        type: string
+      rollout_percentage:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  models.FeatureFlagsResponse:
+    properties:
+      count:
+        type: integer
+      flags:
+        items:
+          $ref: '#/definitions/models.FeatureFlagResponse'
+        type: array
+    type: object
+  models.FieldError:
+    properties:
+      code:
+        description: |-
+          Error code for programmatic handling
+          example: email
+        type: string
+      field:
+        description: |-
+          The field name that failed validation
+          example: email
+        type: string
+      message:
+        description: |-
+          Human-readable error message
+          example: Invalid email format
+        type: string
+      value:
+        description: The rejected value (excluded for sensitive fields)
+    type: object
+  models.FileResponse:
+    properties:
+      content_type:
+        type: string
+      created_at:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: integer
+      location:
+        type: string
+      storage_type:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.HealthComponent:
+    properties:
+      details:
+        additionalProperties: true
+        type: object
+      last_check:
+        type: string
+      latency:
+        type: string
+      message:
+        type: string
+      name:
+        type: string
+      status:
+        description: healthy, degraded, unhealthy
+        type: string
+    type: object
+  models.HealthStatus:
+    properties:
+      components:
+        items:
+          $ref: '#/definitions/models.ComponentStatus'
+        type: array
+      overall_status:
+        type: string
+      runtime:
+        $ref: '#/definitions/models.RuntimeInfo'
+      timestamp:
+        type: string
+      uptime:
+        type: string
+      version:
+        $ref: '#/definitions/models.VersionInfo'
+    type: object
+  models.IPBlocklistResponse:
+    properties:
+      block_type:
+        type: string
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      hit_count:
+        type: integer
+      id:
+        type: integer
+      ip_address:
+        type: string
+      ip_range:
+        type: string
+      is_active:
+        type: boolean
+      reason:
+        type: string
+    type: object
+  models.ImpersonateRequest:
+    properties:
+      reason:
+        description: Reason for impersonation (for audit logging)
+        type: string
+      user_id:
+        description: User ID to impersonate
+        type: integer
+    required:
+    - user_id
+    type: object
+  models.ImpersonateResponse:
+    properties:
+      original_user_id:
+        description: Original admin user ID (for stopping impersonation)
+        type: integer
+      token:
+        description: New JWT token with impersonation claims
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/models.UserResponse'
+        description: The user being impersonated
+    type: object
+  models.LocationInfo:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      country_code:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      region:
+        type: string
+    type: object
+  models.LoginRequest:
+    properties:
+      email:
+        description: |-
+          User's email address (must be valid email format)
+          required: true
+          example: john.doe@example.com
+        example: john.doe@example.com
+        type: string
+      password:
+        description: |-
+          User's password (minimum 8 characters)
+          required: true
+          example: SecurePass123!
+          minLength: 8
+        example: SecurePass123!
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.PasswordResetConfirm:
+    properties:
+      password:
+        description: |-
+          New password (minimum 8 characters)
+          required: true
+          example: NewSecurePass123!
+          minLength: 8
+        example: NewSecurePass123!
+        minLength: 8
+        type: string
+      token:
+        description: |-
+          Reset token received via email
+          required: true
+          example: abc123def456
+        example: abc123def456
+        type: string
+    required:
+    - password
+    - token
+    type: object
+  models.PasswordResetRequest:
+    properties:
+      email:
+        description: |-
+          Email address for password reset (must be registered)
+          required: true
+          example: john.doe@example.com
+        example: john.doe@example.com
+        type: string
+    required:
+    - email
+    type: object
+  models.PortalSessionResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  models.PreviewEmailTemplateRequest:
+    properties:
+      variables:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  models.PreviewEmailTemplateResponse:
+    properties:
+      body_html:
+        type: string
+      body_text:
+        type: string
+      subject:
+        type: string
+    type: object
+  models.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        description: |-
+          The refresh token obtained during login
+          required: true
+        type: string
+    required:
+    - refresh_token
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        description: |-
+          User's email address (must be valid and unique)
+          required: true
+          example: john.doe@example.com
+        example: john.doe@example.com
+        type: string
+      name:
+        description: |-
+          User's full name (required, non-empty)
+          required: true
+          example: John Doe
+          minLength: 1
+        example: John Doe
+        type: string
+      password:
+        description: |-
+          User's password (minimum 8 characters, must contain letters and numbers)
+          required: true
+          example: SecurePass123!
+          minLength: 8
+        example: SecurePass123!
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  models.RequestAccountDeletionRequest:
+    properties:
+      password:
+        type: string
+      reason:
+        type: string
+    required:
+    - password
+    type: object
+  models.RuntimeInfo:
+    properties:
+      go_version:
+        type: string
+      goarch:
+        type: string
+      goos:
+        type: string
+      goroutines:
+        type: integer
+      memory_alloc:
+        type: string
+      memory_sys:
+        type: string
+      num_cpu:
+        type: integer
+      num_gc:
+        type: integer
+    type: object
+  models.SecuritySettings:
+    properties:
+      lockout_duration_minutes:
+        type: integer
+      max_login_attempts:
+        type: integer
+      password_min_length:
+        type: integer
+      password_require_lowercase:
+        type: boolean
+      password_require_number:
+        type: boolean
+      password_require_special:
+        type: boolean
+      password_require_uppercase:
+        type: boolean
+      require_2fa_for_admins:
+        type: boolean
+      session_timeout_minutes:
+        type: integer
+    type: object
+  models.SiteSettings:
+    properties:
+      maintenance_message:
+        type: string
+      maintenance_mode:
+        type: boolean
+      site_logo_url:
+        type: string
+      site_name:
+        type: string
+    type: object
+  models.StorageMetrics:
+    properties:
+      available:
+        type: string
+      file_count:
+        type: integer
+      status:
+        type: string
+      total:
+        type: string
+      used:
+        type: string
+      used_percent:
+        type: number
+    type: object
+  models.SubscriptionResponse:
+    properties:
+      cancel_at_period_end:
+        type: boolean
+      canceled_at:
+        type: string
+      created_at:
+        type: string
+      current_period_end:
+        type: string
+      current_period_start:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      stripe_price_id:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.SuccessResponse:
+    properties:
+      data:
+        description: Response data (varies by endpoint)
+      message:
+        description: |-
+          Success message
+          example: User created successfully
+        example: User created successfully
+        type: string
+      success:
+        description: |-
+          Operation success status
+          example: true
+        example: true
+        type: boolean
+    type: object
+  models.SystemHealthMetrics:
+    properties:
+      api:
+        $ref: '#/definitions/models.APIMetrics'
+      cache:
+        $ref: '#/definitions/models.CacheMetrics'
+      database:
+        $ref: '#/definitions/models.DatabaseMetrics'
+      storage:
+        $ref: '#/definitions/models.StorageMetrics'
+    type: object
+  models.SystemHealthResponse:
+    properties:
+      components:
+        items:
+          $ref: '#/definitions/models.HealthComponent'
+        type: array
+      metrics:
+        $ref: '#/definitions/models.SystemHealthMetrics'
+      status:
+        description: healthy, degraded, unhealthy
+        type: string
+      timestamp:
+        type: string
+    type: object
+  models.SystemSettingResponse:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_sensitive:
+        type: boolean
+      key:
+        type: string
+      updated_at:
+        type: string
+      value: {}
+    type: object
+  models.TemplateVariable:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  models.TwoFactorBackupCodesResponse:
+    properties:
+      backup_codes:
+        items:
+          type: string
+        type: array
+      message:
+        type: string
+    type: object
+  models.TwoFactorSetupResponse:
+    properties:
+      otpauth_url:
+        type: string
+      qr_code_url:
+        type: string
+      secret:
+        type: string
+    type: object
+  models.TwoFactorStatusResponse:
+    properties:
+      backup_codes_remaining:
+        type: integer
+      enabled:
+        type: boolean
+      verified_at:
+        type: string
+    type: object
+  models.TwoFactorVerifyRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
+  models.UpdateAnnouncementRequest:
+    properties:
+      ends_at:
+        type: string
+      is_active:
+        type: boolean
+      is_dismissible:
+        type: boolean
+      link_text:
+        type: string
+      link_url:
+        type: string
+      message:
+        type: string
+      priority:
+        type: integer
+      show_on_pages:
+        items:
+          type: string
+        type: array
+      starts_at:
+        type: string
+      target_roles:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  models.UpdateEmailTemplateRequest:
+    properties:
+      body_html:
+        type: string
+      body_text:
+        type: string
+      is_active:
+        type: boolean
+      subject:
+        type: string
+    type: object
+  models.UpdateFeatureFlagRequest:
+    properties:
+      allowed_roles:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      enabled:
+        type: boolean
+      name:
+        type: string
+      rollout_percentage:
+        type: integer
+    type: object
+  models.UpdateSystemSettingRequest:
+    properties:
+      value: {}
+    required:
+    - value
+    type: object
+  models.UpdateUserPreferencesRequest:
+    properties:
+      date_format:
+        type: string
+      email_notifications:
+        $ref: '#/definitions/models.EmailNotificationSettings'
+      language:
+        type: string
+      theme:
+        type: string
+      time_format:
+        type: string
+      timezone:
+        type: string
+    type: object
+  models.UserPreferencesResponse:
+    properties:
+      date_format:
+        type: string
+      email_notifications:
+        $ref: '#/definitions/models.EmailNotificationSettings'
+      language:
+        type: string
+      theme:
+        type: string
+      time_format:
+        type: string
+      timezone:
+        type: string
+    type: object
+  models.UserResponse:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      location:
+        type: string
+      name:
+        type: string
+      oauth_provider:
+        type: string
+      role:
+        type: string
+      social_links:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  models.UserSessionResponse:
+    properties:
+      created_at:
+        type: string
+      device_info:
+        $ref: '#/definitions/models.DeviceInfo'
+      id:
+        type: integer
+      ip_address:
+        type: string
+      is_current:
+        type: boolean
+      last_active_at:
+        type: string
+      location:
+        $ref: '#/definitions/models.LocationInfo'
+    type: object
+  models.UsersResponse:
+    properties:
+      count:
+        description: |-
+          Number of users returned in this response
+          example: 10
+        example: 10
+        type: integer
+      limit:
+        description: |-
+          Items per page
+          example: 10
+        example: 10
+        type: integer
+      page:
+        description: |-
+          Current page number
+          example: 1
+        example: 1
+        type: integer
+      total:
+        description: |-
+          Total number of users in the system
+          example: 150
+        example: 150
+        type: integer
+      total_pages:
+        description: |-
+          Total number of pages available
+          example: 15
+        example: 15
+        type: integer
+      users:
+        description: List of users on this page
+        items:
+          $ref: '#/definitions/models.UserResponse'
+        type: array
+    type: object
+  models.VersionInfo:
+    properties:
+      build_time:
+        type: string
+      git_commit:
+        type: string
+      version:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: https://github.com/your-org/react-golang-starter-kit/issues
+  description: A comprehensive REST API for the React Go Starter Kit application built
+    with Fiber, GORM, and PostgreSQL. This API provides secure user authentication,
+    user management, and system health monitoring.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://github.com/your-org/react-golang-starter-kit
+  title: React Go Starter Kit API
+  version: 1.0.0
+paths:
+  /admin/users/{id}/role:
+    put:
+      consumes:
+      - application/json
+      description: Update the role of a specific user by their ID. Requires admin
+        or super_admin privileges.
+      parameters:
+      - description: User ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: New role for the user
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User role updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Invalid user ID or role
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to update user role
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a user's role (Admin only)
+      tags:
+      - admin
+      - users
+  /api/admin/announcements:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.AnnouncementBannerResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all announcements
+      tags:
+      - Admin Settings
+    post:
+      parameters:
+      - description: Announcement data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateAnnouncementRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.AnnouncementBannerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create announcement
+      tags:
+      - Admin Settings
+  /api/admin/announcements/{id}:
+    delete:
+      parameters:
+      - description: Announcement ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete announcement
+      tags:
+      - Admin Settings
+    put:
+      parameters:
+      - description: Announcement ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Announcement data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateAnnouncementRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AnnouncementBannerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update announcement
+      tags:
+      - Admin Settings
+  /api/admin/audit-logs:
+    get:
+      parameters:
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Filter by target type
+        in: query
+        name: target_type
+        type: string
+      - description: Filter by action
+        in: query
+        name: action
+        type: string
+      - description: Filter by start date (RFC3339)
+        in: query
+        name: start_date
+        type: string
+      - description: Filter by end date (RFC3339)
+        in: query
+        name: end_date
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuditLogsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get audit logs
+      tags:
+      - Admin
+  /api/admin/email-templates:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.EmailTemplateResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all email templates
+      tags:
+      - Admin Settings
+  /api/admin/email-templates/{id}:
+    get:
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EmailTemplateResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get email template
+      tags:
+      - Admin Settings
+    put:
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Template data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateEmailTemplateRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EmailTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update email template
+      tags:
+      - Admin Settings
+  /api/admin/email-templates/{id}/preview:
+    post:
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Preview variables
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.PreviewEmailTemplateRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PreviewEmailTemplateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Preview email template
+      tags:
+      - Admin Settings
+  /api/admin/feature-flags:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.FeatureFlagsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all feature flags
+      tags:
+      - Feature Flags
+    post:
+      parameters:
+      - description: Feature flag data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateFeatureFlagRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.FeatureFlagResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a feature flag
+      tags:
+      - Feature Flags
+  /api/admin/feature-flags/{key}:
+    delete:
+      parameters:
+      - description: Feature flag key
+        in: path
+        name: key
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a feature flag
+      tags:
+      - Feature Flags
+    put:
+      parameters:
+      - description: Feature flag key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Feature flag data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateFeatureFlagRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.FeatureFlagResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a feature flag
+      tags:
+      - Feature Flags
+  /api/admin/health:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SystemHealthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get system health
+      tags:
+      - Admin Settings
+  /api/admin/health/cache:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get cache health
+      tags:
+      - Admin Settings
+  /api/admin/health/database:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get database health
+      tags:
+      - Admin Settings
+  /api/admin/impersonate:
+    post:
+      parameters:
+      - description: Impersonation request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ImpersonateRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ImpersonateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Start impersonating a user
+      tags:
+      - Admin
+  /api/admin/ip-blocklist:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.IPBlocklistResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get IP blocklist
+      tags:
+      - Admin Settings
+    post:
+      parameters:
+      - description: IP block request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateIPBlockRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.IPBlocklistResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Block an IP
+      tags:
+      - Admin Settings
+  /api/admin/ip-blocklist/{id}:
+    delete:
+      parameters:
+      - description: Block ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Unblock an IP
+      tags:
+      - Admin Settings
+  /api/admin/settings:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.SystemSettingResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all system settings
+      tags:
+      - Admin Settings
+  /api/admin/settings/{category}:
+    get:
+      parameters:
+      - description: Settings category
+        in: path
+        name: category
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.SystemSettingResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get settings by category
+      tags:
+      - Admin Settings
+  /api/admin/settings/{key}:
+    put:
+      parameters:
+      - description: Setting key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Setting value
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateSystemSettingRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a setting
+      tags:
+      - Admin Settings
+  /api/admin/settings/email:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EmailSettings'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get email settings
+      tags:
+      - Admin Settings
+    put:
+      parameters:
+      - description: Email settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.EmailSettings'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update email settings
+      tags:
+      - Admin Settings
+  /api/admin/settings/email/test:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Send test email
+      tags:
+      - Admin Settings
+  /api/admin/settings/security:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SecuritySettings'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get security settings
+      tags:
+      - Admin Settings
+    put:
+      parameters:
+      - description: Security settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.SecuritySettings'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update security settings
+      tags:
+      - Admin Settings
+  /api/admin/settings/site:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SiteSettings'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get site settings
+      tags:
+      - Admin Settings
+    put:
+      parameters:
+      - description: Site settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.SiteSettings'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update site settings
+      tags:
+      - Admin Settings
+  /api/admin/stats:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AdminStatsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get admin statistics
+      tags:
+      - Admin
+  /api/admin/stop-impersonate:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Stop impersonating
+      tags:
+      - Admin
+  /api/admin/users/{id}/deactivate:
+    post:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate user
+      tags:
+      - Admin
+  /api/admin/users/{id}/reactivate:
+    post:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reactivate user
+      tags:
+      - Admin
+  /api/admin/users/{id}/restore:
+    post:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Restore deleted user
+      tags:
+      - Admin
+  /api/admin/users/{id}/role:
+    put:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New role
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            role:
+              type: string
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user role
+      tags:
+      - Admin
+  /api/admin/users/{userId}/feature-flags/{key}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Feature flag key
+        in: path
+        name: key
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user feature flag override
+      tags:
+      - Feature Flags
+    put:
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Feature flag key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Override value
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            enabled:
+              type: boolean
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Set user feature flag override
+      tags:
+      - Feature Flags
+  /api/admin/users/deleted:
+    get:
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UsersResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get deleted users
+      tags:
+      - Admin
+  /api/announcements:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.AnnouncementBannerResponse'
+            type: array
+      summary: Get active announcements
+      tags:
+      - Announcements
+  /api/announcements/{id}/dismiss:
+    post:
+      parameters:
+      - description: Announcement ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Dismiss announcement
+      tags:
+      - Announcements
+  /api/billing/checkout:
+    post:
+      consumes:
+      - application/json
+      description: Creates a Stripe checkout session for subscription purchase
+      parameters:
+      - description: Checkout request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateCheckoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CheckoutSessionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create checkout session
+      tags:
+      - billing
+  /api/billing/config:
+    get:
+      description: Returns the Stripe publishable key for frontend integration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.BillingConfigResponse'
+      summary: Get billing configuration
+      tags:
+      - billing
+  /api/billing/plans:
+    get:
+      description: Returns all available subscription plans with pricing
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.BillingPlan'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get subscription plans
+      tags:
+      - billing
+  /api/billing/portal:
+    post:
+      description: Creates a Stripe billing portal session for subscription management
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PortalSessionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create billing portal session
+      tags:
+      - billing
+  /api/billing/subscription:
+    get:
+      description: Returns the current user's subscription details
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SubscriptionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current subscription
+      tags:
+      - billing
+  /api/feature-flags:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get feature flags for current user
+      tags:
+      - Feature Flags
+  /api/users/me/2fa/backup-codes:
+    post:
+      parameters:
+      - description: Verification code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.TwoFactorVerifyRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TwoFactorBackupCodesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Regenerate backup codes
+      tags:
+      - User Settings
+  /api/users/me/2fa/disable:
+    post:
+      parameters:
+      - description: Verification code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.TwoFactorVerifyRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Disable 2FA
+      tags:
+      - User Settings
+  /api/users/me/2fa/setup:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TwoFactorSetupResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Setup 2FA
+      tags:
+      - User Settings
+  /api/users/me/2fa/status:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TwoFactorStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get 2FA status
+      tags:
+      - User Settings
+  /api/users/me/2fa/verify:
+    post:
+      parameters:
+      - description: Verification code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.TwoFactorVerifyRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TwoFactorBackupCodesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Verify and enable 2FA
+      tags:
+      - User Settings
+  /api/users/me/delete:
+    post:
+      parameters:
+      - description: Deletion request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.RequestAccountDeletionRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Request account deletion
+      tags:
+      - User Settings
+  /api/users/me/delete/cancel:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel account deletion
+      tags:
+      - User Settings
+  /api/users/me/export:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Request data export
+      tags:
+      - User Settings
+  /api/users/me/login-history:
+    get:
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get login history
+      tags:
+      - User Settings
+  /api/users/me/password:
+    put:
+      parameters:
+      - description: Password change request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChangePasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change password
+      tags:
+      - User Settings
+  /api/users/me/preferences:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserPreferencesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user preferences
+      tags:
+      - User Settings
+    put:
+      parameters:
+      - description: Preferences to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserPreferencesRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserPreferencesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user preferences
+      tags:
+      - User Settings
+  /api/users/me/sessions:
+    delete:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke all other sessions
+      tags:
+      - User Settings
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.UserSessionResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user sessions
+      tags:
+      - User Settings
+  /api/users/me/sessions/{id}:
+    delete:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke a session
+      tags:
+      - User Settings
+  /api/webhooks/stripe:
+    post:
+      consumes:
+      - application/json
+      description: Receives and processes Stripe webhook events
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Handle Stripe webhook
+      tags:
+      - webhooks
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Authenticate user with email and password. Returns JWT token for subsequent requests.
+        This endpoint is rate limited to prevent brute force attacks. Maximum 10 requests per minute per IP.
+      parameters:
+      - description: User login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful with JWT token
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Invalid JSON or missing fields
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Invalid credentials or account deactivated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to generate token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Login user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: Logout user by clearing the authentication cookie and revoking
+        the token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+      summary: Logout user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve detailed information about the currently authenticated
+        user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User information retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "401":
+          description: Unauthorized - invalid or missing token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to retrieve user information
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user information
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Exchange a valid refresh token for a new access token. This allows maintaining sessions without re-authentication.
+        The refresh token is long-lived (7 days by default) while access tokens are short-lived (15 minutes by default).
+      parameters:
+      - description: Refresh token request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New access token generated successfully
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to generate new token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Create a new user account with email and password. The user will receive an email verification link.
+        This endpoint is rate limited to prevent abuse. Maximum 5 requests per minute per IP.
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully with JWT token
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Invalid input or validation error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: User with this email already exists
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to create user
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Send password reset email to user. For security, always returns success message even if email doesn't exist.
+        This endpoint is rate limited to prevent abuse. Maximum 3 requests per minute per IP.
+      parameters:
+      - description: Password reset request with email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PasswordResetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset email sent (if email exists)
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid email format
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to process reset request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Request password reset
+      tags:
+      - auth
+  /auth/reset-password/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Reset user password using the reset token from email and new password
+      parameters:
+      - description: Password reset confirmation with token and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.PasswordResetConfirm'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid input or password validation failed
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Invalid or expired reset token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to reset password
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Reset password
+      tags:
+      - auth
+  /auth/verify-email:
+    get:
+      consumes:
+      - application/json
+      description: Verify user's email address using the verification token sent via
+        email
+      parameters:
+      - description: Verification token from email
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid or expired verification token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to verify email
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Verify user email
+      tags:
+      - auth
+  /files:
+    get:
+      description: Get a list of uploaded files with pagination. Users see only their
+        own files unless admin.
+      parameters:
+      - description: 'Number of files to return (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Number of files to skip (default: 0)'
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.FileResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List files
+      tags:
+      - files
+  /files/{id}:
+    delete:
+      description: Delete a file by its ID
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete a file
+      tags:
+      - files
+    get:
+      description: Get metadata for a file by its ID
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.FileResponse'
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get file information
+      tags:
+      - files
+  /files/{id}/download:
+    get:
+      description: Download a file by its ID. For S3 files, redirects to the S3 URL.
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Download a file
+      tags:
+      - files
+  /files/{id}/url:
+    get:
+      description: Get the URL for accessing a file
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get file URL
+      tags:
+      - files
+  /files/storage/status:
+    get:
+      description: Get information about the current storage configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+      summary: Get storage status
+      tags:
+      - files
+  /files/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a file to the server. Uses S3 if configured, otherwise stores
+        in database.
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.FileResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Upload a file
+      tags:
+      - files
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Get the health status of the server and its dependencies (database,
+        cache, jobs)
+      parameters:
+      - description: Include runtime information
+        in: query
+        name: verbose
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Server and its dependencies are healthy
+          schema:
+            $ref: '#/definitions/models.HealthStatus'
+        "503":
+          description: Server or one of its critical dependencies is unhealthy
+          schema:
+            $ref: '#/definitions/models.HealthStatus'
+      summary: Check server health status
+      tags:
+      - health
+  /premium/content:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve exclusive content available only to premium and admin
+        users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Premium content retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.PremiumContentResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden - premium subscription required
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get premium content
+      tags:
+      - premium
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Retrieve a paginated list of all users. This endpoint is public and does not require authentication.
+        This endpoint is rate limited to prevent abuse. Maximum 30 requests per minute per IP.
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: 'Items per page (default: 10, max: 100)'
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of users retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UsersResponse'
+              type: object
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "429":
+          description: Rate limit exceeded
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to fetch users
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the provided information. This endpoint
+        is intended for administrative use and may require admin privileges in production.
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Invalid JSON or validation error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden - admin privileges required
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: User already exists
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to create user
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a new user (Admin endpoint)
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user by their ID. Users can only delete their own account
+        unless they have admin privileges. This action is irreversible.
+      parameters:
+      - description: User ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content - User deleted successfully
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden - can only delete own account
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to delete user
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a user
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single user by their ID. Users can only access their
+        own profile unless they have admin privileges.
+      parameters:
+      - description: User ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized - authentication required
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden - can only access own profile
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to retrieve user
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update a user's information by their ID. Users can only update
+        their own profile unless they have admin privileges.
+      parameters:
+      - description: User ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Updated user data (name and/or email)
+        in: body
+        name: user
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Invalid user ID or JSON
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden - can only update own profile
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: Email already taken
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to update user
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an existing user
+      tags:
+      - users
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: Get the profile of the currently authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to retrieve user
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update the profile of the currently authenticated user
+      parameters:
+      - description: Updated user data (name and/or email)
+        in: body
+        name: user
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.UserResponse'
+              type: object
+        "400":
+          description: Invalid JSON
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: Email already taken
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Failed to update user
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT Authorization header using the Bearer scheme. Format: `Authorization:
+      Bearer {token}`'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

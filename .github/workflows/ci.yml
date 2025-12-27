@@ -179,6 +179,38 @@ jobs:
           args: --timeout=5m
           install-mode: go-install # Build from source with your Go version
 
+  # Backend Swagger Validation
+  backend-swagger:
+    name: Backend Swagger
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@v1.16.6
+
+      - name: Validate Swagger docs
+        run: |
+          mkdir -p /tmp/swagger-validate
+          swag init -g cmd/main.go -o /tmp/swagger-validate
+          sed -i '/LeftDelim:/d; /RightDelim:/d' /tmp/swagger-validate/docs.go
+
+          if ! diff -q docs/swagger.json /tmp/swagger-validate/swagger.json; then
+            echo "ERROR: Swagger docs outdated!"
+            echo "Run: cd backend && make swagger"
+            diff docs/swagger.json /tmp/swagger-validate/swagger.json || true
+            exit 1
+          fi
+          echo "Swagger docs up-to-date."
+        working-directory: ${{ env.BACKEND_DIR }}
+
   # Backend Security
   backend-security:
     name: Backend Security
@@ -315,7 +347,7 @@ jobs:
   backend-build:
     name: Backend Build
     runs-on: ubuntu-latest
-    needs: [backend-lint, backend-security, backend-test, backend-migrations]
+    needs: [backend-lint, backend-security, backend-test, backend-migrations, backend-swagger]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

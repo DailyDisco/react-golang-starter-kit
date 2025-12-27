@@ -28,7 +28,8 @@
     ],
     "backend/**/*.go": [
       "bash -c 'cd backend && go fmt ./...'",
-      "bash -c 'cd backend && go vet ./...'"
+      "bash -c 'cd backend && go vet ./...'",
+      "bash scripts/validate-swagger.sh"
     ]
   },
   "comments": {
