@@ -1,0 +1,12 @@
+DROP INDEX IF EXISTS idx_users_deletion;
+DROP INDEX IF EXISTS idx_users_locked;
+ALTER TABLE users DROP COLUMN IF EXISTS last_data_export_at;
+ALTER TABLE users DROP COLUMN IF EXISTS deletion_reason;
+ALTER TABLE users DROP COLUMN IF EXISTS deletion_scheduled_at;
+ALTER TABLE users DROP COLUMN IF EXISTS deletion_requested_at;
+ALTER TABLE users DROP COLUMN IF EXISTS last_login_ip;
+ALTER TABLE users DROP COLUMN IF EXISTS last_login_at;
+ALTER TABLE users DROP COLUMN IF EXISTS locked_until;
+ALTER TABLE users DROP COLUMN IF EXISTS failed_login_attempts;
+ALTER TABLE users DROP COLUMN IF EXISTS last_password_change_at;
+ALTER TABLE users DROP COLUMN IF EXISTS two_factor_enabled;
