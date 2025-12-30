@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from "react";
 
 import { AlertCircle, Home, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { queryClient } from "../../lib/query-client";
 import { captureError } from "../../lib/sentry";
@@ -14,6 +15,7 @@ export interface ErrorFallbackProps {
 }
 
 export function ErrorFallback({ error, resetError, showStack = false }: ErrorFallbackProps) {
+  const { t } = useTranslation("errors");
   const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
 
   // Report error to Sentry when the component mounts
@@ -41,8 +43,8 @@ export function ErrorFallback({ error, resetError, showStack = false }: ErrorFal
           <div className="bg-destructive/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
             <AlertCircle className="text-destructive h-6 w-6" />
           </div>
-          <CardTitle className="text-destructive">Something went wrong</CardTitle>
-          <CardDescription className="mt-2">{error.message || "An unexpected error occurred"}</CardDescription>
+          <CardTitle className="text-destructive">{t("generic.title")}</CardTitle>
+          <CardDescription className="mt-2">{error.message || t("generic.message")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {showStack && isDev && error.stack && (
@@ -57,7 +59,7 @@ export function ErrorFallback({ error, resetError, showStack = false }: ErrorFal
                 variant="default"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Try Again
+                {t("generic.tryAgain")}
               </Button>
             )}
             <Button
@@ -66,7 +68,7 @@ export function ErrorFallback({ error, resetError, showStack = false }: ErrorFal
             >
               <a href="/">
                 <Home className="mr-2 h-4 w-4" />
-                Go Home
+                {t("generic.goHome")}
               </a>
             </Button>
           </div>

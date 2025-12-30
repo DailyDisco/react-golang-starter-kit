@@ -78,7 +78,8 @@ export async function initSentry(): Promise<void> {
       enabled: import.meta.env.PROD || Boolean(import.meta.env.VITE_SENTRY_ENABLE_DEV),
 
       // Filter out noisy errors
-      beforeSend(event, hint) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      beforeSend(event: any, hint: any) {
         const error = hint?.originalException;
 
         // Filter out certain error types
@@ -98,7 +99,8 @@ export async function initSentry(): Promise<void> {
       },
 
       // Add additional context
-      initialScope: (scope) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      initialScope: (scope: any) => {
         // Add custom tags
         scope.setTag("app.version", import.meta.env.VITE_APP_VERSION || "unknown");
 
@@ -119,7 +121,8 @@ export async function initSentry(): Promise<void> {
  */
 export function captureError(error: Error, context?: Record<string, unknown>): void {
   if (Sentry && isInitialized) {
-    Sentry.withScope((scope) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Sentry.withScope((scope: any) => {
       if (context) {
         scope.setExtras(context);
       }

@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 
 /**
  * Modal displayed when user's session expires.
@@ -17,6 +18,7 @@ import { useNavigate } from "@tanstack/react-router";
  * before redirecting to login.
  */
 export function SessionExpiredModal() {
+  const { t } = useTranslation("auth");
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -48,13 +50,11 @@ export function SessionExpiredModal() {
     >
       <DialogContent showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Session Expired</DialogTitle>
-          <DialogDescription>
-            Your session has expired due to inactivity. Please sign in again to continue.
-          </DialogDescription>
+          <DialogTitle>{t("session.expired")}</DialogTitle>
+          <DialogDescription>{t("session.expiredDescription")}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button onClick={handleSignIn}>Sign In Again</Button>
+          <Button onClick={handleSignIn}>{t("session.signInAgain")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

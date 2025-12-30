@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 
 import {
   Breadcrumb,
@@ -22,7 +23,9 @@ interface AdminPageHeaderProps {
 }
 
 export function AdminPageHeader({ title, description, breadcrumbs = [], actions }: AdminPageHeaderProps) {
-  const allBreadcrumbs = [{ label: "Admin", href: "/admin" }, ...breadcrumbs];
+  const { t } = useTranslation("admin");
+
+  const allBreadcrumbs = [{ label: t("breadcrumb.admin"), href: "/admin" }, ...breadcrumbs];
 
   return (
     <div className="space-y-4">

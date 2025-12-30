@@ -45,7 +45,7 @@ describe("UserService", () => {
       const result = await UserService.fetchUsers();
 
       expect(result).toEqual(mockUsers);
-      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/users");
+      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/users");
     });
 
     it("should return empty array when no users exist", async () => {
@@ -107,7 +107,7 @@ describe("UserService", () => {
 
       expect(result).toEqual(newUser);
       expect(authenticatedFetch).toHaveBeenCalledWith(
-        "http://localhost:8080/api/users",
+        "http://localhost:8080/api/v1/users",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ name: "New User", email: "new@example.com" }),
@@ -127,7 +127,7 @@ describe("UserService", () => {
 
       expect(result).toEqual(newUser);
       expect(authenticatedFetch).toHaveBeenCalledWith(
-        "http://localhost:8080/api/users",
+        "http://localhost:8080/api/v1/users",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ name: "New User", email: "new@example.com", password: "password123" }),
@@ -182,7 +182,7 @@ describe("UserService", () => {
 
       expect(result).toEqual(user);
       expect(authenticatedFetchWithParsing).toHaveBeenCalledWith(
-        "http://localhost:8080/api/users/1",
+        "http://localhost:8080/api/v1/users/1",
         expect.objectContaining({
           method: "PUT",
           body: JSON.stringify(user),
@@ -206,7 +206,7 @@ describe("UserService", () => {
       } as Response);
 
       await expect(UserService.deleteUser(1)).resolves.toBeUndefined();
-      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/users/1", { method: "DELETE" });
+      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/users/1", { method: "DELETE" });
     });
 
     it("should throw error on API failure", async () => {
@@ -229,7 +229,7 @@ describe("UserService", () => {
       const result = await UserService.getUserById(1);
 
       expect(result).toEqual(user);
-      expect(authenticatedFetchWithParsing).toHaveBeenCalledWith("http://localhost:8080/api/users/1");
+      expect(authenticatedFetchWithParsing).toHaveBeenCalledWith("http://localhost:8080/api/v1/users/1");
     });
 
     it("should propagate errors from authenticatedFetchWithParsing", async () => {

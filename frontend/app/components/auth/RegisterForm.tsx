@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -18,26 +19,37 @@ import { AuthErrorGuidance } from "./AuthErrorGuidance";
 import { OAuthButtons, OAuthDivider } from "./OAuthButtons";
 import { PasswordStrengthMeter } from "./PasswordStrengthMeter";
 
-const registerSchema = z
-  .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Please enter a valid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type RegisterFormData = z.infer<typeof registerSchema>;
+type RegisterFormData = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export function RegisterForm() {
+  const { t } = useTranslation(["auth", "validation", "common"]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<ApiError | Error | null>(null);
   const registerMutation = useRegister();
   const navigate = useNavigate();
+
+  // Create schema with translated messages
+  const registerSchema = useMemo(
+    () =>
+      z
+        .object({
+          name: z.string().min(2, t("validation:name.minLength")),
+          email: z.string().email(t("validation:email.invalid")),
+          password: z.string().min(8, t("validation:password.minLength")),
+          confirmPassword: z.string(),
+        })
+        .refine((data) => data.password === data.confirmPassword, {
+          message: t("validation:password.mismatch"),
+          path: ["confirmPassword"],
+        }),
+    [t]
+  );
 
   const {
     register,
@@ -60,15 +72,15 @@ export function RegisterForm() {
       },
       {
         onSuccess: () => {
-          toast.success("Account created!", {
-            description: "Welcome! Your account has been created successfully.",
+          toast.success(t("auth:register.success"), {
+            description: t("auth:register.successDescription"),
           });
           void navigate({ to: "/", search: undefined });
         },
         onError: (err) => {
           setError(err);
-          const errorMessage = err instanceof Error ? err.message : "Registration failed";
-          toast.error("Registration failed", {
+          const errorMessage = err instanceof Error ? err.message : t("auth:register.error");
+          toast.error(t("auth:register.error"), {
             description: errorMessage,
           });
         },
@@ -80,8 +92,8 @@ export function RegisterForm() {
     <div className="bg-background flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-center text-2xl">Create account</CardTitle>
-          <CardDescription className="text-center">Enter your information to create your account</CardDescription>
+          <CardTitle className="text-center text-2xl">{t("auth:register.title")}</CardTitle>
+          <CardDescription className="text-center">{t("auth:register.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <OAuthButtons
@@ -89,7 +101,7 @@ export function RegisterForm() {
             disabled={registerMutation.isPending}
             onError={(message) => setError(new Error(message))}
           />
-          <OAuthDivider text="or register with email" />
+          <OAuthDivider text={t("auth:oauth.registerWithEmail")} />
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-4"
@@ -107,11 +119,11 @@ export function RegisterForm() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">{t("common:labels.fullName")}</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="Enter your full name"
+                placeholder={t("auth:register.namePlaceholder")}
                 autoFocus
                 {...register("name")}
                 disabled={registerMutation.isPending}
@@ -120,11 +132,11 @@ export function RegisterForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("common:labels.email")}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t("auth:register.emailPlaceholder")}
                 {...register("email")}
                 disabled={registerMutation.isPending}
               />
@@ -132,12 +144,12 @@ export function RegisterForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("common:labels.password")}</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Create a password"
+                  placeholder={t("auth:register.passwordPlaceholder")}
                   {...register("password")}
                   disabled={registerMutation.isPending}
                 />
@@ -148,7 +160,7 @@ export function RegisterForm() {
                   className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={registerMutation.isPending}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("auth:login.hidePassword") : t("auth:login.showPassword")}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
@@ -158,12 +170,12 @@ export function RegisterForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">{t("common:labels.confirmPassword")}</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm your password"
+                  placeholder={t("auth:register.confirmPasswordPlaceholder")}
                   {...register("confirmPassword")}
                   disabled={registerMutation.isPending}
                 />
@@ -174,7 +186,7 @@ export function RegisterForm() {
                   className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   disabled={registerMutation.isPending}
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  aria-label={showConfirmPassword ? t("auth:login.hidePassword") : t("auth:login.showPassword")}
                 >
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
@@ -188,17 +200,17 @@ export function RegisterForm() {
               disabled={registerMutation.isPending}
             >
               {registerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create account
+              {t("auth:register.submitButton")}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
+            {t("auth:register.hasAccount")}{" "}
             <Link
               to="/login"
               className="text-primary hover:underline"
             >
-              Sign in
+              {t("auth:register.signInLink")}
             </Link>
           </div>
         </CardContent>

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -17,14 +18,13 @@ import { Label } from "../ui/label";
 import { AuthErrorGuidance } from "./AuthErrorGuidance";
 import { OAuthButtons, OAuthDivider } from "./OAuthButtons";
 
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+  email: string;
+  password: string;
+};
 
 export function LoginForm() {
+  const { t } = useTranslation(["auth", "validation", "common"]);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<ApiError | Error | null>(null);
   const loginMutation = useLogin();
@@ -32,6 +32,16 @@ export function LoginForm() {
   const location = useLocation();
 
   const from = (location.state as { from?: { pathname?: string } } | undefined)?.from?.pathname ?? "/";
+
+  // Create schema with translated messages
+  const loginSchema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email(t("validation:email.invalid")),
+        password: z.string().min(1, t("validation:password.required")),
+      }),
+    [t]
+  );
 
   const {
     register,
@@ -45,8 +55,8 @@ export function LoginForm() {
     setError(null);
     loginMutation.mutate(data, {
       onSuccess: (authData) => {
-        toast.success("Welcome back!", {
-          description: "You have successfully signed in.",
+        toast.success(t("auth:login.success"), {
+          description: t("auth:login.successDescription"),
         });
 
         // If user was trying to access a specific page, honor that
@@ -61,8 +71,8 @@ export function LoginForm() {
       },
       onError: (err) => {
         setError(err);
-        const errorMessage = err instanceof Error ? err.message : "Login failed";
-        toast.error("Sign in failed", {
+        const errorMessage = err instanceof Error ? err.message : t("auth:login.error");
+        toast.error(t("auth:login.error"), {
           description: errorMessage,
         });
       },
@@ -73,10 +83,8 @@ export function LoginForm() {
     <div className="bg-background flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-center text-2xl">Sign in</CardTitle>
-          <CardDescription className="text-center">
-            Enter your email and password to sign in to your account
-          </CardDescription>
+          <CardTitle className="text-center text-2xl">{t("auth:login.title")}</CardTitle>
+          <CardDescription className="text-center">{t("auth:login.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <OAuthButtons
@@ -84,7 +92,7 @@ export function LoginForm() {
             disabled={loginMutation.isPending}
             onError={(message) => setError(new Error(message))}
           />
-          <OAuthDivider text="or continue with email" />
+          <OAuthDivider text={t("auth:oauth.continueWithEmail")} />
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-4"
@@ -103,11 +111,11 @@ export function LoginForm() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("common:labels.email")}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t("auth:login.emailPlaceholder")}
                 autoFocus
                 {...register("email")}
                 disabled={loginMutation.isPending}
@@ -116,12 +124,12 @@ export function LoginForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("common:labels.password")}</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t("auth:login.passwordPlaceholder")}
                   {...register("password")}
                   disabled={loginMutation.isPending}
                 />
@@ -132,7 +140,7 @@ export function LoginForm() {
                   className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loginMutation.isPending}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("auth:login.hidePassword") : t("auth:login.showPassword")}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
@@ -146,17 +154,17 @@ export function LoginForm() {
               disabled={loginMutation.isPending}
             >
               {loginMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sign in
+              {t("auth:login.submitButton")}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{" "}
+            {t("auth:login.noAccount")}{" "}
             <Link
               to="/register"
               className="text-primary hover:underline"
             >
-              Sign up
+              {t("auth:login.signUpLink")}
             </Link>
           </div>
         </CardContent>

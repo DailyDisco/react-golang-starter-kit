@@ -54,7 +54,7 @@ describe("FileService", () => {
 
       expect(result).toEqual(mockResponse);
       expect(mockFetch).toHaveBeenCalledWith(
-        "http://localhost:8080/api/files/upload",
+        "http://localhost:8080/api/v1/files/upload",
         expect.objectContaining({
           method: "POST",
         })
@@ -120,7 +120,7 @@ describe("FileService", () => {
       const result = await FileService.fetchFiles();
 
       expect(result).toEqual(mockFiles);
-      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/files");
+      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/files");
     });
 
     it("should include pagination parameters when provided", async () => {
@@ -131,7 +131,7 @@ describe("FileService", () => {
 
       await FileService.fetchFiles(10, 20);
 
-      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/files?limit=10&offset=20");
+      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/files?limit=10&offset=20");
     });
 
     it("should return empty array on auth failure (401/403)", async () => {
@@ -194,7 +194,7 @@ describe("FileService", () => {
       const result = await FileService.getFileUrl(1);
 
       expect(result).toBe("https://s3.example.com/file.txt");
-      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/files/1/url");
+      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/files/1/url");
     });
 
     it("should handle old response format (fallback)", async () => {
@@ -237,7 +237,7 @@ describe("FileService", () => {
       } as Response);
 
       await expect(FileService.deleteFile(1)).resolves.toBeUndefined();
-      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/files/1", {
+      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/files/1", {
         method: "DELETE",
       });
     });
@@ -265,7 +265,7 @@ describe("FileService", () => {
       const result = await FileService.getStorageStatus();
 
       expect(result).toEqual(mockStatus);
-      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/files/storage/status");
+      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/files/storage/status");
     });
 
     it("should handle old response format (fallback)", async () => {
@@ -315,7 +315,7 @@ describe("FileService", () => {
       const result = await FileService.downloadFile(1);
 
       expect(result).toBe(mockBlob);
-      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/files/1/download");
+      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/files/1/download");
     });
 
     it("should throw error on download failure", async () => {

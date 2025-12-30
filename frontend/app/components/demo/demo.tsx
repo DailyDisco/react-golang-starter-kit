@@ -5,16 +5,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
   Bell,
+  Building2,
   ChevronLeft,
   ChevronRight,
   Code,
   CreditCard,
   FileUp,
   Flag,
+  Globe,
   Key,
   LayoutDashboard,
   Lock,
   Mail,
+  Radio,
   ScrollText,
   Settings,
   Shield,
@@ -58,6 +61,12 @@ const steps: Step[] = [
     description: "Secure login with OAuth, 2FA, and session management",
   },
   {
+    id: "organizations",
+    title: "Organizations",
+    icon: <Building2 className="h-5 w-5" />,
+    description: "Multi-tenant teams with roles and invitations",
+  },
+  {
     id: "billing",
     title: "Billing",
     icon: <CreditCard className="h-5 w-5" />,
@@ -70,6 +79,18 @@ const steps: Step[] = [
     description: "Full admin dashboard with user management",
   },
   {
+    id: "realtime",
+    title: "Real-Time",
+    icon: <Radio className="h-5 w-5" />,
+    description: "WebSocket notifications and live data sync",
+  },
+  {
+    id: "i18n",
+    title: "i18n",
+    icon: <Globe className="h-5 w-5" />,
+    description: "Multi-language support with English and Spanish",
+  },
+  {
     id: "files",
     title: "File Storage",
     icon: <FileUp className="h-5 w-5" />,
@@ -79,7 +100,7 @@ const steps: Step[] = [
     id: "health",
     title: "System Health",
     icon: <Activity className="h-5 w-5" />,
-    description: "Real-time health monitoring and status",
+    description: "Real-time health monitoring with Prometheus metrics",
   },
   {
     id: "settings",
@@ -247,9 +268,12 @@ export function Demo() {
 
               {/* Step Content */}
               {currentStep === 0 && <AuthStep />}
-              {currentStep === 1 && <BillingStep />}
-              {currentStep === 2 && <AdminStep />}
-              {currentStep === 3 && (
+              {currentStep === 1 && <OrganizationsStep />}
+              {currentStep === 2 && <BillingStep />}
+              {currentStep === 3 && <AdminStep />}
+              {currentStep === 4 && <RealtimeStep />}
+              {currentStep === 5 && <I18nStep />}
+              {currentStep === 6 && (
                 <FileStorageStep
                   files={files}
                   filesLoading={filesLoading}
@@ -269,15 +293,15 @@ export function Demo() {
                   resetFileSelection={resetFileSelection}
                 />
               )}
-              {currentStep === 4 && (
+              {currentStep === 7 && (
                 <HealthStep
                   healthStatus={healthStatus}
                   healthLoading={healthLoading}
                   testHealthCheck={testHealthCheck}
                 />
               )}
-              {currentStep === 5 && <SettingsStep />}
-              {currentStep === 6 && <DeveloperStep />}
+              {currentStep === 8 && <SettingsStep />}
+              {currentStep === 9 && <DeveloperStep />}
             </motion.div>
           </AnimatePresence>
 
@@ -369,6 +393,189 @@ function AuthStep() {
           >
             /settings/security
           </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function OrganizationsStep() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <FeatureCard
+          icon={<Building2 className="h-5 w-5" />}
+          title="Multi-Tenant Architecture"
+          description="Create isolated workspaces for different teams or customers with complete data separation."
+        />
+        <FeatureCard
+          icon={<Users className="h-5 w-5" />}
+          title="Team Management"
+          description="Invite team members via email, manage roles, and track membership status."
+        />
+        <FeatureCard
+          icon={<Shield className="h-5 w-5" />}
+          title="Role-Based Permissions"
+          description="Three-tier role system: Owner (full control), Admin (manage members), Member (access only)."
+        />
+        <FeatureCard
+          icon={<Mail className="h-5 w-5" />}
+          title="Invitation Workflow"
+          description="Secure invitation tokens with expiration, accept/decline flow, and email notifications."
+        />
+      </div>
+      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Organization Plans</h3>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-600">
+            <h4 className="font-medium text-gray-900 dark:text-white">Free</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Basic features for small teams</p>
+          </div>
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/50">
+            <h4 className="font-medium text-blue-700 dark:text-blue-300">Pro</h4>
+            <p className="text-sm text-blue-600 dark:text-blue-400">Advanced analytics & more members</p>
+          </div>
+          <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-950/50">
+            <h4 className="font-medium text-purple-700 dark:text-purple-300">Enterprise</h4>
+            <p className="text-sm text-purple-600 dark:text-purple-400">Custom branding & API access</p>
+          </div>
+        </div>
+      </div>
+      <div className="rounded-lg border border-violet-200 bg-violet-50 p-4 dark:border-violet-800 dark:bg-violet-950/50">
+        <p className="text-sm text-violet-700 dark:text-violet-300">
+          <strong>Try it:</strong> Create an organization and manage your team at{" "}
+          <Link
+            to="/dashboard"
+            className="underline"
+          >
+            /dashboard
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function RealtimeStep() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <FeatureCard
+          icon={<Radio className="h-5 w-5" />}
+          title="WebSocket Connection"
+          description="Persistent connection with automatic reconnection and exponential backoff."
+        />
+        <FeatureCard
+          icon={<Bell className="h-5 w-5" />}
+          title="Real-Time Notifications"
+          description="Push notifications to users instantly for important events and updates."
+        />
+        <FeatureCard
+          icon={<Activity className="h-5 w-5" />}
+          title="Live Data Sync"
+          description="Automatic cache invalidation when data changes, keeping UI always up-to-date."
+        />
+        <FeatureCard
+          icon={<Users className="h-5 w-5" />}
+          title="Broadcast Messages"
+          description="Send system-wide announcements to all connected users simultaneously."
+        />
+      </div>
+      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Message Types</h3>
+        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+          <li className="flex items-center gap-2">
+            <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+              notification
+            </span>
+            <span>User-specific alerts and updates</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
+              user_update
+            </span>
+            <span>Profile, preferences, or session changes</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+              broadcast
+            </span>
+            <span>System-wide announcements</span>
+          </li>
+        </ul>
+      </div>
+      <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/50">
+        <p className="text-sm text-rose-700 dark:text-rose-300">
+          <strong>How it works:</strong> Log in to automatically connect to WebSocket. Notifications appear in real-time
+          without page refresh.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function I18nStep() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <FeatureCard
+          icon={<Globe className="h-5 w-5" />}
+          title="Multi-Language Support"
+          description="Full internationalization with English and Spanish translations included."
+        />
+        <FeatureCard
+          icon={<Settings className="h-5 w-5" />}
+          title="Language Detection"
+          description="Automatically detects browser language preference with localStorage persistence."
+        />
+      </div>
+      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Translation Namespaces</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="flex items-center gap-2">
+            <span className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+              common
+            </span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Buttons, labels, navigation</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+              auth
+            </span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Login, register, passwords</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+              errors
+            </span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Error messages and alerts</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+              validation
+            </span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Form validation messages</span>
+          </div>
+        </div>
+      </div>
+      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Supported Languages</h3>
+        <div className="flex gap-4">
+          <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-600">
+            <span className="text-2xl">EN</span>
+            <span className="text-gray-600 dark:text-gray-400">English</span>
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-600">
+            <span className="text-2xl">ES</span>
+            <span className="text-gray-600 dark:text-gray-400">Espanol</span>
+          </div>
+        </div>
+      </div>
+      <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-800 dark:bg-cyan-950/50">
+        <p className="text-sm text-cyan-700 dark:text-cyan-300">
+          <strong>Adding languages:</strong> Create new locale files in{" "}
+          <code className="rounded bg-cyan-100 px-1 dark:bg-cyan-900">frontend/app/i18n/locales/</code> and update the
+          i18n config.
         </p>
       </div>
     </div>
@@ -673,14 +880,25 @@ function HealthStep({
         </div>
       )}
 
-      <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-        <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">Monitored Components</h3>
-        <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
-          <li>Database connectivity and query performance</li>
-          <li>Redis cache status and memory usage</li>
-          <li>File storage availability</li>
-          <li>Background job queue status</li>
-        </ul>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">Monitored Components</h3>
+          <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+            <li>Database connectivity and query performance</li>
+            <li>Redis cache status and memory usage</li>
+            <li>File storage availability</li>
+            <li>Background job queue status</li>
+          </ul>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">Prometheus Metrics</h3>
+          <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+            <li>HTTP requests (count, duration, in-flight)</li>
+            <li>WebSocket connections and messages</li>
+            <li>Authentication attempts and user registrations</li>
+            <li>Cache hits/misses, job processing times</li>
+          </ul>
+        </div>
       </div>
     </div>
   );
@@ -767,19 +985,26 @@ function DeveloperStep() {
             <li>
               <span className="text-gray-600 dark:text-gray-300">Backend: localhost:8080</span>
             </li>
+            <li>
+              <span className="text-gray-600 dark:text-gray-300">Prometheus: localhost:9090</span>
+            </li>
+            <li>
+              <span className="text-gray-600 dark:text-gray-300">Grafana: localhost:3000</span>
+            </li>
           </ul>
         </div>
       </div>
       <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
         <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Tech Stack</h3>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <div>
             <h4 className="mb-2 text-sm font-medium text-blue-600 dark:text-blue-400">Frontend</h4>
             <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
               <li>React 19 + TypeScript</li>
               <li>TanStack Router & Query</li>
               <li>TailwindCSS + ShadCN/UI</li>
-              <li>Vite + Hot Reload</li>
+              <li>Zustand + i18next</li>
+              <li>WebSocket real-time</li>
             </ul>
           </div>
           <div>
@@ -788,7 +1013,18 @@ function DeveloperStep() {
               <li>Go 1.25 + Chi Router</li>
               <li>PostgreSQL + GORM</li>
               <li>Redis Caching</li>
-              <li>Docker + Docker Compose</li>
+              <li>Multi-tenant orgs</li>
+              <li>River job queue</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="mb-2 text-sm font-medium text-orange-600 dark:text-orange-400">DevOps</h4>
+            <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+              <li>Docker Compose</li>
+              <li>Prometheus metrics</li>
+              <li>Grafana dashboards</li>
+              <li>GitHub Actions CI</li>
+              <li>Swagger API docs</li>
             </ul>
           </div>
         </div>

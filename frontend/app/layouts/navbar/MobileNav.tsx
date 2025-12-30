@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link } from "@tanstack/react-router";
 import { CreditCard, DollarSign, LogOut, Menu, Settings, Shield, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import type { User as UserType } from "../../services";
 import { NavLink } from "./NavLink";
@@ -18,6 +19,7 @@ interface MobileNavProps {
 }
 
 export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, onLogout }: MobileNavProps) {
+  const { t } = useTranslation("common");
   const closeMenu = () => setIsOpen(false);
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
@@ -31,12 +33,12 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
           variant="ghost"
           size="sm"
           className="ml-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-          aria-label={isOpen ? "Close main menu" : "Open main menu"}
+          aria-label={isOpen ? t("menu.closeMainMenu") : t("menu.openMainMenu")}
           aria-expanded={isOpen}
           aria-controls="mobile-menu"
         >
           <Menu className="h-6 w-6" />
-          <span className="sr-only">{isOpen ? "Close main menu" : "Open main menu"}</span>
+          <span className="sr-only">{isOpen ? t("menu.closeMainMenu") : t("menu.openMainMenu")}</span>
         </Button>
       </SheetTrigger>
       <SheetContent
@@ -56,14 +58,16 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
               className="text-xl font-bold text-gray-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
               onClick={closeMenu}
             >
-              React + Go
+              {t("appName")}
             </Link>
           </div>
 
           {/* Navigation */}
           <div className="flex-1">
             <div className="mb-8 space-y-1">
-              <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">Navigation</p>
+              <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">
+                {t("menu.navigation")}
+              </p>
               {navigation.map((item) => (
                 <NavLink
                   key={item.name}
@@ -97,7 +101,9 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                 </div>
 
                 <div className="space-y-1">
-                  <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">Account</p>
+                  <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">
+                    {t("menu.account")}
+                  </p>
                   <Link
                     to="/settings/profile"
                     search={{}}
@@ -106,7 +112,7 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                     className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
                   >
                     <User className="mr-3 h-4 w-4" />
-                    Profile
+                    {t("navigation.profile")}
                   </Link>
                   <Link
                     to="/settings"
@@ -116,7 +122,7 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                     className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
                   >
                     <Settings className="mr-3 h-4 w-4" />
-                    Settings
+                    {t("navigation.settings")}
                   </Link>
                   <Link
                     to="/billing"
@@ -126,7 +132,7 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                     className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
                   >
                     <CreditCard className="mr-3 h-4 w-4" />
-                    Billing
+                    {t("navigation.billing")}
                   </Link>
                   <Link
                     to="/pricing"
@@ -136,7 +142,7 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                     className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
                   >
                     <DollarSign className="mr-3 h-4 w-4" />
-                    Pricing
+                    {t("navigation.pricing")}
                   </Link>
                   {isAdmin && (
                     <Link
@@ -147,7 +153,7 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                       className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
                     >
                       <Shield className="mr-3 h-4 w-4" />
-                      Admin Panel
+                      {t("navigation.adminPanel")}
                     </Link>
                   )}
                   <button
@@ -159,14 +165,14 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                     className="mx-2 flex w-full items-center rounded-lg px-4 py-3 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 hover:text-red-700 hover:shadow-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-300"
                   >
                     <LogOut className="mr-3 h-4 w-4" />
-                    Sign Out
+                    {t("auth.signOut")}
                   </button>
                 </div>
               </>
             ) : (
               <div className="space-y-1">
                 <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">
-                  Authentication
+                  {t("menu.authentication")}
                 </p>
                 <Link
                   to="/login"
@@ -175,7 +181,7 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                   role="menuitem"
                   className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
                 >
-                  Sign In
+                  {t("auth.signIn")}
                 </Link>
                 <Link
                   to="/register"
@@ -184,7 +190,7 @@ export function MobileNav({ isOpen, setIsOpen, pathname, isAuthenticated, user, 
                   role="menuitem"
                   className="mx-2 flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
                 >
-                  Sign Up
+                  {t("auth.signUp")}
                 </Link>
               </div>
             )}

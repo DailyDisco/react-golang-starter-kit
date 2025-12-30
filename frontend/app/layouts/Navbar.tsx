@@ -9,26 +9,29 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LanguageToggle } from "@/components/ui/language-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Link, useLocation } from "@tanstack/react-router";
 import { CreditCard, DollarSign, LogOut, Menu, Settings, Shield, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../hooks/auth/useAuth";
 import { API_BASE_URL } from "../services";
 
 export function Navbar() {
+  const { t } = useTranslation("common");
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   const navigation = [
-    { name: "Home", href: "/" },
-    { name: "Demo", href: "/demo" },
-    { name: "Pricing", href: "/pricing" },
+    { name: t("navigation.home"), href: "/" },
+    { name: t("navigation.demo"), href: "/demo" },
+    { name: t("navigation.pricing"), href: "/pricing" },
     {
-      name: "API Docs",
+      name: t("navigation.apiDocs"),
       href: `${API_BASE_URL}/swagger/`,
       external: true,
     },
@@ -45,7 +48,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+    <nav className="border-border bg-background sticky top-0 z-50 border-b shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex">
@@ -53,9 +56,9 @@ export function Navbar() {
               <Link
                 to="/"
                 search={{}}
-                className="text-xl font-bold text-gray-900 dark:text-white"
+                className="text-foreground text-xl font-bold"
               >
-                React + Go
+                {t("appName")}
               </Link>
             </div>
             <div className="hidden md:ml-6 md:flex md:space-x-1">
@@ -66,7 +69,7 @@ export function Navbar() {
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center rounded-md border-transparent px-3 py-2 text-sm font-medium text-gray-600 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                    className="text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:ring-primary inline-flex items-center rounded-md border-transparent px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none"
                   >
                     {item.name}
                     <span className="ml-1 text-xs opacity-60">↗</span>
@@ -76,10 +79,10 @@ export function Navbar() {
                     key={item.name}
                     to={item.href}
                     search={{}}
-                    className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none ${
+                    className={`focus:ring-primary inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
                       isActive(item.href)
-                        ? "border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                        ? "border-primary/20 bg-primary/10 text-primary border"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     }`}
                   >
                     {item.name}
@@ -92,25 +95,25 @@ export function Navbar() {
                   <Link
                     to="/settings"
                     search={{}}
-                    className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none ${
+                    className={`focus:ring-primary inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
                       isActive("/settings")
-                        ? "border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                        ? "border-primary/20 bg-primary/10 text-primary border"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     }`}
                   >
-                    Settings
+                    {t("navigation.settings")}
                   </Link>
                   {isAdmin && (
                     <Link
                       to="/admin"
                       search={{}}
-                      className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none ${
+                      className={`focus:ring-primary inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
                         isActive("/admin")
-                          ? "border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                          ? "border-primary/20 bg-primary/10 text-primary border"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                       }`}
                     >
-                      Admin
+                      {t("navigation.admin")}
                     </Link>
                   )}
                 </>
@@ -119,6 +122,7 @@ export function Navbar() {
           </div>
           {/* User Controls */}
           <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
+            <LanguageToggle />
             <ThemeToggle />
 
             {isAuthenticated && user ? (
@@ -162,7 +166,7 @@ export function Navbar() {
                       className="cursor-pointer"
                     >
                       <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
+                      <span>{t("navigation.profile")}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -172,7 +176,7 @@ export function Navbar() {
                       className="cursor-pointer"
                     >
                       <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
+                      <span>{t("navigation.settings")}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -182,7 +186,7 @@ export function Navbar() {
                       className="cursor-pointer"
                     >
                       <CreditCard className="mr-2 h-4 w-4" />
-                      <span>Billing</span>
+                      <span>{t("navigation.billing")}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -192,7 +196,7 @@ export function Navbar() {
                       className="cursor-pointer"
                     >
                       <DollarSign className="mr-2 h-4 w-4" />
-                      <span>Pricing</span>
+                      <span>{t("navigation.pricing")}</span>
                     </Link>
                   </DropdownMenuItem>
                   {isAdmin && (
@@ -203,7 +207,7 @@ export function Navbar() {
                         className="cursor-pointer"
                       >
                         <Shield className="mr-2 h-4 w-4" />
-                        <span>Admin Panel</span>
+                        <span>{t("navigation.adminPanel")}</span>
                       </Link>
                     </DropdownMenuItem>
                   )}
@@ -213,7 +217,7 @@ export function Navbar() {
                     className="cursor-pointer"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
+                    <span>{t("auth.logOut")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -227,7 +231,7 @@ export function Navbar() {
                     to="/login"
                     search={{}}
                   >
-                    Sign in
+                    {t("auth.signIn")}
                   </Link>
                 </Button>
                 <Button asChild>
@@ -235,13 +239,14 @@ export function Navbar() {
                     to="/register"
                     search={{}}
                   >
-                    Sign up
+                    {t("auth.signUp")}
                   </Link>
                 </Button>
               </div>
             )}
           </div>
           <div className="-mr-2 flex items-center md:hidden">
+            <LanguageToggle />
             <ThemeToggle />
             <Sheet
               open={isOpen}
@@ -251,18 +256,18 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-                  aria-label={isOpen ? "Close main menu" : "Open main menu"}
+                  className="hover:bg-accent ml-2 transition-colors"
+                  aria-label={isOpen ? t("menu.closeMainMenu") : t("menu.openMainMenu")}
                   aria-expanded={isOpen}
                   aria-controls="mobile-menu"
                 >
                   <Menu className="h-6 w-6" />
-                  <span className="sr-only">{isOpen ? "Close main menu" : "Open main menu"}</span>
+                  <span className="sr-only">{isOpen ? t("menu.closeMainMenu") : t("menu.openMainMenu")}</span>
                 </Button>
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-[320px] border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
+                className="border-border bg-background w-[320px] border-l"
                 id="mobile-menu"
               >
                 <div
@@ -270,14 +275,14 @@ export function Navbar() {
                   role="menu"
                 >
                   {/* Header */}
-                  <div className="mb-6 border-b border-gray-200 pb-6 dark:border-gray-700">
+                  <div className="border-border mb-6 border-b pb-6">
                     <Link
                       to="/"
                       search={{}}
-                      className="text-xl font-bold text-gray-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
+                      className="text-foreground hover:text-primary text-xl font-bold transition-colors"
                       onClick={() => setIsOpen(false)}
                     >
-                      React + Go
+                      {t("appName")}
                     </Link>
                   </div>
 
@@ -285,7 +290,7 @@ export function Navbar() {
                   <div className="flex-1">
                     <div className="mb-8 space-y-1">
                       <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">
-                        Navigation
+                        {t("menu.navigation")}
                       </p>
                       {navigation.map((item) => (
                         <Link
@@ -295,10 +300,10 @@ export function Navbar() {
                           rel={item.external ? "noopener noreferrer" : undefined}
                           onClick={() => setIsOpen(false)}
                           role="menuitem"
-                          className={`mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none ${
+                          className={`focus:ring-primary mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
                             isActive(item.href)
-                              ? "bg-blue-600 text-white shadow-sm"
-                              : "text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "text-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
                           }`}
                         >
                           {item.name}
@@ -309,16 +314,16 @@ export function Navbar() {
                   </div>
 
                   {/* User Section */}
-                  <div className="border-t border-gray-200 pt-6 dark:border-gray-700">
+                  <div className="border-border border-t pt-6">
                     {isAuthenticated && user ? (
                       <>
-                        <div className="mb-6 flex items-center rounded-lg border border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-sm dark:border-blue-900/50 dark:from-blue-950/50 dark:to-indigo-950/50">
-                          <Avatar className="mr-3 h-10 w-10 ring-2 ring-blue-200 dark:ring-blue-800">
+                        <div className="border-primary/20 bg-primary/5 mb-6 flex items-center rounded-lg border p-4 shadow-sm">
+                          <Avatar className="ring-primary/20 mr-3 h-10 w-10 ring-2">
                             <AvatarImage
                               src=""
                               alt={user.name}
                             />
-                            <AvatarFallback className="bg-blue-600 text-sm text-white">
+                            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                               {user.name
                                 .split(" ")
                                 .map((n) => n[0])
@@ -327,54 +332,54 @@ export function Navbar() {
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
+                            <p className="text-foreground truncate text-sm font-medium">{user.name}</p>
                             <p className="text-muted-foreground truncate text-xs">{user.email}</p>
                           </div>
                         </div>
 
                         <div className="space-y-1">
                           <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">
-                            Account
+                            {t("menu.account")}
                           </p>
                           <Link
                             to="/settings/profile"
                             search={{}}
                             onClick={() => setIsOpen(false)}
                             role="menuitem"
-                            className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                            className="text-foreground hover:bg-accent hover:text-accent-foreground focus:ring-primary mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:shadow-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
                           >
                             <User className="mr-3 h-4 w-4" />
-                            Profile
+                            {t("navigation.profile")}
                           </Link>
                           <Link
                             to="/settings"
                             search={{}}
                             onClick={() => setIsOpen(false)}
                             role="menuitem"
-                            className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                            className="text-foreground hover:bg-accent hover:text-accent-foreground focus:ring-primary mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:shadow-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
                           >
                             <Settings className="mr-3 h-4 w-4" />
-                            Settings
+                            {t("navigation.settings")}
                           </Link>
                           <Link
                             to="/billing"
                             search={{}}
                             onClick={() => setIsOpen(false)}
                             role="menuitem"
-                            className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                            className="text-foreground hover:bg-accent hover:text-accent-foreground focus:ring-primary mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:shadow-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
                           >
                             <CreditCard className="mr-3 h-4 w-4" />
-                            Billing
+                            {t("navigation.billing")}
                           </Link>
                           <Link
                             to="/pricing"
                             search={{}}
                             onClick={() => setIsOpen(false)}
                             role="menuitem"
-                            className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                            className="text-foreground hover:bg-accent hover:text-accent-foreground focus:ring-primary mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:shadow-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
                           >
                             <DollarSign className="mr-3 h-4 w-4" />
-                            Pricing
+                            {t("navigation.pricing")}
                           </Link>
                           {isAdmin && (
                             <Link
@@ -382,10 +387,10 @@ export function Navbar() {
                               search={{}}
                               onClick={() => setIsOpen(false)}
                               role="menuitem"
-                              className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                              className="text-foreground hover:bg-accent hover:text-accent-foreground focus:ring-primary mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:shadow-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
                             >
                               <Shield className="mr-3 h-4 w-4" />
-                              Admin Panel
+                              {t("navigation.adminPanel")}
                             </Link>
                           )}
                           <button
@@ -394,35 +399,35 @@ export function Navbar() {
                               setIsOpen(false);
                             }}
                             role="menuitem"
-                            className="mx-2 flex w-full items-center rounded-lg px-4 py-3 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 hover:text-red-700 hover:shadow-sm focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-300"
+                            className="text-destructive hover:bg-destructive/10 focus:ring-destructive mx-2 flex w-full items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:shadow-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
                           >
                             <LogOut className="mr-3 h-4 w-4" />
-                            Sign Out
+                            {t("auth.signOut")}
                           </button>
                         </div>
                       </>
                     ) : (
                       <div className="space-y-1">
                         <p className="text-muted-foreground mb-4 text-xs font-semibold tracking-wider uppercase">
-                          Authentication
+                          {t("menu.authentication")}
                         </p>
                         <Link
                           to="/login"
                           search={{}}
                           onClick={() => setIsOpen(false)}
                           role="menuitem"
-                          className="mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-800/50 dark:hover:text-gray-100"
+                          className="text-foreground hover:bg-accent hover:text-accent-foreground focus:ring-primary mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:shadow-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
                         >
-                          Sign In
+                          {t("auth.signIn")}
                         </Link>
                         <Link
                           to="/register"
                           search={{}}
                           onClick={() => setIsOpen(false)}
                           role="menuitem"
-                          className="mx-2 flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-md focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+                          className="bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary mx-2 flex items-center rounded-lg px-4 py-3 text-sm font-medium shadow-sm transition-all duration-200 hover:shadow-md focus:ring-2 focus:ring-offset-2 focus:outline-none"
                         >
-                          Sign Up
+                          {t("auth.signUp")}
                         </Link>
                       </div>
                     )}

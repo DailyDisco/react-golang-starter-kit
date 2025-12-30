@@ -54,7 +54,7 @@ describe("BillingService", () => {
       const result = await BillingService.getConfig();
 
       expect(result).toEqual(mockConfig);
-      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/billing/config");
+      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/billing/config");
     });
 
     it("should throw error on failure", async () => {
@@ -83,7 +83,7 @@ describe("BillingService", () => {
       const result = await BillingService.getPlans();
 
       expect(result).toEqual(mockPlans);
-      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/billing/plans");
+      expect(mockFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/billing/plans");
     });
 
     it("should return empty array when billing is not configured (503)", async () => {
@@ -124,7 +124,7 @@ describe("BillingService", () => {
 
       expect(result).toEqual(mockSession);
       expect(authenticatedFetch).toHaveBeenCalledWith(
-        "http://localhost:8080/api/billing/checkout",
+        "http://localhost:8080/api/v1/billing/checkout",
         expect.objectContaining({
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -158,7 +158,9 @@ describe("BillingService", () => {
       const result = await BillingService.createPortalSession();
 
       expect(result).toEqual(mockSession);
-      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/billing/portal", { method: "POST" });
+      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/billing/portal", {
+        method: "POST",
+      });
     });
 
     it("should throw error on failure", async () => {
@@ -192,7 +194,7 @@ describe("BillingService", () => {
       const result = await BillingService.getSubscription();
 
       expect(result).toEqual(mockSubscription);
-      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/billing/subscription");
+      expect(authenticatedFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/billing/subscription");
     });
 
     it("should return null when no subscription exists (404)", async () => {

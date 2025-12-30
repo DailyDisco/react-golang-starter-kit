@@ -13,9 +13,82 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { fireEvent, render, type RenderOptions } from "@testing-library/react";
+import i18n from "i18next";
+import { I18nextProvider, initReactI18next } from "react-i18next";
 import { vi } from "vitest";
 
 import type { User } from "../services";
+
+// Initialize test i18n instance
+const testI18n = i18n.createInstance();
+testI18n.use(initReactI18next).init({
+  lng: "en",
+  fallbackLng: "en",
+  ns: ["common", "auth", "errors", "validation"],
+  defaultNS: "common",
+  resources: {
+    en: {
+      common: {
+        "navigation.signIn": "Sign in",
+        "navigation.signUp": "Sign up",
+        "labels.email": "Email",
+        "labels.password": "Password",
+        "labels.fullName": "Full Name",
+        "labels.confirmPassword": "Confirm Password",
+        "labels.language": "Language",
+        "buttons.tryAgain": "Try Again",
+        "buttons.goHome": "Go Home",
+      },
+      auth: {
+        "login.title": "Sign in",
+        "login.subtitle": "Enter your email and password to sign in to your account",
+        "login.emailPlaceholder": "Enter your email",
+        "login.passwordPlaceholder": "Enter your password",
+        "login.submitButton": "Sign in",
+        "login.noAccount": "Don't have an account?",
+        "login.signUpLink": "Sign up",
+        "login.showPassword": "Show password",
+        "login.hidePassword": "Hide password",
+        "login.success": "Welcome back!",
+        "login.successDescription": "You have successfully signed in.",
+        "login.error": "Sign in failed",
+        "register.title": "Create account",
+        "register.subtitle": "Enter your information to create your account",
+        "register.submitButton": "Create account",
+        "register.hasAccount": "Already have an account?",
+        "register.signInLink": "Sign in",
+        "oauth.continueWithEmail": "or continue with email",
+        "oauth.registerWithEmail": "or register with email",
+        "session.expired": "Session Expired",
+        "session.expiredDescription": "Your session has expired due to inactivity.",
+        "session.signInAgain": "Sign In Again",
+        "passwordStrength.weak": "Weak",
+        "passwordStrength.fair": "Fair",
+        "passwordStrength.good": "Good",
+        "passwordStrength.strong": "Strong",
+        "passwordStrength.requirements.length": "At least 8 characters",
+        "passwordStrength.requirements.uppercase": "Contains uppercase letter",
+        "passwordStrength.requirements.lowercase": "Contains lowercase letter",
+        "passwordStrength.requirements.number": "Contains number",
+        "passwordStrength.requirements.special": "Contains special character",
+      },
+      errors: {
+        "generic.title": "Something went wrong",
+        "generic.message": "An unexpected error occurred",
+        "generic.tryAgain": "Try Again",
+        "generic.goHome": "Go Home",
+      },
+      validation: {
+        "email.invalid": "Please enter a valid email address",
+        "password.required": "Password is required",
+        "password.minLength": "Password must be at least 8 characters",
+        "password.mismatch": "Passwords don't match",
+        "name.minLength": "Name must be at least 2 characters",
+      },
+    },
+  },
+  interpolation: { escapeValue: false },
+});
 
 // Mock @tanstack/react-router globally
 vi.mock("@tanstack/react-router", () => {
@@ -120,9 +193,9 @@ export const renderWithProviders = (
   const testRouter = router ?? createTestRouter(initialPath);
 
   const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-    <RouterProvider router={testRouter}>
+    <I18nextProvider i18n={testI18n}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </RouterProvider>
+    </I18nextProvider>
   );
   TestWrapper.displayName = "TestWrapper";
 

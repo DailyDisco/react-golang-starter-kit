@@ -26,7 +26,7 @@ export const OAuthService = {
    * Get the OAuth authorization URL for a provider
    */
   async getOAuthURL(provider: OAuthProvider): Promise<OAuthURLResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/oauth/${provider}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/oauth/${provider}`, {
       method: "GET",
       credentials: "include",
     });
@@ -58,7 +58,7 @@ export const OAuthService = {
    * Get linked OAuth providers for the current user
    */
   async getLinkedProviders(): Promise<LinkedProvider[]> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/auth/oauth/providers`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/auth/oauth/providers`);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -75,7 +75,7 @@ export const OAuthService = {
    * Unlink an OAuth provider from the current user
    */
   async unlinkProvider(provider: OAuthProvider): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/auth/oauth/${provider}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/auth/oauth/${provider}`, {
       method: "DELETE",
     });
 

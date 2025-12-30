@@ -1,4 +1,5 @@
 import { AlertTriangle, RefreshCw, ServerCrash, WifiOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
@@ -65,6 +66,7 @@ export function QueryError({
   variant = "default",
   className,
 }: QueryErrorProps) {
+  const { t } = useTranslation("errors");
   const errorType = getErrorType(error);
 
   const Icon = {
@@ -74,15 +76,15 @@ export function QueryError({
   }[errorType];
 
   const defaultTitles = {
-    network: "Connection Error",
-    server: "Server Error",
-    generic: "Something went wrong",
+    network: t("query.connectionError"),
+    server: t("query.serverError"),
+    generic: t("query.genericError"),
   };
 
   const defaultMessages = {
-    network: "Please check your internet connection and try again.",
-    server: "The server is temporarily unavailable. Please try again later.",
-    generic: "An unexpected error occurred. Please try again.",
+    network: t("query.networkMessage"),
+    server: t("query.serverMessage"),
+    generic: t("query.genericMessage"),
   };
 
   if (variant === "compact") {
@@ -139,7 +141,7 @@ export function QueryError({
           className="mt-2"
         >
           <RefreshCw className={cn("mr-2 h-4 w-4", isRetrying && "animate-spin")} />
-          {isRetrying ? "Retrying..." : "Try Again"}
+          {isRetrying ? t("query.retrying") : t("query.tryAgain")}
         </Button>
       )}
     </div>
@@ -157,17 +159,19 @@ interface QueryErrorInlineProps {
  * For use in cards, list items, etc.
  */
 export function QueryErrorInline({ error, onRetry, isRetrying }: QueryErrorInlineProps) {
+  const { t } = useTranslation("errors");
+
   return (
     <span className="inline-flex items-center gap-1 text-sm text-red-600 dark:text-red-400">
       <AlertTriangle className="h-3.5 w-3.5" />
-      <span>{error?.message || "Error loading data"}</span>
+      <span>{error?.message || t("query.loadingError")}</span>
       {onRetry && (
         <button
           onClick={onRetry}
           disabled={isRetrying}
           className="ml-1 underline hover:no-underline focus:ring-2 focus:ring-red-500 focus:ring-offset-1 focus:outline-none"
         >
-          {isRetrying ? <RefreshCw className="inline h-3 w-3 animate-spin" /> : "Retry"}
+          {isRetrying ? <RefreshCw className="inline h-3 w-3 animate-spin" /> : t("query.retry")}
         </button>
       )}
     </span>

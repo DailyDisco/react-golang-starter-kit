@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { useTranslation } from "react-i18next";
+
 import { logger } from "../../lib/logger";
 import { OAuthService, type OAuthProvider } from "../../services/oauth";
 
@@ -70,6 +72,7 @@ const providers: Record<OAuthProvider, ProviderConfig> = {
 };
 
 export function OAuthButtons({ onError, disabled = false, mode = "login" }: OAuthButtonsProps) {
+  const { t } = useTranslation("auth");
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
 
   const handleOAuthClick = async (provider: OAuthProvider) => {
@@ -88,15 +91,15 @@ export function OAuthButtons({ onError, disabled = false, mode = "login" }: OAut
 
   const getButtonText = (provider: OAuthProvider) => {
     if (loading === provider) {
-      return "Connecting...";
+      return t("oauth.connecting");
     }
     switch (mode) {
       case "register":
-        return `Sign up with ${providers[provider].name}`;
+        return t("oauth.signUpWith", { provider: providers[provider].name });
       case "link":
-        return `Link ${providers[provider].name}`;
+        return t("oauth.linkWith", { provider: providers[provider].name });
       default:
-        return `Continue with ${providers[provider].name}`;
+        return t("oauth.continueWith", { provider: providers[provider].name });
     }
   };
 
@@ -150,14 +153,17 @@ interface OAuthDividerProps {
   text?: string;
 }
 
-export function OAuthDivider({ text = "or" }: OAuthDividerProps) {
+export function OAuthDivider({ text }: OAuthDividerProps) {
+  const { t } = useTranslation("auth");
+  const displayText = text ?? t("oauth.or");
+
   return (
     <div className="relative my-6">
       <div className="absolute inset-0 flex items-center">
         <div className="w-full border-t border-gray-300" />
       </div>
       <div className="relative flex justify-center text-sm">
-        <span className="bg-white px-2 text-gray-500">{text}</span>
+        <span className="bg-white px-2 text-gray-500">{displayText}</span>
       </div>
     </div>
   );

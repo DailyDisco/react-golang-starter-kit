@@ -198,7 +198,7 @@ function StatCard({
           <span
             className={cn(
               'ml-2 text-xs font-medium',
-              isPositive ? 'text-green-600' : 'text-red-600'
+              isPositive ? 'text-success' : 'text-destructive'
             )}
           >
             {isPositive ? '+' : ''}

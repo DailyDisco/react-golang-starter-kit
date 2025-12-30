@@ -1,14 +1,15 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import type { RouterContext } from "@/router";
-import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 
 import { SessionExpiredModal } from "../components/auth/SessionExpiredModal";
 import { ErrorFallback } from "../components/error";
 import { OfflineBanner } from "../components/ui/offline-banner";
-import { StandardLayout } from "../layouts";
+import { useLanguageSync } from "../hooks/useLanguageSync";
+import { AppLayout, StandardLayout } from "../layouts";
 import { initCSRFToken } from "../services/api/client";
 
 // Lazy load devtools to exclude from production bundle
@@ -42,6 +43,16 @@ function CSRFInitializer() {
   return null;
 }
 
+/**
+ * Sync language preference between frontend and backend.
+ * On login: syncs language from backend to frontend.
+ * On language change: updates backend.
+ */
+function LanguageSyncInitializer() {
+  useLanguageSync();
+  return null;
+}
+
 // HydrateFallback component for better SSR UX
 function HydrateFallback() {
   return (
@@ -54,19 +65,79 @@ function HydrateFallback() {
   );
 }
 
+// Auth guard component for protected routes
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check for valid user data in localStorage
+    const storedUser = localStorage.getItem("auth_user");
+    let authenticated = false;
+
+    if (storedUser) {
+      try {
+        JSON.parse(storedUser);
+        authenticated = true;
+      } catch {
+        localStorage.removeItem("auth_user");
+        localStorage.removeItem("refresh_token");
+      }
+    }
+
+    if (!authenticated) {
+      navigate({ to: "/login" });
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsChecking(false);
+  }, [navigate]);
+
+  if (isChecking) {
+    return (
+      <div className="bg-background flex min-h-screen items-center justify-center">
+        <div className="space-y-4 text-center">
+          <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
 // RootLayout component that applies layouts based on route groups
 function RootLayout() {
   const location = useLocation();
 
+  // Routes that use the AppLayout (sidebar layout for authenticated users)
+  const appRoutes = ["/dashboard", "/settings", "/admin", "/billing"];
+  const isAppRoute = appRoutes.some((route) => location.pathname.startsWith(route));
+
   // Check if we're in the layout-demo route
   const isLayoutDemo = location.pathname.startsWith("/layout-demo");
 
+  // App routes use AppLayout (sidebar) with auth guard
+  if (isAppRoute) {
+    return (
+      <AuthGuard>
+        <AppLayout />
+      </AuthGuard>
+    );
+  }
+
+  // Layout-demo routes don't use any wrapper layout
   if (isLayoutDemo) {
-    // For layout-demo routes, just render the outlet without StandardLayout
     return <Outlet />;
   }
 
-  // For all other routes, use StandardLayout
+  // Public routes use StandardLayout (navbar + footer)
   return <StandardLayout />;
 }
 
@@ -76,6 +147,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       <ThemeProvider defaultTheme="system">
         {/* QueryClientProvider is handled by the SSR Query integration */}
         <CSRFInitializer />
+        <LanguageSyncInitializer />
         <OfflineBanner />
         <Toaster />
         <SessionExpiredModal />

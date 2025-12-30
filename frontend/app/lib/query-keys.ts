@@ -18,6 +18,9 @@ export const queryKeys = {
     all: ["featureFlags"] as const,
     user: () => [...queryKeys.featureFlags.all, "user"] as const,
   },
+  settings: {
+    preferences: ["settings", "preferences"] as const,
+  },
 } as const;
 
 // Type-safe query key inference

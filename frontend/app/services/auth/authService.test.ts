@@ -72,7 +72,7 @@ describe("AuthService", () => {
 
       expect(result).toEqual(mockAuthResponse);
       expect(apiFetch).toHaveBeenCalledWith(
-        "http://localhost:8080/api/auth/login",
+        "http://localhost:8080/api/v1/auth/login",
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ email: "test@example.com", password: "password123" }),
@@ -134,7 +134,7 @@ describe("AuthService", () => {
 
       expect(result).toEqual(mockAuthResponse);
       expect(apiFetch).toHaveBeenCalledWith(
-        "http://localhost:8080/api/auth/register",
+        "http://localhost:8080/api/v1/auth/register",
         expect.objectContaining({
           method: "POST",
         })
@@ -167,7 +167,7 @@ describe("AuthService", () => {
       const result = await AuthService.getCurrentUser();
 
       expect(result).toEqual(mockUser);
-      expect(authenticatedFetchWithParsing).toHaveBeenCalledWith("http://localhost:8080/api/auth/me");
+      expect(authenticatedFetchWithParsing).toHaveBeenCalledWith("http://localhost:8080/api/v1/auth/me");
     });
   });
 
@@ -181,7 +181,7 @@ describe("AuthService", () => {
 
       expect(result).toEqual(updatedUser);
       expect(authenticatedFetchWithParsing).toHaveBeenCalledWith(
-        "http://localhost:8080/api/users/1",
+        "http://localhost:8080/api/v1/users/1",
         expect.objectContaining({
           method: "PUT",
           body: JSON.stringify({ name: "Updated Name" }),
@@ -201,7 +201,7 @@ describe("AuthService", () => {
 
       await AuthService.logout();
 
-      expect(apiFetch).toHaveBeenCalledWith("http://localhost:8080/api/auth/logout", { method: "POST" });
+      expect(apiFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/auth/logout", { method: "POST" });
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_token");
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_user");
     });

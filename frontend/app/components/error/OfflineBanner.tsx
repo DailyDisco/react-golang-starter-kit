@@ -1,4 +1,5 @@
 import { RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { cn } from "../../lib/utils";
@@ -12,6 +13,7 @@ interface OfflineBannerProps {
  * Automatically hides when back online with a brief "reconnected" message
  */
 export function OfflineBanner({ className }: OfflineBannerProps) {
+  const { t } = useTranslation("errors");
   const { isOnline, wasOffline } = useOnlineStatus();
 
   if (isOnline && !wasOffline) {
@@ -33,13 +35,15 @@ export function OfflineBanner({ className }: OfflineBannerProps) {
         {isOnline ? (
           <>
             <Wifi className="h-5 w-5" />
-            <span className="text-sm font-medium">Back online</span>
+            <span className="text-sm font-medium">{t("network.backOnline")}</span>
             <RefreshCw className="h-4 w-4 animate-spin" />
           </>
         ) : (
           <>
             <WifiOff className="h-5 w-5" />
-            <span className="text-sm font-medium">You&apos;re offline. Some features may be unavailable.</span>
+            <span className="text-sm font-medium">
+              {t("network.offline")} {t("network.offlineDescription")}
+            </span>
           </>
         )}
       </div>

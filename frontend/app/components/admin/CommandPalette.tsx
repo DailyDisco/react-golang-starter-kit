@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { useNavigate } from "@tanstack/react-router";
 import { Activity, BarChart3, Bell, FileText, Flag, Mail, Settings, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import {
   CommandDialog,
@@ -15,49 +16,49 @@ import {
 
 const adminRoutes = [
   {
-    label: "Dashboard",
+    labelKey: "commandPalette.routes.dashboard",
     href: "/admin",
     icon: BarChart3,
     keywords: ["home", "overview", "stats"],
   },
   {
-    label: "Users",
+    labelKey: "commandPalette.routes.users",
     href: "/admin/users",
     icon: Users,
     keywords: ["members", "accounts", "people"],
   },
   {
-    label: "Audit Logs",
+    labelKey: "commandPalette.routes.auditLogs",
     href: "/admin/audit-logs",
     icon: FileText,
     keywords: ["history", "activity", "events"],
   },
   {
-    label: "Feature Flags",
+    labelKey: "commandPalette.routes.featureFlags",
     href: "/admin/feature-flags",
     icon: Flag,
     keywords: ["toggles", "features", "flags"],
   },
   {
-    label: "System Health",
+    labelKey: "commandPalette.routes.systemHealth",
     href: "/admin/health",
     icon: Activity,
     keywords: ["status", "monitoring", "metrics"],
   },
   {
-    label: "Announcements",
+    labelKey: "commandPalette.routes.announcements",
     href: "/admin/announcements",
     icon: Bell,
     keywords: ["banners", "notifications", "alerts"],
   },
   {
-    label: "Email Templates",
+    labelKey: "commandPalette.routes.emailTemplates",
     href: "/admin/email-templates",
     icon: Mail,
     keywords: ["emails", "templates", "messages"],
   },
   {
-    label: "Settings",
+    labelKey: "commandPalette.routes.settings",
     href: "/admin/settings",
     icon: Settings,
     keywords: ["config", "configuration", "preferences"],
@@ -66,17 +67,17 @@ const adminRoutes = [
 
 const quickActions = [
   {
-    label: "Create new user",
+    labelKey: "commandPalette.actions.createUser",
     action: "create-user",
     icon: Users,
   },
   {
-    label: "Create feature flag",
+    labelKey: "commandPalette.actions.createFlag",
     action: "create-flag",
     icon: Flag,
   },
   {
-    label: "Create announcement",
+    labelKey: "commandPalette.actions.createAnnouncement",
     action: "create-announcement",
     icon: Bell,
   },
@@ -88,6 +89,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+  const { t } = useTranslation("admin");
   const navigate = useNavigate();
 
   const handleSelect = (href: string) => {
@@ -115,33 +117,41 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       open={open}
       onOpenChange={onOpenChange}
     >
-      <CommandInput placeholder="Search admin panel..." />
+      <CommandInput placeholder={t("commandPalette.search")} />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Navigation">
-          {adminRoutes.map((route) => (
-            <CommandItem
-              key={route.href}
-              value={route.label + " " + route.keywords.join(" ")}
-              onSelect={() => handleSelect(route.href)}
-            >
-              <route.icon className="mr-2 h-4 w-4" />
-              <span>{route.label}</span>
-            </CommandItem>
-          ))}
+        <CommandEmpty>{t("commandPalette.noResults")}</CommandEmpty>
+        <CommandGroup heading={t("commandPalette.navigation")}>
+          {adminRoutes.map((route) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const label = t(route.labelKey as any) as string;
+            return (
+              <CommandItem
+                key={route.href}
+                value={label + " " + route.keywords.join(" ")}
+                onSelect={() => handleSelect(route.href)}
+              >
+                <route.icon className="mr-2 h-4 w-4" />
+                <span>{label}</span>
+              </CommandItem>
+            );
+          })}
         </CommandGroup>
         <CommandSeparator />
-        <CommandGroup heading="Quick Actions">
-          {quickActions.map((action) => (
-            <CommandItem
-              key={action.action}
-              value={action.label}
-              onSelect={() => handleAction(action.action)}
-            >
-              <action.icon className="mr-2 h-4 w-4" />
-              <span>{action.label}</span>
-            </CommandItem>
-          ))}
+        <CommandGroup heading={t("commandPalette.quickActions")}>
+          {quickActions.map((action) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const label = t(action.labelKey as any) as string;
+            return (
+              <CommandItem
+                key={action.action}
+                value={label}
+                onSelect={() => handleAction(action.action)}
+              >
+                <action.icon className="mr-2 h-4 w-4" />
+                <span>{label}</span>
+              </CommandItem>
+            );
+          })}
         </CommandGroup>
       </CommandList>
     </CommandDialog>

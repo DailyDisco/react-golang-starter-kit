@@ -28,7 +28,7 @@ export class FileService {
       headers["X-CSRF-Token"] = csrfToken;
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/files/upload`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/files/upload`, {
       method: "POST",
       credentials: "include", // Include httpOnly cookies for authentication
       headers,
@@ -36,8 +36,7 @@ export class FileService {
     });
 
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to upload file");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to upload file");
     }
 
     try {
@@ -61,7 +60,7 @@ export class FileService {
     if (limit !== undefined) params.append("limit", limit.toString());
     if (offset !== undefined) params.append("offset", offset.toString());
 
-    const url = `${API_BASE_URL}/api/files${params.toString() ? "?" + params.toString() : ""}`;
+    const url = `${API_BASE_URL}/api/v1/files${params.toString() ? "?" + params.toString() : ""}`;
 
     try {
       const response = await authenticatedFetch(url);
@@ -70,8 +69,7 @@ export class FileService {
         if (response.status === 401 || response.status === 403) {
           return [];
         }
-        const errorMessage = await parseErrorResponse(response, "Failed to fetch files");
-        throw new Error(errorMessage);
+        throw await parseErrorResponse(response, "Failed to fetch files");
       }
 
       const responseData = await response.json();
@@ -92,10 +90,9 @@ export class FileService {
    * Get file URL for download
    */
   static async getFileUrl(fileId: number): Promise<string> {
-    const response = await fetch(`${API_BASE_URL}/api/files/${fileId}/url`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/files/${fileId}/url`);
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to get file URL");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to get file URL");
     }
 
     try {
@@ -116,13 +113,12 @@ export class FileService {
    * Authentication is handled via httpOnly cookies
    */
   static async deleteFile(fileId: number): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/files/${fileId}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/files/${fileId}`, {
       method: "DELETE",
     });
 
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to delete file");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to delete file");
     }
   }
 
@@ -130,10 +126,9 @@ export class FileService {
    * Get storage status
    */
   static async getStorageStatus(): Promise<StorageStatus> {
-    const response = await fetch(`${API_BASE_URL}/api/files/storage/status`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/files/storage/status`);
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to get storage status");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to get storage status");
     }
 
     try {
@@ -153,10 +148,9 @@ export class FileService {
    * Download file directly (for database-stored files)
    */
   static async downloadFile(fileId: number): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/api/files/${fileId}/download`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/files/${fileId}/download`);
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to download file");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to download file");
     }
 
     return response.blob();

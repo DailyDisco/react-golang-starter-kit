@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "react-i18next";
 
 import type { User } from "../../services";
 
@@ -12,6 +13,7 @@ interface UserFormProps {
 }
 
 export const UserForm: React.FC<UserFormProps> = ({ onSubmit, initialData, isLoading }) => {
+  const { t } = useTranslation("common");
   const [name, setName] = useState(initialData?.name ?? "");
   const [email, setEmail] = useState(initialData?.email ?? "");
 
@@ -32,7 +34,7 @@ export const UserForm: React.FC<UserFormProps> = ({ onSubmit, initialData, isLoa
     >
       <Input
         type="text"
-        placeholder="Name"
+        placeholder={t("labels.fullName")}
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
@@ -40,7 +42,7 @@ export const UserForm: React.FC<UserFormProps> = ({ onSubmit, initialData, isLoa
       />
       <Input
         type="email"
-        placeholder="Email"
+        placeholder={t("labels.email")}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
@@ -50,7 +52,7 @@ export const UserForm: React.FC<UserFormProps> = ({ onSubmit, initialData, isLoa
         type="submit"
         disabled={isLoading}
       >
-        {initialData ? "Update User" : "Create User"}
+        {initialData ? t("buttons.save") : t("buttons.save")}
       </Button>
     </form>
   );

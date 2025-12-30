@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, Loader2, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../components/ui/button";
 import { useCreateCheckout } from "../../hooks/mutations/use-billing-mutations";
@@ -12,67 +13,60 @@ export const Route = createFileRoute("/(public)/pricing")({
   component: PricingPage,
 });
 
-// Static fallback plans when Stripe is not configured
-const staticPlans = [
-  {
-    id: "free",
-    name: "Free",
-    description: "Perfect for getting started",
-    amount: 0,
-    currency: "usd",
-    interval: "month",
-    features: ["Up to 3 projects", "Basic analytics", "Community support", "1GB storage", "API access (100 req/day)"],
-    limitations: ["No priority support", "No custom branding", "No team members"],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    description: "For professionals and growing teams",
-    amount: 1900, // $19.00
-    currency: "usd",
-    interval: "month",
-    features: [
-      "Unlimited projects",
-      "Advanced analytics",
-      "Priority email support",
-      "25GB storage",
-      "API access (10,000 req/day)",
-      "Custom branding",
-      "Up to 5 team members",
-      "Two-factor authentication",
-    ],
-    limitations: ["No dedicated support"],
-    popular: true,
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    description: "For large organizations with advanced needs",
-    amount: 9900, // $99.00
-    currency: "usd",
-    interval: "month",
-    features: [
-      "Everything in Pro",
-      "Unlimited storage",
-      "Unlimited API requests",
-      "Unlimited team members",
-      "Dedicated account manager",
-      "24/7 phone support",
-      "Custom integrations",
-      "SLA guarantee",
-      "SSO/SAML",
-      "Audit logs",
-    ],
-    limitations: [],
-  },
-];
+interface StaticPlan {
+  id: string;
+  name: string;
+  description: string;
+  amount: number;
+  currency: string;
+  interval: string;
+  features: string[];
+  limitations: string[];
+  popular?: boolean;
+}
 
 function PricingPage() {
+  const { t } = useTranslation("pricing");
   const { data: plans, isLoading, error } = useBillingPlans();
   const checkoutMutation = useCreateCheckout();
   const { isAuthenticated } = useAuthStore();
 
   const navigate = Route.useNavigate();
+
+  // Static fallback plans when Stripe is not configured
+  const staticPlans: StaticPlan[] = [
+    {
+      id: "free",
+      name: t("plans.free.name"),
+      description: t("plans.free.description"),
+      amount: 0,
+      currency: "usd",
+      interval: "month",
+      features: t("plans.free.features", { returnObjects: true }) as string[],
+      limitations: t("plans.free.limitations", { returnObjects: true }) as string[],
+    },
+    {
+      id: "pro",
+      name: t("plans.pro.name"),
+      description: t("plans.pro.description"),
+      amount: 1900, // $19.00
+      currency: "usd",
+      interval: "month",
+      features: t("plans.pro.features", { returnObjects: true }) as string[],
+      limitations: t("plans.pro.limitations", { returnObjects: true }) as string[],
+      popular: true,
+    },
+    {
+      id: "enterprise",
+      name: t("plans.enterprise.name"),
+      description: t("plans.enterprise.description"),
+      amount: 9900, // $99.00
+      currency: "usd",
+      interval: "month",
+      features: t("plans.enterprise.features", { returnObjects: true }) as string[],
+      limitations: t("plans.enterprise.limitations", { returnObjects: true }) as string[],
+    },
+  ];
 
   // Use Stripe plans if available, otherwise use static fallback
   const hasStripePlans = plans && plans.length > 0;
@@ -103,10 +97,8 @@ function PricingPage() {
     <div className="mx-auto max-w-6xl px-4 py-16">
       {/* Header */}
       <div className="mb-12 text-center">
-        <h1 className="mb-4 text-4xl font-bold">Simple, Transparent Pricing</h1>
-        <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-          Choose the plan that's right for you. All paid plans include a 14-day free trial.
-        </p>
+        <h1 className="mb-4 text-4xl font-bold">{t("title")}</h1>
+        <p className="text-muted-foreground mx-auto max-w-2xl text-lg">{t("subtitle")}</p>
       </div>
 
       {/* Pricing Cards */}
@@ -117,7 +109,7 @@ function PricingPage() {
             <StaticPlanCard
               plan={staticPlans[0]}
               onAction={() => navigate({ to: "/register" })}
-              actionLabel="Get Started"
+              actionLabel={t("buttons.getStarted")}
               variant="outline"
             />
             {/* Dynamic Plans from Stripe */}
@@ -147,7 +139,11 @@ function PricingPage() {
                 }
               }}
               actionLabel={
-                plan.id === "free" ? "Get Started" : plan.id === "enterprise" ? "Contact Sales" : "Start Free Trial"
+                plan.id === "free"
+                  ? t("buttons.getStarted")
+                  : plan.id === "enterprise"
+                    ? t("buttons.contactSales")
+                    : t("buttons.startTrial")
               }
               variant={plan.id === "free" ? "outline" : "default"}
             />
@@ -156,124 +152,20 @@ function PricingPage() {
       </div>
 
       {/* Feature Comparison Table */}
-      {!hasStripePlans && (
-        <div className="mt-16">
-          <h2 className="mb-8 text-center text-2xl font-bold">Compare Plans</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="p-4 text-left font-medium">Feature</th>
-                  <th className="p-4 text-center font-medium">Free</th>
-                  <th className="bg-primary/5 p-4 text-center font-medium">Pro</th>
-                  <th className="p-4 text-center font-medium">Enterprise</th>
-                </tr>
-              </thead>
-              <tbody>
-                <ComparisonRow
-                  feature="Projects"
-                  free="3"
-                  pro="Unlimited"
-                  enterprise="Unlimited"
-                />
-                <ComparisonRow
-                  feature="Storage"
-                  free="1GB"
-                  pro="25GB"
-                  enterprise="Unlimited"
-                />
-                <ComparisonRow
-                  feature="API Requests"
-                  free="100/day"
-                  pro="10,000/day"
-                  enterprise="Unlimited"
-                />
-                <ComparisonRow
-                  feature="Team Members"
-                  free={false}
-                  pro="5"
-                  enterprise="Unlimited"
-                />
-                <ComparisonRow
-                  feature="Custom Branding"
-                  free={false}
-                  pro={true}
-                  enterprise={true}
-                />
-                <ComparisonRow
-                  feature="Priority Support"
-                  free={false}
-                  pro={true}
-                  enterprise={true}
-                />
-                <ComparisonRow
-                  feature="Two-Factor Auth"
-                  free={true}
-                  pro={true}
-                  enterprise={true}
-                />
-                <ComparisonRow
-                  feature="SSO/SAML"
-                  free={false}
-                  pro={false}
-                  enterprise={true}
-                />
-                <ComparisonRow
-                  feature="Audit Logs"
-                  free={false}
-                  pro={false}
-                  enterprise={true}
-                />
-                <ComparisonRow
-                  feature="SLA Guarantee"
-                  free={false}
-                  pro={false}
-                  enterprise={true}
-                />
-                <ComparisonRow
-                  feature="Dedicated Support"
-                  free={false}
-                  pro={false}
-                  enterprise={true}
-                />
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {!hasStripePlans && <ComparisonTable />}
 
       {/* FAQ Section */}
-      <div className="mt-16">
-        <h2 className="mb-8 text-center text-2xl font-bold">Frequently Asked Questions</h2>
-        <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
-          <FaqItem
-            question="Can I change plans later?"
-            answer="Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate your billing."
-          />
-          <FaqItem
-            question="What payment methods do you accept?"
-            answer="We accept all major credit cards (Visa, Mastercard, American Express) and can arrange invoicing for Enterprise plans."
-          />
-          <FaqItem
-            question="Is there a free trial?"
-            answer="Yes! All paid plans come with a 14-day free trial. No credit card required to start."
-          />
-          <FaqItem
-            question="What happens when I exceed my limits?"
-            answer="We'll notify you when you're approaching your limits. You can upgrade anytime, or we'll temporarily pause non-critical features."
-          />
-        </div>
-      </div>
+      <FaqSection />
 
       {/* Contact CTA */}
       <div className="mt-16 text-center">
         <p className="text-muted-foreground">
-          Have more questions?{" "}
+          {t("contact.moreQuestions")}{" "}
           <a
             href="mailto:support@example.com"
             className="text-primary hover:underline"
           >
-            Contact our sales team
+            {t("contact.contactSales")}
           </a>
         </p>
       </div>
@@ -289,6 +181,7 @@ interface PricingCardProps {
 }
 
 function PricingCard({ plan, onSubscribe, isLoading, isAuthenticated }: PricingCardProps) {
+  const { t } = useTranslation("pricing");
   const isPopular = plan.name.toLowerCase().includes("premium") || plan.name.toLowerCase().includes("pro");
 
   return (
@@ -298,7 +191,7 @@ function PricingCard({ plan, onSubscribe, isLoading, isAuthenticated }: PricingC
       {isPopular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-medium">
-            Most Popular
+            {t("mostPopular")}
           </span>
         </div>
       )}
@@ -316,10 +209,10 @@ function PricingCard({ plan, onSubscribe, isLoading, isAuthenticated }: PricingC
           plan.features.map((feature, index) => <FeatureItem key={index}>{feature}</FeatureItem>)
         ) : (
           <>
-            <FeatureItem>All Free features</FeatureItem>
-            <FeatureItem>Priority support</FeatureItem>
-            <FeatureItem>Unlimited projects</FeatureItem>
-            <FeatureItem>Advanced analytics</FeatureItem>
+            <FeatureItem>{t("fallback.allFreeFeatures")}</FeatureItem>
+            <FeatureItem>{t("fallback.prioritySupport")}</FeatureItem>
+            <FeatureItem>{t("fallback.unlimitedProjects")}</FeatureItem>
+            <FeatureItem>{t("fallback.advancedAnalytics")}</FeatureItem>
           </>
         )}
       </ul>
@@ -330,7 +223,7 @@ function PricingCard({ plan, onSubscribe, isLoading, isAuthenticated }: PricingC
         className="w-full"
       >
         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        {isAuthenticated ? "Subscribe Now" : "Sign Up to Subscribe"}
+        {isAuthenticated ? t("buttons.subscribeNow") : t("buttons.signUpToSubscribe")}
       </Button>
     </div>
   );
@@ -354,18 +247,6 @@ function LimitationItem({ children }: { children: React.ReactNode }) {
   );
 }
 
-interface StaticPlan {
-  id: string;
-  name: string;
-  description: string;
-  amount: number;
-  currency: string;
-  interval: string;
-  features: string[];
-  limitations?: string[];
-  popular?: boolean;
-}
-
 interface StaticPlanCardProps {
   plan: StaticPlan;
   onAction: () => void;
@@ -374,6 +255,8 @@ interface StaticPlanCardProps {
 }
 
 function StaticPlanCard({ plan, onAction, actionLabel, variant = "default" }: StaticPlanCardProps) {
+  const { t } = useTranslation("pricing");
+
   return (
     <div
       className={`relative rounded-2xl border p-8 ${
@@ -383,7 +266,7 @@ function StaticPlanCard({ plan, onAction, actionLabel, variant = "default" }: St
       {plan.popular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-medium">
-            Most Popular
+            {t("mostPopular")}
           </span>
         </div>
       )}
@@ -449,6 +332,124 @@ function ComparisonRow({ feature, free, pro, enterprise }: ComparisonRowProps) {
       <td className="bg-primary/5 p-4 text-center">{renderValue(pro)}</td>
       <td className="p-4 text-center">{renderValue(enterprise)}</td>
     </tr>
+  );
+}
+
+function ComparisonTable() {
+  const { t } = useTranslation("pricing");
+
+  return (
+    <div className="mt-16">
+      <h2 className="mb-8 text-center text-2xl font-bold">{t("comparison.title")}</h2>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b">
+              <th className="p-4 text-left font-medium">{t("comparison.feature")}</th>
+              <th className="p-4 text-center font-medium">{t("plans.free.name")}</th>
+              <th className="bg-primary/5 p-4 text-center font-medium">{t("plans.pro.name")}</th>
+              <th className="p-4 text-center font-medium">{t("plans.enterprise.name")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ComparisonRow
+              feature={t("comparison.features.projects")}
+              free="3"
+              pro={t("comparison.features.unlimited")}
+              enterprise={t("comparison.features.unlimited")}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.storage")}
+              free="1GB"
+              pro="25GB"
+              enterprise={t("comparison.features.unlimited")}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.apiRequests")}
+              free="100/day"
+              pro="10,000/day"
+              enterprise={t("comparison.features.unlimited")}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.teamMembers")}
+              free={false}
+              pro="5"
+              enterprise={t("comparison.features.unlimited")}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.customBranding")}
+              free={false}
+              pro={true}
+              enterprise={true}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.prioritySupport")}
+              free={false}
+              pro={true}
+              enterprise={true}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.twoFactorAuth")}
+              free={true}
+              pro={true}
+              enterprise={true}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.ssoSaml")}
+              free={false}
+              pro={false}
+              enterprise={true}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.auditLogs")}
+              free={false}
+              pro={false}
+              enterprise={true}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.slaGuarantee")}
+              free={false}
+              pro={false}
+              enterprise={true}
+            />
+            <ComparisonRow
+              feature={t("comparison.features.dedicatedSupport")}
+              free={false}
+              pro={false}
+              enterprise={true}
+            />
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function FaqSection() {
+  const { t } = useTranslation("pricing");
+
+  return (
+    <div className="mt-16">
+      <h2 className="mb-8 text-center text-2xl font-bold">{t("faq.title")}</h2>
+      <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
+        <FaqItem
+          question={t("faq.questions.changePlans.question")}
+          answer={t("faq.questions.changePlans.answer")}
+        />
+        <FaqItem
+          question={t("faq.questions.paymentMethods.question")}
+          answer={t("faq.questions.paymentMethods.answer")}
+        />
+        <FaqItem
+          question={t("faq.questions.freeTrial.question")}
+          answer={t("faq.questions.freeTrial.answer")}
+        />
+        <FaqItem
+          question={t("faq.questions.exceedLimits.question")}
+          answer={t("faq.questions.exceedLimits.answer")}
+        />
+      </div>
+    </div>
   );
 }
 

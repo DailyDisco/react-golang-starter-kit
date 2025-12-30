@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { HelpCircle, LogIn, UserPlus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { ApiError } from "../../services/api/client";
 
@@ -9,6 +10,8 @@ interface AuthErrorGuidanceProps {
 }
 
 export function AuthErrorGuidance({ error, context }: AuthErrorGuidanceProps) {
+  const { t } = useTranslation("auth");
+
   if (!error) return null;
 
   const errorCode = error instanceof ApiError ? error.code : null;
@@ -22,18 +25,16 @@ export function AuthErrorGuidance({ error, context }: AuthErrorGuidanceProps) {
         <div className="mt-3 space-y-2 text-sm">
           <p className="text-muted-foreground flex items-center gap-1">
             <HelpCircle className="h-4 w-4" />
-            Having trouble signing in?
+            {t("errors.troubleSigningIn")}
           </p>
           <div className="flex flex-col gap-1 pl-5">
-            <p className="text-muted-foreground">
-              Double-check your email and password, or create a new account if you don&apos;t have one yet.
-            </p>
+            <p className="text-muted-foreground">{t("errors.checkCredentials")}</p>
             <Link
               to="/register"
               className="text-primary flex items-center gap-1 hover:underline"
             >
               <UserPlus className="h-3 w-3" />
-              Create a new account
+              {t("errors.createAccount")}
             </Link>
           </div>
         </div>
@@ -44,7 +45,7 @@ export function AuthErrorGuidance({ error, context }: AuthErrorGuidanceProps) {
     if (errorCode === "ACCOUNT_INACTIVE") {
       return (
         <div className="text-muted-foreground mt-3 text-sm">
-          <p>Your account has been deactivated. Please contact support for assistance.</p>
+          <p>{t("errors.accountDeactivated")}</p>
         </div>
       );
     }
@@ -56,13 +57,13 @@ export function AuthErrorGuidance({ error, context }: AuthErrorGuidanceProps) {
     if (errorCode === "CONFLICT") {
       return (
         <div className="mt-3 space-y-2 text-sm">
-          <p className="text-muted-foreground">An account with this email already exists.</p>
+          <p className="text-muted-foreground">{t("errors.emailExists")}</p>
           <Link
             to="/login"
             className="text-primary flex items-center gap-1 hover:underline"
           >
             <LogIn className="h-3 w-3" />
-            Sign in to your existing account
+            {t("errors.signInExisting")}
           </Link>
         </div>
       );

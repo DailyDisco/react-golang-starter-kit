@@ -6,7 +6,7 @@ export class UserService {
    * Fetch all users
    */
   static async fetchUsers(): Promise<User[]> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users`);
     if (!response.ok) {
       const apiError = await parseErrorResponse(response, "Failed to fetch users");
       throw apiError;
@@ -33,7 +33,7 @@ export class UserService {
   static async createUser(name: string, email: string, password?: string): Promise<User> {
     const userData = password ? { name, email, password } : { name, email };
 
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users`, {
       method: "POST",
       body: JSON.stringify(userData),
     });
@@ -60,7 +60,7 @@ export class UserService {
    * Update an existing user
    */
   static async updateUser(user: User): Promise<User> {
-    return authenticatedFetchWithParsing<User>(`${API_BASE_URL}/api/users/${user.id}`, {
+    return authenticatedFetchWithParsing<User>(`${API_BASE_URL}/api/v1/users/${user.id}`, {
       method: "PUT",
       body: JSON.stringify(user),
     });
@@ -70,7 +70,7 @@ export class UserService {
    * Delete a user
    */
   static async deleteUser(id: number): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/${id}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/${id}`, {
       method: "DELETE",
     });
 
@@ -84,6 +84,6 @@ export class UserService {
    * Get a specific user by ID
    */
   static async getUserById(id: number): Promise<User> {
-    return authenticatedFetchWithParsing<User>(`${API_BASE_URL}/api/users/${id}`);
+    return authenticatedFetchWithParsing<User>(`${API_BASE_URL}/api/v1/users/${id}`);
   }
 }

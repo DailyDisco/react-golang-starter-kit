@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,12 +28,14 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   variant = "default",
   onConfirm,
   loading = false,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation("admin");
+
   return (
     <AlertDialog
       open={open}
@@ -43,7 +47,7 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{cancelLabel ?? t("confirmDialog.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
@@ -52,7 +56,7 @@ export function ConfirmDialog({
             disabled={loading}
             className={variant === "destructive" ? "bg-red-600 hover:bg-red-700 focus:ring-red-600" : ""}
           >
-            {loading ? "Loading..." : confirmLabel}
+            {loading ? t("confirmDialog.loading") : (confirmLabel ?? t("confirmDialog.confirm"))}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

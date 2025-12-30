@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Link } from "@tanstack/react-router";
 import { CreditCard, DollarSign, LogOut, Settings, Shield, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import type { User as UserType } from "../../services";
 import { getUserInitials } from "./types";
@@ -19,6 +20,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ user, onLogout }: UserMenuProps) {
+  const { t } = useTranslation("common");
   const isAdmin = user.role === "admin" || user.role === "super_admin";
 
   return (
@@ -56,7 +58,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
             className="cursor-pointer"
           >
             <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
+            <span>{t("navigation.profile")}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
@@ -66,7 +68,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
             className="cursor-pointer"
           >
             <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+            <span>{t("navigation.settings")}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
@@ -76,7 +78,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
             className="cursor-pointer"
           >
             <CreditCard className="mr-2 h-4 w-4" />
-            <span>Billing</span>
+            <span>{t("navigation.billing")}</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
@@ -86,7 +88,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
             className="cursor-pointer"
           >
             <DollarSign className="mr-2 h-4 w-4" />
-            <span>Pricing</span>
+            <span>{t("navigation.pricing")}</span>
           </Link>
         </DropdownMenuItem>
         {isAdmin && (
@@ -97,7 +99,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
               className="cursor-pointer"
             >
               <Shield className="mr-2 h-4 w-4" />
-              <span>Admin Panel</span>
+              <span>{t("navigation.adminPanel")}</span>
             </Link>
           </DropdownMenuItem>
         )}
@@ -107,7 +109,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
           className="cursor-pointer"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{t("auth.logOut")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

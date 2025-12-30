@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Calendar, Edit3, Loader2, Mail, Save, User, X } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { z } from "zod";
 
 import { useAuth } from "../../hooks/auth/useAuth";
@@ -21,6 +22,8 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export function UserProfile() {
+  const { t } = useTranslation("auth");
+  const { t: tCommon } = useTranslation("common");
   const { user, updateUser, isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,11 +46,11 @@ export function UserProfile() {
     try {
       setError(null);
       await updateUser(data);
-      setSuccess("Profile updated successfully!");
+      setSuccess(t("profile.updateSuccess"));
       setIsEditing(false);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(err instanceof Error ? err.message : t("profile.updateFailed"));
     }
   };
 
@@ -73,9 +76,9 @@ export function UserProfile() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <User className="h-5 w-5" />
-          User Profile
+          {t("profile.title")}
         </CardTitle>
-        <CardDescription>View and manage your account information</CardDescription>
+        <CardDescription>{t("profile.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {error && (
@@ -101,7 +104,7 @@ export function UserProfile() {
                 className="flex items-center gap-2"
               >
                 <User className="h-4 w-4" />
-                Full Name
+                {t("profile.fullName")}
               </Label>
               {isEditing ? (
                 <>
@@ -123,7 +126,7 @@ export function UserProfile() {
                 className="flex items-center gap-2"
               >
                 <Mail className="h-4 w-4" />
-                Email Address
+                {t("profile.emailAddress")}
               </Label>
               {isEditing ? (
                 <>
@@ -143,7 +146,7 @@ export function UserProfile() {
                       variant="secondary"
                       className="text-xs"
                     >
-                      Verified
+                      {tCommon("status.verified")}
                     </Badge>
                   )}
                 </div>
@@ -155,7 +158,7 @@ export function UserProfile() {
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Member Since
+                {t("profile.memberSince")}
               </Label>
               <p className="rounded-md border bg-gray-50 p-2 text-sm text-gray-900">
                 {new Date(user.created_at).toLocaleDateString()}
@@ -163,19 +166,19 @@ export function UserProfile() {
             </div>
 
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t("profile.status")}</Label>
               <div className="rounded-md border bg-gray-50 p-2">
                 <Badge variant={user.is_active ? "default" : "destructive"}>
-                  {user.is_active ? "Active" : "Inactive"}
+                  {user.is_active ? tCommon("status.active") : tCommon("status.inactive")}
                 </Badge>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Email Status</Label>
+              <Label>{t("profile.emailStatus")}</Label>
               <div className="rounded-md border bg-gray-50 p-2">
                 <Badge variant={user.email_verified ? "default" : "secondary"}>
-                  {user.email_verified ? "Verified" : "Unverified"}
+                  {user.email_verified ? tCommon("status.verified") : tCommon("status.unverified")}
                 </Badge>
               </div>
             </div>
@@ -190,7 +193,7 @@ export function UserProfile() {
                 >
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   <Save className="mr-2 h-4 w-4" />
-                  Save Changes
+                  {t("profile.saveChanges")}
                 </Button>
                 <Button
                   type="button"
@@ -199,7 +202,7 @@ export function UserProfile() {
                   disabled={isLoading}
                 >
                   <X className="mr-2 h-4 w-4" />
-                  Cancel
+                  {tCommon("buttons.cancel")}
                 </Button>
               </>
             ) : (
@@ -209,7 +212,7 @@ export function UserProfile() {
                 onClick={() => setIsEditing(true)}
               >
                 <Edit3 className="mr-2 h-4 w-4" />
-                Edit Profile
+                {t("profile.editProfile")}
               </Button>
             )}
           </div>

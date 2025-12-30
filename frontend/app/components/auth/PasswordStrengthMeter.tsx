@@ -1,34 +1,39 @@
 import { useMemo } from "react";
 
 import { Check, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface PasswordStrengthMeterProps {
   password: string;
 }
 
 interface PasswordRequirement {
-  label: string;
+  key: string;
   test: (password: string) => boolean;
 }
 
-const requirements: PasswordRequirement[] = [
-  { label: "At least 8 characters", test: (p) => p.length >= 8 },
-  { label: "Contains uppercase letter", test: (p) => /[A-Z]/.test(p) },
-  { label: "Contains lowercase letter", test: (p) => /[a-z]/.test(p) },
-  { label: "Contains number", test: (p) => /\d/.test(p) },
-  { label: "Contains special character", test: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
+const requirementTests: PasswordRequirement[] = [
+  { key: "length", test: (p) => p.length >= 8 },
+  { key: "uppercase", test: (p) => /[A-Z]/.test(p) },
+  { key: "lowercase", test: (p) => /[a-z]/.test(p) },
+  { key: "number", test: (p) => /\d/.test(p) },
+  { key: "special", test: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
 ];
 
+type StrengthKey = "weak" | "fair" | "good" | "strong";
+
 function getStrengthLevel(score: number): {
-  label: string;
+  key: StrengthKey | "";
   color: string;
   bgColor: string;
+  textColor: string;
 } {
-  if (score === 0) return { label: "", color: "bg-muted", bgColor: "bg-muted" };
-  if (score <= 2) return { label: "Weak", color: "bg-red-500", bgColor: "bg-red-100" };
-  if (score <= 3) return { label: "Fair", color: "bg-yellow-500", bgColor: "bg-yellow-100" };
-  if (score <= 4) return { label: "Good", color: "bg-blue-500", bgColor: "bg-blue-100" };
-  return { label: "Strong", color: "bg-green-500", bgColor: "bg-green-100" };
+  if (score === 0) return { key: "", color: "bg-muted", bgColor: "bg-muted", textColor: "text-muted-foreground" };
+  if (score <= 2)
+    return { key: "weak", color: "bg-destructive", bgColor: "bg-destructive/10", textColor: "text-destructive" };
+  if (score <= 3) return { key: "fair", color: "bg-warning", bgColor: "bg-warning/10", textColor: "text-warning" };
+  if (score <= 4) return { key: "good", color: "bg-info", bgColor: "bg-info/10", textColor: "text-info" };
+  return { key: "strong", color: "bg-success", bgColor: "bg-success/10", textColor: "text-success" };
 }
 
 /**
@@ -36,8 +41,10 @@ function getStrengthLevel(score: number): {
  * It displays a progress bar and checklist of security requirements.
  */
 export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) {
+  const { t } = useTranslation("auth");
+
   const { score, passedRequirements } = useMemo(() => {
-    const passed = requirements.map((req) => req.test(password));
+    const passed = requirementTests.map((req) => req.test(password));
     return {
       score: passed.filter(Boolean).length,
       passedRequirements: passed,
@@ -56,36 +63,24 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
         <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
           <div
             className={`h-full transition-all duration-300 ${strength.color}`}
-            style={{ width: `${(score / requirements.length) * 100}%` }}
+            style={{ width: `${(score / requirementTests.length) * 100}%` }}
           />
         </div>
-        {strength.label && (
-          <span
-            className={`text-xs font-medium ${
-              score <= 2
-                ? "text-red-600"
-                : score <= 3
-                  ? "text-yellow-600"
-                  : score <= 4
-                    ? "text-blue-600"
-                    : "text-green-600"
-            }`}
-          >
-            {strength.label}
-          </span>
+        {strength.key && (
+          <span className={`text-xs font-medium ${strength.textColor}`}>{t(`passwordStrength.${strength.key}`)}</span>
         )}
       </div>
 
       {/* Requirements checklist */}
       <ul className="space-y-1 text-xs">
-        {requirements.map((req, index) => (
+        {requirementTests.map((req, index) => (
           <li
-            key={req.label}
+            key={req.key}
             className="flex items-center gap-1.5"
           >
             {passedRequirements[index] ? (
               <Check
-                className="h-3 w-3 text-green-600"
+                className="text-success h-3 w-3"
                 aria-hidden="true"
               />
             ) : (
@@ -94,7 +89,9 @@ export function PasswordStrengthMeter({ password }: PasswordStrengthMeterProps) 
                 aria-hidden="true"
               />
             )}
-            <span className={passedRequirements[index] ? "text-green-600" : "text-muted-foreground"}>{req.label}</span>
+            <span className={passedRequirements[index] ? "text-success" : "text-muted-foreground"}>
+              {t(`passwordStrength.requirements.${req.key}` as `passwordStrength.requirements.length`)}
+            </span>
           </li>
         ))}
       </ul>

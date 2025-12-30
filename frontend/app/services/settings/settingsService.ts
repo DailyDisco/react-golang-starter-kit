@@ -106,7 +106,7 @@ export class SettingsService {
   // ==================== User Preferences ====================
 
   static async getPreferences(): Promise<UserPreferences> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/preferences`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/preferences`);
     if (!response.ok) {
       const apiError = await parseErrorResponse(response, "Failed to fetch preferences");
       throw apiError;
@@ -116,7 +116,7 @@ export class SettingsService {
   }
 
   static async updatePreferences(req: UpdatePreferencesRequest): Promise<UserPreferences> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/preferences`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/preferences`, {
       method: "PUT",
       body: JSON.stringify(req),
     });
@@ -131,7 +131,7 @@ export class SettingsService {
   // ==================== Sessions ====================
 
   static async getSessions(): Promise<UserSession[]> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/sessions`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/sessions`);
     if (!response.ok) {
       const apiError = await parseErrorResponse(response, "Failed to fetch sessions");
       throw apiError;
@@ -141,7 +141,7 @@ export class SettingsService {
   }
 
   static async revokeSession(sessionId: number): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/sessions/${sessionId}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/sessions/${sessionId}`, {
       method: "DELETE",
     });
     if (!response.ok) {
@@ -151,7 +151,7 @@ export class SettingsService {
   }
 
   static async revokeAllSessions(): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/sessions`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/sessions`, {
       method: "DELETE",
     });
     if (!response.ok) {
@@ -163,7 +163,7 @@ export class SettingsService {
   // ==================== Login History ====================
 
   static async getLoginHistory(limit: number = 20): Promise<LoginHistoryEntry[]> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/login-history?limit=${limit}`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/login-history?limit=${limit}`);
     if (!response.ok) {
       const apiError = await parseErrorResponse(response, "Failed to fetch login history");
       throw apiError;
@@ -175,7 +175,7 @@ export class SettingsService {
   // ==================== Password ====================
 
   static async changePassword(req: ChangePasswordRequest): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/password`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/password`, {
       method: "PUT",
       body: JSON.stringify(req),
     });
@@ -188,7 +188,7 @@ export class SettingsService {
   // ==================== Two-Factor Authentication ====================
 
   static async setup2FA(): Promise<TwoFactorSetupResponse> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/2fa/setup`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/2fa/setup`, {
       method: "POST",
     });
     if (!response.ok) {
@@ -200,7 +200,7 @@ export class SettingsService {
   }
 
   static async verify2FA(code: string): Promise<BackupCodesResponse> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/2fa/verify`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/2fa/verify`, {
       method: "POST",
       body: JSON.stringify({ code }),
     });
@@ -213,7 +213,7 @@ export class SettingsService {
   }
 
   static async disable2FA(code: string): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/2fa/disable`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/2fa/disable`, {
       method: "POST",
       body: JSON.stringify({ code }),
     });
@@ -224,7 +224,7 @@ export class SettingsService {
   }
 
   static async regenerateBackupCodes(code: string): Promise<BackupCodesResponse> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/2fa/backup-codes`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/2fa/backup-codes`, {
       method: "POST",
       body: JSON.stringify({ code }),
     });
@@ -245,7 +245,7 @@ export class SettingsService {
     location?: string;
     social_links?: string;
   }): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
@@ -259,7 +259,7 @@ export class SettingsService {
     const formData = new FormData();
     formData.append("avatar", file);
 
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/avatar`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/avatar`, {
       method: "POST",
       headers: {}, // Let browser set content-type for FormData
       body: formData,
@@ -273,7 +273,7 @@ export class SettingsService {
   }
 
   static async deleteAvatar(): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/avatar`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/avatar`, {
       method: "DELETE",
     });
     if (!response.ok) {
@@ -285,7 +285,7 @@ export class SettingsService {
   // ==================== Privacy / Account ====================
 
   static async requestDataExport(): Promise<DataExportStatus> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/export`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/export`, {
       method: "POST",
     });
     if (!response.ok) {
@@ -297,7 +297,7 @@ export class SettingsService {
   }
 
   static async getDataExportStatus(): Promise<DataExportStatus | null> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/export`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/export`);
     if (response.status === 404) {
       return null;
     }
@@ -310,7 +310,7 @@ export class SettingsService {
   }
 
   static async requestAccountDeletion(password: string, reason?: string): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/delete`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/delete`, {
       method: "POST",
       body: JSON.stringify({ password, reason }),
     });
@@ -321,7 +321,7 @@ export class SettingsService {
   }
 
   static async cancelAccountDeletion(): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/delete`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/delete`, {
       method: "DELETE",
     });
     if (!response.ok) {
@@ -333,7 +333,7 @@ export class SettingsService {
   // ==================== Connected Accounts ====================
 
   static async getConnectedAccounts(): Promise<ConnectedAccount[]> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/connected-accounts`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/connected-accounts`);
     if (!response.ok) {
       const apiError = await parseErrorResponse(response, "Failed to fetch connected accounts");
       throw apiError;
@@ -343,7 +343,7 @@ export class SettingsService {
   }
 
   static async disconnectAccount(provider: string): Promise<void> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/users/me/connected-accounts/${provider}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/connected-accounts/${provider}`, {
       method: "DELETE",
     });
     if (!response.ok) {

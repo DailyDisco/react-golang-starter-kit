@@ -75,7 +75,7 @@ export class AuthService {
       throw new Error("No refresh token available");
     }
 
-    const response = await apiFetch(`${API_BASE_URL}/api/auth/refresh`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
       method: "POST",
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
@@ -114,7 +114,7 @@ export class AuthService {
    * Authenticate user with email and password
    */
   static async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/api/auth/login`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/v1/auth/login`, {
       method: "POST",
       body: JSON.stringify(credentials),
     });
@@ -143,7 +143,7 @@ export class AuthService {
    * Register a new user account
    */
   static async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await apiFetch(`${API_BASE_URL}/api/auth/register`, {
+    const response = await apiFetch(`${API_BASE_URL}/api/v1/auth/register`, {
       method: "POST",
       body: JSON.stringify(userData),
     });
@@ -172,14 +172,14 @@ export class AuthService {
    * Get current authenticated user information
    */
   static async getCurrentUser(): Promise<User> {
-    return authenticatedFetchWithParsing<User>(`${API_BASE_URL}/api/auth/me`);
+    return authenticatedFetchWithParsing<User>(`${API_BASE_URL}/api/v1/auth/me`);
   }
 
   /**
    * Update user profile information
    */
   static async updateUser(userId: number, userData: Partial<User>): Promise<User> {
-    return authenticatedFetchWithParsing<User>(`${API_BASE_URL}/api/users/${userId}`, {
+    return authenticatedFetchWithParsing<User>(`${API_BASE_URL}/api/v1/users/${userId}`, {
       method: "PUT",
       body: JSON.stringify(userData),
     });
@@ -198,7 +198,7 @@ export class AuthService {
 
     try {
       // Call logout endpoint to clear the httpOnly cookie on the server
-      await apiFetch(`${API_BASE_URL}/api/auth/logout`, {
+      await apiFetch(`${API_BASE_URL}/api/v1/auth/logout`, {
         method: "POST",
       });
     } catch (error) {

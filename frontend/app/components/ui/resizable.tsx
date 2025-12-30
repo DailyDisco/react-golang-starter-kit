@@ -1,15 +1,23 @@
 import { GripVerticalIcon } from 'lucide-react';
 import * as React from 'react';
-import * as ResizablePrimitive from 'react-resizable-panels';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import ResizablePrimitive from 'react-resizable-panels';
 
 import { cn } from '@/lib/utils';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PanelGroupComponent = (ResizablePrimitive as any).PanelGroup || ResizablePrimitive;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PanelComponent = (ResizablePrimitive as any).Panel || ResizablePrimitive;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PanelResizeHandleComponent = (ResizablePrimitive as any).PanelResizeHandle || ResizablePrimitive;
 
 function ResizablePanelGroup({
   className,
   ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelGroup>) {
+}: React.ComponentProps<'div'>) {
   return (
-    <ResizablePrimitive.PanelGroup
+    <PanelGroupComponent
       data-slot='resizable-panel-group'
       className={cn(
         'flex h-full w-full data-[panel-group-direction=vertical]:flex-col',
@@ -22,19 +30,19 @@ function ResizablePanelGroup({
 
 function ResizablePanel({
   ...props
-}: React.ComponentProps<typeof ResizablePrimitive.Panel>) {
-  return <ResizablePrimitive.Panel data-slot='resizable-panel' {...props} />;
+}: React.ComponentProps<'div'>) {
+  return <PanelComponent data-slot='resizable-panel' {...props} />;
 }
 
 function ResizableHandle({
   withHandle,
   className,
   ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & {
+}: React.ComponentProps<'div'> & {
   withHandle?: boolean;
 }) {
   return (
-    <ResizablePrimitive.PanelResizeHandle
+    <PanelResizeHandleComponent
       data-slot='resizable-handle'
       className={cn(
         'bg-border focus-visible:ring-ring relative flex w-px items-center justify-center after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden data-[panel-group-direction=vertical]:h-px data-[panel-group-direction=vertical]:w-full data-[panel-group-direction=vertical]:after:left-0 data-[panel-group-direction=vertical]:after:h-1 data-[panel-group-direction=vertical]:after:w-full data-[panel-group-direction=vertical]:after:translate-x-0 data-[panel-group-direction=vertical]:after:-translate-y-1/2 [&[data-panel-group-direction=vertical]>div]:rotate-90',
@@ -47,7 +55,7 @@ function ResizableHandle({
           <GripVerticalIcon className='size-2.5' />
         </div>
       )}
-    </ResizablePrimitive.PanelResizeHandle>
+    </PanelResizeHandleComponent>
   );
 }
 

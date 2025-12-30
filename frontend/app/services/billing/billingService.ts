@@ -13,10 +13,9 @@ export class BillingService {
    * Get public billing configuration (Stripe publishable key)
    */
   static async getConfig(): Promise<BillingConfig> {
-    const response = await fetch(`${API_BASE_URL}/api/billing/config`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/billing/config`);
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to get billing config");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to get billing config");
     }
 
     return response.json();
@@ -26,14 +25,13 @@ export class BillingService {
    * Get available subscription plans
    */
   static async getPlans(): Promise<BillingPlan[]> {
-    const response = await fetch(`${API_BASE_URL}/api/billing/plans`);
+    const response = await fetch(`${API_BASE_URL}/api/v1/billing/plans`);
     if (!response.ok) {
       // If billing is not configured, return empty array
       if (response.status === 503) {
         return [];
       }
-      const errorMessage = await parseErrorResponse(response, "Failed to get plans");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to get plans");
     }
 
     return response.json();
@@ -43,7 +41,7 @@ export class BillingService {
    * Create a checkout session for subscription purchase
    */
   static async createCheckoutSession(request: CreateCheckoutRequest): Promise<CheckoutSessionResponse> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/billing/checkout`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/billing/checkout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -52,8 +50,7 @@ export class BillingService {
     });
 
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to create checkout session");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to create checkout session");
     }
 
     return response.json();
@@ -63,13 +60,12 @@ export class BillingService {
    * Create a billing portal session for subscription management
    */
   static async createPortalSession(): Promise<PortalSessionResponse> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/billing/portal`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/billing/portal`, {
       method: "POST",
     });
 
     if (!response.ok) {
-      const errorMessage = await parseErrorResponse(response, "Failed to create portal session");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to create portal session");
     }
 
     return response.json();
@@ -79,15 +75,14 @@ export class BillingService {
    * Get current user's subscription
    */
   static async getSubscription(): Promise<Subscription | null> {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/billing/subscription`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/billing/subscription`);
 
     if (!response.ok) {
       // No subscription found is not an error
       if (response.status === 404) {
         return null;
       }
-      const errorMessage = await parseErrorResponse(response, "Failed to get subscription");
-      throw new Error(errorMessage);
+      throw await parseErrorResponse(response, "Failed to get subscription");
     }
 
     return response.json();

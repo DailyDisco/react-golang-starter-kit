@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 
 export function AuthButtons() {
+  const { t } = useTranslation("common");
+
   return (
     <div className="flex items-center space-x-2">
       <Button
@@ -12,7 +15,7 @@ export function AuthButtons() {
           to="/login"
           search={{}}
         >
-          Sign in
+          {t("auth.signIn")}
         </Link>
       </Button>
       <Button asChild>
@@ -20,7 +23,7 @@ export function AuthButtons() {
           to="/register"
           search={{}}
         >
-          Sign up
+          {t("auth.signUp")}
         </Link>
       </Button>
     </div>

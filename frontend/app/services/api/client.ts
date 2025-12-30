@@ -56,7 +56,7 @@ const getCSRFToken = (): string | null => {
  */
 export const initCSRFToken = async (): Promise<string | null> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/csrf-token`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/csrf-token`, {
       credentials: "include",
     });
     if (response.ok) {
@@ -320,25 +320,25 @@ export const apiFetchWithParsing = async <T = any>(url: string, options: Request
  */
 export const apiClient = {
   async get<T = unknown>(path: string): Promise<T> {
-    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api${path}`);
+    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api/v1${path}`);
   },
 
   async post<T = unknown>(path: string, body: unknown): Promise<T> {
-    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api${path}`, {
+    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api/v1${path}`, {
       method: "POST",
       body: JSON.stringify(body),
     });
   },
 
   async put<T = unknown>(path: string, body: unknown): Promise<T> {
-    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api${path}`, {
+    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api/v1${path}`, {
       method: "PUT",
       body: JSON.stringify(body),
     });
   },
 
   async delete<T = unknown>(path: string): Promise<T> {
-    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api${path}`, {
+    return authenticatedFetchWithParsing<T>(`${API_BASE_URL}/api/v1${path}`, {
       method: "DELETE",
     });
   },
