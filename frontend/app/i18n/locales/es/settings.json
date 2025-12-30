@@ -1,0 +1,361 @@
+{
+  "common": {
+    "saveChanges": "Guardar Cambios",
+    "saving": "Guardando..."
+  },
+  "connectedAccounts": {
+    "title": "Cuentas Conectadas",
+    "subtitle": "Vincula cuentas de terceros para iniciar sesión más fácilmente",
+    "providers": {
+      "title": "Proveedores OAuth",
+      "subtitle": "Conecta tus cuentas para habilitar inicio de sesión único",
+      "google": {
+        "name": "Google",
+        "description": "Inicia sesión con tu cuenta de Google"
+      },
+      "github": {
+        "name": "GitHub",
+        "description": "Inicia sesión con tu cuenta de GitHub"
+      }
+    },
+    "connected": "Conectado",
+    "connectedOn": "Conectado el",
+    "connect": "Conectar",
+    "disconnect": "Desconectar",
+    "whyConnect": {
+      "title": "¿Por qué conectar cuentas?",
+      "reasons": {
+        "faster": "Inicia sesión más rápido sin ingresar tu contraseña",
+        "secure": "Vincula tu identidad de forma segura entre plataformas",
+        "features": "Habilita funciones que se integran con servicios de terceros"
+      }
+    },
+    "securityNote": {
+      "title": "Nota de Seguridad",
+      "text": "Desconectar una cuenta no eliminará ningún dato de ese servicio. Siempre puedes reconectarte más tarde. Solo almacenamos tu correo e identificador único de las cuentas conectadas."
+    },
+    "toast": {
+      "disconnected": "La cuenta ha sido desconectada."
+    }
+  },
+  "loginHistory": {
+    "title": "Historial de Inicio de Sesión",
+    "subtitle": "Revisa tu actividad de inicio de sesión reciente y detecta accesos sospechosos",
+    "refresh": "Actualizar",
+    "stats": {
+      "successful": "Inicios Exitosos",
+      "failed": "Intentos Fallidos",
+      "locations": "Ubicaciones Únicas"
+    },
+    "recentActivity": "Actividad Reciente",
+    "recentActivityHint": "Tu historial de inicio de sesión de los últimos 30 días",
+    "noHistory": "No hay historial de inicio de sesión disponible",
+    "successful": "Inicio de sesión exitoso",
+    "failedAttempt": "Intento de inicio de sesión fallido",
+    "unknown": "Desconocido",
+    "unknownLocation": "Ubicación desconocida",
+    "time": {
+      "justNow": "Justo ahora",
+      "minutesAgo": "hace {{count}} minutos",
+      "hoursAgo": "hace {{count}} horas",
+      "daysAgo": "hace {{count}} días"
+    }
+  },
+  "nav": {
+    "profile": {
+      "title": "Perfil",
+      "description": "Administra tu información personal"
+    },
+    "security": {
+      "title": "Seguridad",
+      "description": "Contraseña, 2FA y sesiones activas"
+    },
+    "loginHistory": {
+      "title": "Historial de Inicio de Sesión",
+      "description": "Ver tu actividad de inicio de sesión reciente"
+    },
+    "preferences": {
+      "title": "Preferencias",
+      "description": "Tema, idioma y configuración de pantalla"
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "description": "Preferencias de notificación por correo"
+    },
+    "privacy": {
+      "title": "Privacidad",
+      "description": "Exportación de datos y eliminación de cuenta"
+    },
+    "connectedAccounts": {
+      "title": "Cuentas Conectadas",
+      "description": "Administra proveedores OAuth vinculados"
+    }
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "subtitle": "Administra tus preferencias de notificación por correo",
+    "email": {
+      "title": "Notificaciones por Correo",
+      "subtitle": "Elige qué correos te gustaría recibir"
+    },
+    "security": {
+      "title": "Alertas de Seguridad",
+      "description": "Recibe notificaciones sobre eventos de seguridad como nuevos inicios de sesión, cambios de contraseña y actividad sospechosa"
+    },
+    "updates": {
+      "title": "Actualizaciones del Producto",
+      "description": "Mantente informado sobre nuevas funciones, mejoras y anuncios importantes"
+    },
+    "marketing": {
+      "title": "Marketing y Promociones",
+      "description": "Recibe ofertas especiales, consejos y contenido promocional"
+    },
+    "weeklyDigest": {
+      "title": "Resumen Semanal",
+      "description": "Recibe un resumen semanal de la actividad de tu cuenta y actualizaciones importantes"
+    },
+    "recommended": "Recomendado",
+    "quickActions": {
+      "title": "Acciones Rápidas",
+      "subtitle": "Habilita o deshabilita rápidamente todas las notificaciones opcionales",
+      "disableOptional": "Deshabilitar Opcionales",
+      "enableAll": "Habilitar Todas"
+    },
+    "save": "Guardar Preferencias",
+    "saving": "Guardando...",
+    "toast": {
+      "saved": "Las preferencias de notificación han sido guardadas."
+    }
+  },
+  "preferences": {
+    "title": "Preferencias",
+    "subtitle": "Personaliza tu experiencia con tema, idioma y configuración de pantalla",
+    "appearance": {
+      "title": "Apariencia",
+      "subtitle": "Elige tu tema de color preferido",
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Sistema"
+    },
+    "regional": {
+      "title": "Configuración Regional",
+      "subtitle": "Establece tu zona horaria y preferencias de idioma",
+      "timezone": "Zona Horaria",
+      "timezonePlaceholder": "Selecciona zona horaria",
+      "currentTime": "Hora actual:",
+      "language": "Idioma",
+      "languagePlaceholder": "Selecciona idioma"
+    },
+    "dateTime": {
+      "title": "Formato de Fecha y Hora",
+      "subtitle": "Elige cómo se muestran las fechas y horas",
+      "dateFormat": "Formato de Fecha",
+      "dateFormatPlaceholder": "Selecciona formato de fecha",
+      "timeFormat": "Formato de Hora",
+      "12hour": "12 horas",
+      "24hour": "24 horas",
+      "example": "Ejemplo:"
+    },
+    "save": "Guardar Preferencias",
+    "saving": "Guardando...",
+    "toast": {
+      "saved": "Tus preferencias han sido guardadas."
+    }
+  },
+  "privacy": {
+    "title": "Privacidad",
+    "subtitle": "Administra tus datos y configuración de privacidad de la cuenta",
+    "export": {
+      "title": "Exportar Tus Datos",
+      "subtitle": "Descarga una copia de todos tus datos personales almacenados en nuestro sistema",
+      "included": "Qué está incluido en tu exportación:",
+      "items": {
+        "profile": "Información de perfil y configuración",
+        "loginHistory": "Historial de inicio de sesión y registros de actividad",
+        "files": "Archivos y documentos que has subido",
+        "notifications": "Preferencias de notificación",
+        "other": "Cualquier otro dato asociado con tu cuenta"
+      },
+      "checking": "Verificando estado de exportación...",
+      "dataExport": "Exportación de Datos",
+      "requestedOn": "Solicitado el",
+      "expiresOn": "Expira el",
+      "download": "Descargar",
+      "request": "Solicitar Exportación de Datos",
+      "requesting": "Solicitando...",
+      "hint": "Tus datos se prepararán como un archivo descargable. Este proceso puede tomar unos minutos. Recibirás una notificación por correo cuando tus datos estén listos.",
+      "status": {
+        "pending": "Pendiente",
+        "processing": "Procesando",
+        "ready": "Listo",
+        "failed": "Fallido"
+      },
+      "toast": {
+        "requested": "La exportación de datos ha sido solicitada. Te notificaremos cuando esté lista."
+      }
+    },
+    "delete": {
+      "title": "Eliminar Cuenta",
+      "subtitle": "Elimina permanentemente tu cuenta y todos los datos asociados",
+      "warning": "Advertencia: Esta acción es permanente",
+      "warningText": "Eliminar tu cuenta eliminará permanentemente todos tus datos, incluyendo:",
+      "items": {
+        "profile": "Tu perfil y configuración",
+        "files": "Todos los archivos y documentos",
+        "loginHistory": "Historial de inicio de sesión y registros de actividad",
+        "billing": "Cualquier suscripción o información de facturación"
+      },
+      "button": "Eliminar Mi Cuenta",
+      "confirmPassword": "Ingresa tu contraseña para confirmar",
+      "passwordPlaceholder": "Ingresa tu contraseña",
+      "reason": "¿Por qué te vas? (opcional)",
+      "reasonPlaceholder": "Ayúdanos a mejorar compartiendo tus comentarios...",
+      "confirmType": "Escribe <1>DELETE</1> para confirmar",
+      "confirmPlaceholder": "Escribe DELETE",
+      "cancel": "Cancelar",
+      "confirmButton": "Eliminar Cuenta Permanentemente",
+      "processing": "Procesando...",
+      "gracePeriod": "Después de solicitar la eliminación, tendrás un período de gracia de 14 días para cancelar. Después de eso, tu cuenta y todos los datos serán eliminados permanentemente.",
+      "toast": {
+        "scheduled": "La eliminación de cuenta ha sido programada. Puedes cancelar esto dentro del período de gracia.",
+        "typeDelete": "Por favor escribe DELETE para confirmar."
+      }
+    }
+  },
+  "profile": {
+    "title": "Perfil",
+    "verified": "Verificado",
+    "memberSince": "Miembro desde",
+    "unknown": "Desconocido",
+    "changePhoto": "Cambiar Foto",
+    "about": {
+      "title": "Acerca de",
+      "subtitle": "Cuéntale a otros sobre ti"
+    },
+    "bio": {
+      "label": "Biografía",
+      "placeholder": "Escribe una breve biografía sobre ti...",
+      "hint": "Breve descripción para tu perfil. Los URLs se convierten en enlaces."
+    },
+    "location": {
+      "label": "Ubicación",
+      "placeholder": "Ciudad de México, México"
+    },
+    "personalInfo": {
+      "title": "Información Personal",
+      "subtitle": "Actualiza tu nombre y dirección de correo"
+    },
+    "fullName": {
+      "label": "Nombre Completo",
+      "placeholder": "Ingresa tu nombre"
+    },
+    "email": {
+      "label": "Correo Electrónico",
+      "placeholder": "Ingresa tu correo",
+      "changeWarning": "Cambiar tu correo requerirá verificación"
+    },
+    "socialLinks": {
+      "title": "Enlaces Sociales",
+      "subtitle": "Conecta tus perfiles sociales",
+      "twitter": "Twitter / X",
+      "github": "GitHub",
+      "linkedin": "LinkedIn",
+      "website": "Sitio Web",
+      "placeholder": "usuario",
+      "websitePlaceholder": "https://ejemplo.com"
+    },
+    "emailStatus": "Estado del Correo",
+    "pending": "Pendiente",
+    "accountRole": "Rol de la Cuenta",
+    "accountStatus": "Estado de la Cuenta",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "quickSettings": {
+      "title": "Configuración Rápida",
+      "subtitle": "Administra otros aspectos de tu cuenta"
+    },
+    "password2fa": "Contraseña y 2FA",
+    "themeLanguage": "Tema e Idioma",
+    "emailPreferences": "Preferencias de correo",
+    "toast": {
+      "profileUpdated": "Tu perfil ha sido actualizado exitosamente.",
+      "avatarUploaded": "Tu avatar ha sido subido exitosamente.",
+      "avatarRemoved": "Tu avatar ha sido eliminado.",
+      "invalidImage": "Por favor sube un archivo de imagen.",
+      "fileTooLarge": "El tamaño del archivo debe ser menor a 5MB."
+    }
+  },
+  "security": {
+    "title": "Seguridad",
+    "subtitle": "Administra tu contraseña, autenticación de dos factores y sesiones activas",
+    "password": {
+      "title": "Cambiar Contraseña",
+      "subtitle": "Actualiza tu contraseña para mantener tu cuenta segura",
+      "current": "Contraseña Actual",
+      "currentPlaceholder": "Ingresa tu contraseña actual",
+      "new": "Nueva Contraseña",
+      "newPlaceholder": "Ingresa nueva contraseña",
+      "confirm": "Confirmar Nueva Contraseña",
+      "confirmPlaceholder": "Confirma nueva contraseña",
+      "mismatch": "Las contraseñas no coinciden",
+      "changing": "Cambiando...",
+      "change": "Cambiar Contraseña",
+      "minLength": "La contraseña debe tener al menos 8 caracteres.",
+      "toast": {
+        "changed": "Tu contraseña ha sido cambiada exitosamente.",
+        "mismatch": "Las nuevas contraseñas no coinciden."
+      }
+    },
+    "twoFactor": {
+      "title": "Autenticación de Dos Factores",
+      "subtitle": "Añade una capa extra de seguridad a tu cuenta",
+      "notEnabled": "2FA No Habilitado",
+      "notEnabledHint": "Protege tu cuenta con autenticación de dos factores",
+      "enable": "Habilitar 2FA",
+      "enabled": "2FA Habilitado",
+      "enabledHint": "Tu cuenta está protegida con autenticación de dos factores",
+      "disable": "Deshabilitar 2FA",
+      "disableConfirm": "¿Deshabilitar Autenticación de Dos Factores?",
+      "disableWarning": "Esto hará tu cuenta menos segura. Ingresa tu código de autenticación para confirmar.",
+      "setupTitle": "Configura tu aplicación de autenticación",
+      "setupSteps": {
+        "step1": "Instala una app de autenticación (Google Authenticator, Authy, etc.)",
+        "step2": "Escanea el código QR o ingresa el secreto manualmente",
+        "step3": "Ingresa el código de 6 dígitos de tu app para verificar"
+      },
+      "manualEntry": "O ingresa este código manualmente:",
+      "verificationCode": "Código de Verificación",
+      "verificationPlaceholder": "Ingresa código de 6 dígitos",
+      "verify": "Verificar",
+      "cancelSetup": "Cancelar Configuración",
+      "cancel": "Cancelar",
+      "backupCodes": {
+        "title": "Códigos de Respaldo",
+        "hint": "Guarda estos códigos de respaldo en un lugar seguro. Cada código solo puede usarse una vez.",
+        "copy": "Copiar Códigos",
+        "done": "Listo"
+      },
+      "toast": {
+        "enabled": "La autenticación de dos factores ha sido habilitada.",
+        "disabled": "La autenticación de dos factores ha sido deshabilitada.",
+        "codesCopied": "Códigos de respaldo copiados al portapapeles."
+      }
+    },
+    "sessions": {
+      "title": "Sesiones Activas",
+      "subtitle": "Administra tus sesiones activas y cierra sesión en otros dispositivos",
+      "signOutAll": "Cerrar Todas las Otras",
+      "noSessions": "No se encontraron sesiones activas",
+      "current": "Actual",
+      "unknownDevice": "Dispositivo Desconocido",
+      "unknownLocation": "Ubicación Desconocida",
+      "lastActive": "Última actividad:",
+      "toast": {
+        "revoked": "La sesión ha sido revocada.",
+        "allRevoked": "Todas las otras sesiones han sido revocadas."
+      }
+    }
+  },
+  "subtitle": "Administra la configuración de tu cuenta y preferencias",
+  "title": "Configuración"
+}

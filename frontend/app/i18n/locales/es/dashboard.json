@@ -1,0 +1,23 @@
+{
+  "goTo": "Ir a {{page}}",
+  "quickLinks": {
+    "profile": {
+      "title": "Perfil",
+      "description": "Actualiza tu informacion personal y avatar"
+    },
+    "security": {
+      "title": "Seguridad",
+      "description": "Gestiona contrasenas, 2FA y sesiones activas"
+    },
+    "billing": {
+      "title": "Facturacion",
+      "description": "Ver y gestionar tu suscripcion"
+    },
+    "settings": {
+      "title": "Configuracion",
+      "description": "Preferencias, notificaciones y privacidad"
+    }
+  },
+  "subtitle": "Aqui tienes un resumen de tu cuenta.",
+  "welcome": "Bienvenido de nuevo"
+}

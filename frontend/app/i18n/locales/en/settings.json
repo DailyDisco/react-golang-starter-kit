@@ -1,0 +1,361 @@
+{
+  "common": {
+    "saveChanges": "Save Changes",
+    "saving": "Saving..."
+  },
+  "connectedAccounts": {
+    "title": "Connected Accounts",
+    "subtitle": "Link third-party accounts for easier sign-in",
+    "providers": {
+      "title": "OAuth Providers",
+      "subtitle": "Connect your accounts to enable single sign-on",
+      "google": {
+        "name": "Google",
+        "description": "Sign in with your Google account"
+      },
+      "github": {
+        "name": "GitHub",
+        "description": "Sign in with your GitHub account"
+      }
+    },
+    "connected": "Connected",
+    "connectedOn": "Connected on",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "whyConnect": {
+      "title": "Why connect accounts?",
+      "reasons": {
+        "faster": "Sign in faster without entering your password",
+        "secure": "Securely link your identity across platforms",
+        "features": "Enable features that integrate with third-party services"
+      }
+    },
+    "securityNote": {
+      "title": "Security Note",
+      "text": "Disconnecting an account won't delete any data from that service. You can always reconnect later. We only store your email and unique identifier from connected accounts."
+    },
+    "toast": {
+      "disconnected": "Account has been disconnected."
+    }
+  },
+  "loginHistory": {
+    "title": "Login History",
+    "subtitle": "Review your recent login activity and detect suspicious access",
+    "refresh": "Refresh",
+    "stats": {
+      "successful": "Successful Logins",
+      "failed": "Failed Attempts",
+      "locations": "Unique Locations"
+    },
+    "recentActivity": "Recent Activity",
+    "recentActivityHint": "Your login history for the past 30 days",
+    "noHistory": "No login history available",
+    "successful": "Successful login",
+    "failedAttempt": "Failed login attempt",
+    "unknown": "Unknown",
+    "unknownLocation": "Unknown location",
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hours ago",
+      "daysAgo": "{{count}} days ago"
+    }
+  },
+  "nav": {
+    "profile": {
+      "title": "Profile",
+      "description": "Manage your personal information"
+    },
+    "security": {
+      "title": "Security",
+      "description": "Password, 2FA, and active sessions"
+    },
+    "loginHistory": {
+      "title": "Login History",
+      "description": "View your recent login activity"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "description": "Theme, language, and display settings"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "description": "Email notification preferences"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "description": "Data export and account deletion"
+    },
+    "connectedAccounts": {
+      "title": "Connected Accounts",
+      "description": "Manage linked OAuth providers"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Manage your email notification preferences",
+    "email": {
+      "title": "Email Notifications",
+      "subtitle": "Choose which emails you'd like to receive"
+    },
+    "security": {
+      "title": "Security Alerts",
+      "description": "Get notified about security events like new logins, password changes, and suspicious activity"
+    },
+    "updates": {
+      "title": "Product Updates",
+      "description": "Stay informed about new features, improvements, and important product announcements"
+    },
+    "marketing": {
+      "title": "Marketing & Promotions",
+      "description": "Receive special offers, tips, and promotional content"
+    },
+    "weeklyDigest": {
+      "title": "Weekly Digest",
+      "description": "Get a weekly summary of your account activity and important updates"
+    },
+    "recommended": "Recommended",
+    "quickActions": {
+      "title": "Quick Actions",
+      "subtitle": "Quickly enable or disable all optional notifications",
+      "disableOptional": "Disable Optional",
+      "enableAll": "Enable All"
+    },
+    "save": "Save Preferences",
+    "saving": "Saving...",
+    "toast": {
+      "saved": "Notification preferences have been saved."
+    }
+  },
+  "preferences": {
+    "title": "Preferences",
+    "subtitle": "Customize your experience with theme, language, and display settings",
+    "appearance": {
+      "title": "Appearance",
+      "subtitle": "Choose your preferred color theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "regional": {
+      "title": "Regional Settings",
+      "subtitle": "Set your timezone and language preferences",
+      "timezone": "Timezone",
+      "timezonePlaceholder": "Select timezone",
+      "currentTime": "Current time:",
+      "language": "Language",
+      "languagePlaceholder": "Select language"
+    },
+    "dateTime": {
+      "title": "Date & Time Format",
+      "subtitle": "Choose how dates and times are displayed",
+      "dateFormat": "Date Format",
+      "dateFormatPlaceholder": "Select date format",
+      "timeFormat": "Time Format",
+      "12hour": "12-hour",
+      "24hour": "24-hour",
+      "example": "Example:"
+    },
+    "save": "Save Preferences",
+    "saving": "Saving...",
+    "toast": {
+      "saved": "Your preferences have been saved."
+    }
+  },
+  "privacy": {
+    "title": "Privacy",
+    "subtitle": "Manage your data and account privacy settings",
+    "export": {
+      "title": "Export Your Data",
+      "subtitle": "Download a copy of all your personal data stored in our system",
+      "included": "What's included in your export:",
+      "items": {
+        "profile": "Profile information and settings",
+        "loginHistory": "Login history and activity logs",
+        "files": "Files and documents you've uploaded",
+        "notifications": "Notification preferences",
+        "other": "Any other data associated with your account"
+      },
+      "checking": "Checking export status...",
+      "dataExport": "Data Export",
+      "requestedOn": "Requested on",
+      "expiresOn": "Expires on",
+      "download": "Download",
+      "request": "Request Data Export",
+      "requesting": "Requesting...",
+      "hint": "Your data will be prepared as a downloadable archive. This process may take a few minutes. You'll receive an email notification when your data is ready.",
+      "status": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "ready": "Ready",
+        "failed": "Failed"
+      },
+      "toast": {
+        "requested": "Data export has been requested. We'll notify you when it's ready."
+      }
+    },
+    "delete": {
+      "title": "Delete Account",
+      "subtitle": "Permanently delete your account and all associated data",
+      "warning": "Warning: This action is permanent",
+      "warningText": "Deleting your account will permanently remove all your data, including:",
+      "items": {
+        "profile": "Your profile and settings",
+        "files": "All files and documents",
+        "loginHistory": "Login history and activity logs",
+        "billing": "Any subscriptions or billing information"
+      },
+      "button": "Delete My Account",
+      "confirmPassword": "Enter your password to confirm",
+      "passwordPlaceholder": "Enter your password",
+      "reason": "Why are you leaving? (optional)",
+      "reasonPlaceholder": "Help us improve by sharing your feedback...",
+      "confirmType": "Type <1>DELETE</1> to confirm",
+      "confirmPlaceholder": "Type DELETE",
+      "cancel": "Cancel",
+      "confirmButton": "Permanently Delete Account",
+      "processing": "Processing...",
+      "gracePeriod": "After requesting deletion, you'll have a 14-day grace period to cancel. After that, your account and all data will be permanently deleted.",
+      "toast": {
+        "scheduled": "Account deletion has been scheduled. You can cancel this within the grace period.",
+        "typeDelete": "Please type DELETE to confirm."
+      }
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "verified": "Verified",
+    "memberSince": "Member since",
+    "unknown": "Unknown",
+    "changePhoto": "Change Photo",
+    "about": {
+      "title": "About",
+      "subtitle": "Tell others about yourself"
+    },
+    "bio": {
+      "label": "Bio",
+      "placeholder": "Write a short bio about yourself...",
+      "hint": "Brief description for your profile. URLs are hyperlinked."
+    },
+    "location": {
+      "label": "Location",
+      "placeholder": "San Francisco, CA"
+    },
+    "personalInfo": {
+      "title": "Personal Information",
+      "subtitle": "Update your name and email address"
+    },
+    "fullName": {
+      "label": "Full Name",
+      "placeholder": "Enter your name"
+    },
+    "email": {
+      "label": "Email Address",
+      "placeholder": "Enter your email",
+      "changeWarning": "Changing your email will require verification"
+    },
+    "socialLinks": {
+      "title": "Social Links",
+      "subtitle": "Connect your social profiles",
+      "twitter": "Twitter / X",
+      "github": "GitHub",
+      "linkedin": "LinkedIn",
+      "website": "Website",
+      "placeholder": "username",
+      "websitePlaceholder": "https://example.com"
+    },
+    "emailStatus": "Email Status",
+    "pending": "Pending",
+    "accountRole": "Account Role",
+    "accountStatus": "Account Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "quickSettings": {
+      "title": "Quick Settings",
+      "subtitle": "Manage other aspects of your account"
+    },
+    "password2fa": "Password & 2FA",
+    "themeLanguage": "Theme & Language",
+    "emailPreferences": "Email preferences",
+    "toast": {
+      "profileUpdated": "Your profile has been updated successfully.",
+      "avatarUploaded": "Your avatar has been uploaded successfully.",
+      "avatarRemoved": "Your avatar has been removed.",
+      "invalidImage": "Please upload an image file.",
+      "fileTooLarge": "File size must be less than 5MB."
+    }
+  },
+  "security": {
+    "title": "Security",
+    "subtitle": "Manage your password, two-factor authentication, and active sessions",
+    "password": {
+      "title": "Change Password",
+      "subtitle": "Update your password to keep your account secure",
+      "current": "Current Password",
+      "currentPlaceholder": "Enter your current password",
+      "new": "New Password",
+      "newPlaceholder": "Enter new password",
+      "confirm": "Confirm New Password",
+      "confirmPlaceholder": "Confirm new password",
+      "mismatch": "Passwords do not match",
+      "changing": "Changing...",
+      "change": "Change Password",
+      "minLength": "Password must be at least 8 characters long.",
+      "toast": {
+        "changed": "Your password has been changed successfully.",
+        "mismatch": "New passwords do not match."
+      }
+    },
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "subtitle": "Add an extra layer of security to your account",
+      "notEnabled": "2FA Not Enabled",
+      "notEnabledHint": "Protect your account with two-factor authentication",
+      "enable": "Enable 2FA",
+      "enabled": "2FA Enabled",
+      "enabledHint": "Your account is protected with two-factor authentication",
+      "disable": "Disable 2FA",
+      "disableConfirm": "Disable Two-Factor Authentication?",
+      "disableWarning": "This will make your account less secure. Enter your authentication code to confirm.",
+      "setupTitle": "Set up your authenticator app",
+      "setupSteps": {
+        "step1": "Install an authenticator app (Google Authenticator, Authy, etc.)",
+        "step2": "Scan the QR code below or enter the secret manually",
+        "step3": "Enter the 6-digit code from your app to verify"
+      },
+      "manualEntry": "Or enter this code manually:",
+      "verificationCode": "Verification Code",
+      "verificationPlaceholder": "Enter 6-digit code",
+      "verify": "Verify",
+      "cancelSetup": "Cancel Setup",
+      "cancel": "Cancel",
+      "backupCodes": {
+        "title": "Backup Codes",
+        "hint": "Save these backup codes in a secure location. Each code can only be used once.",
+        "copy": "Copy Codes",
+        "done": "Done"
+      },
+      "toast": {
+        "enabled": "Two-factor authentication has been enabled.",
+        "disabled": "Two-factor authentication has been disabled.",
+        "codesCopied": "Backup codes copied to clipboard."
+      }
+    },
+    "sessions": {
+      "title": "Active Sessions",
+      "subtitle": "Manage your active sessions and sign out from other devices",
+      "signOutAll": "Sign Out All Others",
+      "noSessions": "No active sessions found",
+      "current": "Current",
+      "unknownDevice": "Unknown Device",
+      "unknownLocation": "Unknown Location",
+      "lastActive": "Last active:",
+      "toast": {
+        "revoked": "Session has been revoked.",
+        "allRevoked": "All other sessions have been revoked."
+      }
+    }
+  },
+  "subtitle": "Manage your account settings and preferences",
+  "title": "Settings"
+}

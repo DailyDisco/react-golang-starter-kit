@@ -1,0 +1,24 @@
+{
+  "availablePlans": {
+    "title": "Available Plans",
+    "noPlans": "No subscription plans are currently available. Please check back later.",
+    "subscribe": "Subscribe"
+  },
+  "currentSubscription": {
+    "title": "Current Subscription",
+    "status": "Status",
+    "currentPeriod": "Current Period",
+    "cancelsAt": "Cancels At",
+    "manageSubscription": "Manage Subscription",
+    "noSubscription": "You don't have an active subscription. Choose a plan below to get started."
+  },
+  "status": {
+    "active": "Active",
+    "trialing": "Trialing",
+    "past_due": "Past Due",
+    "canceled": "Canceled",
+    "unpaid": "Unpaid"
+  },
+  "subtitle": "Manage your subscription and billing details",
+  "title": "Billing & Subscription"
+}

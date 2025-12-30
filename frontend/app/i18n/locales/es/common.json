@@ -1,0 +1,91 @@
+{
+  "appName": "React + Go",
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "signOut": "Cerrar sesión",
+    "logOut": "Cerrar sesión"
+  },
+  "buttons": {
+    "submit": "Enviar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "tryAgain": "Intentar de nuevo",
+    "goHome": "Ir al inicio",
+    "saveChanges": "Guardar cambios",
+    "refresh": "Actualizar",
+    "export": "Exportar",
+    "create": "Crear"
+  },
+  "footer": {
+    "builtWith": "Hecho con ❤️ usando React & Go",
+    "copyright": "© {{year}} React + Go Starter Kit",
+    "openSource": "Código abierto en",
+    "github": "GitHub"
+  },
+  "labels": {
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "name": "Nombre",
+    "fullName": "Nombre completo",
+    "language": "Idioma",
+    "theme": "Tema",
+    "toggleTheme": "Cambiar tema"
+  },
+  "menu": {
+    "openMainMenu": "Abrir menú principal",
+    "closeMainMenu": "Cerrar menú principal",
+    "navigation": "Navegación",
+    "account": "Cuenta",
+    "authentication": "Autenticación"
+  },
+  "messages": {
+    "loading": "Cargando...",
+    "noData": "No hay datos disponibles",
+    "success": "¡Éxito!",
+    "error": "Ha ocurrido un error"
+  },
+  "navigation": {
+    "home": "Inicio",
+    "demo": "Demo",
+    "pricing": "Precios",
+    "apiDocs": "Documentación API",
+    "settings": "Configuración",
+    "admin": "Admin",
+    "dashboard": "Panel",
+    "billing": "Facturación",
+    "profile": "Perfil",
+    "adminPanel": "Panel de Admin",
+    "security": "Seguridad",
+    "preferences": "Preferencias",
+    "notifications": "Notificaciones",
+    "privacy": "Privacidad",
+    "loginHistory": "Historial de Inicio de Sesión",
+    "connectedAccounts": "Cuentas Conectadas",
+    "users": "Usuarios",
+    "auditLogs": "Registros de Auditoría",
+    "featureFlags": "Banderas de Funcionalidad",
+    "systemHealth": "Estado del Sistema",
+    "announcements": "Anuncios",
+    "emailTemplates": "Plantillas de Correo"
+  },
+  "organization": {
+    "create": "Crear Organización",
+    "select": "Seleccionar organización",
+    "search": "Buscar organizaciones...",
+    "notFound": "No se encontró organización.",
+    "organizations": "Organizaciones",
+    "settings": "Configuración de Organización"
+  },
+  "status": {
+    "verified": "Verificado",
+    "unverified": "No verificado",
+    "active": "Activo",
+    "inactive": "Inactivo"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "goTo": "Go to {{page}}",
+  "quickLinks": {
+    "profile": {
+      "title": "Profile",
+      "description": "Update your personal information and avatar"
+    },
+    "security": {
+      "title": "Security",
+      "description": "Manage passwords, 2FA, and active sessions"
+    },
+    "billing": {
+      "title": "Billing",
+      "description": "View and manage your subscription"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Preferences, notifications, and privacy"
+    }
+  },
+  "subtitle": "Here's an overview of your account.",
+  "welcome": "Welcome back"
+}

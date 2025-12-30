@@ -1,0 +1,100 @@
+{
+  "buttons": {
+    "getStarted": "Comenzar",
+    "startTrial": "Iniciar prueba gratuita",
+    "contactSales": "Contactar ventas",
+    "subscribeNow": "Suscribirse ahora",
+    "signUpToSubscribe": "Registrarse para suscribirse"
+  },
+  "comparison": {
+    "title": "Comparar planes",
+    "feature": "Funcion",
+    "features": {
+      "projects": "Proyectos",
+      "storage": "Almacenamiento",
+      "apiRequests": "Solicitudes API",
+      "teamMembers": "Miembros de equipo",
+      "customBranding": "Marca personalizada",
+      "prioritySupport": "Soporte prioritario",
+      "twoFactorAuth": "Auth de dos factores",
+      "ssoSaml": "SSO/SAML",
+      "auditLogs": "Registros de auditoria",
+      "slaGuarantee": "Garantia SLA",
+      "dedicatedSupport": "Soporte dedicado"
+    },
+    "unlimited": "Ilimitado"
+  },
+  "contact": {
+    "moreQuestions": "Tienes mas preguntas?",
+    "contactSales": "Contacta a nuestro equipo de ventas"
+  },
+  "fallback": {
+    "allFreeFeatures": "Todas las funciones gratuitas",
+    "prioritySupport": "Soporte prioritario",
+    "unlimitedProjects": "Proyectos ilimitados",
+    "advancedAnalytics": "Analiticas avanzadas"
+  },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "questions": {
+      "changePlans": {
+        "question": "Puedo cambiar de plan despues?",
+        "answer": "Si, puedes actualizar o degradar tu plan en cualquier momento. Los cambios surten efecto inmediatamente y prorratearemos tu facturacion."
+      },
+      "paymentMethods": {
+        "question": "Que metodos de pago aceptan?",
+        "answer": "Aceptamos todas las tarjetas de credito principales (Visa, Mastercard, American Express) y podemos organizar facturacion para planes Enterprise."
+      },
+      "freeTrial": {
+        "question": "Hay prueba gratuita?",
+        "answer": "Si! Todos los planes de pago vienen con una prueba gratuita de 14 dias. No se requiere tarjeta de credito para comenzar."
+      },
+      "exceedLimits": {
+        "question": "Que pasa cuando excedo mis limites?",
+        "answer": "Te notificaremos cuando te acerques a tus limites. Puedes actualizar en cualquier momento, o pausaremos temporalmente las funciones no criticas."
+      }
+    }
+  },
+  "mostPopular": "Mas popular",
+  "plans": {
+    "free": {
+      "name": "Gratis",
+      "description": "Perfecto para comenzar",
+      "features": ["Hasta 3 proyectos", "Analiticas basicas", "Soporte comunitario", "1GB de almacenamiento", "Acceso API (100 req/dia)"],
+      "limitations": ["Sin soporte prioritario", "Sin marca personalizada", "Sin miembros de equipo"]
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Para profesionales y equipos en crecimiento",
+      "features": [
+        "Proyectos ilimitados",
+        "Analiticas avanzadas",
+        "Soporte prioritario por email",
+        "25GB de almacenamiento",
+        "Acceso API (10,000 req/dia)",
+        "Marca personalizada",
+        "Hasta 5 miembros de equipo",
+        "Autenticacion de dos factores"
+      ],
+      "limitations": ["Sin soporte dedicado"]
+    },
+    "enterprise": {
+      "name": "Empresa",
+      "description": "Para grandes organizaciones con necesidades avanzadas",
+      "features": [
+        "Todo en Pro",
+        "Almacenamiento ilimitado",
+        "Solicitudes API ilimitadas",
+        "Miembros de equipo ilimitados",
+        "Gerente de cuenta dedicado",
+        "Soporte telefonico 24/7",
+        "Integraciones personalizadas",
+        "Garantia SLA",
+        "SSO/SAML",
+        "Registros de auditoria"
+      ]
+    }
+  },
+  "subtitle": "Elige el plan adecuado para ti. Todos los planes de pago incluyen una prueba gratuita de 14 dias.",
+  "title": "Precios simples y transparentes"
+}

@@ -1,0 +1,24 @@
+{
+  "availablePlans": {
+    "title": "Planes disponibles",
+    "noPlans": "No hay planes de suscripcion disponibles actualmente. Por favor, vuelve mas tarde.",
+    "subscribe": "Suscribirse"
+  },
+  "currentSubscription": {
+    "title": "Suscripcion actual",
+    "status": "Estado",
+    "currentPeriod": "Periodo actual",
+    "cancelsAt": "Se cancela el",
+    "manageSubscription": "Gestionar suscripcion",
+    "noSubscription": "No tienes una suscripcion activa. Elige un plan a continuacion para comenzar."
+  },
+  "status": {
+    "active": "Activo",
+    "trialing": "En prueba",
+    "past_due": "Vencido",
+    "canceled": "Cancelado",
+    "unpaid": "Sin pagar"
+  },
+  "subtitle": "Gestiona tu suscripcion y detalles de facturacion",
+  "title": "Facturacion y suscripcion"
+}

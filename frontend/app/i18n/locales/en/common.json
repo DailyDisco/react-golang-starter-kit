@@ -1,0 +1,91 @@
+{
+  "appName": "React + Go",
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign Out",
+    "logOut": "Log out"
+  },
+  "buttons": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "tryAgain": "Try Again",
+    "goHome": "Go Home",
+    "saveChanges": "Save Changes",
+    "refresh": "Refresh",
+    "export": "Export",
+    "create": "Create"
+  },
+  "footer": {
+    "builtWith": "Built with ❤️ using React & Go",
+    "copyright": "© {{year}} React + Go Starter Kit",
+    "openSource": "Open source on",
+    "github": "GitHub"
+  },
+  "labels": {
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "name": "Name",
+    "fullName": "Full Name",
+    "language": "Language",
+    "theme": "Theme",
+    "toggleTheme": "Toggle theme"
+  },
+  "menu": {
+    "openMainMenu": "Open main menu",
+    "closeMainMenu": "Close main menu",
+    "navigation": "Navigation",
+    "account": "Account",
+    "authentication": "Authentication"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "noData": "No data available",
+    "success": "Success!",
+    "error": "An error occurred"
+  },
+  "navigation": {
+    "home": "Home",
+    "demo": "Demo",
+    "pricing": "Pricing",
+    "apiDocs": "API Docs",
+    "settings": "Settings",
+    "admin": "Admin",
+    "dashboard": "Dashboard",
+    "billing": "Billing",
+    "profile": "Profile",
+    "adminPanel": "Admin Panel",
+    "security": "Security",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "loginHistory": "Login History",
+    "connectedAccounts": "Connected Accounts",
+    "users": "Users",
+    "auditLogs": "Audit Logs",
+    "featureFlags": "Feature Flags",
+    "systemHealth": "System Health",
+    "announcements": "Announcements",
+    "emailTemplates": "Email Templates"
+  },
+  "organization": {
+    "create": "Create Organization",
+    "select": "Select organization",
+    "search": "Search organizations...",
+    "notFound": "No organization found.",
+    "organizations": "Organizations",
+    "settings": "Organization Settings"
+  },
+  "status": {
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "active": "Active",
+    "inactive": "Inactive"
+  }
+}

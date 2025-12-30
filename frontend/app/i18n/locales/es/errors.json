@@ -1,0 +1,38 @@
+{
+  "forbidden": {
+    "title": "Acceso denegado",
+    "message": "No tienes permiso para acceder a este recurso."
+  },
+  "generic": {
+    "title": "Algo salió mal",
+    "message": "Ha ocurrido un error inesperado",
+    "tryAgain": "Intentar de nuevo",
+    "goHome": "Ir al inicio"
+  },
+  "network": {
+    "offline": "Estás sin conexión",
+    "offlineDescription": "Algunas funciones pueden no estar disponibles.",
+    "backOnline": "Conectado de nuevo",
+    "connectionError": "No se puede conectar al servidor"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "message": "La página que buscas no existe o ha sido movida."
+  },
+  "query": {
+    "connectionError": "Error de Conexión",
+    "serverError": "Error del Servidor",
+    "genericError": "Algo salió mal",
+    "networkMessage": "Por favor verifica tu conexión a internet e intenta de nuevo.",
+    "serverMessage": "El servidor no está disponible temporalmente. Por favor intenta más tarde.",
+    "genericMessage": "Ha ocurrido un error inesperado. Por favor intenta de nuevo.",
+    "retrying": "Reintentando...",
+    "tryAgain": "Intentar de nuevo",
+    "loadingError": "Error al cargar datos",
+    "retry": "Reintentar"
+  },
+  "unauthorized": {
+    "title": "No autorizado",
+    "message": "Necesitas iniciar sesión para acceder a esta página."
+  }
+}

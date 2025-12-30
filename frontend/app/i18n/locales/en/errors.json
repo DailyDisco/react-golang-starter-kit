@@ -1,0 +1,38 @@
+{
+  "forbidden": {
+    "title": "Access Denied",
+    "message": "You don't have permission to access this resource."
+  },
+  "generic": {
+    "title": "Something went wrong",
+    "message": "An unexpected error occurred",
+    "tryAgain": "Try Again",
+    "goHome": "Go Home"
+  },
+  "network": {
+    "offline": "You're offline",
+    "offlineDescription": "Some features may be unavailable.",
+    "backOnline": "Back online",
+    "connectionError": "Unable to connect to the server"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "message": "The page you're looking for doesn't exist or has been moved."
+  },
+  "query": {
+    "connectionError": "Connection Error",
+    "serverError": "Server Error",
+    "genericError": "Something went wrong",
+    "networkMessage": "Please check your internet connection and try again.",
+    "serverMessage": "The server is temporarily unavailable. Please try again later.",
+    "genericMessage": "An unexpected error occurred. Please try again.",
+    "retrying": "Retrying...",
+    "tryAgain": "Try Again",
+    "loadingError": "Error loading data",
+    "retry": "Retry"
+  },
+  "unauthorized": {
+    "title": "Unauthorized",
+    "message": "You need to sign in to access this page."
+  }
+}

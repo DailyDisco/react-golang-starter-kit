@@ -1,0 +1,538 @@
+{
+  "announcements": {
+    "title": "Announcements",
+    "subtitle": "Manage site-wide announcement banners",
+    "createAnnouncement": "Create Announcement",
+    "create": {
+      "title": "Create New Announcement",
+      "subtitle": "This announcement will be shown to users across the site",
+      "form": {
+        "title": "Title",
+        "titlePlaceholder": "Announcement title",
+        "type": "Type",
+        "types": {
+          "info": "Info",
+          "warning": "Warning",
+          "success": "Success",
+          "error": "Error"
+        },
+        "message": "Message",
+        "messagePlaceholder": "Announcement message",
+        "linkUrl": "Link URL (optional)",
+        "linkUrlPlaceholder": "https://example.com",
+        "linkText": "Link Text (optional)",
+        "linkTextPlaceholder": "Learn more",
+        "isDismissible": "Allow users to dismiss",
+        "isActive": "Active immediately",
+        "cancel": "Cancel",
+        "create": "Create Announcement",
+        "creating": "Creating..."
+      }
+    },
+    "empty": {
+      "title": "No announcements yet",
+      "subtitle": "Create your first announcement to display site-wide banners",
+      "createFirst": "Create your first announcement"
+    },
+    "card": {
+      "inactive": "Inactive",
+      "dismissible": "Dismissible",
+      "active": "Active",
+      "link": "Link:",
+      "targetRoles": "Target roles:"
+    },
+    "tooltips": {
+      "delete": "Delete announcement"
+    },
+    "dialog": {
+      "deleteTitle": "Delete Announcement",
+      "deleteDescription": "Are you sure you want to delete \"{{title}}\"? This action cannot be undone.",
+      "delete": "Delete"
+    },
+    "toast": {
+      "created": "Announcement created successfully",
+      "deleted": "Announcement deleted"
+    }
+  },
+  "auditLogs": {
+    "title": "Audit Logs",
+    "subtitle": "Track all system activity and user actions",
+    "filters": "Filters",
+    "filtersActive": "Active",
+    "export": "Export",
+    "refresh": "Refresh",
+    "clearAll": "Clear all",
+    "loading": "Loading audit logs...",
+    "error": {
+      "title": "Error",
+      "default": "Failed to load audit logs"
+    },
+    "filter": {
+      "targetType": "Target Type",
+      "action": "Action",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "allTypes": "All types",
+      "allActions": "All actions",
+      "types": {
+        "all": "All",
+        "user": "User",
+        "subscription": "Subscription",
+        "file": "File",
+        "featureFlag": "Feature Flag"
+      },
+      "actions": {
+        "all": "All",
+        "create": "Create",
+        "update": "Update",
+        "delete": "Delete",
+        "login": "Login",
+        "logout": "Logout",
+        "impersonate": "Impersonate",
+        "roleChange": "Role Change"
+      }
+    },
+    "table": {
+      "time": "Time",
+      "user": "User",
+      "action": "Action",
+      "target": "Target",
+      "ipAddress": "IP Address"
+    },
+    "empty": {
+      "title": "No audit logs found",
+      "filterHint": "Try adjusting your filters"
+    },
+    "system": "System",
+    "pagination": {
+      "showing": "Showing {{from}} to {{to}} of {{total}} results",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "toast": {
+      "exported": "Audit logs exported to CSV"
+    }
+  },
+  "breadcrumb": {
+    "admin": "Admin"
+  },
+  "commandPalette": {
+    "search": "Search admin panel...",
+    "noResults": "No results found.",
+    "navigation": "Navigation",
+    "quickActions": "Quick Actions",
+    "routes": {
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "auditLogs": "Audit Logs",
+      "featureFlags": "Feature Flags",
+      "systemHealth": "System Health",
+      "announcements": "Announcements",
+      "emailTemplates": "Email Templates",
+      "settings": "Settings"
+    },
+    "actions": {
+      "createUser": "Create new user",
+      "createFlag": "Create feature flag",
+      "createAnnouncement": "Create announcement"
+    }
+  },
+  "common": {
+    "error": "Error",
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "export": "Export",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "confirmDialog": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "loading": "Loading..."
+  },
+  "dashboard": {
+    "title": "Dashboard Overview",
+    "subtitle": "Welcome back! Here's what's happening with your platform.",
+    "exportReport": "Export Report",
+    "metrics": {
+      "totalUsers": "Total Users",
+      "activeUsers": "Active Users",
+      "newToday": "New Today",
+      "activeSubscriptions": "Active Subscriptions",
+      "thisWeek": "this week",
+      "activationRate": "activation rate",
+      "ofTotal": "of total"
+    },
+    "userGrowth": {
+      "title": "User Growth",
+      "subtitle": "New user registrations over the past week",
+      "chartLabel": "New Users"
+    },
+    "platformSummary": {
+      "title": "Platform Summary",
+      "subtitle": "Key metrics at a glance",
+      "verifiedUsers": "Verified Users",
+      "thisMonth": "This Month",
+      "newRegistrations": "New registrations",
+      "totalFiles": "Total Files",
+      "stored": "{{size}} stored",
+      "canceled": "Canceled",
+      "subscriptions": "Subscriptions"
+    },
+    "usersByRole": {
+      "title": "Users by Role",
+      "subtitle": "Distribution of user roles across the platform"
+    },
+    "error": {
+      "title": "Error Loading Stats",
+      "default": "Failed to load dashboard statistics"
+    }
+  },
+  "emailTemplates": {
+    "title": "Email Templates",
+    "subtitle": "Customize the emails sent by the system",
+    "selectTemplate": "Select a template to edit",
+    "badges": {
+      "system": "System",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "preview": {
+      "title": "Email Preview",
+      "close": "Close",
+      "button": "Preview",
+      "loading": "Loading..."
+    },
+    "save": {
+      "button": "Save Changes",
+      "saving": "Saving..."
+    },
+    "variables": {
+      "title": "Available Variables"
+    },
+    "form": {
+      "templateName": "Template Name",
+      "active": "Active",
+      "subjectLine": "Subject Line",
+      "htmlBody": "HTML Body",
+      "plainTextBody": "Plain Text Body (fallback)",
+      "previewVariables": "Preview Variables"
+    },
+    "stats": {
+      "sendCount": "Send Count:",
+      "lastSent": "Last Sent:"
+    },
+    "toast": {
+      "updated": "The email template has been updated successfully."
+    }
+  },
+  "featureFlags": {
+    "title": "Feature Flags",
+    "subtitle": "Control feature rollouts and A/B testing",
+    "refresh": "Refresh",
+    "createFlag": "Create Flag",
+    "loading": "Loading feature flags...",
+    "error": {
+      "title": "Error",
+      "default": "Failed to load feature flags"
+    },
+    "empty": {
+      "title": "No feature flags created yet",
+      "hint": "Click \"Create Flag\" to add your first feature flag."
+    },
+    "create": {
+      "title": "Create Feature Flag",
+      "key": "Key",
+      "keyPlaceholder": "feature_key",
+      "keyHint": "Lowercase letters, numbers, and underscores only",
+      "name": "Name",
+      "namePlaceholder": "Feature Name",
+      "description": "Description",
+      "descriptionPlaceholder": "What does this feature flag control?",
+      "rolloutPercentage": "Rollout Percentage: {{value}}%",
+      "enabled": "Enabled",
+      "enabledHint": "Turn this flag on immediately",
+      "cancel": "Cancel",
+      "create": "Create"
+    },
+    "card": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "rollout": "Rollout:",
+      "roles": "Roles:",
+      "saving": "Saving...",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "tooltips": {
+      "edit": "Edit flag",
+      "delete": "Delete flag"
+    },
+    "dialog": {
+      "deleteTitle": "Delete Feature Flag",
+      "deleteDescription": "Are you sure you want to delete the feature flag \"{{key}}\"? This action cannot be undone.",
+      "delete": "Delete"
+    },
+    "toast": {
+      "created": "Feature flag created successfully",
+      "createError": "Failed to create feature flag",
+      "updated": "Feature flag updated",
+      "updateError": "Failed to update",
+      "deleted": "Feature flag deleted",
+      "deleteError": "Failed to delete",
+      "enabled": "Feature flag enabled",
+      "disabled": "Feature flag disabled",
+      "toggleError": "Failed to toggle"
+    }
+  },
+  "health": {
+    "title": "System Health",
+    "subtitle": "Monitor system status and performance metrics",
+    "refresh": "Refresh",
+    "status": {
+      "healthy": "HEALTHY",
+      "degraded": "DEGRADED",
+      "unhealthy": "UNHEALTHY",
+      "unknown": "Unknown"
+    },
+    "lastUpdated": "Last updated: {{time}} (auto-refreshes every 30s)",
+    "notAvailable": "N/A",
+    "overallStatus": "Overall System Status",
+    "components": {
+      "database": "Database",
+      "cache": "Cache",
+      "storage": "Storage",
+      "api": "API"
+    },
+    "latency": "Latency",
+    "details": "Details",
+    "metrics": {
+      "title": "System Metrics",
+      "database": {
+        "title": "Database Metrics",
+        "activeConnections": "Active Connections",
+        "idleConnections": "Idle Connections",
+        "maxConnections": "Max Connections",
+        "avgQueryTime": "Avg Query Time",
+        "connectionPoolUsage": "Connection Pool Usage"
+      },
+      "cache": {
+        "title": "Cache Metrics",
+        "memoryUsed": "Memory Used",
+        "memoryMax": "Memory Max",
+        "hitRate": "Hit Rate",
+        "keys": "Keys",
+        "cacheHitRate": "Cache Hit Rate"
+      },
+      "storage": {
+        "title": "Storage Metrics",
+        "used": "Used",
+        "available": "Available",
+        "total": "Total",
+        "files": "Files"
+      }
+    },
+    "error": {
+      "title": "Error Loading Health Status",
+      "default": "Failed to load system health"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Configure application-wide settings and preferences",
+    "tabs": {
+      "email": "Email/SMTP",
+      "emailShort": "Email",
+      "security": "Security",
+      "site": "Site",
+      "ipBlocklist": "IP Blocklist",
+      "ipBlocklistShort": "IPs"
+    },
+    "email": {
+      "title": "Email / SMTP Configuration",
+      "subtitle": "Configure the SMTP server for sending transactional emails",
+      "enableSending": "Enable Email Sending",
+      "enableSendingHint": "When enabled, the system will send transactional emails",
+      "smtpHost": "SMTP Host",
+      "smtpHostPlaceholder": "smtp.example.com",
+      "smtpPort": "SMTP Port",
+      "smtpUsername": "SMTP Username",
+      "smtpUsernamePlaceholder": "your-username",
+      "smtpPassword": "SMTP Password",
+      "fromEmail": "From Email",
+      "fromEmailPlaceholder": "noreply@example.com",
+      "fromName": "From Name",
+      "fromNamePlaceholder": "My Application",
+      "sendTest": "Send Test Email",
+      "sendingTest": "Sending...",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "toast": {
+        "updated": "Email settings updated successfully"
+      }
+    },
+    "security": {
+      "title": "Security Settings",
+      "subtitle": "Configure password policies, session settings, and authentication requirements",
+      "password": {
+        "title": "Password Requirements",
+        "minLength": "Minimum Length",
+        "requireUppercase": "Require uppercase",
+        "requireLowercase": "Require lowercase",
+        "requireNumber": "Require number",
+        "requireSpecial": "Require special character"
+      },
+      "session": {
+        "title": "Session Settings",
+        "timeoutMinutes": "Session Timeout (minutes)"
+      },
+      "login": {
+        "title": "Login Protection",
+        "maxAttempts": "Max Login Attempts",
+        "lockoutDuration": "Lockout Duration (minutes)"
+      },
+      "additional": {
+        "title": "Additional Security",
+        "require2fa": "Require 2FA for admins",
+        "require2faHint": "Admin accounts must use two-factor auth",
+        "allowRegistration": "Allow registration",
+        "allowRegistrationHint": "New users can create accounts"
+      },
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "toast": {
+        "updated": "Security settings updated successfully"
+      }
+    },
+    "site": {
+      "title": "Site Settings",
+      "subtitle": "Configure site branding and general settings",
+      "siteName": "Site Name",
+      "siteNamePlaceholder": "My Application",
+      "logoUrl": "Logo URL",
+      "logoUrlPlaceholder": "https://example.com/logo.png",
+      "siteDescription": "Site Description",
+      "siteDescriptionPlaceholder": "A brief description of your site",
+      "contactEmail": "Contact Email",
+      "contactEmailPlaceholder": "contact@example.com",
+      "supportUrl": "Support URL",
+      "supportUrlPlaceholder": "https://support.example.com",
+      "maintenance": {
+        "title": "Maintenance Mode",
+        "subtitle": "Temporarily disable access to the site",
+        "message": "Maintenance Message",
+        "messagePlaceholder": "We're currently undergoing maintenance. Please check back soon."
+      },
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "toast": {
+        "updated": "Site settings updated successfully"
+      }
+    },
+    "ipBlocklist": {
+      "title": "IP Blocklist",
+      "subtitle": "Block IP addresses from accessing the application",
+      "blockIp": "Block IP",
+      "addTitle": "Add IP to Blocklist",
+      "ipAddress": "IP Address",
+      "ipAddressPlaceholder": "192.168.1.1",
+      "reason": "Reason",
+      "reasonPlaceholder": "Spam, abuse, etc.",
+      "cancel": "Cancel",
+      "blocking": "Blocking...",
+      "empty": {
+        "title": "No blocked IPs",
+        "hint": "Click \"Block IP\" to add an IP address to the blocklist"
+      },
+      "item": {
+        "range": "Range: {{range}}",
+        "active": "Active",
+        "inactive": "Inactive",
+        "added": "Added: {{date}} | Hits: {{count}}"
+      },
+      "tooltips": {
+        "remove": "Remove from blocklist"
+      },
+      "dialog": {
+        "removeTitle": "Remove IP from Blocklist",
+        "removeDescription": "Are you sure you want to unblock {{ip}}? This IP will be able to access the application again.",
+        "unblock": "Unblock"
+      },
+      "toast": {
+        "blocked": "IP address added to blocklist",
+        "unblocked": "IP address removed from blocklist"
+      }
+    }
+  },
+  "users": {
+    "title": "User Management",
+    "subtitle": "Manage users, roles, and permissions",
+    "export": "Export",
+    "refresh": "Refresh",
+    "searchPlaceholder": "Search users...",
+    "selected": "{{count}} selected",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "loading": "Loading users...",
+    "error": {
+      "title": "Error",
+      "default": "Failed to load users"
+    },
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "status": "Status",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "verified": "Verified"
+    },
+    "empty": {
+      "title": "No users found",
+      "searchHint": "Try adjusting your search"
+    },
+    "tooltips": {
+      "impersonate": "Impersonate user",
+      "deactivate": "Deactivate user",
+      "reactivate": "Reactivate user",
+      "viewDetails": "View user details"
+    },
+    "pagination": {
+      "showing": "Showing {{from}} to {{to}} of {{total}} users",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "dialog": {
+      "deactivateTitle": "Deactivate User",
+      "deactivateDescription": "Are you sure you want to deactivate {{name}}?",
+      "deactivateUsers": "Deactivate Users",
+      "deactivateUsersDescription": "Are you sure you want to deactivate {{count}} users?",
+      "reactivateTitle": "Reactivate User",
+      "reactivateDescription": "Are you sure you want to reactivate {{name}}?",
+      "reactivateUsers": "Reactivate Users",
+      "reactivateUsersDescription": "Are you sure you want to reactivate {{count}} users?"
+    },
+    "toast": {
+      "impersonating": "Now impersonating {{name}}",
+      "impersonateError": "Failed to impersonate",
+      "deactivated": "User deactivated",
+      "deactivateError": "Failed to deactivate",
+      "reactivated": "User reactivated",
+      "reactivateError": "Failed to reactivate",
+      "bulkDeactivated": "{{count}} users deactivated",
+      "bulkDeactivateError": "Failed to deactivate users",
+      "bulkReactivated": "{{count}} users reactivated",
+      "bulkReactivateError": "Failed to reactivate users",
+      "exported": "Users exported to CSV",
+      "detailsComingSoon": "User details page coming soon"
+    }
+  }
+}

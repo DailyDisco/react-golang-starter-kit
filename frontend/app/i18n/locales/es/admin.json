@@ -1,0 +1,538 @@
+{
+  "announcements": {
+    "title": "Anuncios",
+    "subtitle": "Gestiona los banners de anuncios del sitio",
+    "createAnnouncement": "Crear anuncio",
+    "create": {
+      "title": "Crear nuevo anuncio",
+      "subtitle": "Este anuncio se mostrará a los usuarios en todo el sitio",
+      "form": {
+        "title": "Título",
+        "titlePlaceholder": "Título del anuncio",
+        "type": "Tipo",
+        "types": {
+          "info": "Información",
+          "warning": "Advertencia",
+          "success": "Éxito",
+          "error": "Error"
+        },
+        "message": "Mensaje",
+        "messagePlaceholder": "Mensaje del anuncio",
+        "linkUrl": "URL del enlace (opcional)",
+        "linkUrlPlaceholder": "https://ejemplo.com",
+        "linkText": "Texto del enlace (opcional)",
+        "linkTextPlaceholder": "Saber más",
+        "isDismissible": "Permitir que los usuarios lo descarten",
+        "isActive": "Activo inmediatamente",
+        "cancel": "Cancelar",
+        "create": "Crear anuncio",
+        "creating": "Creando..."
+      }
+    },
+    "empty": {
+      "title": "Aún no hay anuncios",
+      "subtitle": "Crea tu primer anuncio para mostrar banners en todo el sitio",
+      "createFirst": "Crea tu primer anuncio"
+    },
+    "card": {
+      "inactive": "Inactivo",
+      "dismissible": "Descartable",
+      "active": "Activo",
+      "link": "Enlace:",
+      "targetRoles": "Roles objetivo:"
+    },
+    "tooltips": {
+      "delete": "Eliminar anuncio"
+    },
+    "dialog": {
+      "deleteTitle": "Eliminar anuncio",
+      "deleteDescription": "¿Estás seguro de que quieres eliminar \"{{title}}\"? Esta acción no se puede deshacer.",
+      "delete": "Eliminar"
+    },
+    "toast": {
+      "created": "Anuncio creado exitosamente",
+      "deleted": "Anuncio eliminado"
+    }
+  },
+  "auditLogs": {
+    "title": "Registro de auditoría",
+    "subtitle": "Rastrea toda la actividad del sistema y acciones de usuarios",
+    "filters": "Filtros",
+    "filtersActive": "Activo",
+    "export": "Exportar",
+    "refresh": "Actualizar",
+    "clearAll": "Limpiar todo",
+    "loading": "Cargando registros de auditoría...",
+    "error": {
+      "title": "Error",
+      "default": "No se pudieron cargar los registros de auditoría"
+    },
+    "filter": {
+      "targetType": "Tipo de objetivo",
+      "action": "Acción",
+      "startDate": "Fecha de inicio",
+      "endDate": "Fecha de fin",
+      "allTypes": "Todos los tipos",
+      "allActions": "Todas las acciones",
+      "types": {
+        "all": "Todos",
+        "user": "Usuario",
+        "subscription": "Suscripción",
+        "file": "Archivo",
+        "featureFlag": "Feature Flag"
+      },
+      "actions": {
+        "all": "Todas",
+        "create": "Crear",
+        "update": "Actualizar",
+        "delete": "Eliminar",
+        "login": "Inicio de sesión",
+        "logout": "Cierre de sesión",
+        "impersonate": "Suplantar",
+        "roleChange": "Cambio de rol"
+      }
+    },
+    "table": {
+      "time": "Hora",
+      "user": "Usuario",
+      "action": "Acción",
+      "target": "Objetivo",
+      "ipAddress": "Dirección IP"
+    },
+    "empty": {
+      "title": "No se encontraron registros de auditoría",
+      "filterHint": "Intenta ajustar tus filtros"
+    },
+    "system": "Sistema",
+    "pagination": {
+      "showing": "Mostrando {{from}} a {{to}} de {{total}} resultados",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    },
+    "toast": {
+      "exported": "Registros de auditoría exportados a CSV"
+    }
+  },
+  "breadcrumb": {
+    "admin": "Admin"
+  },
+  "commandPalette": {
+    "search": "Buscar en panel de admin...",
+    "noResults": "No se encontraron resultados.",
+    "navigation": "Navegación",
+    "quickActions": "Acciones rápidas",
+    "routes": {
+      "dashboard": "Panel de control",
+      "users": "Usuarios",
+      "auditLogs": "Registro de auditoría",
+      "featureFlags": "Feature Flags",
+      "systemHealth": "Salud del sistema",
+      "announcements": "Anuncios",
+      "emailTemplates": "Plantillas de email",
+      "settings": "Configuración"
+    },
+    "actions": {
+      "createUser": "Crear nuevo usuario",
+      "createFlag": "Crear feature flag",
+      "createAnnouncement": "Crear anuncio"
+    }
+  },
+  "common": {
+    "error": "Error",
+    "loading": "Cargando...",
+    "refresh": "Actualizar",
+    "export": "Exportar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
+  "confirmDialog": {
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "loading": "Cargando..."
+  },
+  "dashboard": {
+    "title": "Resumen del panel",
+    "subtitle": "¡Bienvenido de nuevo! Esto es lo que está pasando en tu plataforma.",
+    "exportReport": "Exportar informe",
+    "metrics": {
+      "totalUsers": "Total de usuarios",
+      "activeUsers": "Usuarios activos",
+      "newToday": "Nuevos hoy",
+      "activeSubscriptions": "Suscripciones activas",
+      "thisWeek": "esta semana",
+      "activationRate": "tasa de activación",
+      "ofTotal": "del total"
+    },
+    "userGrowth": {
+      "title": "Crecimiento de usuarios",
+      "subtitle": "Nuevos registros de usuarios en la última semana",
+      "chartLabel": "Nuevos usuarios"
+    },
+    "platformSummary": {
+      "title": "Resumen de la plataforma",
+      "subtitle": "Métricas clave de un vistazo",
+      "verifiedUsers": "Usuarios verificados",
+      "thisMonth": "Este mes",
+      "newRegistrations": "Nuevos registros",
+      "totalFiles": "Total de archivos",
+      "stored": "{{size}} almacenados",
+      "canceled": "Canceladas",
+      "subscriptions": "Suscripciones"
+    },
+    "usersByRole": {
+      "title": "Usuarios por rol",
+      "subtitle": "Distribución de roles de usuario en la plataforma"
+    },
+    "error": {
+      "title": "Error al cargar estadísticas",
+      "default": "No se pudieron cargar las estadísticas del panel"
+    }
+  },
+  "emailTemplates": {
+    "title": "Plantillas de email",
+    "subtitle": "Personaliza los emails enviados por el sistema",
+    "selectTemplate": "Selecciona una plantilla para editar",
+    "badges": {
+      "system": "Sistema",
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "preview": {
+      "title": "Vista previa del email",
+      "close": "Cerrar",
+      "button": "Vista previa",
+      "loading": "Cargando..."
+    },
+    "save": {
+      "button": "Guardar cambios",
+      "saving": "Guardando..."
+    },
+    "variables": {
+      "title": "Variables disponibles"
+    },
+    "form": {
+      "templateName": "Nombre de la plantilla",
+      "active": "Activo",
+      "subjectLine": "Línea de asunto",
+      "htmlBody": "Cuerpo HTML",
+      "plainTextBody": "Cuerpo de texto plano (respaldo)",
+      "previewVariables": "Variables de vista previa"
+    },
+    "stats": {
+      "sendCount": "Cantidad de envíos:",
+      "lastSent": "Último envío:"
+    },
+    "toast": {
+      "updated": "La plantilla de email se ha actualizado exitosamente."
+    }
+  },
+  "featureFlags": {
+    "title": "Feature Flags",
+    "subtitle": "Controla el despliegue de funcionalidades y pruebas A/B",
+    "refresh": "Actualizar",
+    "createFlag": "Crear flag",
+    "loading": "Cargando feature flags...",
+    "error": {
+      "title": "Error",
+      "default": "No se pudieron cargar los feature flags"
+    },
+    "empty": {
+      "title": "Aún no hay feature flags creados",
+      "hint": "Haz clic en \"Crear flag\" para agregar tu primer feature flag."
+    },
+    "create": {
+      "title": "Crear Feature Flag",
+      "key": "Clave",
+      "keyPlaceholder": "feature_key",
+      "keyHint": "Solo letras minúsculas, números y guiones bajos",
+      "name": "Nombre",
+      "namePlaceholder": "Nombre de la función",
+      "description": "Descripción",
+      "descriptionPlaceholder": "¿Qué controla este feature flag?",
+      "rolloutPercentage": "Porcentaje de despliegue: {{value}}%",
+      "enabled": "Habilitado",
+      "enabledHint": "Activar este flag inmediatamente",
+      "cancel": "Cancelar",
+      "create": "Crear"
+    },
+    "card": {
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado",
+      "rollout": "Despliegue:",
+      "roles": "Roles:",
+      "saving": "Guardando...",
+      "save": "Guardar",
+      "cancel": "Cancelar"
+    },
+    "tooltips": {
+      "edit": "Editar flag",
+      "delete": "Eliminar flag"
+    },
+    "dialog": {
+      "deleteTitle": "Eliminar Feature Flag",
+      "deleteDescription": "¿Estás seguro de que quieres eliminar el feature flag \"{{key}}\"? Esta acción no se puede deshacer.",
+      "delete": "Eliminar"
+    },
+    "toast": {
+      "created": "Feature flag creado exitosamente",
+      "createError": "Error al crear feature flag",
+      "updated": "Feature flag actualizado",
+      "updateError": "Error al actualizar",
+      "deleted": "Feature flag eliminado",
+      "deleteError": "Error al eliminar",
+      "enabled": "Feature flag habilitado",
+      "disabled": "Feature flag deshabilitado",
+      "toggleError": "Error al cambiar estado"
+    }
+  },
+  "health": {
+    "title": "Salud del sistema",
+    "subtitle": "Monitorea el estado del sistema y métricas de rendimiento",
+    "refresh": "Actualizar",
+    "status": {
+      "healthy": "SALUDABLE",
+      "degraded": "DEGRADADO",
+      "unhealthy": "NO SALUDABLE",
+      "unknown": "Desconocido"
+    },
+    "lastUpdated": "Última actualización: {{time}} (se actualiza automáticamente cada 30s)",
+    "notAvailable": "N/D",
+    "overallStatus": "Estado general del sistema",
+    "components": {
+      "database": "Base de datos",
+      "cache": "Caché",
+      "storage": "Almacenamiento",
+      "api": "API"
+    },
+    "latency": "Latencia",
+    "details": "Detalles",
+    "metrics": {
+      "title": "Métricas del sistema",
+      "database": {
+        "title": "Métricas de base de datos",
+        "activeConnections": "Conexiones activas",
+        "idleConnections": "Conexiones inactivas",
+        "maxConnections": "Conexiones máximas",
+        "avgQueryTime": "Tiempo promedio de consulta",
+        "connectionPoolUsage": "Uso del pool de conexiones"
+      },
+      "cache": {
+        "title": "Métricas de caché",
+        "memoryUsed": "Memoria usada",
+        "memoryMax": "Memoria máxima",
+        "hitRate": "Tasa de aciertos",
+        "keys": "Claves",
+        "cacheHitRate": "Tasa de aciertos de caché"
+      },
+      "storage": {
+        "title": "Métricas de almacenamiento",
+        "used": "Usado",
+        "available": "Disponible",
+        "total": "Total",
+        "files": "Archivos"
+      }
+    },
+    "error": {
+      "title": "Error al cargar estado de salud",
+      "default": "No se pudo cargar la salud del sistema"
+    }
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Configura ajustes y preferencias de toda la aplicación",
+    "tabs": {
+      "email": "Email/SMTP",
+      "emailShort": "Email",
+      "security": "Seguridad",
+      "site": "Sitio",
+      "ipBlocklist": "Lista de IPs bloqueadas",
+      "ipBlocklistShort": "IPs"
+    },
+    "email": {
+      "title": "Configuración de Email / SMTP",
+      "subtitle": "Configura el servidor SMTP para enviar emails transaccionales",
+      "enableSending": "Habilitar envío de emails",
+      "enableSendingHint": "Cuando está habilitado, el sistema enviará emails transaccionales",
+      "smtpHost": "Host SMTP",
+      "smtpHostPlaceholder": "smtp.ejemplo.com",
+      "smtpPort": "Puerto SMTP",
+      "smtpUsername": "Usuario SMTP",
+      "smtpUsernamePlaceholder": "tu-usuario",
+      "smtpPassword": "Contraseña SMTP",
+      "fromEmail": "Email de origen",
+      "fromEmailPlaceholder": "noreply@ejemplo.com",
+      "fromName": "Nombre de origen",
+      "fromNamePlaceholder": "Mi aplicación",
+      "sendTest": "Enviar email de prueba",
+      "sendingTest": "Enviando...",
+      "saveChanges": "Guardar cambios",
+      "saving": "Guardando...",
+      "toast": {
+        "updated": "Configuración de email actualizada exitosamente"
+      }
+    },
+    "security": {
+      "title": "Configuración de seguridad",
+      "subtitle": "Configura políticas de contraseña, ajustes de sesión y requisitos de autenticación",
+      "password": {
+        "title": "Requisitos de contraseña",
+        "minLength": "Longitud mínima",
+        "requireUppercase": "Requerir mayúsculas",
+        "requireLowercase": "Requerir minúsculas",
+        "requireNumber": "Requerir número",
+        "requireSpecial": "Requerir carácter especial"
+      },
+      "session": {
+        "title": "Configuración de sesión",
+        "timeoutMinutes": "Tiempo de espera de sesión (minutos)"
+      },
+      "login": {
+        "title": "Protección de inicio de sesión",
+        "maxAttempts": "Máximo de intentos de inicio de sesión",
+        "lockoutDuration": "Duración del bloqueo (minutos)"
+      },
+      "additional": {
+        "title": "Seguridad adicional",
+        "require2fa": "Requerir 2FA para administradores",
+        "require2faHint": "Las cuentas de administrador deben usar autenticación de dos factores",
+        "allowRegistration": "Permitir registro",
+        "allowRegistrationHint": "Los nuevos usuarios pueden crear cuentas"
+      },
+      "saveChanges": "Guardar cambios",
+      "saving": "Guardando...",
+      "toast": {
+        "updated": "Configuración de seguridad actualizada exitosamente"
+      }
+    },
+    "site": {
+      "title": "Configuración del sitio",
+      "subtitle": "Configura la marca del sitio y ajustes generales",
+      "siteName": "Nombre del sitio",
+      "siteNamePlaceholder": "Mi aplicación",
+      "logoUrl": "URL del logo",
+      "logoUrlPlaceholder": "https://ejemplo.com/logo.png",
+      "siteDescription": "Descripción del sitio",
+      "siteDescriptionPlaceholder": "Una breve descripción de tu sitio",
+      "contactEmail": "Email de contacto",
+      "contactEmailPlaceholder": "contacto@ejemplo.com",
+      "supportUrl": "URL de soporte",
+      "supportUrlPlaceholder": "https://soporte.ejemplo.com",
+      "maintenance": {
+        "title": "Modo de mantenimiento",
+        "subtitle": "Deshabilitar temporalmente el acceso al sitio",
+        "message": "Mensaje de mantenimiento",
+        "messagePlaceholder": "Actualmente estamos en mantenimiento. Por favor, vuelve pronto."
+      },
+      "saveChanges": "Guardar cambios",
+      "saving": "Guardando...",
+      "toast": {
+        "updated": "Configuración del sitio actualizada exitosamente"
+      }
+    },
+    "ipBlocklist": {
+      "title": "Lista de IPs bloqueadas",
+      "subtitle": "Bloquea direcciones IP para que no accedan a la aplicación",
+      "blockIp": "Bloquear IP",
+      "addTitle": "Agregar IP a la lista de bloqueados",
+      "ipAddress": "Dirección IP",
+      "ipAddressPlaceholder": "192.168.1.1",
+      "reason": "Razón",
+      "reasonPlaceholder": "Spam, abuso, etc.",
+      "cancel": "Cancelar",
+      "blocking": "Bloqueando...",
+      "empty": {
+        "title": "No hay IPs bloqueadas",
+        "hint": "Haz clic en \"Bloquear IP\" para agregar una dirección IP a la lista de bloqueados"
+      },
+      "item": {
+        "range": "Rango: {{range}}",
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "added": "Agregado: {{date}} | Accesos: {{count}}"
+      },
+      "tooltips": {
+        "remove": "Quitar de la lista de bloqueados"
+      },
+      "dialog": {
+        "removeTitle": "Quitar IP de la lista de bloqueados",
+        "removeDescription": "¿Estás seguro de que quieres desbloquear {{ip}}? Esta IP podrá acceder a la aplicación nuevamente.",
+        "unblock": "Desbloquear"
+      },
+      "toast": {
+        "blocked": "Dirección IP agregada a la lista de bloqueados",
+        "unblocked": "Dirección IP eliminada de la lista de bloqueados"
+      }
+    }
+  },
+  "users": {
+    "title": "Gestión de usuarios",
+    "subtitle": "Gestiona usuarios, roles y permisos",
+    "export": "Exportar",
+    "refresh": "Actualizar",
+    "searchPlaceholder": "Buscar usuarios...",
+    "selected": "{{count}} seleccionados",
+    "deactivate": "Desactivar",
+    "reactivate": "Reactivar",
+    "loading": "Cargando usuarios...",
+    "error": {
+      "title": "Error",
+      "default": "No se pudieron cargar los usuarios"
+    },
+    "table": {
+      "user": "Usuario",
+      "role": "Rol",
+      "status": "Estado",
+      "created": "Creado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "verified": "Verificado"
+    },
+    "empty": {
+      "title": "No se encontraron usuarios",
+      "searchHint": "Intenta ajustar tu búsqueda"
+    },
+    "tooltips": {
+      "impersonate": "Suplantar usuario",
+      "deactivate": "Desactivar usuario",
+      "reactivate": "Reactivar usuario",
+      "viewDetails": "Ver detalles del usuario"
+    },
+    "pagination": {
+      "showing": "Mostrando {{from}} a {{to}} de {{total}} usuarios",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    },
+    "dialog": {
+      "deactivateTitle": "Desactivar usuario",
+      "deactivateDescription": "¿Estás seguro de que quieres desactivar a {{name}}?",
+      "deactivateUsers": "Desactivar usuarios",
+      "deactivateUsersDescription": "¿Estás seguro de que quieres desactivar {{count}} usuarios?",
+      "reactivateTitle": "Reactivar usuario",
+      "reactivateDescription": "¿Estás seguro de que quieres reactivar a {{name}}?",
+      "reactivateUsers": "Reactivar usuarios",
+      "reactivateUsersDescription": "¿Estás seguro de que quieres reactivar {{count}} usuarios?"
+    },
+    "toast": {
+      "impersonating": "Ahora suplantando a {{name}}",
+      "impersonateError": "Error al suplantar",
+      "deactivated": "Usuario desactivado",
+      "deactivateError": "Error al desactivar",
+      "reactivated": "Usuario reactivado",
+      "reactivateError": "Error al reactivar",
+      "bulkDeactivated": "{{count}} usuarios desactivados",
+      "bulkDeactivateError": "Error al desactivar usuarios",
+      "bulkReactivated": "{{count}} usuarios reactivados",
+      "bulkReactivateError": "Error al reactivar usuarios",
+      "exported": "Usuarios exportados a CSV",
+      "detailsComingSoon": "Página de detalles del usuario próximamente"
+    }
+  }
+}

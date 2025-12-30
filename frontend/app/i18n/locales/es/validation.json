@@ -1,0 +1,19 @@
+{
+  "confirmPassword": {
+    "required": "Por favor confirma tu contrasena",
+    "mismatch": "Las contrasenas no coinciden"
+  },
+  "email": {
+    "required": "El correo es requerido",
+    "invalid": "Por favor ingresa un correo valido"
+  },
+  "name": {
+    "required": "El nombre es requerido",
+    "minLength": "El nombre debe tener al menos 2 caracteres"
+  },
+  "password": {
+    "required": "La contrasena es requerida",
+    "minLength": "La contrasena debe tener al menos 8 caracteres",
+    "mismatch": "Las contrasenas no coinciden"
+  }
+}

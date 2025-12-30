@@ -1,0 +1,19 @@
+{
+  "confirmPassword": {
+    "required": "Please confirm your password",
+    "mismatch": "Passwords don't match"
+  },
+  "email": {
+    "required": "Email is required",
+    "invalid": "Please enter a valid email address"
+  },
+  "name": {
+    "required": "Name is required",
+    "minLength": "Name must be at least 2 characters"
+  },
+  "password": {
+    "required": "Password is required",
+    "minLength": "Password must be at least 8 characters",
+    "mismatch": "Passwords don't match"
+  }
+}
