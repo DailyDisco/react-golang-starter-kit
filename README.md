@@ -28,7 +28,7 @@ docker compose logs -f
 
 **Your app is now running:**
 
-- Frontend: [http://localhost:5173](http://localhost:5173)
+- Frontend: [http://localhost:5193](http://localhost:5193)
 - Backend API: [http://localhost:8080](http://localhost:8080)
 - API Health: [http://localhost:8080/health](http://localhost:8080/health)
 
