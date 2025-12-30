@@ -2,7 +2,7 @@
 # React + Go Starter Kit - Docker Development
 # ============================================
 
-.PHONY: help dev prod build rebuild stop clean logs shell backend-logs frontend-logs db-logs format-backend
+.PHONY: help dev prod build rebuild stop clean logs shell backend-logs frontend-logs db-logs format-backend observability-up observability-down observability-logs grafana-logs prometheus-logs
 
 # Environment file
 ENV_FILE := .env.local
@@ -13,8 +13,11 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 # Development commands
-dev: ## Start development environment with hot reload
+dev: ## Start development environment with hot reload and seed data
 	docker compose --env-file $(ENV_FILE) up -d
+	@echo "Waiting for backend to be ready..."
+	@sleep 8
+	@docker compose --env-file $(ENV_FILE) exec -T backend go run ./cmd/seed 2>/dev/null || echo "Seeding skipped (backend not ready or already seeded)"
 
 dev-logs: ## View development logs
 	docker compose --env-file $(ENV_FILE) logs -f
@@ -81,6 +84,16 @@ db-reset: ## Reset database (WARNING: This will delete all data)
 	docker compose --env-file $(ENV_FILE) up -d postgres
 	@echo "Database reset complete. Run 'make dev' to start all services."
 
+seed: ## Seed the database with test data
+	docker compose --env-file $(ENV_FILE) exec backend go run ./cmd/seed
+
+dev-fresh: ## Start dev with fresh database and seed data
+	docker compose --env-file $(ENV_FILE) down -v
+	docker compose --env-file $(ENV_FILE) up -d
+	@echo "Waiting for services to be ready..."
+	@sleep 10
+	docker compose --env-file $(ENV_FILE) exec backend go run ./cmd/seed
+
 # Environment setup
 setup: ## Initial setup - copy env file and start services
 	cp .env.example .env.local
@@ -98,3 +111,22 @@ health: ## Check health of all services
 # Code formatting
 format-backend: ## Format backend Go code
 	cd backend && go fmt ./...
+
+# Observability commands
+observability-up: ## Start observability stack (Prometheus + Grafana)
+	docker network create app-network 2>/dev/null || true
+	docker compose --env-file $(ENV_FILE) -f docker-compose.yml -f docker-compose.observability.yml up -d prometheus grafana
+	@echo "Prometheus: http://localhost:9090"
+	@echo "Grafana: http://localhost:3001 (admin/admin)"
+
+observability-down: ## Stop observability stack
+	docker compose --env-file $(ENV_FILE) -f docker-compose.observability.yml down
+
+observability-logs: ## View observability stack logs
+	docker compose --env-file $(ENV_FILE) -f docker-compose.observability.yml logs -f
+
+grafana-logs: ## View Grafana logs
+	docker compose --env-file $(ENV_FILE) -f docker-compose.observability.yml logs -f grafana
+
+prometheus-logs: ## View Prometheus logs
+	docker compose --env-file $(ENV_FILE) -f docker-compose.observability.yml logs -f prometheus

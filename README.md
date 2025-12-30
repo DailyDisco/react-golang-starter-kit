@@ -1,8 +1,8 @@
 # React-Golang Starter Kit
 
-A modern, production-ready full-stack starter template combining **React 19** (with TanStack Router & Query) and **Go** (with Chi, GORM, JWT). Built for rapid development with Docker, featuring authentication, RBAC, file uploads, and comprehensive testing.
+A modern, production-ready full-stack starter template combining **React 19** (with TanStack Router & Query) and **Go** (with Chi, GORM, JWT). Built for rapid SaaS development with Docker, featuring multi-tenant organizations, real-time WebSockets, i18n, Prometheus observability, Stripe billing, and comprehensive testing.
 
-🌐 **[Live Demo](https://react-golang-starter-kit.vercel.app/)** | 📚 **[Full Documentation](docs/README.md)**
+📚 **[Full Documentation](docs/README.md)**
 
 ---
 
@@ -65,24 +65,30 @@ npm run dev
 - 🛣️ **TanStack Router** - Type-safe, file-based routing
 - 🔄 **TanStack Query** - Powerful async state management
 - 🎨 **TailwindCSS + ShadCN UI** - Beautiful, accessible components
+- 🌐 **i18next** - Multi-language support (EN/ES included)
+- 📡 **WebSocket** - Real-time notifications and data sync
 - 🧪 **Vitest** - Fast, comprehensive testing
 
 ### Backend Stack
 
 - 🐹 **Go 1.25+** with Chi router
 - 🗄️ **GORM + PostgreSQL** - Powerful ORM and database
-- 🔐 **JWT Authentication** - Secure token-based auth
+- 🔐 **JWT Authentication** - Secure token-based auth with 2FA
+- 🏢 **Multi-Tenant Organizations** - Teams with roles and invitations
 - 👥 **Role-Based Access Control (RBAC)** - 4 permission levels
 - 📤 **File Upload System** - AWS S3 or database storage
 - 🛡️ **Rate Limiting** - Configurable API protection
 - 📧 **Email Service** - SMTP with HTML templates
 - 💳 **Stripe Payments** - Subscriptions, Checkout, Customer Portal
 - ⚡ **Background Jobs** - River (PostgreSQL-backed job queue)
+- 📡 **WebSocket Server** - Real-time push notifications
 - 🔄 **Database Migrations** - golang-migrate with CI validation
 
-### DevOps & Production
+### Observability & DevOps
 
-- 🐳 **Docker** - Development and production ready
+- 📊 **Prometheus Metrics** - HTTP, DB, cache, WebSocket, auth metrics
+- 📈 **Grafana Dashboards** - Pre-configured monitoring
+- 🐳 **Docker Compose** - Development and production ready
 - 📦 **Multi-stage builds** - Optimized images
 - 🔧 **Environment-based config** - Comprehensive .env support
 - ✅ **CI/CD Ready** - GitHub Actions workflows included
@@ -93,13 +99,13 @@ npm run dev
 
 ## 📂 Project Structure
 
-```
+```text
 react-golang-starter-kit/
 ├── backend/              # Go API server
 │   ├── cmd/             # Application entry point
 │   ├── migrations/      # SQL database migrations
 │   ├── internal/        # Private application code
-│   │   ├── auth/        # JWT authentication
+│   │   ├── auth/        # JWT authentication & OAuth
 │   │   ├── cache/       # Redis/memory caching
 │   │   ├── config/      # Configuration management
 │   │   ├── database/    # Database connection & migrations
@@ -107,41 +113,34 @@ react-golang-starter-kit/
 │   │   ├── handlers/    # HTTP request handlers
 │   │   ├── jobs/        # River background jobs
 │   │   ├── middleware/  # Chi middleware
-│   │   ├── models/      # GORM models
+│   │   ├── models/      # GORM models (users, orgs)
+│   │   ├── observability/ # Prometheus metrics
 │   │   ├── ratelimit/   # Rate limiting logic
 │   │   ├── services/    # Business logic layer
 │   │   ├── storage/     # File storage (S3/DB)
-│   │   └── stripe/      # Stripe payments
+│   │   ├── stripe/      # Stripe payments
+│   │   └── websocket/   # Real-time WebSocket hub
 │   ├── docs/            # Swagger documentation
 │   └── scripts/         # Utility scripts
 │
 ├── frontend/            # React application
 │   ├── app/            # Application code
 │   │   ├── components/ # Reusable UI components
-│   │   ├── constants/  # Application constants
 │   │   ├── hooks/      # Custom React hooks
+│   │   ├── i18n/       # Internationalization (EN/ES)
 │   │   ├── layouts/    # Layout components
 │   │   ├── lib/        # Utilities and helpers
-│   │   ├── providers/  # Context providers
 │   │   ├── routes/     # TanStack Router pages
 │   │   ├── services/   # API service layer
-│   │   ├── stores/     # State management
-│   │   └── test/       # Test utilities
+│   │   └── stores/     # Zustand state management
 │   └── public/         # Static assets
 │
-├── docs/               # Documentation
-│   ├── README.md       # Documentation hub
-│   ├── FEATURES.md     # Feature documentation
-│   ├── DEPLOYMENT.md   # Deployment guides
-│   ├── DOCKER_SETUP.md # Docker configuration
-│   ├── FRONTEND_GUIDE.md # React development
-│   ├── DEVELOPMENT.md  # Contributor guide
-│   └── decisions/      # Architecture Decision Records (ADRs)
+├── grafana/            # Grafana dashboard configs
+├── prometheus/         # Prometheus configuration
 │
 ├── docker-compose.yml  # Development environment
 ├── docker-compose.prod.yml # Production environment
-├── docker-build.sh     # Docker build script
-├── init-project.sh     # Project initialization
+├── docker-compose.observability.yml # Monitoring stack
 └── Makefile            # Development commands
 ```
 
@@ -260,15 +259,31 @@ make format-backend   # Format Go backend code
 
 ## 🔐 Core Features
 
-### JWT Authentication
+### JWT Authentication & 2FA
 
-Complete authentication system with registration, login, email verification, and password reset. Includes secure password hashing and token management.
+Complete authentication system with registration, login, email verification, password reset, and TOTP two-factor authentication. Includes OAuth support for Google and GitHub.
 
 **Key Endpoints:**
 
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login (returns JWT)
 - `GET /api/auth/me` - Get current user (authenticated)
+- `POST /api/auth/2fa/enable` - Enable two-factor authentication
+
+### Multi-Tenant Organizations
+
+Full multi-tenancy support with isolated workspaces:
+
+- **Organization Roles** - Owner, Admin, Member with hierarchical permissions
+- **Team Management** - Invite members via email, manage roles
+- **Organization Plans** - Free, Pro, Enterprise tiers
+- **Data Isolation** - Complete tenant separation
+
+**Key Endpoints:**
+
+- `POST /api/organizations` - Create organization
+- `GET /api/organizations/:slug` - Get organization details
+- `POST /api/organizations/:id/invite` - Invite team member
 
 ### Role-Based Access Control (RBAC)
 
@@ -279,6 +294,15 @@ Four-tier permission system with granular access control:
 - `admin` - User and content management
 - `super_admin` - Full system administration
 
+### Real-Time WebSocket
+
+Bi-directional real-time communication:
+
+- **Notifications** - Push alerts to connected users
+- **Data Sync** - Automatic cache invalidation on updates
+- **Broadcasts** - System-wide announcements
+- **Auto-Reconnect** - Exponential backoff reconnection
+
 ### Stripe Payments
 
 Full subscription billing with Stripe integration:
@@ -288,20 +312,23 @@ Full subscription billing with Stripe integration:
 - **Webhooks** - Real-time subscription sync with role updates
 - **Billing Pages** - `/pricing` and `/billing` routes included
 
-**Key Endpoints:**
+### Internationalization (i18n)
 
-- `GET /api/billing/plans` - Available subscription plans
-- `POST /api/billing/checkout` - Create checkout session
-- `POST /api/billing/portal` - Create portal session
-- `POST /api/webhooks/stripe` - Webhook handler
+Multi-language support with i18next:
 
-### Email Service
+- **Languages** - English and Spanish included
+- **Namespaces** - common, auth, errors, validation
+- **Detection** - Browser language auto-detection
+- **Persistence** - localStorage preference saving
 
-SMTP-based transactional emails with HTML templates:
+### Observability
 
-- Verification emails after registration
-- Password reset emails
-- Async sending via background jobs
+Full monitoring stack with Prometheus and Grafana:
+
+- **HTTP Metrics** - Request count, duration, in-flight
+- **Database Metrics** - Query duration, connection pool
+- **WebSocket Metrics** - Active connections, messages
+- **Business Metrics** - Auth attempts, registrations, subscriptions
 
 ### Background Jobs (River)
 
@@ -373,4 +400,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ for rapid full-stack development**
+Built with care for rapid full-stack SaaS development.

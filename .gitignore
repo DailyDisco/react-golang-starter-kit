@@ -194,4 +194,4 @@ postgres_data/
 *.pkg
 *.msi
 
-.cursorignore
+.cursorignoreCREDENTIALS.txt
