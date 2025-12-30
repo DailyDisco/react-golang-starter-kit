@@ -42,8 +42,8 @@ function PricingPage() {
       amount: 0,
       currency: "usd",
       interval: "month",
-      features: t("plans.free.features", { returnObjects: true }) as string[],
-      limitations: t("plans.free.limitations", { returnObjects: true }) as string[],
+      features: t("plans.free.features", { returnObjects: true }),
+      limitations: t("plans.free.limitations", { returnObjects: true }),
     },
     {
       id: "pro",
@@ -52,8 +52,8 @@ function PricingPage() {
       amount: 1900, // $19.00
       currency: "usd",
       interval: "month",
-      features: t("plans.pro.features", { returnObjects: true }) as string[],
-      limitations: t("plans.pro.limitations", { returnObjects: true }) as string[],
+      features: t("plans.pro.features", { returnObjects: true }),
+      limitations: t("plans.pro.limitations", { returnObjects: true }),
       popular: true,
     },
     {
@@ -63,7 +63,7 @@ function PricingPage() {
       amount: 9900, // $99.00
       currency: "usd",
       interval: "month",
-      features: t("plans.enterprise.features", { returnObjects: true }) as string[],
+      features: t("plans.enterprise.features", { returnObjects: true }),
       limitations: t("plans.enterprise.limitations", { returnObjects: true }) as string[],
     },
   ];

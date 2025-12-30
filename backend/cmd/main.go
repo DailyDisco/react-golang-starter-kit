@@ -487,16 +487,16 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 			r.Post("/me/delete/cancel", handlers.CancelAccountDeletion) // POST /api/users/me/delete/cancel (backward compat)
 
 			// Data export
-			r.Post("/me/export", handlers.RequestDataExport)    // POST /api/users/me/export
-			r.Get("/me/export", handlers.GetDataExportStatus)   // GET /api/users/me/export
+			r.Post("/me/export", handlers.RequestDataExport)  // POST /api/users/me/export
+			r.Get("/me/export", handlers.GetDataExportStatus) // GET /api/users/me/export
 
 			// Avatar management
 			r.Post("/me/avatar", handlers.UploadAvatar)   // POST /api/users/me/avatar
 			r.Delete("/me/avatar", handlers.DeleteAvatar) // DELETE /api/users/me/avatar
 
 			// Connected accounts (OAuth)
-			r.Get("/me/connected-accounts", handlers.GetConnectedAccounts)              // GET /api/users/me/connected-accounts
-			r.Delete("/me/connected-accounts/{provider}", handlers.DisconnectAccount)   // DELETE /api/users/me/connected-accounts/{provider}
+			r.Get("/me/connected-accounts", handlers.GetConnectedAccounts)            // GET /api/users/me/connected-accounts
+			r.Delete("/me/connected-accounts/{provider}", handlers.DisconnectAccount) // DELETE /api/users/me/connected-accounts/{provider}
 		})
 
 		// Specific user routes
@@ -687,29 +687,29 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 		r.Use(ratelimit.NewAPIRateLimitMiddleware(rateLimitConfig))
 
 		// List user's organizations and create new ones
-		r.Get("/", orgHandler.ListOrganizations)    // GET /api/organizations
-		r.Post("/", orgHandler.CreateOrganization)  // POST /api/organizations
+		r.Get("/", orgHandler.ListOrganizations)   // GET /api/organizations
+		r.Post("/", orgHandler.CreateOrganization) // POST /api/organizations
 
 		// Organization-specific routes (require org membership)
 		r.Route("/{orgSlug}", func(r chi.Router) {
 			r.Use(tenantMiddleware.RequireOrganization)
 
-			r.Get("/", orgHandler.GetOrganization)       // GET /api/organizations/{orgSlug}
+			r.Get("/", orgHandler.GetOrganization)         // GET /api/organizations/{orgSlug}
 			r.Post("/leave", orgHandler.LeaveOrganization) // POST /api/organizations/{orgSlug}/leave
 
 			// Admin+ only routes
 			r.Group(func(r chi.Router) {
 				r.Use(tenantMiddleware.RequireOrgRole(models.OrgRoleAdmin))
-				r.Put("/", orgHandler.UpdateOrganization)  // PUT /api/organizations/{orgSlug}
+				r.Put("/", orgHandler.UpdateOrganization) // PUT /api/organizations/{orgSlug}
 
 				// Member management
-				r.Get("/members", orgHandler.ListMembers)                // GET /api/organizations/{orgSlug}/members
-				r.Post("/members/invite", orgHandler.InviteMember)       // POST /api/organizations/{orgSlug}/members/invite
+				r.Get("/members", orgHandler.ListMembers)                    // GET /api/organizations/{orgSlug}/members
+				r.Post("/members/invite", orgHandler.InviteMember)           // POST /api/organizations/{orgSlug}/members/invite
 				r.Put("/members/{userId}/role", orgHandler.UpdateMemberRole) // PUT /api/organizations/{orgSlug}/members/{userId}/role
-				r.Delete("/members/{userId}", orgHandler.RemoveMember)   // DELETE /api/organizations/{orgSlug}/members/{userId}
+				r.Delete("/members/{userId}", orgHandler.RemoveMember)       // DELETE /api/organizations/{orgSlug}/members/{userId}
 
 				// Invitation management
-				r.Get("/invitations", orgHandler.ListInvitations)            // GET /api/organizations/{orgSlug}/invitations
+				r.Get("/invitations", orgHandler.ListInvitations)                    // GET /api/organizations/{orgSlug}/invitations
 				r.Delete("/invitations/{invitationId}", orgHandler.CancelInvitation) // DELETE /api/organizations/{orgSlug}/invitations/{invitationId}
 			})
 

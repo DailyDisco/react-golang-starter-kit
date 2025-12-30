@@ -1,6 +1,6 @@
 import { GripVerticalIcon } from 'lucide-react';
 import * as React from 'react';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 import ResizablePrimitive from 'react-resizable-panels';
 
 import { cn } from '@/lib/utils';

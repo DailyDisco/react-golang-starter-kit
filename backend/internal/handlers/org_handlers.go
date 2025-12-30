@@ -66,33 +66,33 @@ type UpdateMemberRoleRequest struct {
 
 // OrganizationResponse represents an organization in API responses
 type OrganizationResponse struct {
-	ID        uint                     `json:"id"`
-	Name      string                   `json:"name"`
-	Slug      string                   `json:"slug"`
-	Plan      models.OrganizationPlan  `json:"plan"`
-	CreatedAt string                   `json:"created_at"`
-	Role      models.OrganizationRole  `json:"role,omitempty"` // User's role in this org
+	ID        uint                    `json:"id"`
+	Name      string                  `json:"name"`
+	Slug      string                  `json:"slug"`
+	Plan      models.OrganizationPlan `json:"plan"`
+	CreatedAt string                  `json:"created_at"`
+	Role      models.OrganizationRole `json:"role,omitempty"` // User's role in this org
 }
 
 // MemberResponse represents a member in API responses
 type MemberResponse struct {
-	ID         uint                    `json:"id"`
-	UserID     uint                    `json:"user_id"`
-	Email      string                  `json:"email"`
-	Name       string                  `json:"name"`
-	Role       models.OrganizationRole `json:"role"`
-	Status     models.MemberStatus     `json:"status"`
-	JoinedAt   *string                 `json:"joined_at,omitempty"`
+	ID       uint                    `json:"id"`
+	UserID   uint                    `json:"user_id"`
+	Email    string                  `json:"email"`
+	Name     string                  `json:"name"`
+	Role     models.OrganizationRole `json:"role"`
+	Status   models.MemberStatus     `json:"status"`
+	JoinedAt *string                 `json:"joined_at,omitempty"`
 }
 
 // InvitationResponse represents an invitation in API responses
 type InvitationResponse struct {
-	ID          uint                    `json:"id"`
-	Email       string                  `json:"email"`
-	Role        models.OrganizationRole `json:"role"`
-	InvitedBy   string                  `json:"invited_by"`
-	ExpiresAt   string                  `json:"expires_at"`
-	CreatedAt   string                  `json:"created_at"`
+	ID        uint                    `json:"id"`
+	Email     string                  `json:"email"`
+	Role      models.OrganizationRole `json:"role"`
+	InvitedBy string                  `json:"invited_by"`
+	ExpiresAt string                  `json:"expires_at"`
+	CreatedAt string                  `json:"created_at"`
 }
 
 // ListOrganizations returns all organizations the user is a member of

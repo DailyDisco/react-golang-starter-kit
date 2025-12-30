@@ -47,7 +47,7 @@ export function Breadcrumbs() {
   const breadcrumbItems = pathSegments.map((segment, index) => {
     const path = "/" + pathSegments.slice(0, index + 1).join("/");
     const translationKey = routeTranslationKeys[segment];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const label = translationKey
       ? (t(translationKey as any) as string)
       : segment.charAt(0).toUpperCase() + segment.slice(1);

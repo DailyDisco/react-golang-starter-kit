@@ -711,10 +711,10 @@ func (d *DataExport) ToResponse() DataExportResponse {
 // ConnectedAccountResponse represents an OAuth connected account
 // swagger:model ConnectedAccountResponse
 type ConnectedAccountResponse struct {
-	Provider        string `json:"provider"`
-	ProviderUserID  string `json:"provider_user_id,omitempty"`
-	Email           string `json:"email,omitempty"`
-	ConnectedAt     string `json:"connected_at"`
+	Provider       string `json:"provider"`
+	ProviderUserID string `json:"provider_user_id,omitempty"`
+	Email          string `json:"email,omitempty"`
+	ConnectedAt    string `json:"connected_at"`
 }
 
 // AvatarUploadResponse represents the response after avatar upload
