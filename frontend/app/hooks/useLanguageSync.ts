@@ -29,7 +29,7 @@ export function useLanguageSync() {
   });
 
   // Mutation to update language preference
-  const updateLanguageMutation = useMutation({
+  const { mutate: updateLanguage, isPending: isUpdating } = useMutation({
     mutationFn: (newLanguage: string) => SettingsService.updatePreferences({ language: newLanguage }),
     onSuccess: () => {
       // Invalidate preferences cache
@@ -60,12 +60,12 @@ export function useLanguageSync() {
   useEffect(() => {
     if (isAuthenticated && isInitialized && hasInitialSyncedRef.current && language !== previousLanguageRef.current) {
       previousLanguageRef.current = language;
-      updateLanguageMutation.mutate(language);
+      updateLanguage(language);
     }
-  }, [language, isAuthenticated, isInitialized, updateLanguageMutation]);
+  }, [language, isAuthenticated, isInitialized, updateLanguage]);
 
   return {
     language,
-    isLoading: updateLanguageMutation.isPending,
+    isLoading: isUpdating,
   };
 }

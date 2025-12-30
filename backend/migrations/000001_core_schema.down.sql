@@ -1,0 +1,5 @@
+-- Rollback core schema
+DROP TABLE IF EXISTS data_exports CASCADE;
+DROP TABLE IF EXISTS user_preferences CASCADE;
+DROP TABLE IF EXISTS files CASCADE;
+DROP TABLE IF EXISTS users CASCADE;

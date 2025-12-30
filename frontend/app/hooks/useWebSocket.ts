@@ -60,6 +60,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   const wsRef = useRef<WebSocket | null>(null);
   const retriesRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectRef = useRef<(() => void) | null>(null);
 
   const [isConnected, setIsConnected] = useState(false);
 
@@ -203,7 +204,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
             code: event.code,
           });
 
-          reconnectTimeoutRef.current = setTimeout(connect, delay);
+          reconnectTimeoutRef.current = setTimeout(() => connectRef.current?.(), delay);
         } else if (retriesRef.current >= maxRetries) {
           logger.warn("WebSocket max reconnection attempts reached");
         }
@@ -216,6 +217,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       logger.error("Failed to create WebSocket connection", err);
     }
   }, [isAuthenticated, getWebSocketUrl, handleMessage, reconnectInterval, maxRetries]);
+
+  // Keep connectRef updated so reconnect timeout can call the latest version
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   /**
    * Disconnect from WebSocket server

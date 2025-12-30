@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -34,6 +35,49 @@ func DefaultPoolConfig() *PoolConfig {
 		MaxConnIdleTime:   1 * time.Minute,
 		HealthCheckPeriod: 30 * time.Second,
 	}
+}
+
+// LoadPoolConfig loads pool configuration from environment variables with sensible defaults.
+// Environment variables:
+//   - DB_POOL_MAX_CONNS: Maximum connections (default: 25)
+//   - DB_POOL_MIN_CONNS: Minimum connections (default: 5)
+//   - DB_POOL_MAX_CONN_LIFETIME_MINUTES: Max connection lifetime in minutes (default: 5)
+//   - DB_POOL_MAX_CONN_IDLE_TIME_MINUTES: Max idle time in minutes (default: 1)
+//   - DB_POOL_HEALTH_CHECK_SECONDS: Health check period in seconds (default: 30)
+func LoadPoolConfig() *PoolConfig {
+	config := DefaultPoolConfig()
+
+	if val := os.Getenv("DB_POOL_MAX_CONNS"); val != "" {
+		if n, err := strconv.Atoi(val); err == nil && n > 0 {
+			config.MaxConns = int32(n)
+		}
+	}
+
+	if val := os.Getenv("DB_POOL_MIN_CONNS"); val != "" {
+		if n, err := strconv.Atoi(val); err == nil && n >= 0 {
+			config.MinConns = int32(n)
+		}
+	}
+
+	if val := os.Getenv("DB_POOL_MAX_CONN_LIFETIME_MINUTES"); val != "" {
+		if n, err := strconv.Atoi(val); err == nil && n > 0 {
+			config.MaxConnLifetime = time.Duration(n) * time.Minute
+		}
+	}
+
+	if val := os.Getenv("DB_POOL_MAX_CONN_IDLE_TIME_MINUTES"); val != "" {
+		if n, err := strconv.Atoi(val); err == nil && n > 0 {
+			config.MaxConnIdleTime = time.Duration(n) * time.Minute
+		}
+	}
+
+	if val := os.Getenv("DB_POOL_HEALTH_CHECK_SECONDS"); val != "" {
+		if n, err := strconv.Atoi(val); err == nil && n > 0 {
+			config.HealthCheckPeriod = time.Duration(n) * time.Second
+		}
+	}
+
+	return config
 }
 
 // Pool is the shared pgx connection pool for the application.

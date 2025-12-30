@@ -2,7 +2,7 @@
 # React + Go Starter Kit - Docker Development
 # ============================================
 
-.PHONY: help dev prod build rebuild stop clean logs shell backend-logs frontend-logs db-logs format-backend observability-up observability-down observability-logs grafana-logs prometheus-logs
+.PHONY: help dev prod build rebuild stop clean logs shell backend-logs frontend-logs db-logs format-backend observability-up observability-down observability-logs grafana-logs prometheus-logs deploy-docker deploy-vercel deploy-railway configure-features
 
 # Environment file
 ENV_FILE := .env.local
@@ -130,3 +130,23 @@ grafana-logs: ## View Grafana logs
 
 prometheus-logs: ## View Prometheus logs
 	docker compose --env-file $(ENV_FILE) -f docker-compose.observability.yml logs -f prometheus
+
+# Deployment commands
+deploy-docker: ## Deploy production containers (use --registry and --push flags)
+	./scripts/deploy-docker.sh
+
+deploy-vercel: ## Deploy frontend to Vercel
+	./scripts/deploy-vercel.sh
+
+deploy-vercel-prod: ## Deploy frontend to Vercel (production)
+	./scripts/deploy-vercel.sh --prod
+
+deploy-railway: ## Deploy backend to Railway
+	./scripts/deploy-railway.sh
+
+# Configuration commands
+configure-features: ## Interactive feature configuration wizard
+	./scripts/configure-features.sh
+
+init: ## Initialize a new project from this template
+	./init-project.sh
