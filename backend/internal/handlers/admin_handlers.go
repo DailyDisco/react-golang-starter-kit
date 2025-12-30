@@ -410,6 +410,9 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate user cache after role change
+	invalidateUserCache(r.Context(), uint(userID))
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user.ToUserResponse())
 }
@@ -479,6 +482,9 @@ func DeactivateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate user cache after deactivation
+	invalidateUserCache(r.Context(), uint(userID))
+
 	// Log the action
 	audit.LogUserUpdate(claims.UserID, uint(userID), map[string]interface{}{"is_active": false}, r)
 
@@ -543,6 +549,9 @@ func ReactivateUser(w http.ResponseWriter, r *http.Request) {
 		WriteInternalError(w, r, "Failed to reactivate user")
 		return
 	}
+
+	// Invalidate user cache after reactivation
+	invalidateUserCache(r.Context(), uint(userID))
 
 	// Log the action
 	audit.LogUserUpdate(claims.UserID, uint(userID), map[string]interface{}{"is_active": true}, r)

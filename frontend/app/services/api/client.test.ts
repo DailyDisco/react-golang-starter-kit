@@ -71,21 +71,32 @@ describe("API Client", () => {
       expect(headers["Content-Type"]).toBe("application/json");
     });
 
-    it("should include Authorization header when auth token exists", () => {
-      localStorageMock.setItem("auth_token", "test-token-123");
+    it("should include CSRF token when includeCSRF is true and token exists", () => {
+      // Set up CSRF cookie
+      Object.defineProperty(document, "cookie", {
+        writable: true,
+        value: "csrf_token=test-csrf-token",
+      });
       const headers = createHeaders(true);
-      expect(headers["Authorization"]).toBe("Bearer test-token-123");
+      expect(headers["X-CSRF-Token"]).toBe("test-csrf-token");
     });
 
-    it("should not include Authorization header when no token exists", () => {
-      const headers = createHeaders(true);
-      expect(headers["Authorization"]).toBeUndefined();
-    });
-
-    it("should not include Authorization header when includeAuth is false", () => {
-      localStorageMock.setItem("auth_token", "test-token-123");
+    it("should not include CSRF token when includeCSRF is false", () => {
+      Object.defineProperty(document, "cookie", {
+        writable: true,
+        value: "csrf_token=test-csrf-token",
+      });
       const headers = createHeaders(false);
-      expect(headers["Authorization"]).toBeUndefined();
+      expect(headers["X-CSRF-Token"]).toBeUndefined();
+    });
+
+    it("should not include CSRF token when no token exists", () => {
+      Object.defineProperty(document, "cookie", {
+        writable: true,
+        value: "",
+      });
+      const headers = createHeaders(true);
+      expect(headers["X-CSRF-Token"]).toBeUndefined();
     });
   });
 
@@ -108,7 +119,7 @@ describe("API Client", () => {
     });
 
     it("should clear localStorage and redirect on 401", async () => {
-      localStorageMock.setItem("auth_token", "expired-token");
+      // auth_token is in httpOnly cookie, only auth_user is in localStorage
       localStorageMock.setItem("auth_user", '{"id": 1}');
 
       mockFetch.mockResolvedValueOnce({
@@ -118,14 +129,15 @@ describe("API Client", () => {
 
       await authenticatedFetch("/api/protected");
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_token");
+      // Only auth_user is in localStorage (tokens are in httpOnly cookies)
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_user");
       expect(mockLocation.href).toBe("/login");
     });
 
     it("should not redirect to login if already on login page", async () => {
       mockLocation.pathname = "/login";
-      localStorageMock.setItem("auth_token", "expired-token");
+      // auth_token is in httpOnly cookie
+      localStorageMock.setItem("auth_user", '{"id": 1}');
 
       mockFetch.mockResolvedValueOnce({
         status: 401,
@@ -397,7 +409,7 @@ describe("API Client", () => {
     it("should clear all auth data on 401", async () => {
       localStorageMock.setItem("auth_token", "expired-token");
       localStorageMock.setItem("auth_user", '{"id": 1}');
-      localStorageMock.setItem("refresh_token", "old-refresh");
+      // Note: refresh token is now in httpOnly cookie, not localStorage
 
       mockFetch.mockResolvedValueOnce({
         status: 401,
@@ -406,9 +418,8 @@ describe("API Client", () => {
 
       await authenticatedFetch("/api/protected");
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_token");
+      // Only auth_user is in localStorage (tokens are in httpOnly cookies)
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_user");
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("refresh_token");
     });
   });
 

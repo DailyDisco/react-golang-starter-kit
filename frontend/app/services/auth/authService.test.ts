@@ -192,7 +192,7 @@ describe("AuthService", () => {
 
   describe("logout", () => {
     it("should call logout endpoint and clear localStorage", async () => {
-      localStorageMock.setItem("auth_token", "test-token");
+      // Only auth_user is in localStorage (tokens are in httpOnly cookies)
       localStorageMock.setItem("auth_user", '{"id": 1}');
 
       vi.mocked(apiFetch).mockResolvedValueOnce({
@@ -202,18 +202,19 @@ describe("AuthService", () => {
       await AuthService.logout();
 
       expect(apiFetch).toHaveBeenCalledWith("http://localhost:8080/api/v1/auth/logout", { method: "POST" });
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_token");
+      // Only auth_user is removed from localStorage (tokens are cleared via backend)
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_user");
     });
 
     it("should clear localStorage even if API call fails", async () => {
-      localStorageMock.setItem("auth_token", "test-token");
+      // Only auth_user is in localStorage (tokens are in httpOnly cookies)
+      localStorageMock.setItem("auth_user", '{"id": 1}');
 
       vi.mocked(apiFetch).mockRejectedValueOnce(new Error("Network error"));
 
       await AuthService.logout();
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_token");
+      // Only auth_user is removed from localStorage (tokens are cleared via backend)
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_user");
     });
   });
@@ -228,7 +229,7 @@ describe("AuthService", () => {
     });
 
     it("should return false and clear storage when session is invalid", async () => {
-      localStorageMock.setItem("auth_token", "expired-token");
+      // auth_token is in httpOnly cookie, only auth_user is in localStorage
       localStorageMock.setItem("auth_user", '{"id": 1}');
 
       vi.mocked(authenticatedFetchWithParsing).mockRejectedValueOnce(new Error("Unauthorized"));
@@ -236,7 +237,7 @@ describe("AuthService", () => {
       const result = await AuthService.isAuthenticated();
 
       expect(result).toBe(false);
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_token");
+      // Only auth_user is in localStorage (tokens are in httpOnly cookies)
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_user");
     });
   });
@@ -245,13 +246,16 @@ describe("AuthService", () => {
     it("should store user data in localStorage", () => {
       const authData = {
         user: { id: 1, name: "Test User", email: "test@example.com" },
-        token: "jwt-token",
+        token: "jwt-token", // Note: token is in httpOnly cookie, not stored in localStorage
       };
 
       AuthService.storeAuthData(authData as any);
 
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("auth_user", JSON.stringify(authData.user));
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("auth_token", "jwt-token");
+      // Only minimal user data is stored (tokens are in httpOnly cookies)
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        "auth_user",
+        JSON.stringify({ id: 1, name: "Test User", email: "test@example.com" })
+      );
     });
 
     it("should throw error when user data is missing", () => {
@@ -277,12 +281,12 @@ describe("AuthService", () => {
 
   describe("clearStorage", () => {
     it("should remove auth data from localStorage", () => {
-      localStorageMock.setItem("auth_token", "token");
+      // Only auth_user is in localStorage (tokens are in httpOnly cookies)
       localStorageMock.setItem("auth_user", '{"id": 1}');
 
       AuthService.clearStorage();
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_token");
+      // Only auth_user is removed (tokens are cleared via backend logout endpoint)
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_user");
     });
   });

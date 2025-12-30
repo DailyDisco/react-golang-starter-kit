@@ -36,9 +36,8 @@ export function SessionExpiredModal() {
 
   const handleSignIn = () => {
     setIsOpen(false);
-    // Clear any stored auth data
+    // Clear any stored auth data (refresh token is in httpOnly cookie, cleared by backend)
     localStorage.removeItem("auth_user");
-    localStorage.removeItem("refresh_token");
     // Navigate to login
     void navigate({ to: "/login" });
   };

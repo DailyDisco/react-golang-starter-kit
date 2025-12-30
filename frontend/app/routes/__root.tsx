@@ -82,7 +82,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         authenticated = true;
       } catch {
         localStorage.removeItem("auth_user");
-        localStorage.removeItem("refresh_token");
       }
     }
 

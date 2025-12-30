@@ -28,7 +28,6 @@ function getStoredUser(): User | null {
   } catch {
     // Invalid user data - clear auth storage
     localStorage.removeItem("auth_user");
-    localStorage.removeItem("refresh_token");
     return null;
   }
 }

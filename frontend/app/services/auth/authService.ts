@@ -66,18 +66,13 @@ export class AuthService {
   }
 
   /**
-   * Refresh access token using refresh token
+   * Refresh access token using refresh token from httpOnly cookie
+   * The refresh token is automatically sent via the cookie - no body needed
    */
   static async refreshAccessToken(): Promise<AuthResponse> {
-    const refreshToken = this.getRefreshToken();
-
-    if (!refreshToken) {
-      throw new Error("No refresh token available");
-    }
-
     const response = await apiFetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
       method: "POST",
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      credentials: "include", // Ensure cookies are sent
     });
 
     if (!response.ok) {
@@ -227,11 +222,13 @@ export class AuthService {
   }
 
   /**
-   * Get stored refresh token
+   * Check if a refresh token might be available (in httpOnly cookie)
+   * We can't read the cookie directly, so we rely on having stored user data
+   * as an indicator that we might have a valid session
    */
-  static getRefreshToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("refresh_token");
+  static hasStoredSession(): boolean {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("auth_user") !== null;
   }
 
   /**
@@ -273,12 +270,7 @@ export class AuthService {
         role: authData.user.role,
       };
       localStorage.setItem("auth_user", JSON.stringify(minimalUser));
-
-      // Store refresh token (used to get new access tokens via API)
-      if (authData.refresh_token) {
-        localStorage.setItem("refresh_token", authData.refresh_token);
-      }
-      // Note: Access token is handled via httpOnly cookie set by the backend
+      // Note: Both access token and refresh token are handled via httpOnly cookies set by the backend
     } catch (storageError) {
       logger.error("Failed to store auth data in localStorage", storageError);
       throw new Error("Failed to store authentication data");
@@ -294,8 +286,7 @@ export class AuthService {
     }
 
     localStorage.removeItem("auth_user");
-    localStorage.removeItem("refresh_token");
-    // Note: Access token in httpOnly cookie is cleared by the backend logout endpoint
+    // Note: Both access token and refresh token httpOnly cookies are cleared by the backend logout endpoint
   }
 
   /**
@@ -304,12 +295,13 @@ export class AuthService {
    * Returns true if session is valid, false otherwise
    */
   static async initializeFromStorage(): Promise<boolean> {
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) {
+    // Check if we have stored user data (indicates a previous session)
+    if (!this.hasStoredSession()) {
       return false;
     }
 
     try {
+      // Try to refresh the token using the httpOnly cookie
       await this.refreshAccessToken();
       return true;
     } catch (error) {

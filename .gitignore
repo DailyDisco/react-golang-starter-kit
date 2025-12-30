@@ -195,3 +195,5 @@ postgres_data/
 *.msi
 
 .cursorignoreCREDENTIALS.txt
+
+ClaudeCodeSettingsGUI

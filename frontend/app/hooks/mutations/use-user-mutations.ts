@@ -17,7 +17,7 @@ export const useCreateUser = () => {
       queryClient.setQueryData(queryKeys.users.lists(), (old: User[] | undefined) =>
         old ? [...old, newUser] : [newUser]
       );
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
       resetForm();
       toast.success("User created successfully");
     },

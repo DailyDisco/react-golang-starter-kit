@@ -56,9 +56,9 @@ func DefaultSecurityConfig() *SecurityConfig {
 		// Prevent MIME type sniffing
 		ContentTypeOptions: "nosniff",
 
-		// HSTS settings - SECURITY: Enable in production with HTTPS
-		// Set SECURITY_HSTS_ENABLED=true to enable (requires HTTPS)
-		HSTSEnabled:           false,    // PRODUCTION: Set SECURITY_HSTS_ENABLED=true
+		// HSTS settings - Auto-enabled in production via LoadSecurityConfig()
+		// Override with SECURITY_HSTS_ENABLED=false to disable (not recommended)
+		HSTSEnabled:           false,    // Default false; auto-enabled in production
 		HSTSMaxAge:            31536000, // 1 year
 		HSTSIncludeSubdomains: true,
 		HSTSPreload:           false,

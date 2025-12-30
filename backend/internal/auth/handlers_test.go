@@ -189,32 +189,15 @@ func TestResetPassword_WeakPassword(t *testing.T) {
 
 // ============ RefreshAccessToken Tests ============
 
-func TestRefreshAccessToken_InvalidJSON(t *testing.T) {
-	req := httptest.NewRequest("POST", "/api/auth/refresh", bytes.NewBufferString("invalid json"))
-	req.Header.Set("Content-Type", "application/json")
+func TestRefreshAccessToken_NoCookie(t *testing.T) {
+	// No refresh token cookie provided - should return unauthorized
+	req := httptest.NewRequest("POST", "/api/auth/refresh", nil)
 	rec := httptest.NewRecorder()
 
 	RefreshAccessToken(rec, req)
 
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, rec.Code)
-	}
-}
-
-func TestRefreshAccessToken_MissingToken(t *testing.T) {
-	reqBody := models.RefreshTokenRequest{
-		RefreshToken: "",
-	}
-	body, _ := json.Marshal(reqBody)
-
-	req := httptest.NewRequest("POST", "/api/auth/refresh", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-
-	RefreshAccessToken(rec, req)
-
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("expected status %d, got %d", http.StatusBadRequest, rec.Code)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, rec.Code)
 	}
 
 	var response models.ErrorResponse
@@ -222,8 +205,33 @@ func TestRefreshAccessToken_MissingToken(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if response.Message != "Refresh token is required" {
-		t.Errorf("expected message 'Refresh token is required', got '%s'", response.Message)
+	if response.Message != "Refresh token not found" {
+		t.Errorf("expected message 'Refresh token not found', got '%s'", response.Message)
+	}
+}
+
+func TestRefreshAccessToken_EmptyCookie(t *testing.T) {
+	// Empty refresh token cookie - should return unauthorized
+	req := httptest.NewRequest("POST", "/api/auth/refresh", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  RefreshCookieName,
+		Value: "",
+	})
+	rec := httptest.NewRecorder()
+
+	RefreshAccessToken(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, rec.Code)
+	}
+
+	var response models.ErrorResponse
+	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if response.Message != "Refresh token not found" {
+		t.Errorf("expected message 'Refresh token not found', got '%s'", response.Message)
 	}
 }
 

@@ -43,24 +43,17 @@ describe("auth-store logic", () => {
   });
 
   describe("localStorage auth data", () => {
-    it("stores auth token in localStorage", () => {
-      localStorage.setItem("auth_token", "test-token");
-      expect(localStorage.getItem("auth_token")).toBe("test-token");
-    });
-
+    // Note: auth_token is now in httpOnly cookie, only auth_user is in localStorage
     it("stores auth user in localStorage", () => {
       localStorage.setItem("auth_user", JSON.stringify(mockUser));
       expect(JSON.parse(localStorage.getItem("auth_user") || "{}")).toEqual(mockUser);
     });
 
-    it("removes auth data on clear", () => {
-      localStorage.setItem("auth_token", "test-token");
+    it("removes auth user on clear", () => {
       localStorage.setItem("auth_user", JSON.stringify(mockUser));
 
-      localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_user");
 
-      expect(localStorage.getItem("auth_token")).toBeNull();
       expect(localStorage.getItem("auth_user")).toBeNull();
     });
 
@@ -79,20 +72,18 @@ describe("auth-store logic", () => {
   });
 
   describe("auth state validation", () => {
-    it("requires both token and user for valid auth", () => {
-      const hasToken = localStorage.getItem("auth_token") !== null;
+    // Note: auth_token is now in httpOnly cookie, only auth_user presence indicates a session
+    it("checks auth_user presence for session indicator", () => {
       const hasUser = localStorage.getItem("auth_user") !== null;
 
-      // Both must be present for valid auth
-      expect(hasToken && hasUser).toBe(false);
+      // No user stored yet
+      expect(hasUser).toBe(false);
 
-      localStorage.setItem("auth_token", "token");
       localStorage.setItem("auth_user", JSON.stringify(mockUser));
 
-      const hasTokenNow = localStorage.getItem("auth_token") !== null;
       const hasUserNow = localStorage.getItem("auth_user") !== null;
 
-      expect(hasTokenNow && hasUserNow).toBe(true);
+      expect(hasUserNow).toBe(true);
     });
 
     it("validates user JSON structure", () => {
@@ -249,49 +240,24 @@ describe("auth-store logic", () => {
   });
 
   describe("auth state consistency", () => {
-    it("should clear all auth data when token is present but user is missing", () => {
-      localStorage.setItem("auth_token", "valid-token");
-      // No auth_user set - inconsistent state
+    // Note: auth_token is now in httpOnly cookie, only auth_user is in localStorage
+    // Session validity is determined by backend cookie validation, not localStorage tokens
 
-      const hasToken = localStorage.getItem("auth_token") !== null;
-      const hasUser = localStorage.getItem("auth_user") !== null;
-
-      // Detect inconsistent state
-      if (hasToken && !hasUser) {
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("refresh_token");
-      }
-
-      expect(localStorage.getItem("auth_token")).toBeNull();
-    });
-
-    it("should clear all auth data when user is present but token is missing", () => {
+    it("should have auth_user present for session indicator", () => {
       localStorage.setItem("auth_user", JSON.stringify(mockUser));
-      // No auth_token set - inconsistent state
 
-      const hasToken = localStorage.getItem("auth_token") !== null;
       const hasUser = localStorage.getItem("auth_user") !== null;
 
-      // Detect inconsistent state
-      if (!hasToken && hasUser) {
-        localStorage.removeItem("auth_user");
-      }
-
-      expect(localStorage.getItem("auth_user")).toBeNull();
-    });
-
-    it("should preserve consistent auth data", () => {
-      localStorage.setItem("auth_token", "valid-token");
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
-      localStorage.setItem("refresh_token", "valid-refresh");
-
-      const hasToken = localStorage.getItem("auth_token") !== null;
-      const hasUser = localStorage.getItem("auth_user") !== null;
-
-      // Both present - consistent state
-      expect(hasToken && hasUser).toBe(true);
-      expect(localStorage.getItem("auth_token")).not.toBeNull();
+      expect(hasUser).toBe(true);
       expect(localStorage.getItem("auth_user")).not.toBeNull();
+    });
+
+    it("should have no session indicator when auth_user is missing", () => {
+      // No auth_user set - no local session indicator
+
+      const hasUser = localStorage.getItem("auth_user") !== null;
+
+      expect(hasUser).toBe(false);
     });
   });
 });

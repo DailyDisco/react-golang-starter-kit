@@ -152,12 +152,14 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	// Set auth cookie
 	SetAuthCookie(w, token)
 
-	// Return response with refresh token
+	// Set refresh token as httpOnly cookie (more secure than localStorage)
+	SetRefreshCookie(w, refreshToken)
+
+	// Return response (refresh token now in httpOnly cookie, not exposed in response)
 	response := models.AuthResponse{
-		User:         user.ToUserResponse(),
-		Token:        token,
-		RefreshToken: refreshToken,
-		ExpiresIn:    int64(GetAccessTokenExpirationTime().Seconds()),
+		User:      user.ToUserResponse(),
+		Token:     token,
+		ExpiresIn: int64(GetAccessTokenExpirationTime().Seconds()),
 	}
 
 	writeJSON(w, http.StatusCreated, response)
@@ -253,18 +255,18 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		log.Warn().Err(err).Msg("failed to save refresh token")
 	}
 
-	// Set auth cookie
+	// Set auth and refresh cookies
 	SetAuthCookie(w, token)
+	SetRefreshCookie(w, refreshToken)
 
 	// Audit log successful login
 	audit.LogLogin(user.ID, r, nil)
 
-	// Return response with refresh token
+	// Return response (refresh token now in httpOnly cookie, not exposed in response)
 	response := models.AuthResponse{
-		User:         user.ToUserResponse(),
-		Token:        token,
-		RefreshToken: refreshToken,
-		ExpiresIn:    int64(GetAccessTokenExpirationTime().Seconds()),
+		User:      user.ToUserResponse(),
+		Token:     token,
+		ExpiresIn: int64(GetAccessTokenExpirationTime().Seconds()),
 	}
 
 	writeJSON(w, http.StatusOK, response)
@@ -309,6 +311,7 @@ func LogoutUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ClearAuthCookie(w)
+	ClearRefreshCookie(w)
 	writeSuccess(w, "Logout successful", nil)
 }
 
@@ -461,8 +464,11 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update user with reset token (separate from email verification token)
-	user.PasswordResetToken = resetToken
+	// Hash the token before storing for security (plaintext token is sent via email)
+	hashedResetToken := HashToken(resetToken)
+
+	// Update user with hashed reset token (separate from email verification token)
+	user.PasswordResetToken = hashedResetToken
 	user.PasswordResetExpires = time.Now().Add(1 * time.Hour).Format(time.RFC3339)
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 
@@ -522,8 +528,11 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hash the submitted token to compare with stored hash
+	hashedToken := HashToken(req.Token)
+
 	var user models.User
-	if err := database.DB.Where("password_reset_token = ?", req.Token).First(&user).Error; err != nil {
+	if err := database.DB.Where("password_reset_token = ?", hashedToken).First(&user).Error; err != nil {
 		writeUnauthorized(w, r, "Invalid reset token")
 		return
 	}
@@ -581,20 +590,16 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} models.ErrorResponse "Failed to generate new token"
 // @Router /auth/refresh [post]
 func RefreshAccessToken(w http.ResponseWriter, r *http.Request) {
-	var req models.RefreshTokenRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeBadRequest(w, r, "Invalid JSON")
-		return
-	}
-
-	if req.RefreshToken == "" {
-		writeBadRequest(w, r, "Refresh token is required")
+	// Extract refresh token from httpOnly cookie
+	refreshToken, err := ExtractRefreshTokenFromCookie(r)
+	if err != nil {
+		writeUnauthorized(w, r, "Refresh token not found")
 		return
 	}
 
 	// Find user by refresh token
 	var user models.User
-	if err := database.DB.Where("refresh_token = ?", req.RefreshToken).First(&user).Error; err != nil {
+	if err := database.DB.Where("refresh_token = ?", refreshToken).First(&user).Error; err != nil {
 		writeUnauthorized(w, r, "Invalid refresh token")
 		return
 	}
@@ -636,15 +641,15 @@ func RefreshAccessToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set new auth cookie
+	// Set new auth and refresh cookies
 	SetAuthCookie(w, token)
+	SetRefreshCookie(w, newRefreshToken)
 
-	// Return response with rotated refresh token
+	// Return response (refresh token now in httpOnly cookie, not exposed in response)
 	response := models.AuthResponse{
-		User:         user.ToUserResponse(),
-		Token:        token,
-		RefreshToken: newRefreshToken, // Return the new rotated refresh token
-		ExpiresIn:    int64(GetAccessTokenExpirationTime().Seconds()),
+		User:      user.ToUserResponse(),
+		Token:     token,
+		ExpiresIn: int64(GetAccessTokenExpirationTime().Seconds()),
 	}
 
 	writeJSON(w, http.StatusOK, response)

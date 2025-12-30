@@ -815,6 +815,9 @@ func UpdateUserRole() http.HandlerFunc {
 			return
 		}
 
+		// Invalidate user cache after role change
+		invalidateUserCache(r.Context(), uint(userID))
+
 		userResponse := user.ToUserResponse()
 		WriteSuccess(w, "User role updated successfully", userResponse)
 	}
@@ -926,6 +929,9 @@ func UpdateCurrentUser() http.HandlerFunc {
 			WriteInternalError(w, r, "Failed to update user")
 			return
 		}
+
+		// Invalidate user cache after profile update
+		invalidateUserCache(r.Context(), currentUser.ID)
 
 		userResponse := currentUser.ToUserResponse()
 		WriteSuccess(w, "User profile updated successfully", userResponse)

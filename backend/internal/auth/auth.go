@@ -21,7 +21,8 @@ import (
 
 // Cookie configuration constants
 const (
-	AuthCookieName = "auth_token"
+	AuthCookieName    = "auth_token"
+	RefreshCookieName = "refresh_token"
 )
 
 // emailRegex is a simplified RFC 5322 compliant email validation pattern
@@ -339,6 +340,45 @@ func ClearAuthCookie(w http.ResponseWriter) {
 		Secure:   isSecureCookie(),
 		SameSite: getCookieSameSite(),
 	})
+}
+
+// SetRefreshCookie sets the refresh token as an httpOnly cookie
+func SetRefreshCookie(w http.ResponseWriter, token string) {
+	expiration := GetRefreshTokenExpirationTime()
+	http.SetCookie(w, &http.Cookie{
+		Name:     RefreshCookieName,
+		Value:    token,
+		Path:     "/api/auth", // Only sent to auth endpoints
+		MaxAge:   int(expiration.Seconds()),
+		HttpOnly: true,
+		Secure:   isSecureCookie(),
+		SameSite: getCookieSameSite(),
+	})
+}
+
+// ClearRefreshCookie clears the refresh cookie (for logout)
+func ClearRefreshCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     RefreshCookieName,
+		Value:    "",
+		Path:     "/api/auth",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   isSecureCookie(),
+		SameSite: getCookieSameSite(),
+	})
+}
+
+// ExtractRefreshTokenFromCookie extracts the refresh token from the cookie
+func ExtractRefreshTokenFromCookie(r *http.Request) (string, error) {
+	cookie, err := r.Cookie(RefreshCookieName)
+	if err != nil {
+		return "", errors.New("refresh cookie not found")
+	}
+	if cookie.Value == "" {
+		return "", errors.New("refresh cookie is empty")
+	}
+	return cookie.Value, nil
 }
 
 // ExtractTokenFromCookie extracts the JWT token from the auth cookie
