@@ -658,3 +658,67 @@ type AccountDeletionStatusResponse struct {
 	ScheduledFor string `json:"scheduled_for,omitempty"`
 	Reason       string `json:"reason,omitempty"`
 }
+
+// Data export status constants
+const (
+	ExportStatusPending    = "pending"
+	ExportStatusProcessing = "processing"
+	ExportStatusCompleted  = "completed"
+	ExportStatusFailed     = "failed"
+	ExportStatusExpired    = "expired"
+)
+
+// DataExport represents a user data export request
+// swagger:model DataExport
+type DataExport struct {
+	ID           uint   `json:"id" gorm:"primaryKey"`
+	UserID       uint   `json:"user_id" gorm:"not null;index"`
+	Status       string `json:"status" gorm:"type:varchar(50);default:'pending'"`
+	DownloadURL  string `json:"download_url,omitempty" gorm:"type:varchar(500)"`
+	FilePath     string `json:"-" gorm:"type:varchar(500)"`
+	FileSize     int64  `json:"file_size,omitempty"`
+	RequestedAt  string `json:"requested_at" gorm:"not null"`
+	CompletedAt  string `json:"completed_at,omitempty"`
+	ExpiresAt    string `json:"expires_at,omitempty"`
+	ErrorMessage string `json:"error_message,omitempty" gorm:"type:text"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
+// DataExportResponse represents the response for data export status
+// swagger:model DataExportResponse
+type DataExportResponse struct {
+	ID          uint   `json:"id"`
+	Status      string `json:"status"`
+	DownloadURL string `json:"download_url,omitempty"`
+	RequestedAt string `json:"requested_at"`
+	ExpiresAt   string `json:"expires_at,omitempty"`
+	FileSize    int64  `json:"file_size,omitempty"`
+}
+
+// ToResponse converts a DataExport to DataExportResponse
+func (d *DataExport) ToResponse() DataExportResponse {
+	return DataExportResponse{
+		ID:          d.ID,
+		Status:      d.Status,
+		DownloadURL: d.DownloadURL,
+		RequestedAt: d.RequestedAt,
+		ExpiresAt:   d.ExpiresAt,
+		FileSize:    d.FileSize,
+	}
+}
+
+// ConnectedAccountResponse represents an OAuth connected account
+// swagger:model ConnectedAccountResponse
+type ConnectedAccountResponse struct {
+	Provider        string `json:"provider"`
+	ProviderUserID  string `json:"provider_user_id,omitempty"`
+	Email           string `json:"email,omitempty"`
+	ConnectedAt     string `json:"connected_at"`
+}
+
+// AvatarUploadResponse represents the response after avatar upload
+// swagger:model AvatarUploadResponse
+type AvatarUploadResponse struct {
+	AvatarURL string `json:"avatar_url"`
+}

@@ -261,7 +261,8 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Save refresh token to user
 	user.RefreshToken = HashToken(refreshToken)
-	user.RefreshTokenExpires = time.Now().Add(GetRefreshTokenExpirationTime()).Format(time.RFC3339)
+	refreshExpires := time.Now().Add(GetRefreshTokenExpirationTime())
+	user.RefreshTokenExpires = &refreshExpires
 	if err := database.DB.Save(user).Error; err != nil {
 		log.Error().Err(err).Msg("Failed to save refresh token")
 	}

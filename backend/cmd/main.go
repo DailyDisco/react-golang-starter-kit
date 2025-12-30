@@ -17,14 +17,17 @@ import (
 	"react-golang-starter/internal/handlers"
 	"react-golang-starter/internal/jobs"
 	"react-golang-starter/internal/middleware"
+	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/ratelimit"
 	"react-golang-starter/internal/services"
 	"react-golang-starter/internal/stripe"
+	"react-golang-starter/internal/websocket"
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
 )
@@ -61,7 +64,7 @@ import (
 // @license.url https://opensource.org/licenses/MIT
 //
 // @host localhost:8080
-// @BasePath /api
+// @BasePath /api/v1
 //
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -205,12 +208,19 @@ func main() {
 			Msg("metrics retention cleanup enabled")
 	}
 
+	// Initialize WebSocket hub for real-time communication
+	wsHub := websocket.NewHub()
+	zerologlog.Info().Msg("WebSocket hub initialized")
+
 	// Create Chi router
 	r := chi.NewRouter()
 
 	// Global middleware
 	// Compression middleware for improved performance (must be first)
 	r.Use(chimiddleware.Compress(5, "application/json", "text/plain", "text/html"))
+
+	// Prometheus metrics middleware (early in chain to capture all requests)
+	r.Use(middleware.PrometheusMiddleware)
 
 	// Request ID middleware (before logger so IDs are logged)
 	r.Use(middleware.RequestIDMiddleware)
@@ -273,6 +283,12 @@ func main() {
 	// Health check at root level for Docker health checks
 	r.Get("/health", appService.HealthCheck)
 
+	// Prometheus metrics endpoint (internal, no auth required)
+	r.Handle("/metrics", promhttp.Handler())
+
+	// WebSocket endpoint (before other routes, no rate limiting)
+	r.Get("/ws", websocket.Handler(wsHub))
+
 	// Routes
 	setupRoutes(r, rateLimitConfig, stripeConfig, appService, fileService)
 
@@ -285,6 +301,9 @@ func main() {
 	// Start job processing in background
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// Start WebSocket hub
+	go wsHub.Run(ctx)
 
 	if jobs.IsAvailable() {
 		if err := jobs.Start(ctx); err != nil {
@@ -307,7 +326,11 @@ func main() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer shutdownCancel()
 
-		// Stop job processing first
+		// Stop WebSocket hub first
+		wsHub.Stop()
+		zerologlog.Info().Msg("WebSocket hub stopped")
+
+		// Stop job processing
 		if jobs.IsAvailable() {
 			if err := jobs.Stop(shutdownCtx); err != nil {
 				zerologlog.Error().Err(err).Msg("error stopping job system")
@@ -369,6 +392,11 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *
 // setupAPIRoutes configures all API endpoints
 func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *stripe.Config, appService *handlers.Service, fileService *services.FileService) {
 	_ = appService // Avoid unused variable warning
+
+	// Initialize organization service and handlers
+	orgService := services.NewOrgService(database.DB)
+	orgHandler := handlers.NewOrgHandler(orgService)
+	tenantMiddleware := auth.NewTenantMiddleware(database.DB)
 
 	// CSRF token endpoint - allows frontend to get a fresh CSRF token
 	csrfConfig := middleware.LoadCSRFConfig()
@@ -455,10 +483,20 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 
 			// Account deletion
 			r.Post("/me/delete", handlers.RequestAccountDeletion)       // POST /api/users/me/delete
-			r.Post("/me/delete/cancel", handlers.CancelAccountDeletion) // POST /api/users/me/delete/cancel
+			r.Delete("/me/delete", handlers.CancelAccountDeletion)      // DELETE /api/users/me/delete - Cancel deletion
+			r.Post("/me/delete/cancel", handlers.CancelAccountDeletion) // POST /api/users/me/delete/cancel (backward compat)
 
 			// Data export
-			r.Post("/me/export", handlers.RequestDataExport) // POST /api/users/me/export
+			r.Post("/me/export", handlers.RequestDataExport)    // POST /api/users/me/export
+			r.Get("/me/export", handlers.GetDataExportStatus)   // GET /api/users/me/export
+
+			// Avatar management
+			r.Post("/me/avatar", handlers.UploadAvatar)   // POST /api/users/me/avatar
+			r.Delete("/me/avatar", handlers.DeleteAvatar) // DELETE /api/users/me/avatar
+
+			// Connected accounts (OAuth)
+			r.Get("/me/connected-accounts", handlers.GetConnectedAccounts)              // GET /api/users/me/connected-accounts
+			r.Delete("/me/connected-accounts/{provider}", handlers.DisconnectAccount)   // DELETE /api/users/me/connected-accounts/{provider}
 		})
 
 		// Specific user routes
@@ -641,6 +679,52 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 			r.Use(auth.AuthMiddleware)
 			r.Post("/{id}/dismiss", handlers.DismissAnnouncement) // POST /api/announcements/{id}/dismiss
 		})
+	})
+
+	// Organization routes (multi-tenancy)
+	r.Route("/organizations", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
+		r.Use(ratelimit.NewAPIRateLimitMiddleware(rateLimitConfig))
+
+		// List user's organizations and create new ones
+		r.Get("/", orgHandler.ListOrganizations)    // GET /api/organizations
+		r.Post("/", orgHandler.CreateOrganization)  // POST /api/organizations
+
+		// Organization-specific routes (require org membership)
+		r.Route("/{orgSlug}", func(r chi.Router) {
+			r.Use(tenantMiddleware.RequireOrganization)
+
+			r.Get("/", orgHandler.GetOrganization)       // GET /api/organizations/{orgSlug}
+			r.Post("/leave", orgHandler.LeaveOrganization) // POST /api/organizations/{orgSlug}/leave
+
+			// Admin+ only routes
+			r.Group(func(r chi.Router) {
+				r.Use(tenantMiddleware.RequireOrgRole(models.OrgRoleAdmin))
+				r.Put("/", orgHandler.UpdateOrganization)  // PUT /api/organizations/{orgSlug}
+
+				// Member management
+				r.Get("/members", orgHandler.ListMembers)                // GET /api/organizations/{orgSlug}/members
+				r.Post("/members/invite", orgHandler.InviteMember)       // POST /api/organizations/{orgSlug}/members/invite
+				r.Put("/members/{userId}/role", orgHandler.UpdateMemberRole) // PUT /api/organizations/{orgSlug}/members/{userId}/role
+				r.Delete("/members/{userId}", orgHandler.RemoveMember)   // DELETE /api/organizations/{orgSlug}/members/{userId}
+
+				// Invitation management
+				r.Get("/invitations", orgHandler.ListInvitations)            // GET /api/organizations/{orgSlug}/invitations
+				r.Delete("/invitations/{invitationId}", orgHandler.CancelInvitation) // DELETE /api/organizations/{orgSlug}/invitations/{invitationId}
+			})
+
+			// Owner only routes
+			r.Group(func(r chi.Router) {
+				r.Use(tenantMiddleware.RequireOrgRole(models.OrgRoleOwner))
+				r.Delete("/", orgHandler.DeleteOrganization) // DELETE /api/organizations/{orgSlug}
+			})
+		})
+	})
+
+	// Invitation acceptance (separate from org routes - user may not be a member yet)
+	r.Route("/invitations", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
+		r.Post("/accept", orgHandler.AcceptInvitation) // POST /api/invitations/accept?token=xxx
 	})
 }
 

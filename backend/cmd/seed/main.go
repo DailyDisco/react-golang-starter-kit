@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -13,6 +15,15 @@ import (
 	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// generateUniqueToken generates a random unique token
+func generateUniqueToken() string {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		return fmt.Sprintf("seed_%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(bytes)
+}
 
 // SeedConfig contains configuration for seeding
 type SeedConfig struct {
@@ -66,52 +77,70 @@ func seedUsers(config SeedConfig) error {
 
 	users := []models.User{
 		{
-			Name:          "Super Admin",
-			Email:         "superadmin@example.com",
-			Password:      hashPassword(config.AdminPassword),
-			Role:          "super_admin",
-			IsActive:      true,
-			EmailVerified: true,
+			Name:               "Super Admin",
+			Email:              "superadmin@example.com",
+			Password:           hashPassword(config.AdminPassword),
+			Role:               "super_admin",
+			IsActive:           true,
+			EmailVerified:      true,
+			VerificationToken:  generateUniqueToken(),
+			PasswordResetToken: generateUniqueToken(),
+			StripeCustomerID:   "cus_seed_superadmin",
 		},
 		{
-			Name:          "Admin User",
-			Email:         "admin@example.com",
-			Password:      hashPassword(config.AdminPassword),
-			Role:          "admin",
-			IsActive:      true,
-			EmailVerified: true,
+			Name:               "Admin User",
+			Email:              "admin@example.com",
+			Password:           hashPassword(config.AdminPassword),
+			Role:               "admin",
+			IsActive:           true,
+			EmailVerified:      true,
+			VerificationToken:  generateUniqueToken(),
+			PasswordResetToken: generateUniqueToken(),
+			StripeCustomerID:   "cus_seed_admin",
 		},
 		{
-			Name:          "Premium User",
-			Email:         "premium@example.com",
-			Password:      hashPassword(config.DefaultPassword),
-			Role:          "premium",
-			IsActive:      true,
-			EmailVerified: true,
+			Name:               "Premium User",
+			Email:              "premium@example.com",
+			Password:           hashPassword(config.DefaultPassword),
+			Role:               "premium",
+			IsActive:           true,
+			EmailVerified:      true,
+			VerificationToken:  generateUniqueToken(),
+			PasswordResetToken: generateUniqueToken(),
+			StripeCustomerID:   "cus_seed_premium",
 		},
 		{
-			Name:          "Regular User",
-			Email:         "user@example.com",
-			Password:      hashPassword(config.DefaultPassword),
-			Role:          "user",
-			IsActive:      true,
-			EmailVerified: true,
+			Name:               "Regular User",
+			Email:              "user@example.com",
+			Password:           hashPassword(config.DefaultPassword),
+			Role:               "user",
+			IsActive:           true,
+			EmailVerified:      true,
+			VerificationToken:  generateUniqueToken(),
+			PasswordResetToken: generateUniqueToken(),
+			StripeCustomerID:   "cus_seed_user",
 		},
 		{
-			Name:          "Unverified User",
-			Email:         "unverified@example.com",
-			Password:      hashPassword(config.DefaultPassword),
-			Role:          "user",
-			IsActive:      true,
-			EmailVerified: false,
+			Name:               "Unverified User",
+			Email:              "unverified@example.com",
+			Password:           hashPassword(config.DefaultPassword),
+			Role:               "user",
+			IsActive:           true,
+			EmailVerified:      false,
+			VerificationToken:  generateUniqueToken(),
+			PasswordResetToken: generateUniqueToken(),
+			StripeCustomerID:   "cus_seed_unverified",
 		},
 		{
-			Name:          "Inactive User",
-			Email:         "inactive@example.com",
-			Password:      hashPassword(config.DefaultPassword),
-			Role:          "user",
-			IsActive:      false,
-			EmailVerified: true,
+			Name:               "Inactive User",
+			Email:              "inactive@example.com",
+			Password:           hashPassword(config.DefaultPassword),
+			Role:               "user",
+			IsActive:           false,
+			EmailVerified:      true,
+			VerificationToken:  generateUniqueToken(),
+			PasswordResetToken: generateUniqueToken(),
+			StripeCustomerID:   "cus_seed_inactive",
 		},
 	}
 
@@ -146,6 +175,7 @@ func seedFeatureFlags() error {
 			Enabled:           true,
 			RolloutPercentage: 100,
 			AllowedRoles:      pq.StringArray{},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -156,6 +186,7 @@ func seedFeatureFlags() error {
 			Enabled:           true,
 			RolloutPercentage: 50, // 50% rollout
 			AllowedRoles:      pq.StringArray{},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -166,6 +197,7 @@ func seedFeatureFlags() error {
 			Enabled:           true,
 			RolloutPercentage: 100,
 			AllowedRoles:      pq.StringArray{"premium", "admin", "super_admin"},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -176,6 +208,7 @@ func seedFeatureFlags() error {
 			Enabled:           false,
 			RolloutPercentage: 0,
 			AllowedRoles:      pq.StringArray{"admin", "super_admin"},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},
@@ -186,6 +219,7 @@ func seedFeatureFlags() error {
 			Enabled:           true,
 			RolloutPercentage: 100,
 			AllowedRoles:      pq.StringArray{},
+			Metadata:          "{}",
 			CreatedAt:         now,
 			UpdatedAt:         now,
 		},

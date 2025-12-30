@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"react-golang-starter/internal/audit"
 	"react-golang-starter/internal/database"
@@ -72,9 +73,12 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Normalize email to lowercase for case-insensitive comparison
+	normalizedEmail := strings.ToLower(strings.TrimSpace(req.Email))
+
 	// Check if user already exists
 	var existingUser models.User
-	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+	if err := database.DB.Where("email = ?", normalizedEmail).First(&existingUser).Error; err == nil {
 		writeConflict(w, r, "User with this email already exists")
 		return
 	}
@@ -96,7 +100,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	// Create user
 	user := models.User{
 		Name:                req.Name,
-		Email:               req.Email,
+		Email:               normalizedEmail,
 		Password:            hashedPassword,
 		VerificationToken:   verificationToken,
 		VerificationExpires: time.Now().Add(24 * time.Hour).Format(time.RFC3339),
@@ -138,7 +142,8 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	// Save refresh token to user
 	user.RefreshToken = refreshToken
-	user.RefreshTokenExpires = time.Now().Add(GetRefreshTokenExpirationTime()).Format(time.RFC3339)
+	refreshExpires := time.Now().Add(GetRefreshTokenExpirationTime())
+	user.RefreshTokenExpires = &refreshExpires
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 	if err := database.DB.Save(&user).Error; err != nil {
 		log.Warn().Err(err).Msg("failed to save refresh token")
@@ -203,9 +208,12 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Normalize email to lowercase for case-insensitive comparison
+	normalizedEmail := strings.ToLower(strings.TrimSpace(req.Email))
+
 	// Find user by email
 	var user models.User
-	if err := database.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+	if err := database.DB.Where("email = ?", normalizedEmail).First(&user).Error; err != nil {
 		writeUnauthorized(w, r, "Invalid credentials")
 		return
 	}
@@ -238,7 +246,8 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	// Save refresh token to user
 	user.RefreshToken = refreshToken
-	user.RefreshTokenExpires = time.Now().Add(GetRefreshTokenExpirationTime()).Format(time.RFC3339)
+	refreshExpires := time.Now().Add(GetRefreshTokenExpirationTime())
+	user.RefreshTokenExpires = &refreshExpires
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 	if err := database.DB.Save(&user).Error; err != nil {
 		log.Warn().Err(err).Msg("failed to save refresh token")
@@ -591,9 +600,8 @@ func RefreshAccessToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if refresh token is expired
-	if user.RefreshTokenExpires != "" {
-		expiresTime, err := time.Parse(time.RFC3339, user.RefreshTokenExpires)
-		if err != nil || time.Now().After(expiresTime) {
+	if user.RefreshTokenExpires != nil {
+		if time.Now().After(*user.RefreshTokenExpires) {
 			writeTokenExpired(w, r, "Refresh token has expired")
 			return
 		}
@@ -620,7 +628,8 @@ func RefreshAccessToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.RefreshToken = newRefreshToken
-	user.RefreshTokenExpires = time.Now().Add(GetRefreshTokenExpirationTime()).Format(time.RFC3339)
+	newRefreshExpires := time.Now().Add(GetRefreshTokenExpirationTime())
+	user.RefreshTokenExpires = &newRefreshExpires
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 	if err := database.DB.Save(&user).Error; err != nil {
 		writeInternalError(w, r, "Failed to save refresh token")

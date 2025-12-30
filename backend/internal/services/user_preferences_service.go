@@ -68,6 +68,9 @@ func (s *UserPreferencesService) UpdatePreferences(userID uint, req *models.Upda
 	}
 
 	if req.Language != nil {
+		if !isValidLanguage(*req.Language) {
+			return nil, fmt.Errorf("invalid language: must be a supported language code")
+		}
 		updates["language"] = *req.Language
 	}
 
@@ -163,6 +166,11 @@ func (s *UserPreferencesService) createDefaultPreferences(userID uint) models.Us
 
 func isValidTheme(theme string) bool {
 	return theme == "light" || theme == "dark" || theme == "system"
+}
+
+func isValidLanguage(lang string) bool {
+	_, exists := SupportedLanguages[lang]
+	return exists
 }
 
 // Available timezones (subset of common ones)

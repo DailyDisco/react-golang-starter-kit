@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
@@ -53,7 +55,7 @@ type User struct {
 	RefreshToken string `json:"-" gorm:"index"`
 
 	// Refresh token expiration time
-	RefreshTokenExpires string `json:"-"`
+	RefreshTokenExpires *time.Time `json:"-"`
 
 	// Whether the user account is active
 	IsActive bool `json:"is_active" gorm:"default:true;index"`
@@ -67,10 +69,10 @@ type User struct {
 
 	// OAuth provider (if user signed up via OAuth)
 	// example: google
-	OAuthProvider string `json:"oauth_provider,omitempty" gorm:"type:varchar(50);index"`
+	OAuthProvider string `json:"oauth_provider,omitempty" gorm:"column:oauth_provider;type:varchar(50);index"`
 
 	// OAuth provider user ID
-	OAuthProviderID string `json:"-" gorm:"type:varchar(255)"`
+	OAuthProviderID string `json:"-" gorm:"column:oauth_provider_id;type:varchar(255)"`
 
 	// User's avatar URL (from OAuth provider or uploaded)
 	AvatarURL string `json:"avatar_url,omitempty" gorm:"type:varchar(500)"`
@@ -825,7 +827,7 @@ type FeatureFlag struct {
 	AllowedRoles pq.StringArray `json:"allowed_roles,omitempty" gorm:"type:text[]"`
 
 	// Additional configuration metadata (JSON)
-	Metadata string `json:"metadata,omitempty" gorm:"type:jsonb"`
+	Metadata string `json:"metadata,omitempty" gorm:"type:jsonb;default:'{}'"`
 
 	// When the flag was created
 	CreatedAt string `json:"created_at"`

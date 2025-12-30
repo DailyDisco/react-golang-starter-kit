@@ -1,5 +1,82 @@
-basePath: /api
+basePath: /api/v1
 definitions:
+  handlers.CreateOrganizationRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      slug:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  handlers.InvitationResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: integer
+      invited_by:
+        type: string
+      role:
+        $ref: '#/definitions/models.OrganizationRole'
+    type: object
+  handlers.InviteMemberRequest:
+    properties:
+      email:
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/models.OrganizationRole'
+        enum:
+        - admin
+        - member
+    required:
+    - email
+    - role
+    type: object
+  handlers.MemberResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      joined_at:
+        type: string
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/models.OrganizationRole'
+      status:
+        $ref: '#/definitions/models.MemberStatus'
+      user_id:
+        type: integer
+    type: object
+  handlers.OrganizationResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      plan:
+        $ref: '#/definitions/models.OrganizationPlan'
+      role:
+        allOf:
+        - $ref: '#/definitions/models.OrganizationRole'
+        description: User's role in this org
+      slug:
+        type: string
+    type: object
   handlers.PremiumContentResponse:
     properties:
       access_level:
@@ -10,6 +87,27 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  handlers.UpdateMemberRoleRequest:
+    properties:
+      role:
+        allOf:
+        - $ref: '#/definitions/models.OrganizationRole'
+        enum:
+        - owner
+        - admin
+        - member
+    required:
+    - role
+    type: object
+  handlers.UpdateOrganizationRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - name
     type: object
   handlers.UpdateRoleRequest:
     properties:
@@ -161,6 +259,11 @@ definitions:
         - $ref: '#/definitions/models.UserResponse'
         description: Authenticated user information
     type: object
+  models.AvatarUploadResponse:
+    properties:
+      avatar_url:
+        type: string
+    type: object
   models.BillingConfigResponse:
     properties:
       publishable_key:
@@ -235,6 +338,17 @@ definitions:
       name:
         type: string
       status:
+        type: string
+    type: object
+  models.ConnectedAccountResponse:
+    properties:
+      connected_at:
+        type: string
+      email:
+        type: string
+      provider:
+        type: string
+      provider_user_id:
         type: string
     type: object
   models.CreateAnnouncementRequest:
@@ -316,6 +430,21 @@ definitions:
         type: string
     required:
     - ip_address
+    type: object
+  models.DataExportResponse:
+    properties:
+      download_url:
+        type: string
+      expires_at:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: integer
+      requested_at:
+        type: string
+      status:
+        type: string
     type: object
   models.DatabaseMetrics:
     properties:
@@ -628,6 +757,36 @@ definitions:
     - email
     - password
     type: object
+  models.MemberStatus:
+    enum:
+    - active
+    - inactive
+    - pending
+    type: string
+    x-enum-varnames:
+    - MemberStatusActive
+    - MemberStatusInactive
+    - MemberStatusPending
+  models.OrganizationPlan:
+    enum:
+    - free
+    - pro
+    - enterprise
+    type: string
+    x-enum-varnames:
+    - OrgPlanFree
+    - OrgPlanPro
+    - OrgPlanEnterprise
+  models.OrganizationRole:
+    enum:
+    - owner
+    - admin
+    - member
+    type: string
+    x-enum-varnames:
+    - OrgRoleOwner
+    - OrgRoleAdmin
+    - OrgRoleMember
   models.PasswordResetConfirm:
     properties:
       password:
@@ -2634,6 +2793,101 @@ paths:
       summary: Verify and enable 2FA
       tags:
       - User Settings
+  /api/users/me/avatar:
+    delete:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user avatar
+      tags:
+      - User Settings
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Avatar image file
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AvatarUploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "413":
+          description: File too large
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload user avatar
+      tags:
+      - User Settings
+  /api/users/me/connected-accounts:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ConnectedAccountResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get connected OAuth accounts
+      tags:
+      - User Settings
+  /api/users/me/connected-accounts/{provider}:
+    delete:
+      parameters:
+      - description: OAuth provider (google, github)
+        in: path
+        name: provider
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Cannot unlink only auth method
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Provider not linked
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Disconnect OAuth provider
+      tags:
+      - User Settings
   /api/users/me/delete:
     post:
       parameters:
@@ -2678,6 +2932,25 @@ paths:
       tags:
       - User Settings
   /api/users/me/export:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.DataExportResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: No export request found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get data export status
+      tags:
+      - User Settings
     post:
       responses:
         "200":
@@ -3379,6 +3652,438 @@ paths:
       summary: Check server health status
       tags:
       - health
+  /invitations/accept:
+    post:
+      consumes:
+      - application/json
+      description: Accept an invitation to join an organization
+      parameters:
+      - description: Invitation token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.OrganizationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Accept invitation
+      tags:
+      - organizations
+  /organizations:
+    get:
+      consumes:
+      - application/json
+      description: Get all organizations the authenticated user belongs to
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.OrganizationResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List user's organizations
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Create a new organization with the authenticated user as owner
+      parameters:
+      - description: Organization details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateOrganizationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.OrganizationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create organization
+      tags:
+      - organizations
+  /organizations/{orgSlug}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an organization (owner only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete organization
+      tags:
+      - organizations
+    get:
+      consumes:
+      - application/json
+      description: Get organization details by slug
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.OrganizationResponse'
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get organization
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      description: Update organization details (admin+ only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      - description: Updated details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateOrganizationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.OrganizationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update organization
+      tags:
+      - organizations
+  /organizations/{orgSlug}/invitations:
+    get:
+      consumes:
+      - application/json
+      description: Get all pending invitations for an organization (admin+ only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.InvitationResponse'
+                  type: array
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List pending invitations
+      tags:
+      - organizations
+  /organizations/{orgSlug}/invitations/{invitationId}:
+    delete:
+      consumes:
+      - application/json
+      description: Cancel a pending invitation (admin+ only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      - description: Invitation ID
+        in: path
+        name: invitationId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Cancel invitation
+      tags:
+      - organizations
+  /organizations/{orgSlug}/leave:
+    post:
+      consumes:
+      - application/json
+      description: Leave an organization (non-owners only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Leave organization
+      tags:
+      - organizations
+  /organizations/{orgSlug}/members:
+    get:
+      consumes:
+      - application/json
+      description: Get all members of an organization
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handlers.MemberResponse'
+                  type: array
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List organization members
+      tags:
+      - organizations
+  /organizations/{orgSlug}/members/{userId}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a member from the organization (admin+ only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Remove member
+      tags:
+      - organizations
+  /organizations/{orgSlug}/members/{userId}/role:
+    put:
+      consumes:
+      - application/json
+      description: Update a member's role in the organization (admin+ only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: New role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateMemberRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update member role
+      tags:
+      - organizations
+  /organizations/{orgSlug}/members/invite:
+    post:
+      consumes:
+      - application/json
+      description: Send an invitation to join the organization (admin+ only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      - description: Invitation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.InviteMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.InvitationResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Invite member
+      tags:
+      - organizations
   /premium/content:
     get:
       consumes:
