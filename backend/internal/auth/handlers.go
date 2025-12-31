@@ -203,6 +203,14 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 //	  },
 //	  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 //	}
+//
+// Account lockout configuration
+const (
+	MaxFailedLoginAttempts = 5                // Lock after this many failed attempts
+	LockoutDuration        = 30 * time.Minute // Lock account for this duration
+	FailedLoginWindow      = 15 * time.Minute // Reset counter if last failure was longer ago
+)
+
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var req models.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -220,6 +228,22 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if account is locked
+	if user.LockedUntil != nil && time.Now().Before(*user.LockedUntil) {
+		remainingLockTime := time.Until(*user.LockedUntil).Round(time.Minute)
+		log.Warn().
+			Uint("user_id", user.ID).
+			Str("email", user.Email).
+			Time("locked_until", *user.LockedUntil).
+			Msg("login attempt on locked account")
+		writeJSON(w, http.StatusTooManyRequests, models.ErrorResponse{
+			Error:   "Account Locked",
+			Message: "Account is temporarily locked due to too many failed login attempts. Try again in " + remainingLockTime.String(),
+			Code:    http.StatusTooManyRequests,
+		})
+		return
+	}
+
 	// Check if account is active
 	if !user.IsActive {
 		writeAccountInactive(w, r, "Account is deactivated")
@@ -228,8 +252,24 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	// Check password
 	if !CheckPassword(req.Password, user.Password) {
+		// Track failed login attempt
+		handleFailedLogin(&user, r)
 		writeUnauthorized(w, r, "Invalid credentials")
 		return
+	}
+
+	// Successful login - reset failed login counter
+	if user.FailedLoginAttempts > 0 || user.LockedUntil != nil {
+		user.FailedLoginAttempts = 0
+		user.LockedUntil = nil
+		user.LastFailedLogin = nil
+		if err := database.DB.Model(&user).Updates(map[string]interface{}{
+			"failed_login_attempts": 0,
+			"locked_until":          nil,
+			"last_failed_login":     nil,
+		}).Error; err != nil {
+			log.Warn().Err(err).Uint("user_id", user.ID).Msg("failed to reset login attempts")
+		}
 	}
 
 	// Generate JWT access token
@@ -653,4 +693,79 @@ func RefreshAccessToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+// handleFailedLogin tracks failed login attempts and locks accounts after too many failures.
+// This provides brute-force protection at the account level (in addition to IP-based rate limiting).
+func handleFailedLogin(user *models.User, r *http.Request) {
+	now := time.Now()
+
+	// Check if we should reset the counter (last failure was outside the window)
+	if user.LastFailedLogin != nil && now.Sub(*user.LastFailedLogin) > FailedLoginWindow {
+		user.FailedLoginAttempts = 0
+	}
+
+	// Increment failed attempts
+	user.FailedLoginAttempts++
+	user.LastFailedLogin = &now
+
+	// Lock account if threshold exceeded
+	if user.FailedLoginAttempts >= MaxFailedLoginAttempts {
+		lockUntil := now.Add(LockoutDuration)
+		user.LockedUntil = &lockUntil
+
+		log.Warn().
+			Uint("user_id", user.ID).
+			Str("email", user.Email).
+			Int("failed_attempts", user.FailedLoginAttempts).
+			Time("locked_until", lockUntil).
+			Str("ip", getClientIP(r)).
+			Msg("account locked due to too many failed login attempts")
+
+		// TODO: Queue email notification about account lockout
+		// if jobs.IsAvailable() {
+		//     jobs.EnqueueAccountLockoutNotification(r.Context(), user.ID, user.Email, user.Name, lockUntil)
+		// }
+	}
+
+	// Save the updated user
+	updates := map[string]interface{}{
+		"failed_login_attempts": user.FailedLoginAttempts,
+		"last_failed_login":     user.LastFailedLogin,
+		"locked_until":          user.LockedUntil,
+	}
+	if err := database.DB.Model(user).Updates(updates).Error; err != nil {
+		log.Error().Err(err).Uint("user_id", user.ID).Msg("failed to update login attempt tracking")
+	}
+
+	// Audit log failed login attempt
+	audit.LogLogin(user.ID, r, map[string]interface{}{
+		"success":         false,
+		"failed_attempts": user.FailedLoginAttempts,
+		"locked":          user.LockedUntil != nil,
+	})
+}
+
+// getClientIP extracts the client IP address from the request
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header (set by reverse proxies)
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		// Take the first IP in the chain
+		if idx := strings.Index(xff, ","); idx != -1 {
+			return strings.TrimSpace(xff[:idx])
+		}
+		return strings.TrimSpace(xff)
+	}
+
+	// Check X-Real-IP header
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return strings.TrimSpace(xri)
+	}
+
+	// Fall back to RemoteAddr
+	ip := r.RemoteAddr
+	if idx := strings.LastIndex(ip, ":"); idx != -1 {
+		return ip[:idx]
+	}
+	return ip
 }

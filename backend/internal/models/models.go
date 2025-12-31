@@ -85,6 +85,14 @@ type User struct {
 
 	// User's social links (stored as JSON)
 	SocialLinks string `json:"social_links,omitempty" gorm:"type:jsonb;default:'{}'"`
+
+	// Account lockout fields for brute-force protection
+	// Number of consecutive failed login attempts
+	FailedLoginAttempts int `json:"-" gorm:"default:0"`
+	// Account locked until this time (NULL if not locked)
+	LockedUntil *time.Time `json:"-"`
+	// Timestamp of last failed login attempt
+	LastFailedLogin *time.Time `json:"-"`
 }
 
 // TokenBlacklist stores revoked JWT tokens to prevent reuse

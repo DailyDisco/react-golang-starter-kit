@@ -156,6 +156,15 @@ func GetUserFromContext(ctx context.Context) (*models.User, bool) {
 	return user, ok
 }
 
+// SetUserContext adds a user to the context (primarily for testing)
+func SetUserContext(ctx context.Context, user *models.User) context.Context {
+	ctx = context.WithValue(ctx, UserContextKey, user)
+	ctx = context.WithValue(ctx, UserIDContextKey, user.ID)
+	ctx = context.WithValue(ctx, UserEmailContextKey, user.Email)
+	ctx = context.WithValue(ctx, UserRoleContextKey, user.Role)
+	return ctx
+}
+
 // GetUserIDFromContext retrieves the user ID from the request context
 func GetUserIDFromContext(ctx context.Context) (uint, bool) {
 	userID, ok := ctx.Value(UserIDContextKey).(uint)
