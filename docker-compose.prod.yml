@@ -1,26 +1,26 @@
-# Production Docker Compose Configuration
-# Use this for production deployments with: docker compose -f docker-compose.prod.yml up -d
-# For staging: Set LOG_LEVEL=debug and DEBUG=true in your .env file
-# Note: Ensure DOCKER_BUILDKIT=1 is set for optimized builds
+# Production Configuration (Blue-Green Deployment)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Or:    make prod
+#
+# This file provides zero-downtime deployments using blue-green strategy.
+# Traffic switching is handled by Caddy via ACTIVE_BACKEND/ACTIVE_FRONTEND env vars.
+#
+# Commands:
+#   make prod         - Deploy with zero downtime
+#   make prod-status  - Show deployment status
+#   make rollback     - Rollback to previous version
 
 services:
+  # ============================================
+  # Shared Infrastructure (Production Tuned)
+  # ============================================
   postgres:
-    image: postgres:15-alpine
     container_name: react-golang-postgres-prod
     restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      # Performance tuning
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
-    # Don't expose PostgreSQL port externally in production
     expose:
       - "5432"
-    volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
-      - postgres_logs_prod:/var/log/postgresql
-    # Optimized PostgreSQL configuration for production
     command: >
       postgres
       -c shared_buffers=256MB
@@ -37,104 +37,127 @@ services:
       -c max_wal_size=4GB
       -c log_min_duration_statement=1000
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-    networks:
-      - app-network-prod
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 1G
         reservations:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 512M
 
-  backend:
+  dragonfly:
+    container_name: react-golang-dragonfly-prod
+    restart: always
+    expose:
+      - "6379"
+    command: dragonfly --requirepass "${REDIS_PASSWORD:-}"
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 128M
+
+  # ============================================
+  # Blue Environment
+  # ============================================
+  backend-blue:
+    container_name: react-golang-backend-blue
     build:
       context: ./backend
       dockerfile: ./Dockerfile
       target: production
       args:
         BUILDKIT_INLINE_CACHE: 1
-    container_name: react-golang-backend-prod
-    restart: always
-    # Don't expose backend port externally - access through frontend/nginx
-    expose:
-      - "8080"
+    restart: unless-stopped
     environment:
+      # Database
       DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-devuser}
+      DB_PASSWORD: ${DB_PASSWORD:-devpass}
+      DB_NAME: ${DB_NAME:-starter_kit_db}
       DB_SSLMODE: ${DB_SSLMODE:-disable}
+      # Auth
       JWT_SECRET: ${JWT_SECRET}
-      # Short-lived access tokens (15 min) with long-lived refresh tokens (7 days)
       ACCESS_TOKEN_EXPIRATION_MINUTES: ${ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
       REFRESH_TOKEN_EXPIRATION_DAYS: ${REFRESH_TOKEN_EXPIRATION_DAYS:-7}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5193,http://localhost:4193}
       API_PORT: 8080
-      RATE_LIMIT_ENABLED: true
+      # Production settings
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DEBUG: false
+      GO_ENV: production
+      # Rate limiting
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
       RATE_LIMIT_GENERAL_REQUESTS: ${RATE_LIMIT_GENERAL_REQUESTS:-100}
       RATE_LIMIT_GENERAL_WINDOW: ${RATE_LIMIT_GENERAL_WINDOW:-1m}
       RATE_LIMIT_AUTH_REQUESTS: ${RATE_LIMIT_AUTH_REQUESTS:-5}
       RATE_LIMIT_AUTH_WINDOW: ${RATE_LIMIT_AUTH_WINDOW:-1m}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      DEBUG: false
-      GO_ENV: production
-      # Database migrations (auto-run on startup)
+      # Migrations
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
       MIGRATIONS_PATH: ${MIGRATIONS_PATH:-./migrations}
-      # Background jobs (River)
+      # Background jobs
       JOBS_ENABLED: ${JOBS_ENABLED:-true}
       JOBS_WORKER_COUNT: ${JOBS_WORKER_COUNT:-10}
-      # Email service
+      # Email
       EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
-      FRONTEND_URL: ${FRONTEND_URL:-}
-      # Stripe payments
+      SMTP_FROM: ${SMTP_FROM:-noreply@localhost}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-App}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5193}
+      # Stripe
       STRIPE_ENABLED: ${STRIPE_ENABLED:-false}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-}
-      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-}
-      STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:-}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:5193/billing/success}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:5193/billing/cancel}
+      STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:-http://localhost:5193/billing}
+      # Cache
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
+      CACHE_TYPE: redis
+      REDIS_URL: redis://dragonfly:6379/0
     depends_on:
       postgres:
         condition: service_healthy
+      dragonfly:
+        condition: service_healthy
+    expose:
+      - "8080"
     healthcheck:
-      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:8080/health']
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 40s
-    networks:
-      - app-network-prod
+      start_period: 30s
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 512M
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 128M
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
         window: 120s
+    networks:
+      - app-network
 
-  frontend:
+  frontend-blue:
+    container_name: react-golang-frontend-blue
     build:
       context: ./frontend
       dockerfile: ./Dockerfile
@@ -142,66 +165,190 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL}
         BUILDKIT_INLINE_CACHE: 1
-    container_name: react-golang-frontend-prod
-    restart: always
-    ports:
-      - '${FRONTEND_PORT:-80}:80' # Expose to the world via HTTP (use reverse proxy for HTTPS)
-    depends_on:
-      - backend
+    restart: unless-stopped
+    expose:
+      - "80"
     healthcheck:
-      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:80/']
-      interval: 30s
-      timeout: 3s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 10s
-    networks:
-      - app-network-prod
+      start_period: 20s
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 256M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 64M
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
         window: 120s
+    networks:
+      - app-network
 
-  # Optional: Nginx reverse proxy for production with SSL termination
-  # Uncomment and configure if you need a separate reverse proxy
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: react-golang-nginx-prod
-  #   restart: always
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
-  #     - ./ssl:/etc/ssl/certs:ro
-  #   depends_on:
-  #     - frontend
-  #     - backend
-  #   networks:
-  #     - app-network-prod
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.5'
-  #         memory: 128M
+  # ============================================
+  # Green Environment
+  # ============================================
+  backend-green:
+    container_name: react-golang-backend-green
+    build:
+      context: ./backend
+      dockerfile: ./Dockerfile
+      target: production
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    restart: unless-stopped
+    environment:
+      # Database
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-devuser}
+      DB_PASSWORD: ${DB_PASSWORD:-devpass}
+      DB_NAME: ${DB_NAME:-starter_kit_db}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+      # Auth
+      JWT_SECRET: ${JWT_SECRET}
+      ACCESS_TOKEN_EXPIRATION_MINUTES: ${ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
+      REFRESH_TOKEN_EXPIRATION_DAYS: ${REFRESH_TOKEN_EXPIRATION_DAYS:-7}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5193,http://localhost:4193}
+      API_PORT: 8080
+      # Production settings
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DEBUG: false
+      GO_ENV: production
+      # Rate limiting
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      RATE_LIMIT_GENERAL_REQUESTS: ${RATE_LIMIT_GENERAL_REQUESTS:-100}
+      RATE_LIMIT_GENERAL_WINDOW: ${RATE_LIMIT_GENERAL_WINDOW:-1m}
+      RATE_LIMIT_AUTH_REQUESTS: ${RATE_LIMIT_AUTH_REQUESTS:-5}
+      RATE_LIMIT_AUTH_WINDOW: ${RATE_LIMIT_AUTH_WINDOW:-1m}
+      # Migrations
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      MIGRATIONS_PATH: ${MIGRATIONS_PATH:-./migrations}
+      # Background jobs
+      JOBS_ENABLED: ${JOBS_ENABLED:-true}
+      JOBS_WORKER_COUNT: ${JOBS_WORKER_COUNT:-10}
+      # Email
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@localhost}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-App}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5193}
+      # Stripe
+      STRIPE_ENABLED: ${STRIPE_ENABLED:-false}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:5193/billing/success}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:5193/billing/cancel}
+      STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:-http://localhost:5193/billing}
+      # Cache
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
+      CACHE_TYPE: redis
+      REDIS_URL: redis://dragonfly:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dragonfly:
+        condition: service_healthy
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 128M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    networks:
+      - app-network
 
-volumes:
-  postgres_data_prod:
-    driver: local
-  postgres_logs_prod:
-    driver: local
+  frontend-green:
+    container_name: react-golang-frontend-green
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+      target: production
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        BUILDKIT_INLINE_CACHE: 1
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 64M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    networks:
+      - app-network
+
+  # ============================================
+  # Caddy Reverse Proxy (Blue-Green Aware)
+  # ============================================
+  caddy:
+    container_name: react-golang-caddy-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACTIVE_BACKEND: ${ACTIVE_BACKEND:-backend-blue}
+      ACTIVE_FRONTEND: ${ACTIVE_FRONTEND:-frontend-blue}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          cpus: "0.1"
+          memory: 32M
+    # NOTE: No depends_on for backend/frontend - deployment script handles startup order
+    # This allows Caddy to start independently and route to whichever env is active
 
 networks:
-  app-network-prod:
+  app-network:
     driver: bridge
-    # Don't set internal: true as frontend needs external access
     driver_opts:
       com.docker.network.bridge.name: br-react-golang-prod

@@ -4,7 +4,7 @@
 # ============================================
 
 # Development stage
-FROM node:20-alpine AS development
+FROM node:22-alpine AS development
 
 # Install curl for healthchecks
 RUN apk add --no-cache curl
@@ -34,7 +34,7 @@ EXPOSE 5173 4173
 # CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
 
 # Production dependencies stage
-FROM node:20-alpine AS production-dependencies
+FROM node:22-alpine AS production-dependencies
 
 WORKDIR /app
 

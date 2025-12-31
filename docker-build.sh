@@ -61,24 +61,28 @@ show_disk_usage() {
     docker buildx du 2>/dev/null || docker builder prune --help > /dev/null 2>&1
 }
 
+# Compose file combinations
+COMPOSE_DEV="-f docker-compose.yml -f docker-compose.dev.yml"
+COMPOSE_PROD="-f docker-compose.yml -f docker-compose.prod.yml"
+
 # Function to build development environment
 build_dev() {
     print_info "Building development environment..."
-    docker compose build "$@"
+    docker compose $COMPOSE_DEV build "$@"
     print_success "Development build complete"
 }
 
 # Function to build production environment
 build_prod() {
     print_info "Building production environment..."
-    docker compose -f docker-compose.prod.yml build "$@"
+    docker compose $COMPOSE_PROD build "$@"
     print_success "Production build complete"
 }
 
 # Function to rebuild without cache
 build_no_cache() {
     print_warning "Building without cache (this will be slow)..."
-    docker compose build --no-cache "$@"
+    docker compose $COMPOSE_DEV build --no-cache "$@"
     print_success "No-cache build complete"
 }
 

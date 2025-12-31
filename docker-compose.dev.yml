@@ -1,0 +1,108 @@
+# Development Docker Compose Overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Or: make dev
+
+services:
+  postgres:
+    container_name: react-golang-postgres
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_logs:/var/log/postgresql
+      - ./postgres.conf:/etc/postgresql/postgresql.conf:ro
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+
+  backend:
+    container_name: react-golang-backend
+    build:
+      target: development
+    working_dir: /app
+    ports:
+      - "${API_PORT:-8080}:${API_PORT:-8080}"
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      DEBUG: ${DEBUG:-true}
+      CGO_ENABLED: 0
+      GO_ENV: development
+      AUTO_SEED: ${AUTO_SEED:-true}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin123!}
+      SEED_DEFAULT_PASSWORD: ${SEED_DEFAULT_PASSWORD:-password123!}
+    volumes:
+      - ./backend:/app:cached
+      - go_modules:/go/pkg/mod:cached
+      - go_cache:/root/.cache/go-build:cached
+    command: ["air", "-c", ".air.toml"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${API_PORT:-8080}/health"]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+
+  frontend:
+    container_name: react-golang-frontend
+    build:
+      target: development
+    working_dir: /app
+    ports:
+      - "${FRONTEND_PORT:-5193}:${FRONTEND_PORT:-5193}"
+      - "${FRONTEND_HMR_PORT:-4193}:${FRONTEND_HMR_PORT:-4193}"
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: ""
+      CI: false
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-false}
+      FRONTEND_PORT: ${FRONTEND_PORT:-5193}
+      FRONTEND_HMR_PORT: ${FRONTEND_HMR_PORT:-4193}
+    volumes:
+      - ./frontend:/app:cached
+      - /app/node_modules
+      - vite_cache:/app/.vite:cached
+    entrypoint: ["./start-dev.sh"]
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:$${FRONTEND_PORT:-5193}"]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  dragonfly:
+    container_name: react-golang-dragonfly
+    ports:
+      - "${REDIS_PORT:-6381}:6379"
+    command: dragonfly --requirepass ""
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 384M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+
+  # Caddy not used in development (Vite handles proxying)
+  caddy:
+    profiles:
+      - donotstart
+
+volumes:
+  go_modules:
+  go_cache:
+  vite_cache:
