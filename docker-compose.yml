@@ -49,7 +49,9 @@ services:
       DB_NAME: ${DB_NAME:-starter_kit_db}
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
+      # Short-lived access tokens (15 min) with long-lived refresh tokens (7 days)
+      ACCESS_TOKEN_EXPIRATION_MINUTES: ${ACCESS_TOKEN_EXPIRATION_MINUTES:-15}
+      REFRESH_TOKEN_EXPIRATION_DAYS: ${REFRESH_TOKEN_EXPIRATION_DAYS:-7}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5193,http://localhost:4193}
       API_PORT: ${API_PORT:-8080}
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
