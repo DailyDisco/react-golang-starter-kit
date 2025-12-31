@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
   Bell,
+  Brain,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -13,16 +14,21 @@ import {
   FileUp,
   Flag,
   Globe,
+  Image,
   Key,
   LayoutDashboard,
   Lock,
   Mail,
+  MessageSquare,
   Radio,
   ScrollText,
+  Send,
   Settings,
   Shield,
   Smartphone,
+  Sparkles,
   Users,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -107,6 +113,12 @@ const steps: Step[] = [
     title: "User Settings",
     icon: <Settings className="h-5 w-5" />,
     description: "Preferences, security, and account management",
+  },
+  {
+    id: "ai",
+    title: "AI Integration",
+    icon: <Sparkles className="h-5 w-5" />,
+    description: "Gemini-powered chat, vision, and embeddings",
   },
   {
     id: "developer",
@@ -301,7 +313,8 @@ export function Demo() {
                 />
               )}
               {currentStep === 8 && <SettingsStep />}
-              {currentStep === 9 && <DeveloperStep />}
+              {currentStep === 9 && <AIStep isAuthenticated={isAuthenticated} />}
+              {currentStep === 10 && <DeveloperStep />}
             </motion.div>
           </AnimatePresence>
 
@@ -939,6 +952,169 @@ function SettingsStep() {
             /settings
           </Link>{" "}
           to explore all user preferences and account options.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function AIStep({ isAuthenticated }: { isAuthenticated: boolean }) {
+  const [message, setMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || !isAuthenticated) return;
+
+    const userMessage = message.trim();
+    setMessage("");
+    setChatHistory((prev) => [...prev, { role: "user", content: userMessage }]);
+    setIsLoading(true);
+
+    try {
+      // Dynamic import to avoid circular dependencies
+      const { AIService } = await import("../../services/ai/aiService");
+      const response = await AIService.chat(
+        [...chatHistory, { role: "user" as const, content: userMessage }].map((m) => ({
+          role: (m.role === "assistant" ? "model" : m.role) as "user" | "model" | "system" | "assistant",
+          content: m.content,
+        })),
+        { maxTokens: 500 }
+      );
+      setChatHistory((prev) => [...prev, { role: "assistant", content: response.content }]);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to get response";
+      if (errorMessage.includes("not available") || errorMessage.includes("503")) {
+        toast.error("AI service not configured", {
+          description: "Set GEMINI_API_KEY in your environment to enable AI features",
+        });
+      } else {
+        toast.error("AI request failed", {
+          description: errorMessage,
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <FeatureCard
+          icon={<MessageSquare className="h-5 w-5" />}
+          title="Multi-Turn Chat"
+          description="Have conversations with context. The AI remembers previous messages in the chat."
+        />
+        <FeatureCard
+          icon={<Zap className="h-5 w-5" />}
+          title="Streaming Responses"
+          description="Real-time token streaming via Server-Sent Events for instant feedback."
+        />
+        <FeatureCard
+          icon={<Image className="h-5 w-5" />}
+          title="Image Analysis"
+          description="Upload images and ask questions about them using multi-modal vision."
+        />
+        <FeatureCard
+          icon={<Brain className="h-5 w-5" />}
+          title="Embeddings"
+          description="Generate vector embeddings for semantic search and similarity."
+        />
+      </div>
+
+      {/* Interactive Chat Demo */}
+      <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Try AI Chat</h3>
+
+        {!isAuthenticated ? (
+          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-950/50">
+            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+              <strong>Login required:</strong> Please{" "}
+              <Link
+                to="/login"
+                className="underline"
+              >
+                log in
+              </Link>{" "}
+              to try the AI chat demo.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Chat Messages */}
+            <div className="mb-4 max-h-[300px] space-y-3 overflow-y-auto rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-900">
+              {chatHistory.length === 0 ? (
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                  Send a message to start chatting with Gemini AI
+                </p>
+              ) : (
+                chatHistory.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                        msg.role === "user"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-900 dark:bg-gray-800 dark:text-white"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="rounded-lg bg-white px-4 py-2 dark:bg-gray-800">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-600"></span>
+                      Thinking...
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                placeholder="Type a message..."
+                disabled={isLoading}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={isLoading || !message.trim()}
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-fuchsia-200 bg-fuchsia-50 p-4 dark:border-fuchsia-800 dark:bg-fuchsia-950/50">
+        <p className="text-sm text-fuchsia-700 dark:text-fuchsia-300">
+          <strong>Configuration:</strong> Set{" "}
+          <code className="rounded bg-fuchsia-100 px-1 dark:bg-fuchsia-900">GEMINI_API_KEY</code> in your environment to
+          enable AI features. Get your API key from{" "}
+          <a
+            href="https://aistudio.google.com/app/apikey"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            Google AI Studio
+          </a>
+          .
         </p>
       </div>
     </div>

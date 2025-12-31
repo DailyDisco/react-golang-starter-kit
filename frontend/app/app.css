@@ -411,3 +411,82 @@ body {
 .animation-delay-500 {
   animation-delay: 500ms;
 }
+
+/* ==========================================================================
+   SUCCESS ANIMATIONS
+   ========================================================================== */
+
+/* Confetti explosion animation */
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-120px) rotate(720deg) scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-confetti {
+  animation: confetti 1s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+/* Sparkle ray animation */
+@keyframes sparkleRay {
+  0% {
+    transform: rotate(var(--rotation, 0deg)) translateY(0) scaleY(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+    transform: rotate(var(--rotation, 0deg)) translateY(-30px) scaleY(1);
+  }
+  100% {
+    transform: rotate(var(--rotation, 0deg)) translateY(-50px) scaleY(0);
+    opacity: 0;
+  }
+}
+
+.animate-sparkle-ray {
+  animation: sparkleRay 0.8s ease-out forwards;
+}
+
+/* Success checkmark draw animation */
+@keyframes checkmarkDraw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-checkmark-draw {
+  stroke-dasharray: 100;
+  animation: checkmarkDraw 0.5s ease-out forwards;
+}
+
+/* Celebration bounce */
+@keyframes celebrationBounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  75% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-celebration-bounce {
+  animation: celebrationBounce 0.6s ease-in-out;
+}

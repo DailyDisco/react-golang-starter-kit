@@ -1,6 +1,9 @@
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {
+  AlertCircle,
+  Bell,
+  Clock,
   FileQuestion,
   FolderOpen,
   Inbox,
@@ -11,7 +14,7 @@ import {
 import * as React from 'react';
 import { Button } from './button';
 
-type EmptyStateVariant = 'default' | 'search' | 'users' | 'files' | 'folder';
+type EmptyStateVariant = 'default' | 'search' | 'users' | 'files' | 'folder' | 'error' | 'activity' | 'notifications';
 
 interface EmptyStateAction {
   label: string;
@@ -47,6 +50,9 @@ const variantIcons: Record<EmptyStateVariant, LucideIcon> = {
   users: Users,
   files: FileQuestion,
   folder: FolderOpen,
+  error: AlertCircle,
+  activity: Clock,
+  notifications: Bell,
 };
 
 const sizeClasses = {
@@ -220,4 +226,83 @@ function EmptyStateInline({
   );
 }
 
-export { EmptyState, EmptyStateInline };
+/**
+ * Preset empty states for common use cases
+ */
+function SearchEmptyState({
+  searchQuery,
+  onClear,
+  className,
+}: {
+  searchQuery?: string;
+  onClear?: () => void;
+  className?: string;
+}) {
+  return (
+    <EmptyState
+      variant="search"
+      title="No results found"
+      description={searchQuery ? `No matches for "${searchQuery}"` : "Try adjusting your search or filters"}
+      action={onClear ? { label: "Clear search", onClick: onClear } : undefined}
+      className={className}
+      size="sm"
+    />
+  );
+}
+
+function NoDataEmptyState({
+  resourceName = "items",
+  onCreate,
+  className,
+}: {
+  resourceName?: string;
+  onCreate?: () => void;
+  className?: string;
+}) {
+  const singular = resourceName.endsWith('s') ? resourceName.slice(0, -1) : resourceName;
+  return (
+    <EmptyState
+      variant="folder"
+      title={`No ${resourceName} yet`}
+      description={`Get started by creating your first ${singular}.`}
+      action={onCreate ? { label: `Create ${singular}`, onClick: onCreate } : undefined}
+      className={className}
+      size="sm"
+    />
+  );
+}
+
+function ErrorEmptyState({
+  message = "Something went wrong",
+  onRetry,
+  className,
+}: {
+  message?: string;
+  onRetry?: () => void;
+  className?: string;
+}) {
+  return (
+    <EmptyState
+      variant="error"
+      title="Error loading data"
+      description={message}
+      action={onRetry ? { label: "Try again", onClick: onRetry } : undefined}
+      className={className}
+      size="sm"
+    />
+  );
+}
+
+function ActivityEmptyState({ className }: { className?: string }) {
+  return (
+    <EmptyState
+      variant="activity"
+      title="No recent activity"
+      description="Your recent activity will appear here."
+      className={className}
+      size="sm"
+    />
+  );
+}
+
+export { EmptyState, EmptyStateInline, SearchEmptyState, NoDataEmptyState, ErrorEmptyState, ActivityEmptyState };

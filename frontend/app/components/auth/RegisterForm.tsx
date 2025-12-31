@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { AlertCircle, Check, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -125,10 +125,25 @@ export function RegisterForm() {
                 type="text"
                 placeholder={t("auth:register.namePlaceholder")}
                 autoFocus
+                error={!!errors.name}
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? "name-error" : undefined}
                 {...register("name")}
                 disabled={registerMutation.isPending}
               />
-              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+              {errors.name && (
+                <p
+                  id="name-error"
+                  role="alert"
+                  className="text-destructive animate-fade-in-up flex items-center gap-1.5 text-sm"
+                >
+                  <AlertCircle
+                    className="h-3.5 w-3.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  {errors.name.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -137,10 +152,25 @@ export function RegisterForm() {
                 id="email"
                 type="email"
                 placeholder={t("auth:register.emailPlaceholder")}
+                error={!!errors.email}
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
                 {...register("email")}
                 disabled={registerMutation.isPending}
               />
-              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+              {errors.email && (
+                <p
+                  id="email-error"
+                  role="alert"
+                  className="text-destructive animate-fade-in-up flex items-center gap-1.5 text-sm"
+                >
+                  <AlertCircle
+                    className="h-3.5 w-3.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -150,6 +180,9 @@ export function RegisterForm() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder={t("auth:register.passwordPlaceholder")}
+                  error={!!errors.password}
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? "password-error" : undefined}
                   {...register("password")}
                   disabled={registerMutation.isPending}
                 />
@@ -165,7 +198,19 @@ export function RegisterForm() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+              {errors.password && (
+                <p
+                  id="password-error"
+                  role="alert"
+                  className="text-destructive animate-fade-in-up flex items-center gap-1.5 text-sm"
+                >
+                  <AlertCircle
+                    className="h-3.5 w-3.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  {errors.password.message}
+                </p>
+              )}
               <PasswordStrengthMeter password={passwordValue} />
             </div>
 
@@ -176,6 +221,12 @@ export function RegisterForm() {
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder={t("auth:register.confirmPasswordPlaceholder")}
+                  error={!!errors.confirmPassword}
+                  success={
+                    !errors.confirmPassword && passwordValue.length > 0 && watch("confirmPassword") === passwordValue
+                  }
+                  aria-invalid={!!errors.confirmPassword}
+                  aria-describedby={errors.confirmPassword ? "confirm-password-error" : undefined}
                   {...register("confirmPassword")}
                   disabled={registerMutation.isPending}
                 />
@@ -191,15 +242,34 @@ export function RegisterForm() {
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-              {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>}
+              {errors.confirmPassword ? (
+                <p
+                  id="confirm-password-error"
+                  role="alert"
+                  className="text-destructive animate-fade-in-up flex items-center gap-1.5 text-sm"
+                >
+                  <AlertCircle
+                    className="h-3.5 w-3.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  {errors.confirmPassword.message}
+                </p>
+              ) : passwordValue.length > 0 && watch("confirmPassword") === passwordValue ? (
+                <p className="text-success animate-fade-in-up flex items-center gap-1.5 text-sm">
+                  <Check
+                    className="h-3.5 w-3.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  {t("validation:password.match")}
+                </p>
+              ) : null}
             </div>
 
             <Button
               type="submit"
               className="w-full"
-              disabled={registerMutation.isPending}
+              loading={registerMutation.isPending}
             >
-              {registerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t("auth:register.submitButton")}
             </Button>
           </form>
