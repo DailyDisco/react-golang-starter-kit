@@ -431,6 +431,22 @@ definitions:
     required:
     - ip_address
     type: object
+  models.CreateUserAPIKeyRequest:
+    properties:
+      api_key:
+        description: The actual API key
+        type: string
+      name:
+        description: User-friendly name for the key
+        type: string
+      provider:
+        description: Provider name (gemini, openai, anthropic)
+        type: string
+    required:
+    - api_key
+    - name
+    - provider
+    type: object
   models.DataExportResponse:
     properties:
       download_url:
@@ -1143,6 +1159,18 @@ definitions:
     required:
     - value
     type: object
+  models.UpdateUserAPIKeyRequest:
+    properties:
+      api_key:
+        description: New API key value
+        type: string
+      is_active:
+        description: Whether the key is active
+        type: boolean
+      name:
+        description: New name for the key
+        type: string
+    type: object
   models.UpdateUserPreferencesRequest:
     properties:
       date_format:
@@ -1157,6 +1185,36 @@ definitions:
         type: string
       timezone:
         type: string
+    type: object
+  models.UserAPIKeyResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      key_preview:
+        type: string
+      last_used_at:
+        type: string
+      name:
+        type: string
+      provider:
+        type: string
+      updated_at:
+        type: string
+      usage_count:
+        type: integer
+    type: object
+  models.UserAPIKeysResponse:
+    properties:
+      count:
+        type: integer
+      keys:
+        items:
+          $ref: '#/definitions/models.UserAPIKeyResponse'
+        type: array
     type: object
   models.UserPreferencesResponse:
     properties:
@@ -2791,6 +2849,168 @@ paths:
       security:
       - BearerAuth: []
       summary: Verify and enable 2FA
+      tags:
+      - User Settings
+  /api/users/me/api-keys:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserAPIKeysResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user API keys
+      tags:
+      - User Settings
+    post:
+      parameters:
+      - description: API key details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserAPIKeyRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.UserAPIKeyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: Key already exists for this provider
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create user API key
+      tags:
+      - User Settings
+  /api/users/me/api-keys/{id}:
+    delete:
+      parameters:
+      - description: API Key ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user API key
+      tags:
+      - User Settings
+    get:
+      parameters:
+      - description: API Key ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserAPIKeyResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user API key by ID
+      tags:
+      - User Settings
+    put:
+      parameters:
+      - description: API Key ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: API key updates
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserAPIKeyRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserAPIKeyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user API key
+      tags:
+      - User Settings
+  /api/users/me/api-keys/{id}/test:
+    post:
+      parameters:
+      - description: API Key ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Test user API key
       tags:
       - User Settings
   /api/users/me/avatar:
