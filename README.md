@@ -1,6 +1,6 @@
 # React-Golang Starter Kit
 
-A modern, production-ready full-stack starter template combining **React 19** (with TanStack Router & Query) and **Go** (with Chi, GORM, JWT). Built for rapid SaaS development with Docker, featuring multi-tenant organizations, real-time WebSockets, i18n, Prometheus observability, Stripe billing, and comprehensive testing.
+A modern, production-ready full-stack starter template combining **React 19** (with TanStack Router & Query) and **Go 1.25** (with Chi, GORM, JWT). Built for rapid SaaS development with Docker, featuring multi-tenant organizations, real-time WebSockets, i18n, Prometheus observability, Stripe billing, and comprehensive CI/CD with smart change detection.
 
 📚 **[Full Documentation](docs/README.md)**
 
@@ -36,7 +36,7 @@ docker compose logs -f
 
 ### Local Development
 
-**Prerequisites:** Go 1.25+, Node.js (LTS), PostgreSQL
+**Prerequisites:** Go 1.25+, Node.js 20+ (LTS), PostgreSQL 15+
 
 ```bash
 # Configure environment
@@ -60,39 +60,41 @@ npm run dev
 
 ### Frontend Stack
 
-- ⚛️ **React 19** with TypeScript
-- ⚡ **Vite** - Lightning-fast builds and HMR
+- ⚛️ **React 19** with TypeScript (strict mode)
+- ⚡ **Vite 7** - Lightning-fast builds and HMR
 - 🛣️ **TanStack Router** - Type-safe, file-based routing
-- 🔄 **TanStack Query** - Powerful async state management
-- 🎨 **TailwindCSS + ShadCN UI** - Beautiful, accessible components
+- 🔄 **TanStack Query** - Server state management
+- 🐻 **Zustand** - Client state management
+- 🎨 **TailwindCSS 4 + ShadCN UI** - Beautiful, accessible components
 - 🌐 **i18next** - Multi-language support (EN/ES included)
 - 📡 **WebSocket** - Real-time notifications and data sync
-- 🧪 **Vitest** - Fast, comprehensive testing
+- 🧪 **Vitest + Playwright** - Unit and E2E testing
 
 ### Backend Stack
 
 - 🐹 **Go 1.25+** with Chi router
-- 🗄️ **GORM + PostgreSQL** - Powerful ORM and database
-- 🔐 **JWT Authentication** - Secure token-based auth with 2FA
+- 🗄️ **GORM + PostgreSQL 15+** - Powerful ORM and database
+- 🔐 **JWT Authentication** - Secure token-based auth with 2FA (TOTP)
 - 🏢 **Multi-Tenant Organizations** - Teams with roles and invitations
 - 👥 **Role-Based Access Control (RBAC)** - 4 permission levels
-- 📤 **File Upload System** - AWS S3 or database storage
-- 🛡️ **Rate Limiting** - Configurable API protection
-- 📧 **Email Service** - SMTP with HTML templates
+- 📤 **File Upload System** - AWS S3 or database storage with fallback
+- 🛡️ **Rate Limiting** - Configurable IP and user-based protection
+- 📧 **Email Service** - SMTP with styled HTML templates
 - 💳 **Stripe Payments** - Subscriptions, Checkout, Customer Portal
 - ⚡ **Background Jobs** - River (PostgreSQL-backed job queue)
 - 📡 **WebSocket Server** - Real-time push notifications
 - 🔄 **Database Migrations** - golang-migrate with CI validation
 - 🤖 **AI Integration** - Gemini with chat, streaming, vision, embeddings
+- 📝 **Structured Logging** - zerolog with JSON output
 
 ### Observability & DevOps
 
 - 📊 **Prometheus Metrics** - HTTP, DB, cache, WebSocket, auth metrics
 - 📈 **Grafana Dashboards** - Pre-configured monitoring
 - 🐳 **Docker Compose** - Development and production ready
-- 📦 **Multi-stage builds** - Optimized images
+- 📦 **Multi-stage builds** - Optimized Alpine & Distroless images
 - 🔧 **Environment-based config** - Comprehensive .env support
-- ✅ **CI/CD Ready** - GitHub Actions workflows included
+- ✅ **GitHub Actions CI/CD** - Smart change detection, parallel checks, E2E tests
 
 📖 **[Detailed Features Guide →](docs/FEATURES.md)**
 
@@ -127,12 +129,12 @@ react-golang-starter-kit/
 │
 ├── frontend/            # React application
 │   ├── app/            # Application code
-│   │   ├── components/ # Reusable UI components
+│   │   ├── components/ # Reusable UI components (50+ ShadCN)
 │   │   ├── hooks/      # Custom React hooks
 │   │   ├── i18n/       # Internationalization (EN/ES)
-│   │   ├── layouts/    # Layout components
+│   │   ├── layouts/    # Layout components (Admin, Settings, Dashboard)
 │   │   ├── lib/        # Utilities and helpers
-│   │   ├── routes/     # TanStack Router pages
+│   │   ├── routes/     # TanStack Router pages (file-based)
 │   │   ├── services/   # API service layer
 │   │   └── stores/     # Zustand state management
 │   └── public/         # Static assets
@@ -204,6 +206,7 @@ cd frontend
 npm test              # Watch mode
 npm run test:fast     # Run once (CI)
 npm run test:coverage # Coverage report
+npm run test:e2e      # Playwright E2E tests
 ```
 
 ### Backend Tests
@@ -212,7 +215,20 @@ npm run test:coverage # Coverage report
 cd backend
 go test ./...         # Run all tests
 go test -cover ./...  # With coverage
+go test -race ./...   # With race detection
 ```
+
+### CI Pipeline
+
+The GitHub Actions workflow includes:
+
+- **Change Detection** - Only runs affected services (frontend/backend)
+- **Parallel Checks** - Lint, typecheck, format, security audit run concurrently
+- **Test Coverage** - Unit tests with coverage reports
+- **E2E Testing** - Playwright tests on Chromium
+- **Migration Validation** - Tests up/down/up cycle on real PostgreSQL
+- **Swagger Validation** - Ensures API docs stay current
+- **Compatibility Matrix** - Node 22 and Go 1.24 verification on master
 
 📖 **[Testing Guide →](docs/FRONTEND_GUIDE.md#testing)**
 
@@ -251,10 +267,17 @@ make migrate-version  # Show current version
 ### Code Quality
 
 ```bash
-npm test              # Run frontend tests
-npm run lint          # Check code formatting
-npm run format        # Fix code formatting
-make format-backend   # Format Go backend code
+# Frontend
+npm run lint          # ESLint check
+npm run lint:fix      # Fix ESLint issues
+npm run prettier:check # Check formatting
+npm run format        # Fix formatting
+npm run typecheck     # TypeScript check
+
+# Backend
+make format-backend   # Format Go code (go fmt)
+make vet-backend      # Static analysis (go vet)
+# golangci-lint and govulncheck run in CI
 ```
 
 ---
@@ -295,6 +318,15 @@ Four-tier permission system with granular access control:
 - `premium` - Access to premium content (via Stripe subscription)
 - `admin` - User and content management
 - `super_admin` - Full system administration
+
+### Dashboard & Admin
+
+Pre-built admin and dashboard interfaces:
+
+- **Dashboard Widgets** - Customizable widget system with activity feeds
+- **Admin Panel** - User management, audit logs, system settings
+- **Layout Components** - Reusable AdminLayout, SettingsLayout, DashboardLayout
+- **Activity Tracking** - User action logging and display
 
 ### Real-Time WebSocket
 
