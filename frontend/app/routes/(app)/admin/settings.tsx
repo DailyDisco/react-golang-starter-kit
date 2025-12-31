@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AdminLayout } from "@/layouts/AdminLayout";
 import {
   AdminSettingsService,
   type CreateIPBlockRequest,
@@ -32,64 +33,66 @@ function AdminSettingsPage() {
   const { t } = useTranslation("admin");
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        title={t("settings.title")}
-        description={t("settings.subtitle")}
-        breadcrumbs={[{ label: t("settings.title") }]}
-      />
+    <AdminLayout>
+      <div className="space-y-6">
+        <AdminPageHeader
+          title={t("settings.title")}
+          description={t("settings.subtitle")}
+          breadcrumbs={[{ label: t("settings.title") }]}
+        />
 
-      <Tabs
-        defaultValue="email"
-        className="space-y-6"
-      >
-        <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-4">
-          <TabsTrigger
-            value="email"
-            className="gap-2"
-          >
-            <Mail className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("settings.tabs.email")}</span>
-            <span className="sm:hidden">{t("settings.tabs.emailShort")}</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="security"
-            className="gap-2"
-          >
-            <Lock className="h-4 w-4" />
-            <span>{t("settings.tabs.security")}</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="site"
-            className="gap-2"
-          >
-            <Globe className="h-4 w-4" />
-            <span>{t("settings.tabs.site")}</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="ip-blocklist"
-            className="gap-2"
-          >
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("settings.tabs.ipBlocklist")}</span>
-            <span className="sm:hidden">{t("settings.tabs.ipBlocklistShort")}</span>
-          </TabsTrigger>
-        </TabsList>
+        <Tabs
+          defaultValue="email"
+          className="space-y-6"
+        >
+          <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-4">
+            <TabsTrigger
+              value="email"
+              className="gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("settings.tabs.email")}</span>
+              <span className="sm:hidden">{t("settings.tabs.emailShort")}</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="security"
+              className="gap-2"
+            >
+              <Lock className="h-4 w-4" />
+              <span>{t("settings.tabs.security")}</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="site"
+              className="gap-2"
+            >
+              <Globe className="h-4 w-4" />
+              <span>{t("settings.tabs.site")}</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="ip-blocklist"
+              className="gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("settings.tabs.ipBlocklist")}</span>
+              <span className="sm:hidden">{t("settings.tabs.ipBlocklistShort")}</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="email">
-          <EmailSettingsTab />
-        </TabsContent>
-        <TabsContent value="security">
-          <SecuritySettingsTab />
-        </TabsContent>
-        <TabsContent value="site">
-          <SiteSettingsTab />
-        </TabsContent>
-        <TabsContent value="ip-blocklist">
-          <IPBlocklistTab />
-        </TabsContent>
-      </Tabs>
-    </div>
+          <TabsContent value="email">
+            <EmailSettingsTab />
+          </TabsContent>
+          <TabsContent value="security">
+            <SecuritySettingsTab />
+          </TabsContent>
+          <TabsContent value="site">
+            <SiteSettingsTab />
+          </TabsContent>
+          <TabsContent value="ip-blocklist">
+            <IPBlocklistTab />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AdminLayout>
   );
 }
 

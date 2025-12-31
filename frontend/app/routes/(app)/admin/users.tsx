@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AdminLayout } from "@/layouts/AdminLayout";
 import { requireAdmin } from "@/lib/guards";
 import { AdminService } from "@/services/admin";
 import { apiClient } from "@/services/api/client";
@@ -269,351 +270,353 @@ function AdminUsersPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{t("users.title")}</h2>
-          <p className="text-muted-foreground text-sm">{t("users.subtitle")}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={exportToCSV}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("users.export")}</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("users.refresh")}</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Search and Bulk Actions */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative flex-1 sm:max-w-xs">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                placeholder={t("users.searchPlaceholder")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            {selectedUsers.size > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground text-sm">
-                  {t("users.selected", { count: selectedUsers.size })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setConfirmDialog({
-                      open: true,
-                      title: t("users.dialog.deactivateTitle"),
-                      description: t("users.dialog.deactivateUsersDescription", { count: selectedUsers.size }),
-                      action: () => bulkDeactivateMutation.mutate([...selectedUsers]),
-                      variant: "destructive",
-                    })
-                  }
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Ban className="mr-2 h-4 w-4" />
-                  {t("users.deactivate")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setConfirmDialog({
-                      open: true,
-                      title: t("users.dialog.reactivateTitle"),
-                      description: t("users.dialog.reactivateUsersDescription", { count: selectedUsers.size }),
-                      action: () => bulkReactivateMutation.mutate([...selectedUsers]),
-                      variant: "default",
-                    })
-                  }
-                  className="text-success hover:text-success"
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  {t("users.reactivate")}
-                </Button>
-              </div>
-            )}
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">{t("users.title")}</h2>
+            <p className="text-muted-foreground text-sm">{t("users.subtitle")}</p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={exportToCSV}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("users.export")}</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("users.refresh")}</span>
+            </Button>
+          </div>
+        </div>
 
-      {/* Loading State */}
-      {isLoading && (
+        {/* Search and Bulk Actions */}
         <Card>
-          <CardContent className="py-8">
-            <div className="flex items-center justify-center">
-              <RefreshCw className="text-muted-foreground h-6 w-6 animate-spin" />
-              <span className="text-muted-foreground ml-2">{t("users.loading")}</span>
+          <CardContent className="py-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1 sm:max-w-xs">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                <Input
+                  placeholder={t("users.searchPlaceholder")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              {selectedUsers.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-sm">
+                    {t("users.selected", { count: selectedUsers.size })}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setConfirmDialog({
+                        open: true,
+                        title: t("users.dialog.deactivateTitle"),
+                        description: t("users.dialog.deactivateUsersDescription", { count: selectedUsers.size }),
+                        action: () => bulkDeactivateMutation.mutate([...selectedUsers]),
+                        variant: "destructive",
+                      })
+                    }
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Ban className="mr-2 h-4 w-4" />
+                    {t("users.deactivate")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setConfirmDialog({
+                        open: true,
+                        title: t("users.dialog.reactivateTitle"),
+                        description: t("users.dialog.reactivateUsersDescription", { count: selectedUsers.size }),
+                        action: () => bulkReactivateMutation.mutate([...selectedUsers]),
+                        variant: "default",
+                      })
+                    }
+                    className="text-success hover:text-success"
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    {t("users.reactivate")}
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Error State */}
-      {error && (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="text-destructive">{t("users.error.title")}</CardTitle>
-            <CardDescription className="text-destructive/80">
-              {error instanceof Error ? error.message : t("users.error.default")}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
-
-      {/* Users Table */}
-      {data && (
-        <>
+        {/* Loading State */}
+        {isLoading && (
           <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={
-                        filteredAndSortedUsers.length > 0 && selectedUsers.size === filteredAndSortedUsers.length
-                      }
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>
-                    <SortHeader
-                      field="name"
-                      onSort={handleSort}
-                    >
-                      {t("users.table.user")}
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead>
-                    <SortHeader
-                      field="role"
-                      onSort={handleSort}
-                    >
-                      {t("users.table.role")}
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead>{t("users.table.status")}</TableHead>
-                  <TableHead>
-                    <SortHeader
-                      field="created_at"
-                      onSort={handleSort}
-                    >
-                      {t("users.table.created")}
-                    </SortHeader>
-                  </TableHead>
-                  <TableHead className="text-right">{t("users.table.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedUsers.length === 0 ? (
+            <CardContent className="py-8">
+              <div className="flex items-center justify-center">
+                <RefreshCw className="text-muted-foreground h-6 w-6 animate-spin" />
+                <span className="text-muted-foreground ml-2">{t("users.loading")}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="text-destructive">{t("users.error.title")}</CardTitle>
+              <CardDescription className="text-destructive/80">
+                {error instanceof Error ? error.message : t("users.error.default")}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+
+        {/* Users Table */}
+        {data && (
+          <>
+            <Card>
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="h-24 text-center"
-                    >
-                      <div className="text-muted-foreground flex flex-col items-center justify-center">
-                        <UsersIcon className="mb-2 h-8 w-8" />
-                        <p>{t("users.empty.title")}</p>
-                        {search && <p className="text-sm">{t("users.empty.searchHint")}</p>}
-                      </div>
-                    </TableCell>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={
+                          filteredAndSortedUsers.length > 0 && selectedUsers.size === filteredAndSortedUsers.length
+                        }
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader
+                        field="name"
+                        onSort={handleSort}
+                      >
+                        {t("users.table.user")}
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader
+                        field="role"
+                        onSort={handleSort}
+                      >
+                        {t("users.table.role")}
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>{t("users.table.status")}</TableHead>
+                    <TableHead>
+                      <SortHeader
+                        field="created_at"
+                        onSort={handleSort}
+                      >
+                        {t("users.table.created")}
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead className="text-right">{t("users.table.actions")}</TableHead>
                   </TableRow>
-                ) : (
-                  filteredAndSortedUsers.map((user) => (
-                    <TableRow
-                      key={user.id}
-                      data-state={selectedUsers.has(user.id) && "selected"}
-                    >
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedUsers.has(user.id)}
-                          onCheckedChange={() => handleSelectUser(user.id)}
-                        />
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="h-24 text-center"
+                      >
+                        <div className="text-muted-foreground flex flex-col items-center justify-center">
+                          <UsersIcon className="mb-2 h-8 w-8" />
+                          <p>{t("users.empty.title")}</p>
+                          {search && <p className="text-sm">{t("users.empty.searchHint")}</p>}
+                        </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{user.name}</p>
-                            <p className="text-muted-foreground text-sm">{user.email}</p>
+                    </TableRow>
+                  ) : (
+                    filteredAndSortedUsers.map((user) => (
+                      <TableRow
+                        key={user.id}
+                        data-state={selectedUsers.has(user.id) && "selected"}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedUsers.has(user.id)}
+                            onCheckedChange={() => handleSelectUser(user.id)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{user.name}</p>
+                              <p className="text-muted-foreground text-sm">{user.email}</p>
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getRoleBadgeVariant(user.role)}>{user.role || "user"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {user.is_active ? (
-                            <Badge variant="success">
-                              <CheckCircle className="mr-1 h-3 w-3" />
-                              {t("users.status.active")}
-                            </Badge>
-                          ) : (
-                            <Badge variant="destructive">
-                              <Ban className="mr-1 h-3 w-3" />
-                              {t("users.status.inactive")}
-                            </Badge>
-                          )}
-                          {user.email_verified && <Badge variant="info">{t("users.status.verified")}</Badge>}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          {user.id !== currentUser?.id && user.role !== "super_admin" && (
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getRoleBadgeVariant(user.role)}>{user.role || "user"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {user.is_active ? (
+                              <Badge variant="success">
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                {t("users.status.active")}
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive">
+                                <Ban className="mr-1 h-3 w-3" />
+                                {t("users.status.inactive")}
+                              </Badge>
+                            )}
+                            {user.email_verified && <Badge variant="info">{t("users.status.verified")}</Badge>}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            {user.id !== currentUser?.id && user.role !== "super_admin" && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => impersonateMutation.mutate(user.id)}
+                                    disabled={impersonateMutation.isPending}
+                                  >
+                                    <Shield className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>{t("users.tooltips.impersonate")}</TooltipContent>
+                              </Tooltip>
+                            )}
+                            {user.id !== currentUser?.id &&
+                              (user.is_active ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        setConfirmDialog({
+                                          open: true,
+                                          title: t("users.dialog.deactivateTitle"),
+                                          description: t("users.dialog.deactivateDescription", { name: user.name }),
+                                          action: () => deactivateMutation.mutate(user.id),
+                                          variant: "destructive",
+                                        })
+                                      }
+                                      className="text-destructive hover:text-destructive"
+                                    >
+                                      <Ban className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{t("users.tooltips.deactivate")}</TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        setConfirmDialog({
+                                          open: true,
+                                          title: t("users.dialog.reactivateTitle"),
+                                          description: t("users.dialog.reactivateDescription", { name: user.name }),
+                                          action: () => reactivateMutation.mutate(user.id),
+                                          variant: "default",
+                                        })
+                                      }
+                                      className="text-success hover:text-success"
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{t("users.tooltips.reactivate")}</TooltipContent>
+                                </Tooltip>
+                              ))}
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => impersonateMutation.mutate(user.id)}
-                                  disabled={impersonateMutation.isPending}
+                                  onClick={() => toast.info(t("users.toast.detailsComingSoon"))}
                                 >
-                                  <Shield className="h-4 w-4" />
+                                  <UserCog className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>{t("users.tooltips.impersonate")}</TooltipContent>
+                              <TooltipContent>{t("users.tooltips.viewDetails")}</TooltipContent>
                             </Tooltip>
-                          )}
-                          {user.id !== currentUser?.id &&
-                            (user.is_active ? (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      setConfirmDialog({
-                                        open: true,
-                                        title: t("users.dialog.deactivateTitle"),
-                                        description: t("users.dialog.deactivateDescription", { name: user.name }),
-                                        action: () => deactivateMutation.mutate(user.id),
-                                        variant: "destructive",
-                                      })
-                                    }
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Ban className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>{t("users.tooltips.deactivate")}</TooltipContent>
-                              </Tooltip>
-                            ) : (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      setConfirmDialog({
-                                        open: true,
-                                        title: t("users.dialog.reactivateTitle"),
-                                        description: t("users.dialog.reactivateDescription", { name: user.name }),
-                                        action: () => reactivateMutation.mutate(user.id),
-                                        variant: "default",
-                                      })
-                                    }
-                                    className="text-success hover:text-success"
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>{t("users.tooltips.reactivate")}</TooltipContent>
-                              </Tooltip>
-                            ))}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toast.info(t("users.toast.detailsComingSoon"))}
-                              >
-                                <UserCog className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>{t("users.tooltips.viewDetails")}</TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
 
-          {/* Pagination */}
-          {data.total_pages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-sm">
-                {t("users.pagination.showing", {
-                  from: (data.page - 1) * data.limit + 1,
-                  to: Math.min(data.page * data.limit, data.total),
-                  total: data.total,
-                })}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  <ChevronLeft className="mr-1 h-4 w-4" />
-                  {t("users.pagination.previous")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= data.total_pages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  {t("users.pagination.next")}
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
+            {/* Pagination */}
+            {data.total_pages > 1 && (
+              <div className="flex items-center justify-between">
+                <p className="text-muted-foreground text-sm">
+                  {t("users.pagination.showing", {
+                    from: (data.page - 1) * data.limit + 1,
+                    to: Math.min(data.page * data.limit, data.total),
+                    total: data.total,
+                  })}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => setPage(page - 1)}
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4" />
+                    {t("users.pagination.previous")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= data.total_pages}
+                    onClick={() => setPage(page + 1)}
+                  >
+                    {t("users.pagination.next")}
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </>
+        )}
 
-      {/* Confirm Dialog */}
-      <ConfirmDialog
-        open={confirmDialog.open}
-        onOpenChange={(open) => setConfirmDialog((prev) => ({ ...prev, open }))}
-        title={confirmDialog.title}
-        description={confirmDialog.description}
-        onConfirm={confirmDialog.action}
-        variant={confirmDialog.variant}
-        loading={
-          deactivateMutation.isPending ||
-          reactivateMutation.isPending ||
-          bulkDeactivateMutation.isPending ||
-          bulkReactivateMutation.isPending
-        }
-      />
-    </div>
+        {/* Confirm Dialog */}
+        <ConfirmDialog
+          open={confirmDialog.open}
+          onOpenChange={(open) => setConfirmDialog((prev) => ({ ...prev, open }))}
+          title={confirmDialog.title}
+          description={confirmDialog.description}
+          onConfirm={confirmDialog.action}
+          variant={confirmDialog.variant}
+          loading={
+            deactivateMutation.isPending ||
+            reactivateMutation.isPending ||
+            bulkDeactivateMutation.isPending ||
+            bulkReactivateMutation.isPending
+          }
+        />
+      </div>
+    </AdminLayout>
   );
 }

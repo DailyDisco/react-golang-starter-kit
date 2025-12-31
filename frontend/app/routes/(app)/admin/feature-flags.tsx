@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AdminLayout } from "@/layouts/AdminLayout";
 import { requireAdmin } from "@/lib/guards";
 import {
   AdminService,
@@ -39,91 +40,93 @@ function FeatureFlagsPage() {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{t("featureFlags.title")}</h2>
-          <p className="text-muted-foreground text-sm">{t("featureFlags.subtitle")}</p>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">{t("featureFlags.title")}</h2>
+            <p className="text-muted-foreground text-sm">{t("featureFlags.subtitle")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("featureFlags.refresh")}</span>
+            </Button>
+            <Button
+              onClick={() => setShowCreate(true)}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("featureFlags.createFlag")}</span>
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("featureFlags.refresh")}</span>
-          </Button>
-          <Button
-            onClick={() => setShowCreate(true)}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("featureFlags.createFlag")}</span>
-          </Button>
-        </div>
+
+        {/* Create Form */}
+        {showCreate && (
+          <CreateFeatureFlagForm
+            onClose={() => setShowCreate(false)}
+            onSuccess={() => {
+              setShowCreate(false);
+              queryClient.invalidateQueries({ queryKey: ["admin", "feature-flags"] });
+            }}
+          />
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <Card>
+            <CardContent className="py-8">
+              <div className="flex items-center justify-center">
+                <RefreshCw className="text-muted-foreground h-6 w-6 animate-spin" />
+                <span className="text-muted-foreground ml-2">{t("featureFlags.loading")}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardHeader>
+              <CardTitle className="text-destructive">{t("featureFlags.error.title")}</CardTitle>
+              <CardDescription className="text-destructive/80">
+                {error instanceof Error ? error.message : t("featureFlags.error.default")}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+
+        {/* Feature Flags List */}
+        {data && (
+          <div className="space-y-4">
+            {data.flags.length === 0 ? (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <Flag className="text-muted-foreground/50 mb-4 h-12 w-12" />
+                    <p className="font-medium">{t("featureFlags.empty.title")}</p>
+                    <p className="text-muted-foreground mt-1 text-sm">{t("featureFlags.empty.hint")}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              data.flags.map((flag) => (
+                <FeatureFlagCard
+                  key={flag.id}
+                  flag={flag}
+                />
+              ))
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Create Form */}
-      {showCreate && (
-        <CreateFeatureFlagForm
-          onClose={() => setShowCreate(false)}
-          onSuccess={() => {
-            setShowCreate(false);
-            queryClient.invalidateQueries({ queryKey: ["admin", "feature-flags"] });
-          }}
-        />
-      )}
-
-      {/* Loading State */}
-      {isLoading && (
-        <Card>
-          <CardContent className="py-8">
-            <div className="flex items-center justify-center">
-              <RefreshCw className="text-muted-foreground h-6 w-6 animate-spin" />
-              <span className="text-muted-foreground ml-2">{t("featureFlags.loading")}</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="text-destructive">{t("featureFlags.error.title")}</CardTitle>
-            <CardDescription className="text-destructive/80">
-              {error instanceof Error ? error.message : t("featureFlags.error.default")}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )}
-
-      {/* Feature Flags List */}
-      {data && (
-        <div className="space-y-4">
-          {data.flags.length === 0 ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <Flag className="text-muted-foreground/50 mb-4 h-12 w-12" />
-                  <p className="font-medium">{t("featureFlags.empty.title")}</p>
-                  <p className="text-muted-foreground mt-1 text-sm">{t("featureFlags.empty.hint")}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            data.flags.map((flag) => (
-              <FeatureFlagCard
-                key={flag.id}
-                flag={flag}
-              />
-            ))
-          )}
-        </div>
-      )}
-    </div>
+    </AdminLayout>
   );
 }
 

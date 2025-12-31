@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AdminLayout } from "@/layouts/AdminLayout";
 import { requireAdmin } from "@/lib/guards";
 import { AdminSettingsService, type Announcement, type CreateAnnouncementRequest } from "@/services/admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -102,174 +103,178 @@ function AnnouncementsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold">{t("announcements.title")}</h2>
-          <p className="text-muted-foreground text-sm">{t("announcements.subtitle")}</p>
+      <AdminLayout>
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold">{t("announcements.title")}</h2>
+            <p className="text-muted-foreground text-sm">{t("announcements.subtitle")}</p>
+          </div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <div className="bg-muted h-6 w-48 animate-pulse rounded" />
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-muted/50 h-16 animate-pulse rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <div className="bg-muted h-6 w-48 animate-pulse rounded" />
-              </CardHeader>
-              <CardContent>
-                <div className="bg-muted/50 h-16 animate-pulse rounded" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{t("announcements.title")}</h2>
-          <p className="text-muted-foreground text-sm">{t("announcements.subtitle")}</p>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">{t("announcements.title")}</h2>
+            <p className="text-muted-foreground text-sm">{t("announcements.subtitle")}</p>
+          </div>
+          <Button
+            onClick={() => setShowCreateForm(true)}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("announcements.createAnnouncement")}</span>
+          </Button>
         </div>
-        <Button
-          onClick={() => setShowCreateForm(true)}
-          className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">{t("announcements.createAnnouncement")}</span>
-        </Button>
-      </div>
 
-      {/* Create Form */}
-      {showCreateForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("announcements.create.title")}</CardTitle>
-            <CardDescription>{t("announcements.create.subtitle")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CreateAnnouncementForm
-              onSubmit={(data) => createMutation.mutate(data)}
-              onCancel={() => setShowCreateForm(false)}
-              isLoading={createMutation.isPending}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Announcements List */}
-      <div className="space-y-4">
-        {announcements?.length === 0 ? (
+        {/* Create Form */}
+        {showCreateForm && (
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Bell className="text-muted-foreground/50 h-12 w-12" />
-              <p className="mt-4 font-medium">{t("announcements.empty.title")}</p>
-              <p className="text-muted-foreground text-sm">{t("announcements.empty.subtitle")}</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => setShowCreateForm(true)}
-              >
-                {t("announcements.empty.createFirst")}
-              </Button>
+            <CardHeader>
+              <CardTitle>{t("announcements.create.title")}</CardTitle>
+              <CardDescription>{t("announcements.create.subtitle")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CreateAnnouncementForm
+                onSubmit={(data) => createMutation.mutate(data)}
+                onCancel={() => setShowCreateForm(false)}
+                isLoading={createMutation.isPending}
+              />
             </CardContent>
           </Card>
-        ) : (
-          announcements?.map((announcement) => (
-            <Card
-              key={announcement.id}
-              className={announcement.is_active ? "" : "opacity-60"}
-            >
-              <CardHeader>
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {getTypeIcon(announcement.type)}
-                    <CardTitle className="text-lg">{announcement.title}</CardTitle>
-                    <Badge variant={getTypeBadgeVariant(announcement.type)}>{announcement.type}</Badge>
-                    {!announcement.is_active && <Badge variant="secondary">{t("announcements.card.inactive")}</Badge>}
-                    {announcement.is_dismissible && (
-                      <Badge
-                        variant="outline"
-                        className="text-xs"
-                      >
-                        {t("announcements.card.dismissible")}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <Label
-                        htmlFor={`toggle-${announcement.id}`}
-                        className="text-muted-foreground text-sm"
-                      >
-                        {announcement.is_active ? t("announcements.card.active") : t("announcements.card.inactive")}
-                      </Label>
-                      <Switch
-                        id={`toggle-${announcement.id}`}
-                        checked={announcement.is_active}
-                        onCheckedChange={(checked) =>
-                          toggleMutation.mutate({ id: announcement.id, is_active: checked })
-                        }
-                      />
-                    </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() =>
-                            setDeleteConfirm({ open: true, id: announcement.id, title: announcement.title })
-                          }
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{t("announcements.tooltips.delete")}</TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{announcement.message}</p>
-                {announcement.link_url && (
-                  <p className="text-primary mt-2 text-sm">
-                    {t("announcements.card.link")}: {announcement.link_text || announcement.link_url}
-                  </p>
-                )}
-                {announcement.target_roles && announcement.target_roles.length > 0 && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-muted-foreground text-sm">{t("announcements.card.targetRoles")}:</span>
-                    <div className="flex gap-1">
-                      {announcement.target_roles.map((role) => (
+        )}
+
+        {/* Announcements List */}
+        <div className="space-y-4">
+          {announcements?.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Bell className="text-muted-foreground/50 h-12 w-12" />
+                <p className="mt-4 font-medium">{t("announcements.empty.title")}</p>
+                <p className="text-muted-foreground text-sm">{t("announcements.empty.subtitle")}</p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => setShowCreateForm(true)}
+                >
+                  {t("announcements.empty.createFirst")}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            announcements?.map((announcement) => (
+              <Card
+                key={announcement.id}
+                className={announcement.is_active ? "" : "opacity-60"}
+              >
+                <CardHeader>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {getTypeIcon(announcement.type)}
+                      <CardTitle className="text-lg">{announcement.title}</CardTitle>
+                      <Badge variant={getTypeBadgeVariant(announcement.type)}>{announcement.type}</Badge>
+                      {!announcement.is_active && <Badge variant="secondary">{t("announcements.card.inactive")}</Badge>}
+                      {announcement.is_dismissible && (
                         <Badge
-                          key={role}
                           variant="outline"
                           className="text-xs"
                         >
-                          {role}
+                          {t("announcements.card.dismissible")}
                         </Badge>
-                      ))}
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <Label
+                          htmlFor={`toggle-${announcement.id}`}
+                          className="text-muted-foreground text-sm"
+                        >
+                          {announcement.is_active ? t("announcements.card.active") : t("announcements.card.inactive")}
+                        </Label>
+                        <Switch
+                          id={`toggle-${announcement.id}`}
+                          checked={announcement.is_active}
+                          onCheckedChange={(checked) =>
+                            toggleMutation.mutate({ id: announcement.id, is_active: checked })
+                          }
+                        />
+                      </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() =>
+                              setDeleteConfirm({ open: true, id: announcement.id, title: announcement.title })
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{t("announcements.tooltips.delete")}</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{announcement.message}</p>
+                  {announcement.link_url && (
+                    <p className="text-primary mt-2 text-sm">
+                      {t("announcements.card.link")}: {announcement.link_text || announcement.link_url}
+                    </p>
+                  )}
+                  {announcement.target_roles && announcement.target_roles.length > 0 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-muted-foreground text-sm">{t("announcements.card.targetRoles")}:</span>
+                      <div className="flex gap-1">
+                        {announcement.target_roles.map((role) => (
+                          <Badge
+                            key={role}
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {role}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
 
-      <ConfirmDialog
-        open={deleteConfirm.open}
-        onOpenChange={(open) => setDeleteConfirm((prev) => ({ ...prev, open }))}
-        title={t("announcements.dialog.deleteTitle")}
-        description={t("announcements.dialog.deleteDescription", { title: deleteConfirm.title })}
-        confirmLabel={t("announcements.dialog.delete")}
-        variant="destructive"
-        onConfirm={() => deleteMutation.mutate(deleteConfirm.id)}
-        loading={deleteMutation.isPending}
-      />
-    </div>
+        <ConfirmDialog
+          open={deleteConfirm.open}
+          onOpenChange={(open) => setDeleteConfirm((prev) => ({ ...prev, open }))}
+          title={t("announcements.dialog.deleteTitle")}
+          description={t("announcements.dialog.deleteDescription", { title: deleteConfirm.title })}
+          confirmLabel={t("announcements.dialog.delete")}
+          variant="destructive"
+          onConfirm={() => deleteMutation.mutate(deleteConfirm.id)}
+          loading={deleteMutation.isPending}
+        />
+      </div>
+    </AdminLayout>
   );
 }
 
