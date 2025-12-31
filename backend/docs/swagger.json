@@ -3267,64 +3267,6 @@
                 }
             }
         },
-        "/auth/login": {
-            "post": {
-                "description": "Authenticate user with email and password. Returns JWT token for subsequent requests.\nThis endpoint is rate limited to prevent brute force attacks. Maximum 10 requests per minute per IP.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Login user",
-                "parameters": [
-                    {
-                        "description": "User login credentials",
-                        "name": "credentials",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.LoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Login successful with JWT token",
-                        "schema": {
-                            "$ref": "#/definitions/models.AuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid JSON or missing fields",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Invalid credentials or account deactivated",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "429": {
-                        "description": "Rate limit exceeded",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to generate token",
-                        "schema": {
-                            "$ref": "#/definitions/models.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/auth/logout": {
             "post": {
                 "description": "Logout user by clearing the authentication cookie and revoking the token",
@@ -6403,25 +6345,6 @@
                 },
                 "region": {
                     "type": "string"
-                }
-            }
-        },
-        "models.LoginRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "description": "User's email address (must be valid email format)\nrequired: true\nexample: john.doe@example.com",
-                    "type": "string",
-                    "example": "john.doe@example.com"
-                },
-                "password": {
-                    "description": "User's password (minimum 8 characters)\nrequired: true\nexample: SecurePass123!\nminLength: 8",
-                    "type": "string",
-                    "example": "SecurePass123!"
                 }
             }
         },

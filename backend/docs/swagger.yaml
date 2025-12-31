@@ -752,27 +752,6 @@ definitions:
       region:
         type: string
     type: object
-  models.LoginRequest:
-    properties:
-      email:
-        description: |-
-          User's email address (must be valid email format)
-          required: true
-          example: john.doe@example.com
-        example: john.doe@example.com
-        type: string
-      password:
-        description: |-
-          User's password (minimum 8 characters)
-          required: true
-          example: SecurePass123!
-          minLength: 8
-        example: SecurePass123!
-        type: string
-    required:
-    - email
-    - password
-    type: object
   models.MemberStatus:
     enum:
     - active
@@ -3365,46 +3344,6 @@ paths:
       summary: Handle Stripe webhook
       tags:
       - webhooks
-  /auth/login:
-    post:
-      consumes:
-      - application/json
-      description: |-
-        Authenticate user with email and password. Returns JWT token for subsequent requests.
-        This endpoint is rate limited to prevent brute force attacks. Maximum 10 requests per minute per IP.
-      parameters:
-      - description: User login credentials
-        in: body
-        name: credentials
-        required: true
-        schema:
-          $ref: '#/definitions/models.LoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Login successful with JWT token
-          schema:
-            $ref: '#/definitions/models.AuthResponse'
-        "400":
-          description: Invalid JSON or missing fields
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "401":
-          description: Invalid credentials or account deactivated
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "429":
-          description: Rate limit exceeded
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-        "500":
-          description: Failed to generate token
-          schema:
-            $ref: '#/definitions/models.ErrorResponse'
-      summary: Login user
-      tags:
-      - auth
   /auth/logout:
     post:
       description: Logout user by clearing the authentication cookie and revoking
