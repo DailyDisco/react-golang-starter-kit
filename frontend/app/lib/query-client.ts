@@ -1,12 +1,23 @@
 import { QueryClient } from "@tanstack/react-query";
 
+import { ApiError } from "../services/api/client";
 import { logger } from "./logger";
 
 /**
- * Extract HTTP status code from error message.
- * Matches patterns like "status 404", "status: 500", "failed with 401"
+ * Extract HTTP status code from error.
+ * Checks ApiError.statusCode first, then falls back to parsing error message.
  */
 const extractStatusCode = (error: Error): number | null => {
+  // Check for ApiError with explicit statusCode
+  if (error instanceof ApiError) {
+    return error.statusCode;
+  }
+
+  // Check for statusCode property on generic errors
+  if ("statusCode" in error && typeof error.statusCode === "number") {
+    return error.statusCode;
+  }
+
   if (!error.message) return null;
 
   // Match common patterns: "status 404", "status: 500", "with status 401", etc.
@@ -27,6 +38,8 @@ const extractStatusCode = (error: Error): number | null => {
 /**
  * Check if error represents a 4xx client error (should not retry).
  * Returns true for 400-499 status codes.
+ * Auth errors (401/403) are specifically not retried - the auth recovery
+ * in client.ts handles token refresh separately.
  */
 const isClientError = (error: Error): boolean => {
   const status = extractStatusCode(error);

@@ -95,8 +95,10 @@ const isStateChangingMethod = (method?: string): boolean => {
 };
 
 // Track if we're currently refreshing to prevent concurrent refresh attempts
-let isRefreshing = false;
+// Uses a queue-based approach to batch all 401 requests and retry them together
 let refreshPromise: Promise<boolean> | null = null;
+type QueuedRequest = { resolve: (response: Response) => void; retry: () => Promise<Response> };
+const failedRequestsQueue: QueuedRequest[] = [];
 
 // Grace period after login/registration to allow cookies to propagate
 // During this window, we don't fire session-expired events on 401s
@@ -189,48 +191,97 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
     }
   }
 
-  // Handle 401 Unauthorized - try to refresh token and retry once
+  // Handle 401 Unauthorized - queue request and retry after token refresh
   if (response.status === 401) {
-    // Don't try to refresh on login/refresh endpoints to avoid infinite loops
+    // Don't try to refresh on auth endpoints to avoid infinite loops
     if (url.includes("/auth/login") || url.includes("/auth/refresh") || url.includes("/auth/register")) {
       return response;
     }
 
-    try {
-      // Use a single refresh promise to prevent concurrent refresh attempts
-      if (!isRefreshing) {
-        isRefreshing = true;
-        const AuthService = await getAuthService();
-        refreshPromise = AuthService.initializeFromStorage();
+    // Create a retry function for this request
+    const retryRequest = async (): Promise<Response> => {
+      const retryHeaders = createHeaders(needsCSRF);
+      return fetch(url, {
+        ...options,
+        credentials: "include",
+        headers: {
+          ...retryHeaders,
+          ...options.headers,
+        },
+      });
+    };
+
+    // Queue this request and return a promise that resolves when it's retried
+    return new Promise<Response>((resolve) => {
+      failedRequestsQueue.push({ resolve, retry: retryRequest });
+
+      // If no refresh is in progress, start one
+      if (!refreshPromise) {
+        const startRefresh = async () => {
+          try {
+            const AuthService = await getAuthService();
+            const refreshed = await AuthService.initializeFromStorage();
+
+            // Small delay to ensure cookies are fully propagated
+            await new Promise((resolve) => setTimeout(resolve, 50));
+
+            // Process all queued requests
+            const queue = [...failedRequestsQueue];
+            failedRequestsQueue.length = 0;
+
+            if (refreshed) {
+              // Retry all queued requests with new token
+              for (const request of queue) {
+                try {
+                  const retryResponse = await request.retry();
+                  request.resolve(retryResponse);
+                } catch (retryError) {
+                  logger.warn("Failed to retry request after token refresh", { error: retryError });
+                  // Resolve with an error response
+                  request.resolve(
+                    new Response(JSON.stringify({ error: "RETRY_FAILED", message: "Failed to retry request" }), {
+                      status: 500,
+                      headers: { "Content-Type": "application/json" },
+                    })
+                  );
+                }
+              }
+            } else {
+              // Refresh failed - dispatch session-expired and reject all queued requests
+              if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
+                window.dispatchEvent(new CustomEvent("session-expired"));
+              }
+              // Return original 401 response to all queued requests
+              for (const request of queue) {
+                request.resolve(response);
+              }
+            }
+          } catch (refreshError) {
+            logger.warn("Token refresh failed during 401 recovery", { error: refreshError });
+            // Dispatch session-expired event
+            if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
+              window.dispatchEvent(new CustomEvent("session-expired"));
+            }
+            // Return original 401 response to all queued requests
+            const queue = [...failedRequestsQueue];
+            failedRequestsQueue.length = 0;
+            for (const request of queue) {
+              request.resolve(response);
+            }
+          } finally {
+            refreshPromise = null;
+          }
+        };
+
+        refreshPromise = startRefresh().then(() => true);
       }
+    });
+  }
 
-      const refreshed = await refreshPromise;
-      isRefreshing = false;
-      refreshPromise = null;
-
-      if (refreshed) {
-        // Token refreshed successfully, retry the original request
-        headers = createHeaders(needsCSRF);
-        return fetch(url, {
-          ...options,
-          credentials: "include",
-          headers: {
-            ...headers,
-            ...options.headers,
-          },
-        });
-      }
-    } catch (refreshError) {
-      isRefreshing = false;
-      refreshPromise = null;
-      logger.warn("Token refresh failed during 401 recovery", { error: refreshError });
-    }
-
-    // Refresh failed or wasn't possible - dispatch session-expired event
-    // But not during the grace period right after login (cookies may still be propagating)
-    if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
-      window.dispatchEvent(new CustomEvent("session-expired"));
-    }
+  // Handle rate limiting - log for debugging
+  if (response.status === 429) {
+    const retryAfter = response.headers.get("Retry-After");
+    logger.warn("Rate limited", { retryAfter, endpoint: url });
   }
 
   return response;

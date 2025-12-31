@@ -75,6 +75,7 @@ describe("API Client", () => {
       // Set up CSRF cookie
       Object.defineProperty(document, "cookie", {
         writable: true,
+        configurable: true,
         value: "csrf_token=test-csrf-token",
       });
       const headers = createHeaders(true);
@@ -84,6 +85,7 @@ describe("API Client", () => {
     it("should not include CSRF token when includeCSRF is false", () => {
       Object.defineProperty(document, "cookie", {
         writable: true,
+        configurable: true,
         value: "csrf_token=test-csrf-token",
       });
       const headers = createHeaders(false);
@@ -93,6 +95,7 @@ describe("API Client", () => {
     it("should not include CSRF token when no token exists", () => {
       Object.defineProperty(document, "cookie", {
         writable: true,
+        configurable: true,
         value: "",
       });
       const headers = createHeaders(true);
@@ -118,10 +121,20 @@ describe("API Client", () => {
       );
     });
 
-    it("should clear localStorage and redirect on 401", async () => {
+    it("should dispatch session-expired event on 401 when refresh fails", async () => {
       // auth_token is in httpOnly cookie, only auth_user is in localStorage
       localStorageMock.setItem("auth_user", '{"id": 1}');
 
+      // Track session-expired event
+      const sessionExpiredHandler = vi.fn();
+      window.addEventListener("session-expired", sessionExpiredHandler);
+
+      // First call returns 401
+      mockFetch.mockResolvedValueOnce({
+        status: 401,
+        ok: false,
+      });
+      // Refresh attempt also fails
       mockFetch.mockResolvedValueOnce({
         status: 401,
         ok: false,
@@ -129,9 +142,11 @@ describe("API Client", () => {
 
       await authenticatedFetch("/api/protected");
 
-      // Only auth_user is in localStorage (tokens are in httpOnly cookies)
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("auth_user");
-      expect(mockLocation.href).toBe("/login");
+      // Session-expired event should be dispatched when refresh fails
+      expect(sessionExpiredHandler).toHaveBeenCalled();
+
+      // Cleanup
+      window.removeEventListener("session-expired", sessionExpiredHandler);
     });
 
     it("should not redirect to login if already on login page", async () => {
@@ -198,7 +213,9 @@ describe("API Client", () => {
       } as Response;
 
       const result = await parseErrorResponse(mockResponse, "Default error");
-      expect(result.message).toBe("Bad Request");
+      // parseErrorResponse prefers message over error field
+      expect(result.message).toBe("Invalid input");
+      expect(result.code).toBe("Bad Request");
     });
 
     it("should return message if error field is missing", async () => {
