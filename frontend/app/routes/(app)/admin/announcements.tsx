@@ -327,10 +327,10 @@ function CreateAnnouncementForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="info">{t("announcements.create.form.typeInfo")}</SelectItem>
-              <SelectItem value="warning">{t("announcements.create.form.typeWarning")}</SelectItem>
-              <SelectItem value="success">{t("announcements.create.form.typeSuccess")}</SelectItem>
-              <SelectItem value="error">{t("announcements.create.form.typeError")}</SelectItem>
+              <SelectItem value="info">{t("announcements.create.form.types.info")}</SelectItem>
+              <SelectItem value="warning">{t("announcements.create.form.types.warning")}</SelectItem>
+              <SelectItem value="success">{t("announcements.create.form.types.success")}</SelectItem>
+              <SelectItem value="error">{t("announcements.create.form.types.error")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -381,7 +381,7 @@ function CreateAnnouncementForm({
             htmlFor="is_dismissible"
             className="cursor-pointer"
           >
-            {t("announcements.create.form.allowDismiss")}
+            {t("announcements.create.form.isDismissible")}
           </Label>
         </div>
         <div className="flex items-center gap-2">
@@ -394,7 +394,7 @@ function CreateAnnouncementForm({
             htmlFor="is_active"
             className="cursor-pointer"
           >
-            {t("announcements.create.form.activeImmediately")}
+            {t("announcements.create.form.isActive")}
           </Label>
         </div>
       </div>

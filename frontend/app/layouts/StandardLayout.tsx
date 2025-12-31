@@ -9,6 +9,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { Home } from "lucide-react";
 
 import { Footer } from "./Footer";
 import { Navbar } from "./Navbar";
@@ -30,6 +31,24 @@ const ROUTE_LABELS: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/login": "Login",
   "/register": "Register",
+  // App routes
+  "/billing": "Billing",
+  "/admin": "Admin",
+  "/admin/users": "Users",
+  "/admin/audit-logs": "Audit Logs",
+  "/admin/feature-flags": "Feature Flags",
+  "/admin/health": "System Health",
+  "/admin/announcements": "Announcements",
+  "/admin/email-templates": "Email Templates",
+  "/admin/settings": "Admin Settings",
+  // Settings sub-routes
+  "/settings/profile": "Profile",
+  "/settings/security": "Security",
+  "/settings/preferences": "Preferences",
+  "/settings/notifications": "Notifications",
+  "/settings/privacy": "Privacy",
+  "/settings/login-history": "Login History",
+  "/settings/connected-accounts": "Connected Accounts",
 };
 
 // Helper function to get user-friendly label
@@ -96,17 +115,23 @@ export default function StandardLayout() {
         Skip to main content
       </a>
       <Navbar />
-      <div className="bg-muted/30 border-b">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+      <div className="bg-background/95 supports-backdrop-filter:bg-background/60 border-b backdrop-blur">
+        <div className="mx-auto max-w-screen-2xl px-4 py-2 sm:px-6 lg:px-8">
           <Breadcrumb>
             <BreadcrumbList>
               {/* Always show Home */}
               <BreadcrumbItem>
                 {isOnHomePage ? (
-                  <BreadcrumbPage>Home</BreadcrumbPage>
+                  <BreadcrumbPage>
+                    <Home className="size-3.5" />
+                    Home
+                  </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link to="/">Home</Link>
+                    <Link to="/">
+                      <Home className="size-3.5" />
+                      Home
+                    </Link>
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
@@ -135,7 +160,9 @@ export default function StandardLayout() {
         id="main-content"
         className="flex-1"
       >
-        <Outlet />
+        <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-8">
+          <Outlet />
+        </div>
       </main>
       <Footer />
     </div>

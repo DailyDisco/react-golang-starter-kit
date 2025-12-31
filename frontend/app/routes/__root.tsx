@@ -6,10 +6,11 @@ import { createRootRouteWithContext, Outlet, useLocation, useNavigate } from "@t
 import { Toaster } from "sonner";
 
 import { SessionExpiredModal } from "../components/auth/SessionExpiredModal";
+import { CommandPalette } from "../components/command-palette";
 import { ErrorFallback } from "../components/error";
 import { OfflineBanner } from "../components/ui/offline-banner";
 import { useLanguageSync } from "../hooks/useLanguageSync";
-import { AppLayout, StandardLayout } from "../layouts";
+import { StandardLayout } from "../layouts";
 import { initCSRFToken } from "../services/api/client";
 
 // Lazy load devtools to exclude from production bundle
@@ -122,18 +123,18 @@ function RootLayout() {
   // Check if we're in the layout-demo route
   const isLayoutDemo = location.pathname.startsWith("/layout-demo");
 
-  // App routes use AppLayout (sidebar) with auth guard
-  if (isAppRoute) {
-    return (
-      <AuthGuard>
-        <AppLayout />
-      </AuthGuard>
-    );
-  }
-
   // Layout-demo routes don't use any wrapper layout
   if (isLayoutDemo) {
     return <Outlet />;
+  }
+
+  // App routes use StandardLayout with auth guard
+  if (isAppRoute) {
+    return (
+      <AuthGuard>
+        <StandardLayout />
+      </AuthGuard>
+    );
   }
 
   // Public routes use StandardLayout (navbar + footer)
@@ -150,6 +151,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         <OfflineBanner />
         <Toaster />
         <SessionExpiredModal />
+        <CommandPalette />
         <RootLayout />
         {import.meta.env.DEV && (
           <Suspense fallback={null}>

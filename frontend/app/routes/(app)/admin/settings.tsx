@@ -243,7 +243,7 @@ function EmailSettingsTab() {
               onClick={() => testMutation.mutate()}
               disabled={testMutation.isPending}
             >
-              {testMutation.isPending ? t("settings.email.sendingTest") : t("settings.email.sendTestEmail")}
+              {testMutation.isPending ? t("settings.email.sendingTest") : t("settings.email.sendTest")}
             </Button>
             <Button
               type="submit"
@@ -381,7 +381,7 @@ function SecuritySettingsTab() {
             <h4 className="font-medium">{t("settings.security.session.title")}</h4>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="session_timeout_minutes">{t("settings.security.session.timeout")}</Label>
+                <Label htmlFor="session_timeout_minutes">{t("settings.security.session.timeoutMinutes")}</Label>
                 <Input
                   id="session_timeout_minutes"
                   type="number"
@@ -587,7 +587,7 @@ function SiteSettingsTab() {
                   >
                     {t("settings.site.maintenance.title")}
                   </Label>
-                  <p className="text-muted-foreground text-sm">{t("settings.site.maintenance.hint")}</p>
+                  <p className="text-muted-foreground text-sm">{t("settings.site.maintenance.subtitle")}</p>
                 </div>
               </div>
               <Switch
@@ -731,7 +731,7 @@ function IPBlocklistTab() {
             <div className="text-muted-foreground flex flex-col items-center justify-center py-12">
               <Shield className="text-muted-foreground/30 mb-3 h-12 w-12" />
               <p className="font-medium">{t("settings.ipBlocklist.empty.title")}</p>
-              <p className="text-sm">{t("settings.ipBlocklist.empty.description")}</p>
+              <p className="text-sm">{t("settings.ipBlocklist.empty.hint")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -759,8 +759,10 @@ function IPBlocklistTab() {
                     </div>
                     <p className="text-muted-foreground mt-1 text-sm">{block.reason}</p>
                     <p className="text-muted-foreground mt-1 text-xs">
-                      {t("settings.ipBlocklist.item.added")}: {new Date(block.created_at).toLocaleString()} |{" "}
-                      {t("settings.ipBlocklist.item.hits")}: {block.hit_count}
+                      {t("settings.ipBlocklist.item.added", {
+                        date: new Date(block.created_at).toLocaleString(),
+                        count: block.hit_count,
+                      })}
                     </p>
                   </div>
                   <Tooltip>
@@ -774,7 +776,7 @@ function IPBlocklistTab() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{t("settings.ipBlocklist.item.removeTooltip")}</TooltipContent>
+                    <TooltipContent>{t("settings.ipBlocklist.tooltips.remove")}</TooltipContent>
                   </Tooltip>
                 </div>
               ))}
@@ -786,11 +788,11 @@ function IPBlocklistTab() {
       <ConfirmDialog
         open={confirmDialog.open}
         onOpenChange={(open) => setConfirmDialog((prev) => ({ ...prev, open }))}
-        title={t("settings.ipBlocklist.dialog.title")}
-        description={t("settings.ipBlocklist.dialog.description", { ip: confirmDialog.ip })}
+        title={t("settings.ipBlocklist.dialog.removeTitle")}
+        description={t("settings.ipBlocklist.dialog.removeDescription", { ip: confirmDialog.ip })}
         onConfirm={() => unblockMutation.mutate(confirmDialog.id)}
         variant="destructive"
-        confirmLabel={t("settings.ipBlocklist.dialog.confirm")}
+        confirmLabel={t("settings.ipBlocklist.dialog.unblock")}
         loading={unblockMutation.isPending}
       />
     </div>

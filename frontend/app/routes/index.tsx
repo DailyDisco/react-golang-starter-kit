@@ -2,16 +2,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
   Bell,
+  Bot,
+  Brain,
   Building2,
   CreditCard,
   FileText,
   Flag,
   Globe,
   HardDrive,
+  Image,
   Key,
   LayoutDashboard,
   Lock,
   Mail,
+  MessageSquare,
   MonitorCheck,
   Radio,
   ScrollText,
@@ -19,7 +23,10 @@ import {
   Shield,
   ShieldCheck,
   Smartphone,
+  Sparkles,
   Users,
+  Wrench,
+  Zap,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -223,6 +230,38 @@ function Home() {
         },
       ],
     },
+    {
+      title: t("features.categories.ai.title"),
+      icon: <Sparkles className="h-6 w-6" />,
+      iconColor: "text-fuchsia-500",
+      features: [
+        {
+          icon: <MessageSquare className="h-4 w-4" />,
+          name: t("features.categories.ai.chat.name"),
+          description: t("features.categories.ai.chat.description"),
+        },
+        {
+          icon: <Zap className="h-4 w-4" />,
+          name: t("features.categories.ai.streaming.name"),
+          description: t("features.categories.ai.streaming.description"),
+        },
+        {
+          icon: <Image className="h-4 w-4" />,
+          name: t("features.categories.ai.vision.name"),
+          description: t("features.categories.ai.vision.description"),
+        },
+        {
+          icon: <Brain className="h-4 w-4" />,
+          name: t("features.categories.ai.embeddings.name"),
+          description: t("features.categories.ai.embeddings.description"),
+        },
+        {
+          icon: <Wrench className="h-4 w-4" />,
+          name: t("features.categories.ai.functionCalling.name"),
+          description: t("features.categories.ai.functionCalling.description"),
+        },
+      ],
+    },
   ];
 
   return (
@@ -239,14 +278,14 @@ function Home() {
             <Link
               to="/demo"
               search={{}}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex w-full items-center justify-center rounded-lg px-8 py-3 font-semibold shadow-lg transition-all hover:shadow-xl sm:w-auto"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex w-full items-center justify-center rounded-lg px-8 py-3 font-semibold shadow-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_20px_oklch(0.55_0.18_250/0.4)] sm:w-auto"
             >
               {t("hero.tryDemo")}
             </Link>
             <Link
               to="/pricing"
               search={{}}
-              className="border-border bg-card text-card-foreground hover:bg-accent inline-flex w-full items-center justify-center rounded-lg border px-8 py-3 font-semibold shadow-sm transition-all sm:w-auto"
+              className="border-border bg-card text-card-foreground hover:bg-accent inline-flex w-full items-center justify-center rounded-lg border px-8 py-3 font-semibold shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md sm:w-auto"
             >
               {t("hero.viewPricing")}
             </Link>
@@ -263,13 +302,16 @@ function Home() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {featureCategories.map((category) => (
+            {featureCategories.map((category, index) => (
               <div
                 key={category.title}
-                className="bg-card rounded-xl p-6 shadow-md transition-shadow hover:shadow-lg"
+                className="group bg-card border-t-primary/60 animate-fade-in-up rounded-xl border-t-4 p-6 shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
+                style={{ animationDelay: `${index * 75}ms` }}
               >
                 <div className="mb-4 flex items-center gap-3">
-                  <div className={category.iconColor}>{category.icon}</div>
+                  <div className={`${category.iconColor} transition-transform duration-200 group-hover:scale-110`}>
+                    {category.icon}
+                  </div>
                   <h3 className="text-card-foreground text-lg font-semibold">{category.title}</h3>
                 </div>
                 <div className="space-y-3">
@@ -301,7 +343,7 @@ function Home() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-3">
-            <div className="border-primary/20 bg-primary/5 rounded-lg border p-6">
+            <div className="border-primary/20 bg-primary/5 hover:border-primary/40 rounded-lg border p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
               <h3 className="text-primary mb-4 text-lg font-semibold">{t("techStack.frontend.title")}</h3>
               <ul className="text-card-foreground space-y-2">
                 <li className="flex items-center gap-2">
@@ -321,7 +363,7 @@ function Home() {
                 </li>
               </ul>
             </div>
-            <div className="border-success/20 bg-success/5 rounded-lg border p-6">
+            <div className="border-success/20 bg-success/5 hover:border-success/40 rounded-lg border p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
               <h3 className="text-success mb-4 text-lg font-semibold">{t("techStack.backend.title")}</h3>
               <ul className="text-card-foreground space-y-2">
                 <li className="flex items-center gap-2">
@@ -341,7 +383,7 @@ function Home() {
                 </li>
               </ul>
             </div>
-            <div className="border-warning/20 bg-warning/5 rounded-lg border p-6">
+            <div className="border-warning/20 bg-warning/5 hover:border-warning/40 rounded-lg border p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
               <h3 className="text-warning mb-4 text-lg font-semibold">{t("techStack.devops.title")}</h3>
               <ul className="text-card-foreground space-y-2">
                 <li className="flex items-center gap-2">
@@ -357,7 +399,7 @@ function Home() {
                   <span className="text-warning">&#9679;</span> {t("techStack.devops.river")}
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-warning">&#9679;</span> {t("techStack.devops.githubActions")}
+                  <span className="text-warning">&#9679;</span> {t("techStack.devops.github")}
                 </li>
               </ul>
             </div>
@@ -414,7 +456,7 @@ function Home() {
                 </span>
                 <div>
                   <p className="text-card-foreground font-medium">{t("gettingStarted.steps.build.title")}</p>
-                  <p className="text-muted-foreground mt-1 text-sm">{t("gettingStarted.steps.build.description")}</p>
+                  <p className="text-muted-foreground mt-1 text-sm">{t("gettingStarted.steps.build.subtitle")}</p>
                 </div>
               </div>
             </div>

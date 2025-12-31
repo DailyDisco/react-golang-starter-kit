@@ -102,7 +102,103 @@ export interface ConnectedAccount {
   connected_at: string;
 }
 
+// API Key Types
+export interface UserAPIKey {
+  id: number;
+  provider: "gemini" | "openai" | "anthropic";
+  name: string;
+  key_preview: string;
+  is_active: boolean;
+  last_used_at?: string;
+  usage_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAPIKeyRequest {
+  provider: "gemini" | "openai" | "anthropic";
+  name: string;
+  api_key: string;
+}
+
+export interface UpdateAPIKeyRequest {
+  name?: string;
+  api_key?: string;
+  is_active?: boolean;
+}
+
+export interface UserAPIKeysResponse {
+  keys: UserAPIKey[];
+  count: number;
+}
+
 export class SettingsService {
+  // ==================== API Keys ====================
+
+  static async getAPIKeys(): Promise<UserAPIKey[]> {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/api-keys`);
+    if (!response.ok) {
+      const apiError = await parseErrorResponse(response, "Failed to fetch API keys");
+      throw apiError;
+    }
+    const data = await response.json();
+    return data.keys || [];
+  }
+
+  static async getAPIKey(id: number): Promise<UserAPIKey> {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/api-keys/${id}`);
+    if (!response.ok) {
+      const apiError = await parseErrorResponse(response, "Failed to fetch API key");
+      throw apiError;
+    }
+    return response.json();
+  }
+
+  static async createAPIKey(req: CreateAPIKeyRequest): Promise<UserAPIKey> {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/api-keys`, {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+    if (!response.ok) {
+      const apiError = await parseErrorResponse(response, "Failed to create API key");
+      throw apiError;
+    }
+    return response.json();
+  }
+
+  static async updateAPIKey(id: number, req: UpdateAPIKeyRequest): Promise<UserAPIKey> {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/api-keys/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(req),
+    });
+    if (!response.ok) {
+      const apiError = await parseErrorResponse(response, "Failed to update API key");
+      throw apiError;
+    }
+    return response.json();
+  }
+
+  static async deleteAPIKey(id: number): Promise<void> {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/api-keys/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const apiError = await parseErrorResponse(response, "Failed to delete API key");
+      throw apiError;
+    }
+  }
+
+  static async testAPIKey(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/users/me/api-keys/${id}/test`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      const apiError = await parseErrorResponse(response, "Failed to test API key");
+      throw apiError;
+    }
+    return response.json();
+  }
+
   // ==================== User Preferences ====================
 
   static async getPreferences(): Promise<UserPreferences> {

@@ -141,7 +141,7 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
   const createMutation = useMutation({
     mutationFn: (data: CreateFeatureFlagRequest) => AdminService.createFeatureFlag(data),
     onSuccess: () => {
-      toast.success(t("featureFlags.toast.createSuccess"));
+      toast.success(t("featureFlags.toast.created"));
       onSuccess();
     },
     onError: (error) => {
@@ -248,7 +248,7 @@ function CreateFeatureFlagForm({ onClose, onSuccess }: { onClose: () => void; on
               className="gap-2"
             >
               {createMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {t("featureFlags.create.submit")}
+              {t("featureFlags.create.create")}
             </Button>
           </div>
         </form>
@@ -272,7 +272,7 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
   const updateMutation = useMutation({
     mutationFn: () => AdminService.updateFeatureFlag(flag.key, editData),
     onSuccess: () => {
-      toast.success(t("featureFlags.toast.updateSuccess"));
+      toast.success(t("featureFlags.toast.updated"));
       setIsEditing(false);
       queryClient.invalidateQueries({ queryKey: ["admin", "feature-flags"] });
     },
@@ -284,7 +284,7 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
   const deleteMutation = useMutation({
     mutationFn: () => AdminService.deleteFeatureFlag(flag.key),
     onSuccess: () => {
-      toast.success(t("featureFlags.toast.deleteSuccess"));
+      toast.success(t("featureFlags.toast.deleted"));
       queryClient.invalidateQueries({ queryKey: ["admin", "feature-flags"] });
     },
     onError: (error) => {
@@ -325,26 +325,24 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlag }) {
                 <div className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>{t("featureFlags.card.name")}</Label>
+                      <Label>{t("featureFlags.create.name")}</Label>
                       <Input
                         value={editData.name}
                         onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                        placeholder={t("featureFlags.card.namePlaceholder")}
+                        placeholder={t("featureFlags.create.namePlaceholder")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>{t("featureFlags.card.description")}</Label>
+                      <Label>{t("featureFlags.create.description")}</Label>
                       <Input
                         value={editData.description}
                         onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                        placeholder={t("featureFlags.card.descriptionPlaceholder")}
+                        placeholder={t("featureFlags.create.descriptionPlaceholder")}
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>
-                      {t("featureFlags.card.rolloutPercentage", { percentage: editData.rollout_percentage })}
-                    </Label>
+                    <Label>{t("featureFlags.create.rolloutPercentage", { value: editData.rollout_percentage })}</Label>
                     <Slider
                       value={[editData.rollout_percentage]}
                       onValueChange={([value]) => setEditData({ ...editData, rollout_percentage: value })}

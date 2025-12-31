@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 import { queryKeys } from "../../lib/query-keys";
 import { AuthService, type LoginRequest, type RegisterRequest } from "../../services";
-import { ApiError } from "../../services/api/client";
+import { ApiError, markAuthenticationComplete } from "../../services/api/client";
 import { useAuthStore } from "../../stores/auth-store";
 
 export const useLogin = () => {
@@ -12,6 +12,9 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: (credentials: LoginRequest) => AuthService.login(credentials),
     onSuccess: (authData) => {
+      // Mark authentication complete to start grace period for cookie propagation
+      markAuthenticationComplete();
+
       login(authData.user);
       AuthService.storeAuthData(authData);
 
@@ -57,6 +60,9 @@ export const useRegister = () => {
   return useMutation({
     mutationFn: (userData: RegisterRequest) => AuthService.register(userData),
     onSuccess: (authData) => {
+      // Mark authentication complete to start grace period for cookie propagation
+      markAuthenticationComplete();
+
       login(authData.user);
       AuthService.storeAuthData(authData);
 

@@ -186,11 +186,15 @@ function PricingCard({ plan, onSubscribe, isLoading, isAuthenticated }: PricingC
 
   return (
     <div
-      className={`relative rounded-2xl border p-8 ${isPopular ? "border-primary bg-primary/5 shadow-lg" : "bg-card"}`}
+      className={`relative rounded-2xl border p-8 transition-all duration-300 hover:shadow-xl ${
+        isPopular
+          ? "border-primary from-primary/10 to-primary/5 z-10 scale-[1.02] border-2 bg-gradient-to-b shadow-lg"
+          : "bg-card hover:-translate-y-1"
+      }`}
     >
       {isPopular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-medium">
+          <span className="bg-primary text-primary-foreground rounded-full px-4 py-1.5 text-xs font-semibold shadow-md">
             {t("mostPopular")}
           </span>
         </div>
@@ -219,10 +223,10 @@ function PricingCard({ plan, onSubscribe, isLoading, isAuthenticated }: PricingC
 
       <Button
         onClick={onSubscribe}
-        disabled={isLoading}
+        loading={isLoading}
+        variant={isPopular ? "glow" : "default"}
         className="w-full"
       >
-        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         {isAuthenticated ? t("buttons.subscribeNow") : t("buttons.signUpToSubscribe")}
       </Button>
     </div>
@@ -231,8 +235,10 @@ function PricingCard({ plan, onSubscribe, isLoading, isAuthenticated }: PricingC
 
 function FeatureItem({ children }: { children: React.ReactNode }) {
   return (
-    <li className="flex items-center gap-2">
-      <Check className="h-4 w-4 text-green-500" />
+    <li className="flex items-center gap-2.5">
+      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500/10">
+        <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+      </div>
       <span className="text-sm">{children}</span>
     </li>
   );
@@ -259,13 +265,15 @@ function StaticPlanCard({ plan, onAction, actionLabel, variant = "default" }: St
 
   return (
     <div
-      className={`relative rounded-2xl border p-8 ${
-        plan.popular ? "border-primary bg-primary/5 shadow-lg" : "bg-card"
+      className={`relative rounded-2xl border p-8 transition-all duration-300 hover:shadow-xl ${
+        plan.popular
+          ? "border-primary from-primary/10 to-primary/5 z-10 scale-[1.02] border-2 bg-gradient-to-b shadow-lg"
+          : "bg-card hover:-translate-y-1"
       }`}
     >
       {plan.popular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-medium">
+          <span className="bg-primary text-primary-foreground rounded-full px-4 py-1.5 text-xs font-semibold shadow-md">
             {t("mostPopular")}
           </span>
         </div>
@@ -282,12 +290,11 @@ function StaticPlanCard({ plan, onAction, actionLabel, variant = "default" }: St
       </div>
 
       <ul className="mb-4 space-y-2">
-        {plan.features.map((feature, index) => (
-          <FeatureItem key={index}>{feature}</FeatureItem>
-        ))}
+        {Array.isArray(plan.features) &&
+          plan.features.map((feature, index) => <FeatureItem key={index}>{feature}</FeatureItem>)}
       </ul>
 
-      {plan.limitations && plan.limitations.length > 0 && (
+      {Array.isArray(plan.limitations) && plan.limitations.length > 0 && (
         <ul className="mb-6 space-y-2">
           {plan.limitations.map((limitation, index) => (
             <LimitationItem key={index}>{limitation}</LimitationItem>
@@ -297,7 +304,7 @@ function StaticPlanCard({ plan, onAction, actionLabel, variant = "default" }: St
 
       <Button
         onClick={onAction}
-        variant={variant}
+        variant={plan.popular ? "glow" : variant}
         className="w-full"
       >
         {actionLabel}
@@ -355,26 +362,26 @@ function ComparisonTable() {
             <ComparisonRow
               feature={t("comparison.features.projects")}
               free="3"
-              pro={t("comparison.features.unlimited")}
-              enterprise={t("comparison.features.unlimited")}
+              pro={t("comparison.unlimited")}
+              enterprise={t("comparison.unlimited")}
             />
             <ComparisonRow
               feature={t("comparison.features.storage")}
               free="1GB"
               pro="25GB"
-              enterprise={t("comparison.features.unlimited")}
+              enterprise={t("comparison.unlimited")}
             />
             <ComparisonRow
               feature={t("comparison.features.apiRequests")}
               free="100/day"
               pro="10,000/day"
-              enterprise={t("comparison.features.unlimited")}
+              enterprise={t("comparison.unlimited")}
             />
             <ComparisonRow
               feature={t("comparison.features.teamMembers")}
               free={false}
               pro="5"
-              enterprise={t("comparison.features.unlimited")}
+              enterprise={t("comparison.unlimited")}
             />
             <ComparisonRow
               feature={t("comparison.features.customBranding")}
@@ -460,7 +467,7 @@ interface FaqItemProps {
 
 function FaqItem({ question, answer }: FaqItemProps) {
   return (
-    <div className="bg-card rounded-lg border p-6">
+    <div className="bg-card border-l-primary rounded-lg border border-l-4 p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <h3 className="mb-2 font-semibold">{question}</h3>
       <p className="text-muted-foreground text-sm">{answer}</p>
     </div>

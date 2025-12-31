@@ -321,7 +321,7 @@ function AdminUsersPage() {
                     setConfirmDialog({
                       open: true,
                       title: t("users.dialog.deactivateTitle"),
-                      description: t("users.dialog.bulkDeactivateDescription", { count: selectedUsers.size }),
+                      description: t("users.dialog.deactivateUsersDescription", { count: selectedUsers.size }),
                       action: () => bulkDeactivateMutation.mutate([...selectedUsers]),
                       variant: "destructive",
                     })
@@ -338,7 +338,7 @@ function AdminUsersPage() {
                     setConfirmDialog({
                       open: true,
                       title: t("users.dialog.reactivateTitle"),
-                      description: t("users.dialog.bulkReactivateDescription", { count: selectedUsers.size }),
+                      description: t("users.dialog.reactivateUsersDescription", { count: selectedUsers.size }),
                       action: () => bulkReactivateMutation.mutate([...selectedUsers]),
                       variant: "default",
                     })

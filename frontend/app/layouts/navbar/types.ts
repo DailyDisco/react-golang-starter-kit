@@ -4,6 +4,7 @@ export interface NavItem {
   name: string;
   href: string;
   external?: boolean;
+  separator?: boolean;
 }
 
 export const navigation: NavItem[] = [
@@ -14,6 +15,7 @@ export const navigation: NavItem[] = [
     name: "API Docs",
     href: `${API_BASE_URL}/swagger/`,
     external: true,
+    separator: true,
   },
 ];
 

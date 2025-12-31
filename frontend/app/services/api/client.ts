@@ -98,6 +98,53 @@ const isStateChangingMethod = (method?: string): boolean => {
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
+// Grace period after login/registration to allow cookies to propagate
+// During this window, we don't fire session-expired events on 401s
+let authGraceUntil: number = 0;
+const AUTH_GRACE_PERIOD_MS = 5000; // 5 seconds
+
+// Also track in sessionStorage as backup (survives HMR)
+const AUTH_GRACE_KEY = "auth_grace_until";
+
+/**
+ * Mark that authentication just happened (login/register).
+ * During the grace period, 401 errors won't trigger session-expired events.
+ * This prevents false positives while httpOnly cookies propagate in the browser.
+ */
+export const markAuthenticationComplete = (): void => {
+  authGraceUntil = Date.now() + AUTH_GRACE_PERIOD_MS;
+  // Also store in sessionStorage as backup
+  if (typeof window !== "undefined") {
+    sessionStorage.setItem(AUTH_GRACE_KEY, authGraceUntil.toString());
+  }
+};
+
+/**
+ * Check if we're within the post-authentication grace period
+ */
+const isInAuthGracePeriod = (): boolean => {
+  // Check in-memory value first
+  if (Date.now() < authGraceUntil) {
+    return true;
+  }
+  // Fall back to sessionStorage (handles HMR/module reload)
+  if (typeof window !== "undefined") {
+    const stored = sessionStorage.getItem(AUTH_GRACE_KEY);
+    if (stored) {
+      const storedTime = parseInt(stored, 10);
+      if (Date.now() < storedTime) {
+        // Restore in-memory value
+        authGraceUntil = storedTime;
+        return true;
+      } else {
+        // Clean up expired value
+        sessionStorage.removeItem(AUTH_GRACE_KEY);
+      }
+    }
+  }
+  return false;
+};
+
 // Import AuthService dynamically to avoid circular dependency
 const getAuthService = async () => {
   const { AuthService } = await import("../auth/authService");
@@ -180,7 +227,8 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
     }
 
     // Refresh failed or wasn't possible - dispatch session-expired event
-    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+    // But not during the grace period right after login (cookies may still be propagating)
+    if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
       window.dispatchEvent(new CustomEvent("session-expired"));
     }
   }
