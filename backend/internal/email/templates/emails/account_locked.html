@@ -1,0 +1,97 @@
+{{define "subject"}}Your {{.AppName}} account has been locked{{end}}
+
+{{define "title"}}Account locked{{end}}
+
+{{define "preheader"}}Your account has been temporarily locked due to multiple failed login attempts.{{end}}
+
+{{define "footer_links"}}{{template "footer_links_security" .}}{{end}}
+
+{{define "content"}}
+<!-- Lock Icon -->
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td align="center" style="padding-bottom: 24px;">
+            <div style="width: 64px; height: 64px; background-color: #fef2f2; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;">
+                <span style="font-size: 32px;">&#128274;</span>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<h1 class="email-heading" style="margin: 0 0 24px 0; font-size: 28px; font-weight: 700; color: #dc2626; line-height: 1.3; text-align: center;">
+    Account Temporarily Locked
+</h1>
+
+<p class="email-text" style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #374151;">
+    Hi {{.Data.Name}},
+</p>
+
+<p class="email-text" style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #374151;">
+    Your {{.AppName}} account has been temporarily locked due to multiple failed login attempts. This is a security measure to protect your account.
+</p>
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+    <tr>
+        <td class="email-danger" style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 0 8px 8px 0;">
+            <p class="email-danger-text" style="margin: 0; font-size: 14px; color: #991b1b;">
+                <strong>Your account is locked for {{.Data.LockDuration}}.</strong> After this period, you can try logging in again.
+            </p>
+        </td>
+    </tr>
+</table>
+
+<p class="email-text" style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #374151; font-weight: 600;">
+    What happened?
+</p>
+
+<p class="email-text" style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #374151;">
+    We detected {{.Data.FailedAttempts}} failed login attempts to your account. This could mean:
+</p>
+
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;">
+    <tr>
+        <td style="padding: 8px 0 8px 20px; font-size: 16px; line-height: 1.6; color: #374151;" class="email-text">
+            &#8226; &nbsp;You may have forgotten your password
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 8px 0 8px 20px; font-size: 16px; line-height: 1.6; color: #374151;" class="email-text">
+            &#8226; &nbsp;Someone may be trying to access your account
+        </td>
+    </tr>
+</table>
+
+<p class="email-text" style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #374151; font-weight: 600;">
+    What should you do?
+</p>
+
+<p class="email-text" style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #374151;">
+    If you were trying to log in, you can reset your password to regain access immediately:
+</p>
+
+<!-- CTA Button -->
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td align="center" style="padding: 8px 0 24px 0;">
+            <!--[if mso]>
+            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{.FrontendURL}}/forgot-password" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="13%" stroke="f" fillcolor="#2563eb">
+            <w:anchorlock/>
+            <center>
+            <![endif]-->
+            <a href="{{.FrontendURL}}/forgot-password" class="button" style="background-color: #2563eb; border-radius: 6px; color: #ffffff; display: inline-block; font-size: 16px; font-weight: 600; padding: 14px 32px; text-decoration: none;">
+                Reset Password
+            </a>
+            <!--[if mso]>
+            </center>
+            </v:roundrect>
+            <![endif]-->
+        </td>
+    </tr>
+</table>
+
+<p class="email-text-muted" style="margin: 0 0 24px 0; font-size: 14px; color: #6b7280;">
+    If you weren't trying to log in, someone else may be attempting to access your account. We recommend resetting your password and enabling two-factor authentication.
+</p>
+
+{{template "support_line" .}}
+{{end}}

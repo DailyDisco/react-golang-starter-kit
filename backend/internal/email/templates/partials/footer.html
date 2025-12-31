@@ -1,0 +1,25 @@
+{{define "footer"}}
+<!-- Footer -->
+<tr>
+    <td class="email-footer" style="padding: 24px; text-align: center;">
+        <p class="email-text-muted" style="margin: 0 0 8px 0; font-size: 12px; color: #6b7280;">
+            &copy; {{.CurrentYear}} {{.AppName}}. All rights reserved.
+        </p>
+        <p class="email-text-muted" style="margin: 0; font-size: 12px; color: #6b7280;">
+            {{template "footer_links" .}}
+        </p>
+    </td>
+</tr>
+{{end}}
+
+{{define "footer_links_default"}}
+<a href="{{.FrontendURL}}/settings/preferences" class="email-link" style="color: #6b7280;">Email Preferences</a>
+&nbsp;&bull;&nbsp;
+<a href="{{.FrontendURL}}/privacy" class="email-link" style="color: #6b7280;">Privacy Policy</a>
+{{end}}
+
+{{define "footer_links_security"}}
+<a href="{{.FrontendURL}}/settings/security" class="email-link" style="color: #6b7280;">Security Settings</a>
+&nbsp;&bull;&nbsp;
+<a href="{{.FrontendURL}}/privacy" class="email-link" style="color: #6b7280;">Privacy Policy</a>
+{{end}}

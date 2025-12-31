@@ -5,16 +5,18 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"strings"
 	"time"
 )
 
-//go:embed templates/*.html
+//go:embed templates/layouts/*.html templates/partials/*.html templates/emails/*.html
 var templateFS embed.FS
 
-// TemplateManager handles email templates
+// TemplateManager handles email templates with layout inheritance
 type TemplateManager struct {
 	templates map[string]*template.Template
+	baseSet   *template.Template
 }
 
 // TemplateData contains common data available to all templates
@@ -26,38 +28,101 @@ type TemplateData struct {
 	Data         map[string]interface{}
 }
 
-// NewTemplateManager creates a new template manager
+// NewTemplateManager creates a new template manager with layout support
 func NewTemplateManager() (*TemplateManager, error) {
 	tm := &TemplateManager{
 		templates: make(map[string]*template.Template),
 	}
 
-	// Parse all templates
-	entries, err := templateFS.ReadDir("templates")
+	// Parse base templates (layouts + partials)
+	baseSet, err := tm.parseBaseTemplates()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read templates dir: %w", err)
+		return nil, fmt.Errorf("failed to parse base templates: %w", err)
 	}
+	tm.baseSet = baseSet
 
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".html") {
-			continue
-		}
-
-		name := strings.TrimSuffix(entry.Name(), ".html")
-		content, err := templateFS.ReadFile("templates/" + entry.Name())
-		if err != nil {
-			return nil, fmt.Errorf("failed to read template %s: %w", name, err)
-		}
-
-		tmpl, err := template.New(name).Parse(string(content))
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse template %s: %w", name, err)
-		}
-
-		tm.templates[name] = tmpl
+	// Parse email templates
+	if err := tm.parseEmailTemplates(); err != nil {
+		return nil, fmt.Errorf("failed to parse email templates: %w", err)
 	}
 
 	return tm, nil
+}
+
+// parseBaseTemplates loads all layouts and partials into a base template set
+func (tm *TemplateManager) parseBaseTemplates() (*template.Template, error) {
+	baseSet := template.New("base")
+
+	// Load layouts
+	layoutFiles, err := fs.Glob(templateFS, "templates/layouts/*.html")
+	if err != nil {
+		return nil, fmt.Errorf("failed to glob layouts: %w", err)
+	}
+
+	for _, file := range layoutFiles {
+		content, err := templateFS.ReadFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read layout %s: %w", file, err)
+		}
+		if _, err := baseSet.Parse(string(content)); err != nil {
+			return nil, fmt.Errorf("failed to parse layout %s: %w", file, err)
+		}
+	}
+
+	// Load partials
+	partialFiles, err := fs.Glob(templateFS, "templates/partials/*.html")
+	if err != nil {
+		return nil, fmt.Errorf("failed to glob partials: %w", err)
+	}
+
+	for _, file := range partialFiles {
+		content, err := templateFS.ReadFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read partial %s: %w", file, err)
+		}
+		if _, err := baseSet.Parse(string(content)); err != nil {
+			return nil, fmt.Errorf("failed to parse partial %s: %w", file, err)
+		}
+	}
+
+	return baseSet, nil
+}
+
+// parseEmailTemplates loads all email templates, each inheriting from base set
+func (tm *TemplateManager) parseEmailTemplates() error {
+	emailFiles, err := fs.Glob(templateFS, "templates/emails/*.html")
+	if err != nil {
+		return fmt.Errorf("failed to glob emails: %w", err)
+	}
+
+	for _, file := range emailFiles {
+		// Extract template name from path
+		name := extractTemplateName(file)
+
+		content, err := templateFS.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("failed to read template %s: %w", name, err)
+		}
+
+		// Clone base set and add this template
+		tmpl, err := tm.baseSet.Clone()
+		if err != nil {
+			return fmt.Errorf("failed to clone base for %s: %w", name, err)
+		}
+		if _, err := tmpl.Parse(string(content)); err != nil {
+			return fmt.Errorf("failed to parse template %s: %w", name, err)
+		}
+		tm.templates[name] = tmpl
+	}
+
+	return nil
+}
+
+// extractTemplateName gets the template name from a file path
+func extractTemplateName(path string) string {
+	// Remove directory prefix and .html suffix
+	name := strings.TrimPrefix(path, "templates/emails/")
+	return strings.TrimSuffix(name, ".html")
 }
 
 // Render renders a template with the given data
@@ -78,14 +143,30 @@ func (tm *TemplateManager) Render(name string, data map[string]interface{}) (str
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, templateData); err != nil {
-		return "", "", "", fmt.Errorf("failed to execute template: %w", err)
+
+	// Check if template uses base layout (has "base" defined)
+	if tmpl.Lookup("base") != nil {
+		// Execute base template
+		if err := tmpl.ExecuteTemplate(&buf, "base", templateData); err != nil {
+			return "", "", "", fmt.Errorf("failed to execute base template: %w", err)
+		}
+	} else {
+		// Execute as standalone template
+		if err := tmpl.Execute(&buf, templateData); err != nil {
+			return "", "", "", fmt.Errorf("failed to execute template: %w", err)
+		}
 	}
 
 	htmlBody := buf.String()
 
-	// Extract subject from template if present (<!-- SUBJECT: ... -->)
-	subject := extractSubject(htmlBody)
+	// Extract subject from "subject" template block
+	var subject string
+	if tmpl.Lookup("subject") != nil {
+		var subjectBuf bytes.Buffer
+		if err := tmpl.ExecuteTemplate(&subjectBuf, "subject", templateData); err == nil {
+			subject = strings.TrimSpace(subjectBuf.String())
+		}
+	}
 
 	// Generate plain text version (basic HTML stripping)
 	textBody := generatePlainText(htmlBody)
@@ -99,22 +180,13 @@ func (tm *TemplateManager) HasTemplate(name string) bool {
 	return ok
 }
 
-func extractSubject(html string) string {
-	const prefix = "<!-- SUBJECT: "
-	const suffix = " -->"
-
-	start := strings.Index(html, prefix)
-	if start == -1 {
-		return ""
+// ListTemplates returns all available template names
+func (tm *TemplateManager) ListTemplates() []string {
+	names := make([]string, 0, len(tm.templates))
+	for name := range tm.templates {
+		names = append(names, name)
 	}
-
-	start += len(prefix)
-	end := strings.Index(html[start:], suffix)
-	if end == -1 {
-		return ""
-	}
-
-	return strings.TrimSpace(html[start : start+end])
+	return names
 }
 
 func generatePlainText(html string) string {

@@ -1,0 +1,189 @@
+{{/* Primary CTA Button */}}
+{{define "button"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td align="center" style="padding: 8px 0 24px 0;">
+            <!--[if mso]>
+            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{.URL}}" style="height:48px;v-text-anchor:middle;width:200px;" arcsize="13%" stroke="f" fillcolor="#2563eb">
+            <w:anchorlock/>
+            <center>
+            <![endif]-->
+            <a href="{{.URL}}" class="button" style="background-color: #2563eb; border-radius: 6px; color: #ffffff; display: inline-block; font-size: 16px; font-weight: 600; padding: 14px 32px; text-decoration: none;">
+                {{.Text}}
+            </a>
+            <!--[if mso]>
+            </center>
+            </v:roundrect>
+            <![endif]-->
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* Danger/Red Button */}}
+{{define "button_danger"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td align="center" style="padding: 8px 0 24px 0;">
+            <!--[if mso]>
+            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{.URL}}" style="height:48px;v-text-anchor:middle;width:200px;" arcsize="13%" stroke="f" fillcolor="#dc2626">
+            <w:anchorlock/>
+            <center>
+            <![endif]-->
+            <a href="{{.URL}}" class="button button-danger" style="background-color: #dc2626; border-radius: 6px; color: #ffffff; display: inline-block; font-size: 16px; font-weight: 600; padding: 14px 32px; text-decoration: none;">
+                {{.Text}}
+            </a>
+            <!--[if mso]>
+            </center>
+            </v:roundrect>
+            <![endif]-->
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* URL Display Box */}}
+{{define "url_box"}}
+<p class="email-text-muted" style="margin: 0 0 8px 0; font-size: 14px; color: #6b7280;">
+    Or copy and paste this link into your browser:
+</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td class="email-url-box" style="background-color: #f5f5f5; border-radius: 6px; padding: 12px; margin-bottom: 24px;">
+            <p style="margin: 0; font-size: 13px; word-break: break-all; color: #2563eb;" class="email-link">
+                {{.}}
+            </p>
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* Large Code Display (for 2FA codes) */}}
+{{define "code_box"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td align="center" style="padding: 16px 0 24px 0;">
+            <div class="email-code-box" style="background-color: #f5f5f5; border-radius: 8px; padding: 24px 32px; display: inline-block;">
+                <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #1f2937; font-family: 'SF Mono', Monaco, 'Courier New', monospace;">{{.}}</span>
+            </div>
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* Warning Alert Box (Yellow/Amber) */}}
+{{define "alert_warning"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+    <tr>
+        <td class="email-warning" style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 0 8px 8px 0;">
+            <p class="email-warning-text" style="margin: 0; font-size: 14px; color: #92400e;">
+                {{.}}
+            </p>
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* Info Alert Box (Blue) */}}
+{{define "alert_info"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+    <tr>
+        <td class="email-info" style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 0 8px 8px 0;">
+            <p class="email-info-text" style="margin: 0; font-size: 14px; color: #1e40af;">
+                {{.}}
+            </p>
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* Danger Alert Box (Red) */}}
+{{define "alert_danger"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+    <tr>
+        <td class="email-danger" style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 0 8px 8px 0;">
+            <p class="email-danger-text" style="margin: 0; font-size: 14px; color: #991b1b;">
+                {{.}}
+            </p>
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* Success Alert Box (Green) */}}
+{{define "alert_success"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 24px 0;">
+    <tr>
+        <td class="email-success" style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 0 8px 8px 0;">
+            <p class="email-success-text" style="margin: 0; font-size: 14px; color: #166534;">
+                {{.}}
+            </p>
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* Horizontal Divider */}}
+{{define "divider"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td class="email-border" style="border-top: 1px solid #e5e7eb; padding-top: 24px;">
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* Support Contact Line */}}
+{{define "support_line"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+        <td class="email-border" style="border-top: 1px solid #e5e7eb; padding-top: 24px;">
+            <p class="email-text-muted" style="margin: 0; font-size: 13px; color: #6b7280;">
+                This email was sent by {{.AppName}}. If you have questions, contact us at <a href="mailto:{{.SupportEmail}}" class="email-link" style="color: #2563eb;">{{.SupportEmail}}</a>.
+            </p>
+        </td>
+    </tr>
+</table>
+{{end}}
+
+{{/* Device/Location Info Box */}}
+{{define "device_info"}}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 16px 0;">
+    <tr>
+        <td class="email-url-box" style="background-color: #f5f5f5; border-radius: 8px; padding: 16px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                {{if .Device}}
+                <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #6b7280;" class="email-text-muted" width="100">Device:</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #374151;" class="email-text">{{.Device}}</td>
+                </tr>
+                {{end}}
+                {{if .Browser}}
+                <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #6b7280;" class="email-text-muted" width="100">Browser:</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #374151;" class="email-text">{{.Browser}}</td>
+                </tr>
+                {{end}}
+                {{if .Location}}
+                <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #6b7280;" class="email-text-muted" width="100">Location:</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #374151;" class="email-text">{{.Location}}</td>
+                </tr>
+                {{end}}
+                {{if .IP}}
+                <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #6b7280;" class="email-text-muted" width="100">IP Address:</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #374151;" class="email-text">{{.IP}}</td>
+                </tr>
+                {{end}}
+                {{if .Time}}
+                <tr>
+                    <td style="padding: 4px 0; font-size: 14px; color: #6b7280;" class="email-text-muted" width="100">Time:</td>
+                    <td style="padding: 4px 0; font-size: 14px; color: #374151;" class="email-text">{{.Time}}</td>
+                </tr>
+                {{end}}
+            </table>
+        </td>
+    </tr>
+</table>
+{{end}}
