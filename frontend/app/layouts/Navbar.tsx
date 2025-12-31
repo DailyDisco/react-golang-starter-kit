@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LanguageToggle } from "@/components/ui/language-toggle";
+import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Link, useLocation } from "@tanstack/react-router";
@@ -61,7 +62,7 @@ export function Navbar() {
                 {t("appName")}
               </Link>
             </div>
-            <div className="hidden md:ml-6 md:flex md:space-x-1">
+            <div className="hidden md:ml-6 md:flex md:items-center md:space-x-1">
               {navigation.map((item) =>
                 item.external ? (
                   <a
@@ -89,20 +90,16 @@ export function Navbar() {
                   </Link>
                 )
               )}
+              {/* Separator before authenticated nav links */}
+              {isAuthenticated && (
+                <Separator
+                  orientation="vertical"
+                  className="mx-2 h-5 self-center"
+                />
+              )}
               {/* Authenticated nav links */}
               {isAuthenticated && (
                 <>
-                  <Link
-                    to="/settings"
-                    search={{}}
-                    className={`focus:ring-primary inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
-                      isActive("/settings")
-                        ? "border-primary/20 bg-primary/10 text-primary border"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    }`}
-                  >
-                    {t("navigation.settings")}
-                  </Link>
                   {isAdmin && (
                     <Link
                       to="/admin"
@@ -116,6 +113,17 @@ export function Navbar() {
                       {t("navigation.admin")}
                     </Link>
                   )}
+                  <Link
+                    to="/settings"
+                    search={{}}
+                    className={`focus:ring-primary inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
+                      isActive("/settings")
+                        ? "border-primary/20 bg-primary/10 text-primary border"
+                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                  >
+                    {t("navigation.settings")}
+                  </Link>
                 </>
               )}
             </div>
