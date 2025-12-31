@@ -20,6 +20,7 @@ export interface User {
   bio?: string;
   location?: string;
   social_links?: string; // JSON string from backend
+  two_factor_enabled?: boolean;
 }
 
 // Authentication types

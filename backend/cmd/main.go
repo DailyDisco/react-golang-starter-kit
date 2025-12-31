@@ -313,10 +313,13 @@ func main() {
 	// Routes
 	setupRoutes(r, rateLimitConfig, stripeConfig, appService, fileService)
 
-	// Create server
+	// Create server with timeouts to prevent slowloris and other DoS attacks
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: r,
+		Addr:         ":8080",
+		Handler:      r,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 60 * time.Second, // Higher for file uploads and streaming
+		IdleTimeout:  120 * time.Second,
 	}
 
 	// Start job processing in background

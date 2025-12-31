@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
@@ -23,7 +24,6 @@ import {
   Monitor,
   Shield,
   Smartphone,
-  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -204,7 +204,7 @@ function TwoFactorCard() {
     staleTime: 60 * 1000,
   });
 
-  const is2FAEnabled = false; // TODO: Get from user.two_factor_enabled
+  const is2FAEnabled = user?.two_factor_enabled ?? false;
 
   const setup2FAMutation = useMutation({
     mutationFn: () => SettingsService.setup2FA(),
@@ -393,46 +393,44 @@ function TwoFactorCard() {
           </div>
         )}
 
-        {/* Backup Codes Modal */}
-        {showBackupCodes && backupCodes.length > 0 && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-background w-full max-w-md rounded-lg p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">{t("security.twoFactor.backupCodes.title")}</h3>
-                <button onClick={() => setShowBackupCodes(false)}>
-                  <X className="text-muted-foreground h-5 w-5" />
-                </button>
-              </div>
-              <p className="text-muted-foreground mb-4 text-sm">{t("security.twoFactor.backupCodes.hint")}</p>
-              <div className="bg-muted grid grid-cols-2 gap-2 rounded-lg p-4 font-mono text-sm">
-                {backupCodes.map((code, i) => (
-                  <div
-                    key={i}
-                    className="bg-background rounded px-2 py-1 text-center"
-                  >
-                    {code}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 flex gap-2">
-                <Button
-                  onClick={copyBackupCodes}
-                  variant="outline"
-                  className="flex-1"
+        {/* Backup Codes Dialog */}
+        <Dialog
+          open={showBackupCodes && backupCodes.length > 0}
+          onOpenChange={setShowBackupCodes}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t("security.twoFactor.backupCodes.title")}</DialogTitle>
+              <DialogDescription>{t("security.twoFactor.backupCodes.hint")}</DialogDescription>
+            </DialogHeader>
+            <div className="bg-muted grid grid-cols-2 gap-2 rounded-lg p-4 font-mono text-sm">
+              {backupCodes.map((code, i) => (
+                <div
+                  key={i}
+                  className="bg-background rounded px-2 py-1 text-center"
                 >
-                  <Copy className="mr-2 h-4 w-4" />
-                  {t("security.twoFactor.backupCodes.copy")}
-                </Button>
-                <Button
-                  onClick={() => setShowBackupCodes(false)}
-                  className="flex-1"
-                >
-                  {t("security.twoFactor.backupCodes.done")}
-                </Button>
-              </div>
+                  {code}
+                </div>
+              ))}
             </div>
-          </div>
-        )}
+            <div className="flex gap-2">
+              <Button
+                onClick={copyBackupCodes}
+                variant="outline"
+                className="flex-1"
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                {t("security.twoFactor.backupCodes.copy")}
+              </Button>
+              <Button
+                onClick={() => setShowBackupCodes(false)}
+                className="flex-1"
+              >
+                {t("security.twoFactor.backupCodes.done")}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
