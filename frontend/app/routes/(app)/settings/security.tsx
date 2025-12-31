@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { AuthService } from "@/services/auth/authService";
 import { SettingsService, type TwoFactorSetupResponse, type UserSession } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -39,25 +40,27 @@ function SecuritySettingsPage() {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold">{t("security.title")}</h2>
-        <p className="text-muted-foreground text-sm">{t("security.subtitle")}</p>
+    <SettingsLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h2 className="text-2xl font-bold">{t("security.title")}</h2>
+          <p className="text-muted-foreground text-sm">{t("security.subtitle")}</p>
+        </div>
+
+        {/* Password Change */}
+        <PasswordChangeCard />
+
+        {/* Two-Factor Authentication */}
+        <TwoFactorCard />
+
+        {/* Active Sessions */}
+        <SessionsCard
+          sessions={sessions || []}
+          isLoading={sessionsLoading}
+        />
       </div>
-
-      {/* Password Change */}
-      <PasswordChangeCard />
-
-      {/* Two-Factor Authentication */}
-      <TwoFactorCard />
-
-      {/* Active Sessions */}
-      <SessionsCard
-        sessions={sessions || []}
-        isLoading={sessionsLoading}
-      />
-    </div>
+    </SettingsLayout>
   );
 }
 

@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bell, ChevronRight, History, Key, KeyRound, Link2, Palette, Shield, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -78,44 +79,48 @@ function SettingsPage() {
   const { t } = useTranslation("settings");
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground mt-2">{t("subtitle")}</p>
-      </div>
+    <SettingsLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("subtitle")}</p>
+        </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {settingsNavItems.map((item, index) => {
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              className="group"
-            >
-              <Card
-                className={`h-full transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${item.borderColor} animate-fade-in-up`}
-                style={{ animationDelay: `${index * 50}ms` }}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {settingsNavItems.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                className="group"
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`bg-gradient-to-br ${item.gradient} rounded-xl p-2.5 transition-transform duration-200 group-hover:scale-110`}
-                    >
-                      <Icon className={`h-5 w-5 ${item.iconColor}`} />
+                <Card
+                  className={`h-full transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${item.borderColor} animate-fade-in-up`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`bg-gradient-to-br ${item.gradient} rounded-xl p-2.5 transition-transform duration-200 group-hover:scale-110`}
+                      >
+                        <Icon className={`h-5 w-5 ${item.iconColor}`} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{t(`nav.${item.key}.title` as never)}</h3>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                          {t(`nav.${item.key}.description` as never)}
+                        </p>
+                      </div>
+                      <ChevronRight className="text-muted-foreground group-hover:text-foreground h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{t(`nav.${item.key}.title`)}</h3>
-                      <p className="text-muted-foreground mt-1 text-sm">{t(`nav.${item.key}.description`)}</p>
-                    </div>
-                    <ChevronRight className="text-muted-foreground group-hover:text-foreground h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </SettingsLayout>
   );
 }

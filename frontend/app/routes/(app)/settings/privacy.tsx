@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { SettingsService, type DataExportStatus } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -21,19 +22,21 @@ function PrivacySettingsPage() {
   const { t } = useTranslation("settings");
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold">{t("privacy.title")}</h2>
-        <p className="text-muted-foreground text-sm">{t("privacy.subtitle")}</p>
+    <SettingsLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h2 className="text-2xl font-bold">{t("privacy.title")}</h2>
+          <p className="text-muted-foreground text-sm">{t("privacy.subtitle")}</p>
+        </div>
+
+        {/* Data Export */}
+        <DataExportCard />
+
+        {/* Account Deletion */}
+        <AccountDeletionCard />
       </div>
-
-      {/* Data Export */}
-      <DataExportCard />
-
-      {/* Account Deletion */}
-      <AccountDeletionCard />
-    </div>
+    </SettingsLayout>
   );
 }
 

@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { SettingsService, type CreateAPIKeyRequest, type UserAPIKey } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -101,204 +102,206 @@ function APIKeysSettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{t("apiKeys.title")}</h2>
-          <p className="text-muted-foreground text-sm">{t("apiKeys.subtitle")}</p>
+    <SettingsLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">{t("apiKeys.title")}</h2>
+            <p className="text-muted-foreground text-sm">{t("apiKeys.subtitle")}</p>
+          </div>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t("apiKeys.addKey")}
+          </Button>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("apiKeys.addKey")}
-        </Button>
-      </div>
 
-      {/* Info Card */}
-      <Card className="border-blue-500/30 bg-blue-500/10">
-        <CardContent className="flex items-start gap-4 p-4">
-          <div className="rounded-lg bg-blue-500/20 p-2">
-            <Key className="h-5 w-5 text-blue-500" />
-          </div>
-          <div>
-            <p className="font-medium text-blue-700 dark:text-blue-300">{t("apiKeys.info.title")}</p>
-            <p className="text-muted-foreground text-sm">{t("apiKeys.info.description")}</p>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Info Card */}
+        <Card className="border-blue-500/30 bg-blue-500/10">
+          <CardContent className="flex items-start gap-4 p-4">
+            <div className="rounded-lg bg-blue-500/20 p-2">
+              <Key className="h-5 w-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="font-medium text-blue-700 dark:text-blue-300">{t("apiKeys.info.title")}</p>
+              <p className="text-muted-foreground text-sm">{t("apiKeys.info.description")}</p>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* API Keys List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            {t("apiKeys.yourKeys")}
-          </CardTitle>
-          <CardDescription>{t("apiKeys.yourKeysDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="bg-muted h-20 animate-pulse rounded-lg"
-                />
-              ))}
-            </div>
-          ) : !apiKeys || apiKeys.length === 0 ? (
-            <div className="py-8 text-center">
-              <Key className="text-muted-foreground mx-auto h-12 w-12" />
-              <p className="text-muted-foreground mt-4">{t("apiKeys.noKeys")}</p>
-              <Button
-                className="mt-4"
-                variant="outline"
-                onClick={() => setShowAddDialog(true)}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {t("apiKeys.addFirstKey")}
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {apiKeys.map((key) => {
-                const providerInfo = getProviderInfo(key.provider);
-                const Icon = providerInfo.icon;
-                return (
+        {/* API Keys List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              {t("apiKeys.yourKeys")}
+            </CardTitle>
+            <CardDescription>{t("apiKeys.yourKeysDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
                   <div
-                    key={key.id}
-                    className={`flex items-center justify-between rounded-lg border p-4 ${
-                      key.is_active ? "" : "opacity-60"
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`rounded-lg p-2 ${
-                          key.provider === "gemini"
-                            ? "bg-purple-500/20"
-                            : key.provider === "openai"
-                              ? "bg-green-500/20"
-                              : "bg-orange-500/20"
-                        }`}
-                      >
-                        <Icon
-                          className={`h-5 w-5 ${
+                    key={i}
+                    className="bg-muted h-20 animate-pulse rounded-lg"
+                  />
+                ))}
+              </div>
+            ) : !apiKeys || apiKeys.length === 0 ? (
+              <div className="py-8 text-center">
+                <Key className="text-muted-foreground mx-auto h-12 w-12" />
+                <p className="text-muted-foreground mt-4">{t("apiKeys.noKeys")}</p>
+                <Button
+                  className="mt-4"
+                  variant="outline"
+                  onClick={() => setShowAddDialog(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("apiKeys.addFirstKey")}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {apiKeys.map((key) => {
+                  const providerInfo = getProviderInfo(key.provider);
+                  const Icon = providerInfo.icon;
+                  return (
+                    <div
+                      key={key.id}
+                      className={`flex items-center justify-between rounded-lg border p-4 ${
+                        key.is_active ? "" : "opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`rounded-lg p-2 ${
                             key.provider === "gemini"
-                              ? "text-purple-500"
+                              ? "bg-purple-500/20"
                               : key.provider === "openai"
-                                ? "text-green-500"
-                                : "text-orange-500"
+                                ? "bg-green-500/20"
+                                : "bg-orange-500/20"
                           }`}
+                        >
+                          <Icon
+                            className={`h-5 w-5 ${
+                              key.provider === "gemini"
+                                ? "text-purple-500"
+                                : key.provider === "openai"
+                                  ? "text-green-500"
+                                  : "text-orange-500"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{key.name}</span>
+                            <Badge variant={key.is_active ? "default" : "secondary"}>{providerInfo.label}</Badge>
+                          </div>
+                          <div className="text-muted-foreground text-sm">
+                            <code className="bg-muted rounded px-1">{key.key_preview}</code>
+                            {key.last_used_at && (
+                              <span className="ml-2">
+                                {t("apiKeys.lastUsed")}: {new Date(key.last_used_at).toLocaleDateString()}
+                              </span>
+                            )}
+                            {key.usage_count > 0 && (
+                              <span className="ml-2">
+                                ({key.usage_count} {t("apiKeys.uses")})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={key.is_active}
+                          onCheckedChange={(checked) => toggleKeyMutation.mutate({ id: key.id, isActive: checked })}
                         />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{key.name}</span>
-                          <Badge variant={key.is_active ? "default" : "secondary"}>{providerInfo.label}</Badge>
-                        </div>
-                        <div className="text-muted-foreground text-sm">
-                          <code className="bg-muted rounded px-1">{key.key_preview}</code>
-                          {key.last_used_at && (
-                            <span className="ml-2">
-                              {t("apiKeys.lastUsed")}: {new Date(key.last_used_at).toLocaleDateString()}
-                            </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => testKeyMutation.mutate(key.id)}
+                          disabled={testKeyMutation.isPending}
+                        >
+                          {testKeyMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <TestTube className="h-4 w-4" />
                           )}
-                          {key.usage_count > 0 && (
-                            <span className="ml-2">
-                              ({key.usage_count} {t("apiKeys.uses")})
-                            </span>
-                          )}
-                        </div>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowDeleteDialog(key)}
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={key.is_active}
-                        onCheckedChange={(checked) => toggleKeyMutation.mutate({ id: key.id, isActive: checked })}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => testKeyMutation.mutate(key.id)}
-                        disabled={testKeyMutation.isPending}
-                      >
-                        {testKeyMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <TestTube className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowDeleteDialog(key)}
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Security Note */}
+        <Card className="border-amber-500/30 bg-amber-500/10">
+          <CardContent className="flex items-start gap-4 p-4">
+            <div className="rounded-lg bg-amber-500/20 p-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div>
+              <p className="font-medium text-amber-700 dark:text-amber-300">{t("apiKeys.security.title")}</p>
+              <p className="text-muted-foreground text-sm">{t("apiKeys.security.description")}</p>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Security Note */}
-      <Card className="border-amber-500/30 bg-amber-500/10">
-        <CardContent className="flex items-start gap-4 p-4">
-          <div className="rounded-lg bg-amber-500/20 p-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-          </div>
-          <div>
-            <p className="font-medium text-amber-700 dark:text-amber-300">{t("apiKeys.security.title")}</p>
-            <p className="text-muted-foreground text-sm">{t("apiKeys.security.description")}</p>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Add API Key Dialog */}
+        <AddAPIKeyDialog
+          open={showAddDialog}
+          onOpenChange={setShowAddDialog}
+        />
 
-      {/* Add API Key Dialog */}
-      <AddAPIKeyDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={!!showDeleteDialog}
-        onOpenChange={() => setShowDeleteDialog(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("apiKeys.deleteDialog.title")}</DialogTitle>
-            <DialogDescription>
-              {t("apiKeys.deleteDialog.description", { name: showDeleteDialog?.name })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(null)}
-            >
-              {t("apiKeys.deleteDialog.cancel")}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => showDeleteDialog && deleteKeyMutation.mutate(showDeleteDialog.id)}
-              disabled={deleteKeyMutation.isPending}
-            >
-              {deleteKeyMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="mr-2 h-4 w-4" />
-              )}
-              {t("apiKeys.deleteDialog.confirm")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={!!showDeleteDialog}
+          onOpenChange={() => setShowDeleteDialog(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("apiKeys.deleteDialog.title")}</DialogTitle>
+              <DialogDescription>
+                {t("apiKeys.deleteDialog.description", { name: showDeleteDialog?.name })}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(null)}
+              >
+                {t("apiKeys.deleteDialog.cancel")}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => showDeleteDialog && deleteKeyMutation.mutate(showDeleteDialog.id)}
+                disabled={deleteKeyMutation.isPending}
+              >
+                {deleteKeyMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                {t("apiKeys.deleteDialog.confirm")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </SettingsLayout>
   );
 }
 
