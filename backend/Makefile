@@ -1,9 +1,28 @@
-.PHONY: db-up db-down db-reset db-logs db-shell dev clean swagger swagger-check swagger-validate swagger-install \
+.PHONY: help db-up db-down db-reset db-logs db-shell dev clean swagger swagger-check swagger-validate swagger-install \
 	test test-v test-race test-cover test-cover-check test-cover-show \
-	migrate-install migrate-create migrate-up migrate-down migrate-reset migrate-version migrate-force \
+	migrate-install migrate-create migrate-up migrate-down migrate-reset migrate-version migrate-force migrate-validate \
 	seed seed-fresh
 
-# Database configuration
+# Default target
+help: ## Show this help message
+	@echo "Backend Makefile - Available commands:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Note: For full-stack development, use the root Makefile instead."
+	@echo "      These targets are for standalone backend development only."
+
+# ============================================
+# DATABASE CONFIGURATION
+# ============================================
+# NOTE: These db-* targets run a STANDALONE PostgreSQL container.
+# For full-stack development, use the ROOT Makefile instead:
+#   make dev    - Starts all services via docker-compose
+#   make logs   - View all service logs
+#
+# Use these targets only for isolated backend development without
+# the frontend or when you need direct database control.
+# ============================================
+
 DB_NAME=starter_kit_db
 DB_USER=devuser
 DB_PASS=devpass
@@ -11,7 +30,7 @@ DB_PORT=5432
 CONTAINER_NAME=postgres-dev
 
 # Start PostgreSQL container
-db-up:
+db-up: ## Start standalone PostgreSQL container
 	@echo "Starting PostgreSQL container..."
 	@docker run --name $(CONTAINER_NAME) \
 		-e POSTGRES_USER=$(DB_USER) \
@@ -24,25 +43,25 @@ db-up:
 	@echo "PostgreSQL is ready!"
 
 # Stop and remove PostgreSQL container
-db-down:
+db-down: ## Stop and remove PostgreSQL container
 	@echo "Stopping PostgreSQL container..."
 	@docker stop $(CONTAINER_NAME) 2>/dev/null || true
 	@docker rm $(CONTAINER_NAME) 2>/dev/null || true
 	@echo "PostgreSQL container stopped and removed"
 
 # Reset database (stop, remove, start fresh)
-db-reset: db-down db-up
+db-reset: db-down db-up ## Reset database (stop, remove, start fresh)
 
 # Show database logs
-db-logs:
+db-logs: ## Show PostgreSQL container logs
 	@docker logs $(CONTAINER_NAME)
 
 # Connect to database shell
-db-shell:
+db-shell: ## Connect to PostgreSQL shell (psql)
 	@docker exec -it $(CONTAINER_NAME) psql -U $(DB_USER) -d $(DB_NAME)
 
 # Start development environment (database + air)
-dev: db-up
+dev: db-up ## Start dev server (database + air hot reload)
 	@echo "Starting development server..."
 	@sleep 3
 	@air
@@ -52,10 +71,10 @@ swagger-check:
 	@which swag > /dev/null 2>&1 || (echo "Error: swag not installed. Run: make swagger-install" && exit 1)
 
 # Generate Swagger documentation
-swagger: swagger-check
+swagger: swagger-check ## Generate Swagger API documentation
 	@echo "Generating Swagger documentation..."
 	@swag init -g cmd/main.go -o docs
-	@sed -i '/LeftDelim:/d; /RightDelim:/d' docs/docs.go
+	@sed -i.bak '/LeftDelim:/d; /RightDelim:/d' docs/docs.go && rm -f docs/docs.go.bak
 	@echo "Swagger documentation generated in docs/"
 
 # Validate Swagger docs are up-to-date
@@ -63,7 +82,7 @@ swagger-validate: swagger-check
 	@echo "Validating Swagger documentation..."
 	@mkdir -p /tmp/swagger-validate
 	@swag init -g cmd/main.go -o /tmp/swagger-validate 2>/dev/null
-	@sed -i '/LeftDelim:/d; /RightDelim:/d' /tmp/swagger-validate/docs.go 2>/dev/null || true
+	@sed -i.bak '/LeftDelim:/d; /RightDelim:/d' /tmp/swagger-validate/docs.go 2>/dev/null && rm -f /tmp/swagger-validate/docs.go.bak || true
 	@if ! diff -q docs/swagger.json /tmp/swagger-validate/swagger.json > /dev/null 2>&1; then \
 		echo "Error: Swagger docs outdated! Run 'make swagger' and commit."; \
 		rm -rf /tmp/swagger-validate; \
@@ -84,19 +103,19 @@ clean: db-down
 	@echo "Cleaned up Docker images"
 
 # Run all tests
-test:
+test: ## Run all tests
 	@go test ./internal/...
 
 # Run tests with verbose output
-test-v:
+test-v: ## Run tests with verbose output
 	@go test -v ./internal/...
 
 # Run tests with race detection
-test-race:
+test-race: ## Run tests with race detection
 	@go test -race ./internal/...
 
 # Run tests with coverage report
-test-cover:
+test-cover: ## Run tests with coverage report
 	@go test -coverprofile=coverage.out ./internal/...
 	@go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated: coverage.html"
@@ -142,13 +161,13 @@ migrate-create:
 	@echo "Migration files created for: $(name)"
 
 # Run all pending migrations
-migrate-up:
+migrate-up: ## Run all pending migrations
 	@echo "Running migrations..."
 	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" up
 	@echo "Migrations applied successfully"
 
 # Rollback last migration
-migrate-down:
+migrate-down: ## Rollback last migration
 	@echo "Rolling back last migration..."
 	@migrate -path $(MIGRATIONS_PATH) -database "$(DB_URL)" down 1
 	@echo "Rolled back 1 migration"
@@ -183,11 +202,11 @@ migrate-validate:
 # ============================================
 
 # Seed the database with test data
-seed:
+seed: ## Seed database with test data
 	@echo "Seeding database..."
 	@go run cmd/seed/main.go
 	@echo "Seeding complete"
 
 # Reset database and seed fresh
-seed-fresh: migrate-reset migrate-up seed
+seed-fresh: migrate-reset migrate-up seed ## Reset DB, run migrations, and seed
 	@echo "Fresh seed complete"

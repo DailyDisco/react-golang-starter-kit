@@ -36,7 +36,7 @@ docker compose logs -f
 
 ### Local Development
 
-**Prerequisites:** Go 1.25+, Node.js 20+ (LTS), PostgreSQL 15+
+**Prerequisites:** Go 1.25+, Node.js 20+ (LTS), PostgreSQL 17+
 
 ```bash
 # Configure environment
@@ -73,7 +73,7 @@ npm run dev
 ### Backend Stack
 
 - 🐹 **Go 1.25+** with Chi router
-- 🗄️ **GORM + PostgreSQL 15+** - Powerful ORM and database
+- 🗄️ **GORM + PostgreSQL 17** - Powerful ORM and database
 - 🔐 **JWT Authentication** - Secure token-based auth with 2FA (TOTP)
 - 🏢 **Multi-Tenant Organizations** - Teams with roles and invitations
 - 👥 **Role-Based Access Control (RBAC)** - 4 permission levels
@@ -110,7 +110,7 @@ react-golang-starter-kit/
 │   ├── internal/        # Private application code
 │   │   ├── ai/          # Gemini AI service
 │   │   ├── auth/        # JWT authentication & OAuth
-│   │   ├── cache/       # Redis/memory caching
+│   │   ├── cache/       # Dragonfly/memory caching
 │   │   ├── config/      # Configuration management
 │   │   ├── database/    # Database connection & migrations
 │   │   ├── email/       # SMTP email service
@@ -424,7 +424,7 @@ cp .env.example .env
 
 ### Optional Features
 
-All optional features (AWS S3, Redis, SMTP, payments, AI, analytics) are included in `.env.example` as commented sections. Simply uncomment and configure the features you need.
+All optional features (AWS S3, Dragonfly (Redis-compatible), SMTP, payments, AI, analytics) are included in `.env.example` as commented sections. Simply uncomment and configure the features you need.
 
 📖 **[Environment Configuration Guide →](.env.example)**
 

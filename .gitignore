@@ -11,6 +11,7 @@
 .env.test
 .env.agent
 !.env.example
+!.env.prod.example
 
 # ===========================================
 # Dependencies
@@ -164,6 +165,7 @@ desktop.ini
 .vercel
 .netlify/
 .serverless/
+.bluegreen-state
 
 # ===========================================
 # Security & Credentials
