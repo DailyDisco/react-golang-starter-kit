@@ -81,6 +81,63 @@ import (
 //
 // @tag.name health
 // @tag.description System health monitoring and status endpoints for checking server availability
+// validateProductionSecrets validates that critical secrets are properly configured in production.
+// This prevents deployment with weak or default secrets that could compromise security.
+func validateProductionSecrets() {
+	env := os.Getenv("GO_ENV")
+	if env != "production" && env != "prod" {
+		return // Only validate in production
+	}
+
+	// Validate JWT_SECRET
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		zerologlog.Fatal().Msg("JWT_SECRET is required in production")
+	}
+	if len(jwtSecret) < 32 {
+		zerologlog.Fatal().Msg("JWT_SECRET must be at least 32 characters in production")
+	}
+	// Check for known default/weak secrets
+	weakSecrets := []string{
+		"dev-jwt-secret-key-change-in-production",
+		"secret",
+		"jwt-secret",
+		"changeme",
+		"your-secret-key",
+	}
+	for _, weak := range weakSecrets {
+		if strings.EqualFold(jwtSecret, weak) {
+			zerologlog.Fatal().Msg("Using a known weak JWT_SECRET in production is forbidden")
+		}
+	}
+
+	// Validate Redis password if Redis is configured
+	redisURL := os.Getenv("REDIS_URL")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	if redisURL != "" && redisPassword == "" {
+		zerologlog.Warn().Msg("REDIS_PASSWORD is empty - Redis should be password-protected in production")
+	}
+
+	// Validate database password
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		zerologlog.Fatal().Msg("DB_PASSWORD is required in production")
+	}
+	weakDBPasswords := []string{"devpass", "password", "postgres", "admin", "123456"}
+	for _, weak := range weakDBPasswords {
+		if strings.EqualFold(dbPassword, weak) {
+			zerologlog.Fatal().Msg("Using a known weak DB_PASSWORD in production is forbidden")
+		}
+	}
+
+	// Validate debug mode is disabled
+	if os.Getenv("DEBUG") == "true" {
+		zerologlog.Fatal().Msg("DEBUG mode must be disabled in production (DEBUG=false)")
+	}
+
+	zerologlog.Info().Msg("production secrets validation passed")
+}
+
 func main() {
 	// Load environment variables - try multiple locations
 	err := godotenv.Load(".env.local")
@@ -91,6 +148,9 @@ func main() {
 			zerologlog.Info().Msg("No .env.local or .env file found, using system environment variables")
 		}
 	}
+
+	// Validate production secrets before proceeding
+	validateProductionSecrets()
 
 	// Initialize Sentry for error tracking (optional - controlled by SENTRY_DSN env var)
 	sentryConfig := middleware.LoadSentryConfig()
