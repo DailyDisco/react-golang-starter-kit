@@ -14,6 +14,7 @@
   "password": {
     "required": "Password is required",
     "minLength": "Password must be at least 8 characters",
-    "mismatch": "Passwords don't match"
+    "mismatch": "Passwords don't match",
+    "match": "Passwords match"
   }
 }

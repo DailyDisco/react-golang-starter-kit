@@ -1,4 +1,50 @@
 {
+  "apiKeys": {
+    "title": "API Keys",
+    "subtitle": "Manage your API keys for AI services like Gemini, OpenAI, and Anthropic",
+    "addKey": "Add API Key",
+    "yourKeys": "Your API Keys",
+    "yourKeysDescription": "API keys you've added for AI services",
+    "noKeys": "You haven't added any API keys yet",
+    "addFirstKey": "Add Your First API Key",
+    "lastUsed": "Last used",
+    "uses": "uses",
+    "info": {
+      "title": "Your Keys, Your Control",
+      "description": "Add your own API keys to use AI features. Your keys are encrypted and stored securely. You can remove them at any time."
+    },
+    "security": {
+      "title": "Security Notice",
+      "description": "Your API keys are encrypted with AES-256 before storage. We never log or transmit your keys in plain text. Only you can access and use your keys."
+    },
+    "addDialog": {
+      "title": "Add API Key",
+      "description": "Add an API key for an AI service provider",
+      "provider": "Provider",
+      "name": "Key Name",
+      "namePlaceholder": "e.g., My Gemini Key",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Paste your API key here",
+      "cancel": "Cancel",
+      "save": "Add Key"
+    },
+    "deleteDialog": {
+      "title": "Delete API Key",
+      "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "validation": {
+      "required": "Please fill in all required fields"
+    },
+    "toast": {
+      "created": "API key added successfully",
+      "updated": "API key updated",
+      "deleted": "API key deleted",
+      "testSuccess": "API key is valid and working",
+      "testFailed": "API key test failed"
+    }
+  },
   "common": {
     "saveChanges": "Save Changes",
     "saving": "Saving..."
@@ -89,6 +135,10 @@
     "connectedAccounts": {
       "title": "Connected Accounts",
       "description": "Manage linked OAuth providers"
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "description": "Manage your AI service API keys"
     }
   },
   "notifications": {

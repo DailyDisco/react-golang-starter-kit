@@ -14,7 +14,7 @@
         "emailPassword": { "name": "Auth Email/Contrasena", "description": "Autenticacion basada en JWT" },
         "oauth": { "name": "Integracion OAuth", "description": "SSO con Google y GitHub" },
         "twoFactor": { "name": "Auth de dos factores", "description": "TOTP con codigos de respaldo" },
-        "sessions": { "name": "Gestion de sesiones", "description": "Ver y revocar sesiones" },
+        "sessionManagement": { "name": "Gestion de sesiones", "description": "Ver y revocar sesiones" },
         "loginHistory": { "name": "Historial de inicio de sesion", "description": "Rastrear actividad de inicio de sesion" },
         "ipBlocklist": { "name": "Lista de IPs bloqueadas", "description": "Bloquear IPs maliciosas" }
       },
@@ -22,14 +22,14 @@
         "title": "Organizaciones y equipos",
         "multiTenant": { "name": "Multi-inquilino", "description": "Espacios de trabajo aislados" },
         "teamManagement": { "name": "Gestion de equipos", "description": "Invitar y gestionar miembros" },
-        "roleAccess": { "name": "Acceso basado en roles", "description": "Roles de propietario, admin, miembro" },
+        "roleBasedAccess": { "name": "Acceso basado en roles", "description": "Roles de propietario, admin, miembro" },
         "invitations": { "name": "Invitaciones", "description": "Flujo de invitacion por email" }
       },
       "billing": {
         "title": "Facturacion y monetizacion",
-        "stripe": { "name": "Integracion Stripe", "description": "Sistema de facturacion completo" },
-        "subscriptions": { "name": "Planes de suscripcion", "description": "Precios dinamicos desde Stripe" },
-        "portal": { "name": "Portal del cliente", "description": "Gestion de autoservicio" }
+        "stripeIntegration": { "name": "Integracion Stripe", "description": "Sistema de facturacion completo" },
+        "subscriptionPlans": { "name": "Planes de suscripcion", "description": "Precios dinamicos desde Stripe" },
+        "customerPortal": { "name": "Portal del cliente", "description": "Gestion de autoservicio" }
       },
       "admin": {
         "title": "Admin y gestion",
@@ -44,15 +44,23 @@
         "title": "Tiempo real e i18n",
         "websocket": { "name": "WebSocket", "description": "Notificaciones y sincronizacion en vivo" },
         "i18n": { "name": "Internacionalizacion", "description": "Soporte multi-idioma" },
-        "push": { "name": "Notificaciones push", "description": "Alertas en tiempo real" }
+        "pushNotifications": { "name": "Notificaciones push", "description": "Alertas en tiempo real" }
       },
       "infrastructure": {
         "title": "Infraestructura y observabilidad",
-        "storage": { "name": "Almacenamiento de archivos", "description": "S3 o almacenamiento en base de datos" },
-        "prometheus": { "name": "Metricas Prometheus", "description": "Observabilidad completa" },
-        "health": { "name": "Monitoreo de salud", "description": "Estado del sistema en tiempo real" },
-        "rateLimit": { "name": "Limitacion de tasa", "description": "Proteccion integrada" },
-        "preferences": { "name": "Preferencias de usuario", "description": "Tema, zona horaria, idioma" }
+        "fileStorage": { "name": "Almacenamiento de archivos", "description": "S3 o almacenamiento en base de datos" },
+        "prometheusMetrics": { "name": "Metricas Prometheus", "description": "Observabilidad completa" },
+        "healthMonitoring": { "name": "Monitoreo de salud", "description": "Estado del sistema en tiempo real" },
+        "rateLimiting": { "name": "Limitacion de tasa", "description": "Proteccion integrada" },
+        "userPreferences": { "name": "Preferencias de usuario", "description": "Tema, zona horaria, idioma" }
+      },
+      "ai": {
+        "title": "Integracion IA",
+        "chat": { "name": "Chat IA", "description": "Conversaciones multi-turno con Gemini" },
+        "streaming": { "name": "Respuestas en Streaming", "description": "Streaming de tokens en tiempo real" },
+        "vision": { "name": "Analisis de Imagenes", "description": "Comprension multi-modal" },
+        "embeddings": { "name": "Embeddings", "description": "Busqueda vectorial y similitud" },
+        "functionCalling": { "name": "Llamada de Funciones", "description": "Uso de herramientas y salida estructurada" }
       }
     }
   },
@@ -78,15 +86,27 @@
     "subtitle": "Construido con las ultimas tecnologias para rendimiento y experiencia de desarrollo.",
     "frontend": {
       "title": "Frontend",
-      "items": ["React 19 + TypeScript", "TanStack Router & Query", "TailwindCSS + ShadCN/UI", "Zustand + i18next", "WebSocket en tiempo real"]
+      "react": "React 19 + TypeScript",
+      "tanstack": "TanStack Router & Query",
+      "tailwind": "TailwindCSS + ShadCN/UI",
+      "zustand": "Zustand + i18next",
+      "websocket": "WebSocket en tiempo real"
     },
     "backend": {
       "title": "Backend",
-      "items": ["Go 1.25 + Chi router", "PostgreSQL + GORM", "Cache Redis", "Orgs multi-inquilino", "Docs API Swagger"]
+      "go": "Go 1.25 + Chi router",
+      "postgresql": "PostgreSQL + GORM",
+      "redis": "Cache Redis",
+      "multiTenant": "Orgs multi-inquilino",
+      "swagger": "Docs API Swagger"
     },
     "devops": {
       "title": "DevOps",
-      "items": ["Docker Compose", "Metricas Prometheus", "Dashboards Grafana", "Cola de trabajos River", "GitHub Actions CI"]
+      "docker": "Docker Compose",
+      "prometheus": "Metricas Prometheus",
+      "grafana": "Dashboards Grafana",
+      "river": "Cola de trabajos River",
+      "github": "GitHub Actions CI"
     }
   }
 }

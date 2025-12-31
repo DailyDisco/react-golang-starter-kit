@@ -14,7 +14,7 @@
         "emailPassword": { "name": "Email/Password Auth", "description": "JWT-based authentication" },
         "oauth": { "name": "OAuth Integration", "description": "Google & GitHub SSO" },
         "twoFactor": { "name": "Two-Factor Auth", "description": "TOTP with backup codes" },
-        "sessions": { "name": "Session Management", "description": "View & revoke sessions" },
+        "sessionManagement": { "name": "Session Management", "description": "View & revoke sessions" },
         "loginHistory": { "name": "Login History", "description": "Track login activity" },
         "ipBlocklist": { "name": "IP Blocklist", "description": "Block malicious IPs" }
       },
@@ -22,14 +22,14 @@
         "title": "Organizations & Teams",
         "multiTenant": { "name": "Multi-Tenant", "description": "Isolated org workspaces" },
         "teamManagement": { "name": "Team Management", "description": "Invite & manage members" },
-        "roleAccess": { "name": "Role-Based Access", "description": "Owner, admin, member roles" },
+        "roleBasedAccess": { "name": "Role-Based Access", "description": "Owner, admin, member roles" },
         "invitations": { "name": "Invitations", "description": "Email invite workflow" }
       },
       "billing": {
         "title": "Billing & Monetization",
-        "stripe": { "name": "Stripe Integration", "description": "Complete billing system" },
-        "subscriptions": { "name": "Subscription Plans", "description": "Dynamic pricing from Stripe" },
-        "portal": { "name": "Customer Portal", "description": "Self-service management" }
+        "stripeIntegration": { "name": "Stripe Integration", "description": "Complete billing system" },
+        "subscriptionPlans": { "name": "Subscription Plans", "description": "Dynamic pricing from Stripe" },
+        "customerPortal": { "name": "Customer Portal", "description": "Self-service management" }
       },
       "admin": {
         "title": "Admin & Management",
@@ -44,15 +44,23 @@
         "title": "Real-Time & i18n",
         "websocket": { "name": "WebSocket", "description": "Live notifications & sync" },
         "i18n": { "name": "Internationalization", "description": "Multi-language support" },
-        "push": { "name": "Push Notifications", "description": "Real-time alerts" }
+        "pushNotifications": { "name": "Push Notifications", "description": "Real-time alerts" }
       },
       "infrastructure": {
         "title": "Infrastructure & Observability",
-        "storage": { "name": "File Storage", "description": "S3 or database storage" },
-        "prometheus": { "name": "Prometheus Metrics", "description": "Full observability" },
-        "health": { "name": "Health Monitoring", "description": "Real-time system status" },
-        "rateLimit": { "name": "Rate Limiting", "description": "Built-in protection" },
-        "preferences": { "name": "User Preferences", "description": "Theme, timezone, language" }
+        "fileStorage": { "name": "File Storage", "description": "S3 or database storage" },
+        "prometheusMetrics": { "name": "Prometheus Metrics", "description": "Full observability" },
+        "healthMonitoring": { "name": "Health Monitoring", "description": "Real-time system status" },
+        "rateLimiting": { "name": "Rate Limiting", "description": "Built-in protection" },
+        "userPreferences": { "name": "User Preferences", "description": "Theme, timezone, language" }
+      },
+      "ai": {
+        "title": "AI Integration",
+        "chat": { "name": "AI Chat", "description": "Multi-turn conversations with Gemini" },
+        "streaming": { "name": "Streaming Responses", "description": "Real-time token streaming" },
+        "vision": { "name": "Image Analysis", "description": "Multi-modal understanding" },
+        "embeddings": { "name": "Embeddings", "description": "Vector search & similarity" },
+        "functionCalling": { "name": "Function Calling", "description": "Tool use & structured output" }
       }
     }
   },
@@ -78,15 +86,27 @@
     "subtitle": "Built with the latest technologies for performance and developer experience.",
     "frontend": {
       "title": "Frontend",
-      "items": ["React 19 + TypeScript", "TanStack Router & Query", "TailwindCSS + ShadCN/UI", "Zustand + i18next", "WebSocket real-time"]
+      "react": "React 19 + TypeScript",
+      "tanstack": "TanStack Router & Query",
+      "tailwind": "TailwindCSS + ShadCN/UI",
+      "zustand": "Zustand + i18next",
+      "websocket": "WebSocket real-time"
     },
     "backend": {
       "title": "Backend",
-      "items": ["Go 1.25 + Chi router", "PostgreSQL + GORM", "Redis caching", "Multi-tenant orgs", "Swagger API docs"]
+      "go": "Go 1.25 + Chi router",
+      "postgresql": "PostgreSQL + GORM",
+      "redis": "Redis caching",
+      "multiTenant": "Multi-tenant orgs",
+      "swagger": "Swagger API docs"
     },
     "devops": {
       "title": "DevOps",
-      "items": ["Docker Compose", "Prometheus metrics", "Grafana dashboards", "River job queue", "GitHub Actions CI"]
+      "docker": "Docker Compose",
+      "prometheus": "Prometheus metrics",
+      "grafana": "Grafana dashboards",
+      "river": "River job queue",
+      "github": "GitHub Actions CI"
     }
   }
 }

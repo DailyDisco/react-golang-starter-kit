@@ -92,7 +92,8 @@
         "Garantia SLA",
         "SSO/SAML",
         "Registros de auditoria"
-      ]
+      ],
+      "limitations": []
     }
   },
   "subtitle": "Elige el plan adecuado para ti. Todos los planes de pago incluyen una prueba gratuita de 14 dias.",

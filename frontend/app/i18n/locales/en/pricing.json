@@ -92,7 +92,8 @@
         "SLA guarantee",
         "SSO/SAML",
         "Audit logs"
-      ]
+      ],
+      "limitations": []
     }
   },
   "subtitle": "Choose the plan that's right for you. All paid plans include a 14-day free trial.",
