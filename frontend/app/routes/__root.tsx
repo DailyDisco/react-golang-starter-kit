@@ -144,7 +144,7 @@ function RootLayout() {
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
     <>
-      <ThemeProvider defaultTheme="system">
+      <ThemeProvider defaultTheme="light">
         {/* QueryClientProvider is handled by the SSR Query integration */}
         <CSRFInitializer />
         <LanguageSyncInitializer />

@@ -373,7 +373,7 @@ function Home() {
                   <span className="text-success">&#9679;</span> {t("techStack.backend.postgresql")}
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-success">&#9679;</span> {t("techStack.backend.redis")}
+                  <span className="text-success">&#9679;</span> {t("techStack.backend.dragonfly")}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-success">&#9679;</span> {t("techStack.backend.multiTenant")}

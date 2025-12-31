@@ -29,7 +29,11 @@ export default defineConfig({
   ],
   server: {
     host: '0.0.0.0',
+    port: Number(process.env.FRONTEND_PORT) || 5193,
     allowedHosts: true, // Allow all hosts for remote development
+    hmr: {
+      port: Number(process.env.FRONTEND_HMR_PORT) || 4193,
+    },
     proxy: {
       '/api': {
         target: 'http://backend:8080',
@@ -71,11 +75,11 @@ export default defineConfig({
         '**/e2e/**',
       ],
       thresholds: {
-        // Set reasonable thresholds that can be incrementally increased
-        lines: 50,
-        functions: 50,
-        branches: 50,
-        statements: 50,
+        // Coverage thresholds - aim for higher on critical paths
+        lines: 70,
+        functions: 75,
+        branches: 65,
+        statements: 70,
       },
     },
   },

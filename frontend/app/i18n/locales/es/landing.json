@@ -96,7 +96,7 @@
       "title": "Backend",
       "go": "Go 1.25 + Chi router",
       "postgresql": "PostgreSQL + GORM",
-      "redis": "Cache Redis",
+      "dragonfly": "Dragonfly (compatible con Redis)",
       "multiTenant": "Orgs multi-inquilino",
       "swagger": "Docs API Swagger"
     },

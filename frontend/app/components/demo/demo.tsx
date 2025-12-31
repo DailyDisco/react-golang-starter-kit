@@ -1188,7 +1188,7 @@ function DeveloperStep() {
             <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
               <li>Go 1.25 + Chi Router</li>
               <li>PostgreSQL + GORM</li>
-              <li>Redis Caching</li>
+              <li>Dragonfly (Redis-compatible)</li>
               <li>Multi-tenant orgs</li>
               <li>River job queue</li>
             </ul>
