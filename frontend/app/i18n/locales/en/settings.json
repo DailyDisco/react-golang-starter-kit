@@ -45,6 +45,7 @@
       "testFailed": "API key test failed"
     }
   },
+  "backToDashboard": "Back to Dashboard",
   "common": {
     "saveChanges": "Save Changes",
     "saving": "Saving..."

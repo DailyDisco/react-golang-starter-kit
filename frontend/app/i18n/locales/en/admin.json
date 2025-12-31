@@ -197,6 +197,11 @@
     "title": "Email Templates",
     "subtitle": "Customize the emails sent by the system",
     "selectTemplate": "Select a template to edit",
+    "selectTemplateHint": "Choose a template from the list to start editing",
+    "searchPlaceholder": "Search templates...",
+    "noResults": "No templates found",
+    "templatesCount": "templates",
+    "unsavedChanges": "Unsaved",
     "badges": {
       "system": "System",
       "active": "Active",
@@ -206,29 +211,47 @@
       "title": "Email Preview",
       "close": "Close",
       "button": "Preview",
-      "loading": "Loading..."
+      "loading": "Loading...",
+      "plainText": "Plain Text",
+      "noPlainText": "No plain text version available"
     },
     "save": {
-      "button": "Save Changes",
+      "button": "Save",
       "saving": "Saving..."
     },
     "variables": {
-      "title": "Available Variables"
+      "title": "Available Variables",
+      "clickToInsert": "Click to insert",
+      "copy": "Copy to clipboard",
+      "copied": "Variable copied to clipboard"
     },
     "form": {
       "templateName": "Template Name",
-      "active": "Active",
+      "active": "Template Active",
+      "activeDescription": "When disabled, this email will not be sent",
       "subjectLine": "Subject Line",
+      "subjectTooLong": "Subject line is too long and may be truncated",
+      "mobilePreviewWarning": "May be cut off on mobile",
       "htmlBody": "HTML Body",
-      "plainTextBody": "Plain Text Body (fallback)",
+      "plainTextBody": "Plain Text Body",
+      "plainTextHint": "Fallback for email clients that don't support HTML",
       "previewVariables": "Preview Variables"
     },
     "stats": {
-      "sendCount": "Send Count:",
-      "lastSent": "Last Sent:"
+      "sendCount": "Emails Sent",
+      "lastSent": "Last Sent"
+    },
+    "testEmail": {
+      "button": "Send Test",
+      "title": "Send Test Email",
+      "description": "Send a test email to verify your template looks correct",
+      "emailAddress": "Email Address",
+      "cancel": "Cancel",
+      "send": "Send Test",
+      "sent": "Test email sent to {{email}}"
     },
     "toast": {
-      "updated": "The email template has been updated successfully."
+      "updated": "Email template saved successfully"
     }
   },
   "featureFlags": {
@@ -467,6 +490,23 @@
         "blocked": "IP address added to blocklist",
         "unblocked": "IP address removed from blocklist"
       }
+    }
+  },
+  "sidebar": {
+    "title": "Admin",
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "featureFlags": "Feature Flags",
+    "announcements": "Announcements",
+    "emailTemplates": "Email Templates",
+    "auditLogs": "Audit Logs",
+    "health": "System Health",
+    "settings": "Settings",
+    "backToApp": "Back to App",
+    "groups": {
+      "overview": "Overview",
+      "management": "Management",
+      "system": "System"
     }
   },
   "users": {

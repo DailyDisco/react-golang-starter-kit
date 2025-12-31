@@ -1,23 +1,50 @@
 {
+  "activityFeed": {
+    "title": "Actividad Reciente"
+  },
+  "editProfile": "Editar Perfil",
+  "gettingStarted": {
+    "title": "Primeros Pasos",
+    "subtitle": "Completa estos pasos para aprovechar al máximo tu cuenta",
+    "completeProfile": "Completa tu perfil",
+    "enable2FA": "Habilita 2FA",
+    "setNotifications": "Configura notificaciones",
+    "exploreFeatures": "Explora funciones"
+  },
   "goTo": "Ir a {{page}}",
+  "quickActions": {
+    "title": "Acciones Rápidas"
+  },
   "quickLinks": {
     "profile": {
       "title": "Perfil",
-      "description": "Actualiza tu informacion personal y avatar"
+      "description": "Actualiza tu información personal y avatar"
     },
     "security": {
       "title": "Seguridad",
-      "description": "Gestiona contrasenas, 2FA y sesiones activas"
+      "description": "Gestiona contraseñas, 2FA y sesiones activas"
     },
     "billing": {
-      "title": "Facturacion",
-      "description": "Ver y gestionar tu suscripcion"
+      "title": "Facturación",
+      "description": "Ver y gestionar tu suscripción"
     },
     "settings": {
-      "title": "Configuracion",
+      "title": "Configuración",
       "description": "Preferencias, notificaciones y privacidad"
     }
   },
-  "subtitle": "Aqui tienes un resumen de tu cuenta.",
+  "settings": "Configuración",
+  "stats": {
+    "accountStatus": "Estado de Cuenta",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "memberSince": "Miembro Desde",
+    "emailVerified": "Email Verificado",
+    "verified": "Verificado",
+    "pending": "Pendiente",
+    "role": "Rol"
+  },
+  "subtitle": "Aquí tienes un resumen de tu cuenta.",
+  "verified": "Verificado",
   "welcome": "Bienvenido de nuevo"
 }

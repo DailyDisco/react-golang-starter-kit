@@ -1,4 +1,5 @@
 {
+  "backToDashboard": "Volver al Panel",
   "common": {
     "saveChanges": "Guardar Cambios",
     "saving": "Guardando..."
@@ -89,6 +90,10 @@
     "connectedAccounts": {
       "title": "Cuentas Conectadas",
       "description": "Administra proveedores OAuth vinculados"
+    },
+    "apiKeys": {
+      "title": "Claves API",
+      "description": "Administra tus claves API de servicios IA"
     }
   },
   "notifications": {

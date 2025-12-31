@@ -197,6 +197,11 @@
     "title": "Plantillas de email",
     "subtitle": "Personaliza los emails enviados por el sistema",
     "selectTemplate": "Selecciona una plantilla para editar",
+    "selectTemplateHint": "Elige una plantilla de la lista para comenzar a editar",
+    "searchPlaceholder": "Buscar plantillas...",
+    "noResults": "No se encontraron plantillas",
+    "templatesCount": "plantillas",
+    "unsavedChanges": "Sin guardar",
     "badges": {
       "system": "Sistema",
       "active": "Activo",
@@ -206,29 +211,47 @@
       "title": "Vista previa del email",
       "close": "Cerrar",
       "button": "Vista previa",
-      "loading": "Cargando..."
+      "loading": "Cargando...",
+      "plainText": "Texto plano",
+      "noPlainText": "No hay versión de texto plano disponible"
     },
     "save": {
-      "button": "Guardar cambios",
+      "button": "Guardar",
       "saving": "Guardando..."
     },
     "variables": {
-      "title": "Variables disponibles"
+      "title": "Variables disponibles",
+      "clickToInsert": "Clic para insertar",
+      "copy": "Copiar al portapapeles",
+      "copied": "Variable copiada al portapapeles"
     },
     "form": {
       "templateName": "Nombre de la plantilla",
-      "active": "Activo",
+      "active": "Plantilla activa",
+      "activeDescription": "Cuando está desactivada, este email no se enviará",
       "subjectLine": "Línea de asunto",
+      "subjectTooLong": "La línea de asunto es muy larga y puede ser truncada",
+      "mobilePreviewWarning": "Puede cortarse en móvil",
       "htmlBody": "Cuerpo HTML",
-      "plainTextBody": "Cuerpo de texto plano (respaldo)",
+      "plainTextBody": "Cuerpo de texto plano",
+      "plainTextHint": "Respaldo para clientes de email que no soportan HTML",
       "previewVariables": "Variables de vista previa"
     },
     "stats": {
-      "sendCount": "Cantidad de envíos:",
-      "lastSent": "Último envío:"
+      "sendCount": "Emails enviados",
+      "lastSent": "Último envío"
+    },
+    "testEmail": {
+      "button": "Enviar prueba",
+      "title": "Enviar email de prueba",
+      "description": "Envía un email de prueba para verificar que tu plantilla se ve correcta",
+      "emailAddress": "Dirección de email",
+      "cancel": "Cancelar",
+      "send": "Enviar prueba",
+      "sent": "Email de prueba enviado a {{email}}"
     },
     "toast": {
-      "updated": "La plantilla de email se ha actualizado exitosamente."
+      "updated": "Plantilla de email guardada exitosamente"
     }
   },
   "featureFlags": {
@@ -467,6 +490,23 @@
         "blocked": "Dirección IP agregada a la lista de bloqueados",
         "unblocked": "Dirección IP eliminada de la lista de bloqueados"
       }
+    }
+  },
+  "sidebar": {
+    "title": "Admin",
+    "dashboard": "Panel de Control",
+    "users": "Usuarios",
+    "featureFlags": "Banderas de Funciones",
+    "announcements": "Anuncios",
+    "emailTemplates": "Plantillas de Email",
+    "auditLogs": "Registros de Auditoría",
+    "health": "Estado del Sistema",
+    "settings": "Configuración",
+    "backToApp": "Volver a la App",
+    "groups": {
+      "overview": "Resumen",
+      "management": "Gestión",
+      "system": "Sistema"
     }
   },
   "users": {
