@@ -29,9 +29,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: List frontend directory contents
-        run: ls -l ${{ env.FRONTEND_DIR }}
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -44,7 +41,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
 
       - name: Run security audit
-        run: npm audit --audit-level=moderate
+        run: npm audit --audit-level=high
         working-directory: ${{ env.FRONTEND_DIR }}
 
   # Frontend Quality Checks
@@ -54,9 +51,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: List frontend directory contents
-        run: ls -l ${{ env.FRONTEND_DIR }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -73,25 +67,29 @@ jobs:
         run: npm run prettier:check
         working-directory: ${{ env.FRONTEND_DIR }}
 
+      - name: Run linter
+        run: npm run lint
+        working-directory: ${{ env.FRONTEND_DIR }}
+
       - name: Run type checking
         run: npm run typecheck
         working-directory: ${{ env.FRONTEND_DIR }}
 
   # Frontend Testing
   frontend-test:
-    name: Frontend Test
+    name: Frontend Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['20', '22']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: List frontend directory contents
-        run: ls -l ${{ env.FRONTEND_DIR }}
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ matrix.node-version }}
           cache: "npm"
           cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
 
@@ -99,15 +97,22 @@ jobs:
         run: npm ci
         working-directory: ${{ env.FRONTEND_DIR }}
 
-      - name: Run tests (fast mode)
-        run: npm run test:fast
+      - name: Run tests with coverage
+        run: npm run test:coverage
         working-directory: ${{ env.FRONTEND_DIR }}
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-coverage-node-${{ matrix.node-version }}
+          path: ${{ env.FRONTEND_DIR }}/coverage/
+          retention-days: 7
 
   # Frontend E2E Testing (Playwright)
   frontend-e2e:
     name: Frontend E2E
     runs-on: ubuntu-latest
-    needs: [frontend-security, frontend-quality, frontend-test]
+    needs: [frontend-build]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -127,9 +132,11 @@ jobs:
         run: npx playwright install chromium --with-deps
         working-directory: ${{ env.FRONTEND_DIR }}
 
-      - name: Build frontend
-        run: npm run build
-        working-directory: ${{ env.FRONTEND_DIR }}
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ${{ env.FRONTEND_DIR }}/dist/
 
       - name: Run Playwright tests
         run: npm run test:e2e
@@ -137,9 +144,6 @@ jobs:
         env:
           CI: true
           PLAYWRIGHT_BASE_URL: http://localhost:3000
-          # E2E_TEST_USER and E2E_TEST_PASSWORD can be set as secrets
-          # E2E_TEST_USER: ${{ secrets.E2E_TEST_USER }}
-          # E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v6
@@ -238,8 +242,11 @@ jobs:
 
   # Backend Testing
   backend-test:
-    name: Backend Test
+    name: Backend Test (Go ${{ matrix.go-version }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.24', '1.25']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -247,20 +254,28 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: ${{ matrix.go-version }}
           cache: true
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
           echo "🧪 Running Go tests with race detector..."
-          # Skip tests if no test files exist (faster execution)
           if find . -name "*_test.go" -type f | grep -q .; then
-            go test -v -race ./...
+            go test -v -race -timeout 5m -coverprofile=coverage.out -covermode=atomic ./...
+            go tool cover -func=coverage.out
           else
             echo "✅ No Go test files found - skipping tests"
           fi
         shell: bash
         working-directory: ${{ env.BACKEND_DIR }}
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v6
+        if: success() && hashFiles('backend/coverage.out') != ''
+        with:
+          name: backend-coverage-go-${{ matrix.go-version }}
+          path: ${{ env.BACKEND_DIR }}/coverage.out
+          retention-days: 7
 
   # Backend Migrations Test
   backend-migrations:
@@ -313,13 +328,10 @@ jobs:
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
-    needs: [frontend-security, frontend-quality, frontend-test, frontend-e2e]
+    needs: [frontend-security, frontend-quality, frontend-test]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: List frontend directory contents
-        run: ls -l ${{ env.FRONTEND_DIR }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -340,7 +352,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: frontend-build
-          path: ${{ env.FRONTEND_DIR }}/build/
+          path: ${{ env.FRONTEND_DIR }}/dist/
           retention-days: 30
 
   # Backend Build

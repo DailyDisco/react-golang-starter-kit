@@ -36,6 +36,10 @@ export default defineConfig({
         changeOrigin: true,
         // Don't rewrite - backend expects /api prefix
       },
+      '/swagger': {
+        target: 'http://backend:8080',
+        changeOrigin: true,
+      },
     },
   },
   resolve: {
@@ -79,11 +83,52 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
+          // Core React
           vendor: ['react', 'react-dom'],
+
+          // Routing & Data Fetching
           router: ['@tanstack/react-router'],
           query: ['@tanstack/react-query'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-          utils: ['clsx', 'tailwind-merge', 'date-fns'],
+
+          // Radix UI primitives (heavy)
+          'radix-core': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-switch',
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-label',
+            '@radix-ui/react-slot',
+          ],
+          'radix-extended': [
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-progress',
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-slider',
+          ],
+
+          // Charts (heavy - ~150KB)
+          charts: ['recharts'],
+
+          // Animation (heavy - ~100KB)
+          animation: ['framer-motion'],
+
+          // Forms
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+
+          // Utilities
+          utils: ['clsx', 'tailwind-merge', 'date-fns', 'lucide-react'],
+
+          // i18n
+          i18n: ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+
+          // State management
+          state: ['zustand'],
         },
       },
     },

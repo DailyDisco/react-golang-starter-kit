@@ -1,15 +1,32 @@
+# ===========================================
+# Environment Files
+# ===========================================
+# All .env files are ignored except .env.example
+.env
+.env.local
+.env.*.local
+.env.prod
+.env.production
+.env.development
+.env.test
+.env.agent
+!.env.example
 
+# ===========================================
 # Dependencies
-/backend/vendor/
+# ===========================================
+node_modules/
 /frontend/node_modules/
 /frontend/.pnp
 /frontend/.pnp.js
-node_modules/
-package-lock.json
+/backend/vendor/
+jspm_packages/
 
-todo.md
-
-# Build artifacts
+# ===========================================
+# Build Artifacts
+# ===========================================
+dist/
+build/
 /backend/tmp/
 /backend/main
 /backend/server
@@ -17,10 +34,10 @@ todo.md
 /backend/dist/
 /frontend/dist/
 /frontend/build/
-/frontend/coverage/
-/coverage/
 
-# Go specific
+# ===========================================
+# Go Specific
+# ===========================================
 *.exe
 *.exe~
 *.dll
@@ -28,79 +45,64 @@ todo.md
 *.dylib
 *.test
 *.out
-debug
 *.prof
 *.trace
 *.cover
 *.coverprofile
 *.sum.bak
 *.mod.bak
+*.go.backup
+debug
+__debug_bin*
 
-# Generated documentation
-# /backend/docs/  # Tracked - swagger docs validated against code
-
-# Development and cache directories
+# ===========================================
+# Frontend Build Tools
+# ===========================================
 .vite/
 .cache/
 .parcel-cache/
 .turbo/
 .next/
 .nuxt/
-dist/
-build/
-coverage/
+*.tsbuildinfo
 
 # TanStack Router generated files
 /frontend/app/routeTree.gen.ts
-
-# Node specific
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-lerna-debug.log*
-*.tsbuildinfo
 
 # React Router
 /.react-router/
 /frontend/.react-router/
 
-# AWS
-aws/
+# Storybook
+.out/
+.storybook-out/
 
-# Husky
-.husky/_/
+# ===========================================
+# Package Manager Files
+# ===========================================
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*.local
-.env.prod
-.env.production
-/backend/.env
-/backend/.env.*
-/frontend/.env
-/frontend/.env.*
-
-# Note: .env.example files are NOT ignored and will be tracked by git.
-# This is intentional so that example environment files are available for reference.
-
+# ===========================================
 # Logs
+# ===========================================
 *.log
 *.log.*
 logs/
-pids/
-*.pid
-*.seed
-*.pid.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
 /frontend_dev_server.log
 /backend/build-errors.log
 
-# Coverage and test results
+# ===========================================
+# Testing & Coverage
+# ===========================================
 coverage/
+/frontend/coverage/
 *.lcov
 .nyc_output
 /frontend/test-results/
@@ -110,47 +112,32 @@ junit.xml
 test-results/
 playwright-report/
 
-# Dependency directories
-jspm_packages/
+# ===========================================
+# Docker
+# ===========================================
+postgres_data/
+redis_data/
+*.docker-compose.override.yml
 
-# Optional caches
-.npm
-.eslintcache
-.stylelintcache
-.prettiercache
-.node_repl_history
-
-# Package manager files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-.pnpm-debug.log*
-
-# Output of 'npm pack'
-*.tgz
-*.tar.gz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
-tmp/
-temp/
-
-# Editor directories and files
+# ===========================================
+# IDE & Editors
+# ===========================================
 .vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
+*~
 
-# OS generated files
+# ===========================================
+# OS Generated
+# ===========================================
 .DS_Store
 .DS_Store?
 ._*
@@ -160,28 +147,40 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# Database files
+# ===========================================
+# Database Files
+# ===========================================
 *.db
 *.sqlite
 *.sqlite3
 /backend/*.db
 /frontend/*.db
 
-# Go backup files
-*.go.backup
-main.go.backup
-
-# Railway deployment
+# ===========================================
+# Deployment
+# ===========================================
 .railway/
-
-# Vercel deployment
 .vercel/
 .vercel
+.netlify/
+.serverless/
 
-# Docker volumes (local development)
-postgres_data/
+# ===========================================
+# Security & Credentials
+# ===========================================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+credentials.json
+secrets.json
+service-account*.json
+.mcp.json
 
-# Miscellaneous archives
+# ===========================================
+# Archives
+# ===========================================
 *.rar
 *.zip
 *.7z
@@ -189,11 +188,47 @@ postgres_data/
 *.gz
 *.xz
 *.bz2
+*.tar
+*.tgz
+*.tar.gz
 *.deb
 *.rpm
 *.pkg
 *.msi
 
-.cursorignoreCREDENTIALS.txt
+# ===========================================
+# Temporary & Cache
+# ===========================================
+tmp/
+temp/
+.tmp/
+.temp/
+.npm/
+.eslintcache
+.stylelintcache
+.prettiercache
+.node_repl_history
+.yarn-integrity
 
+# ===========================================
+# Husky
+# ===========================================
+.husky/_/
+
+# ===========================================
+# Process IDs
+# ===========================================
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ===========================================
+# Miscellaneous
+# ===========================================
+todo.md
+aws/
+*.tgz
+.cursorignore
+CREDENTIALS.txt
 ClaudeCodeSettingsGUI

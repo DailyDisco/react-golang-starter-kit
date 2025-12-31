@@ -83,6 +83,7 @@ npm run dev
 - ⚡ **Background Jobs** - River (PostgreSQL-backed job queue)
 - 📡 **WebSocket Server** - Real-time push notifications
 - 🔄 **Database Migrations** - golang-migrate with CI validation
+- 🤖 **AI Integration** - Gemini with chat, streaming, vision, embeddings
 
 ### Observability & DevOps
 
@@ -105,6 +106,7 @@ react-golang-starter-kit/
 │   ├── cmd/             # Application entry point
 │   ├── migrations/      # SQL database migrations
 │   ├── internal/        # Private application code
+│   │   ├── ai/          # Gemini AI service
 │   │   ├── auth/        # JWT authentication & OAuth
 │   │   ├── cache/       # Redis/memory caching
 │   │   ├── config/      # Configuration management
@@ -337,6 +339,33 @@ PostgreSQL-backed job queue for reliable async processing:
 - Email sending
 - Webhook processing
 - Configurable workers and retries
+
+### AI Integration (Gemini)
+
+Full-featured Gemini AI integration with multiple capabilities:
+
+- **Text Chat** - Multi-turn conversations with system prompts
+- **Streaming** - Real-time token streaming via SSE
+- **Multi-Modal** - Image analysis and understanding
+- **Embeddings** - Vector embeddings for semantic search
+- **Function Calling** - Tool use and structured interactions
+- **JSON Mode** - Structured output with schema validation
+- **Safety Settings** - Configurable content filtering levels
+
+**Key Endpoints:**
+
+- `POST /api/ai/chat` - Text chat completion
+- `POST /api/ai/chat/stream` - Streaming chat (SSE)
+- `POST /api/ai/chat/advanced` - Function calling & JSON mode
+- `POST /api/ai/analyze-image` - Image analysis
+- `POST /api/ai/embeddings` - Generate embeddings
+
+**Security:**
+
+- JWT authentication required for all AI endpoints
+- Separate rate limiting tier for AI (20 req/min default)
+- Input validation with configurable limits
+- User-provided API keys support
 
 ### File Upload System
 

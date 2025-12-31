@@ -152,7 +152,7 @@ The application uses these default credentials (defined in `Makefile` and `.env`
 
 - **Host:** localhost
 - **Port:** 5432 (to avoid conflicts with system PostgreSQL)
-- **Database:** devdb
+- **Database:** starter_kit_db
 - **Username:** devuser
 - **Password:** devpass
 
@@ -205,7 +205,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_USER=devuser
 DB_PASSWORD=devpass
-DB_NAME=devdb
+DB_NAME=starter_kit_db
 DB_SSLMODE=disable
 ```
 

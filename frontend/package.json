@@ -65,6 +65,7 @@
     "@tanstack/react-query-devtools": "^5.91.1",
     "@tanstack/react-router": "^1.142.8",
     "@tanstack/react-router-devtools": "^1.142.8",
+    "@tanstack/react-table": "^8.21.3",
     "@vercel/analytics": "^1.6.1",
     "@vitejs/plugin-react": "^5.1.2",
     "class-variance-authority": "^0.7.1",

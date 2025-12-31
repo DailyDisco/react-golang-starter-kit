@@ -4,7 +4,7 @@ services:
     container_name: react-golang-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-devdb}
+      POSTGRES_DB: ${DB_NAME:-starter_kit_db}
       POSTGRES_USER: ${DB_USER:-devuser}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-devpass}
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
@@ -15,7 +15,7 @@ services:
       - postgres_logs:/var/log/postgresql
       - ./postgres.conf:/etc/postgresql/postgresql.conf:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-devuser} -d ${DB_NAME:-devdb}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-devuser} -d ${DB_NAME:-starter_kit_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,7 +46,7 @@ services:
       DB_PORT: ${DB_PORT:-5432}
       DB_USER: ${DB_USER:-devuser}
       DB_PASSWORD: ${DB_PASSWORD:-devpass}
-      DB_NAME: ${DB_NAME:-devdb}
+      DB_NAME: ${DB_NAME:-starter_kit_db}
       DB_SSLMODE: disable
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
@@ -61,6 +61,10 @@ services:
       DEBUG: ${DEBUG:-true}
       CGO_ENABLED: 0
       GO_ENV: development
+      # Database seeding (auto-run on startup in development)
+      AUTO_SEED: ${AUTO_SEED:-true}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin123!}
+      SEED_DEFAULT_PASSWORD: ${SEED_DEFAULT_PASSWORD:-password123!}
       # Database migrations (auto-run on startup)
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
       MIGRATIONS_PATH: ${MIGRATIONS_PATH:-./migrations}

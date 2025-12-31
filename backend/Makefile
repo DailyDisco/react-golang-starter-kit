@@ -4,8 +4,8 @@
 	seed seed-fresh
 
 # Database configuration
-DB_NAME=devdb
-DB_USER=devuser  
+DB_NAME=starter_kit_db
+DB_USER=devuser
 DB_PASS=devpass
 DB_PORT=5432
 CONTAINER_NAME=postgres-dev

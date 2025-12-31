@@ -5,7 +5,7 @@
 .PHONY: help dev prod build rebuild stop clean logs shell backend-logs frontend-logs db-logs format-backend observability-up observability-down observability-logs grafana-logs prometheus-logs deploy-docker deploy-vercel deploy-railway configure-features
 
 # Environment file
-ENV_FILE := .env.local
+ENV_FILE := .env
 
 # Default target
 help: ## Show this help message
@@ -13,11 +13,10 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 # Development commands
-dev: ## Start development environment with hot reload and seed data
+dev: ## Start development environment with hot reload (auto-seeds on startup)
 	docker compose --env-file $(ENV_FILE) up -d
-	@echo "Waiting for backend to be ready..."
-	@sleep 8
-	@docker compose --env-file $(ENV_FILE) exec -T backend go run ./cmd/seed 2>/dev/null || echo "Seeding skipped (backend not ready or already seeded)"
+	@echo "Services starting... Database will be auto-seeded on backend startup."
+	@echo "Run 'make logs' to watch startup progress."
 
 dev-logs: ## View development logs
 	docker compose --env-file $(ENV_FILE) logs -f
@@ -87,12 +86,10 @@ db-reset: ## Reset database (WARNING: This will delete all data)
 seed: ## Seed the database with test data
 	docker compose --env-file $(ENV_FILE) exec backend go run ./cmd/seed
 
-dev-fresh: ## Start dev with fresh database and seed data
+dev-fresh: ## Start dev with fresh database (auto-seeds on startup)
 	docker compose --env-file $(ENV_FILE) down -v
 	docker compose --env-file $(ENV_FILE) up -d
-	@echo "Waiting for services to be ready..."
-	@sleep 10
-	docker compose --env-file $(ENV_FILE) exec backend go run ./cmd/seed
+	@echo "Fresh database created. Auto-seeding on backend startup."
 
 # Environment setup
 setup: ## Initial setup - copy env file and start services
