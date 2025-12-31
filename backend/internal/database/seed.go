@@ -12,6 +12,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // SeedConfig contains configuration for seeding
@@ -106,6 +107,7 @@ func SeedUsers(config *SeedConfig) error {
 }
 
 // seedUsersInternal is the internal implementation for seeding users
+// Uses a transaction to ensure atomic seeding - all users are created or none
 func seedUsersInternal(config *SeedConfig) error {
 	adminHash, err := hashPassword(config.AdminPassword)
 	if err != nil {
@@ -214,27 +216,37 @@ func seedUsersInternal(config *SeedConfig) error {
 	}
 
 	seededCount := 0
-	for _, user := range users {
-		// Check if user already exists
-		var existing models.User
-		result := DB.Where("email = ?", user.Email).First(&existing)
-		if result.Error == nil {
-			continue
-		}
 
-		// Create user
-		if err := DB.Create(&user).Error; err != nil {
-			log.Warn().
-				Err(err).
+	// Use a transaction for atomic seeding
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		for _, user := range users {
+			// Check if user already exists
+			var existing models.User
+			result := tx.Where("email = ?", user.Email).First(&existing)
+			if result.Error == nil {
+				continue
+			}
+
+			// Create user
+			if err := tx.Create(&user).Error; err != nil {
+				log.Warn().
+					Err(err).
+					Str("email", user.Email).
+					Msg("Failed to seed user")
+				// Return error to rollback transaction
+				return fmt.Errorf("failed to seed user %s: %w", user.Email, err)
+			}
+			seededCount++
+			log.Debug().
 				Str("email", user.Email).
-				Msg("Failed to seed user")
-			continue
+				Str("role", user.Role).
+				Msg("Seeded user")
 		}
-		seededCount++
-		log.Debug().
-			Str("email", user.Email).
-			Str("role", user.Role).
-			Msg("Seeded user")
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 
 	if seededCount > 0 {
@@ -252,17 +264,6 @@ func SeedFeatureFlagsExtended() error {
 	now := time.Now().Format(time.RFC3339)
 
 	extendedFlags := []models.FeatureFlag{
-		{
-			Key:               "new_dashboard",
-			Name:              "New Dashboard",
-			Description:       "Enable the redesigned dashboard UI",
-			Enabled:           true,
-			RolloutPercentage: 50,
-			AllowedRoles:      pq.StringArray{},
-			Metadata:          "{}",
-			CreatedAt:         now,
-			UpdatedAt:         now,
-		},
 		{
 			Key:               "file_sharing",
 			Name:              "File Sharing",
