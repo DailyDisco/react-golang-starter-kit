@@ -8,6 +8,7 @@ import (
 	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/response"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -37,25 +38,25 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			// Fall back to Authorization header for backwards compatibility
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "Authentication required", http.StatusUnauthorized)
+				response.Unauthorized(w, r, "Authentication required")
 				return
 			}
 			tokenString, err = ExtractTokenFromHeader(authHeader)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				response.Unauthorized(w, r, err.Error())
 				return
 			}
 		}
 
 		// Check if token is blacklisted (revoked)
 		if IsTokenBlacklisted(tokenString) {
-			http.Error(w, "Token has been revoked", http.StatusUnauthorized)
+			response.TokenInvalid(w, r, "Token has been revoked")
 			return
 		}
 
 		claims, err := ValidateJWT(tokenString)
 		if err != nil {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			response.TokenInvalid(w, r, "Invalid token")
 			return
 		}
 
@@ -71,7 +72,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			}
 			// Fetch from database
 			if err := database.DB.First(&user, claims.UserID).Error; err != nil {
-				http.Error(w, "User not found", http.StatusUnauthorized)
+				response.Unauthorized(w, r, "User not found")
 				return
 			}
 			// Store in cache for 2 minutes
@@ -79,7 +80,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		if !user.IsActive {
-			http.Error(w, "Account is deactivated", http.StatusUnauthorized)
+			response.AccountInactive(w, r, "Account is deactivated")
 			return
 		}
 
@@ -173,13 +174,13 @@ func AdminMiddleware(next http.Handler) http.Handler {
 	return AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, ok := GetUserFromContext(r.Context())
 		if !ok {
-			http.Error(w, "User not found in context", http.StatusUnauthorized)
+			response.Unauthorized(w, r, "User not found in context")
 			return
 		}
 
 		// Check if user has admin or super_admin role
 		if !HasRole(user.Role, models.RoleAdmin, models.RoleSuperAdmin) {
-			http.Error(w, "Forbidden: Admin privileges required", http.StatusForbidden)
+			response.Forbidden(w, r, "Admin privileges required")
 			return
 		}
 
@@ -193,13 +194,13 @@ func SuperAdminMiddleware(next http.Handler) http.Handler {
 	return AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, ok := GetUserFromContext(r.Context())
 		if !ok {
-			http.Error(w, "User not found in context", http.StatusUnauthorized)
+			response.Unauthorized(w, r, "User not found in context")
 			return
 		}
 
 		// Check if user has super_admin role
 		if user.Role != models.RoleSuperAdmin {
-			http.Error(w, "Forbidden: Super admin privileges required", http.StatusForbidden)
+			response.Forbidden(w, r, "Super admin privileges required")
 			return
 		}
 
@@ -214,7 +215,7 @@ func MinRoleLevelMiddleware(minRole string) func(http.Handler) http.Handler {
 		return AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, ok := GetUserFromContext(r.Context())
 			if !ok {
-				http.Error(w, "User not found in context", http.StatusUnauthorized)
+				response.Unauthorized(w, r, "User not found in context")
 				return
 			}
 
@@ -222,12 +223,12 @@ func MinRoleLevelMiddleware(minRole string) func(http.Handler) http.Handler {
 			minLevel, minExists := models.RoleHierarchy[minRole]
 
 			if !userExists || !minExists {
-				http.Error(w, "Invalid role configuration", http.StatusInternalServerError)
+				response.InternalError(w, r, "Invalid role configuration")
 				return
 			}
 
 			if userLevel < minLevel {
-				http.Error(w, "Forbidden: Insufficient role level", http.StatusForbidden)
+				response.Forbidden(w, r, "Insufficient role level")
 				return
 			}
 

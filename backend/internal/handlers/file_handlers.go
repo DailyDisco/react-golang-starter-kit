@@ -545,7 +545,7 @@ func (fh *FileHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var fileResponses []models.FileResponse
+	fileResponses := []models.FileResponse{}
 	for _, file := range files {
 		fileResponses = append(fileResponses, file.ToFileResponse())
 	}

@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"react-golang-starter/internal/ai"
 	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
@@ -155,6 +156,15 @@ func main() {
 		zerologlog.Warn().Err(err).Msg("Feature flag seeding failed")
 	}
 
+	// Auto-seed database in development when AUTO_SEED=true
+	seedConfig := database.LoadSeedConfig()
+	if seedConfig.Enabled {
+		zerologlog.Info().Msg("AUTO_SEED enabled, seeding database...")
+		if err := database.SeedAll(seedConfig); err != nil {
+			zerologlog.Warn().Err(err).Msg("Auto-seeding failed")
+		}
+	}
+
 	// Initialize cache
 	cacheConfig := cache.LoadConfig()
 	if err := cache.Initialize(cacheConfig); err != nil {
@@ -187,6 +197,17 @@ func main() {
 		zerologlog.Info().
 			Bool("available", stripe.IsAvailable()).
 			Msg("stripe service initialized")
+	}
+
+	// Initialize AI service (Gemini)
+	aiConfig := ai.LoadConfig()
+	if err := ai.Initialize(aiConfig); err != nil {
+		zerologlog.Warn().Err(err).Msg("ai initialization failed, continuing without AI features")
+	} else if aiConfig.Enabled {
+		zerologlog.Info().
+			Str("model", aiConfig.Model).
+			Bool("available", ai.IsAvailable()).
+			Msg("ai service initialized")
 	}
 
 	// Initialize job queue (River)
@@ -387,6 +408,9 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *
 	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "docs/swagger.json")
 	})
+	// Serve swagger static files (self-hosted swagger-ui)
+	staticFs := http.FileServer(http.Dir("docs/static"))
+	r.Handle("/swagger/static/*", http.StripPrefix("/swagger/static/", staticFs))
 }
 
 // setupAPIRoutes configures all API endpoints
@@ -404,34 +428,43 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 
 	// Authentication routes
 	r.Route("/auth", func(r chi.Router) {
-		r.Use(ratelimit.NewAuthRateLimitMiddleware(rateLimitConfig))
+		// Strict rate limiting for login/register/password reset (brute-force protection)
+		r.Group(func(r chi.Router) {
+			r.Use(ratelimit.NewAuthRateLimitMiddleware(rateLimitConfig))
+			r.Post("/register", auth.RegisterUser)                // POST /api/auth/register
+			r.Post("/login", auth.LoginUser)                      // POST /api/auth/login
+			r.Post("/reset-password", auth.RequestPasswordReset)  // POST /api/auth/reset-password
+			r.Post("/reset-password/confirm", auth.ResetPassword) // POST /api/auth/reset-password/confirm
+			r.Get("/verify-email", auth.VerifyEmail)              // GET /api/auth/verify-email
+		})
 
-		// Public auth endpoints
-		r.Post("/register", auth.RegisterUser)      // POST /api/auth/register
-		r.Post("/login", auth.LoginUser)            // POST /api/auth/login
-		r.Post("/logout", auth.LogoutUser)          // POST /api/auth/logout
-		r.Post("/refresh", auth.RefreshAccessToken) // POST /api/auth/refresh - Exchange refresh token for new access token
+		// Token refresh uses more lenient API rate limit (called automatically by frontend)
+		r.Group(func(r chi.Router) {
+			r.Use(ratelimit.NewAPIRateLimitMiddleware(rateLimitConfig))
+			r.Post("/refresh", auth.RefreshAccessToken) // POST /api/auth/refresh - Exchange refresh token for new access token
+			r.Post("/logout", auth.LogoutUser)          // POST /api/auth/logout
+		})
 
 		// Protected auth endpoints
 		r.Group(func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
+			r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
 			r.Get("/me", auth.GetCurrentUser) // GET /api/auth/me
 		})
 
-		// Password reset (public)
-		r.Post("/reset-password", auth.RequestPasswordReset)  // POST /api/auth/reset-password
-		r.Post("/reset-password/confirm", auth.ResetPassword) // POST /api/auth/reset-password/confirm
-		r.Get("/verify-email", auth.VerifyEmail)              // GET /api/auth/verify-email
-
 		// OAuth routes
 		r.Route("/oauth", func(r chi.Router) {
-			// Public OAuth endpoints
-			r.Get("/{provider}", auth.GetOAuthURL)                  // GET /api/auth/oauth/{provider} - Get OAuth URL
-			r.Get("/{provider}/callback", auth.HandleOAuthCallback) // GET /api/auth/oauth/{provider}/callback - OAuth callback
+			// Public OAuth endpoints (use auth rate limit)
+			r.Group(func(r chi.Router) {
+				r.Use(ratelimit.NewAuthRateLimitMiddleware(rateLimitConfig))
+				r.Get("/{provider}", auth.GetOAuthURL)                  // GET /api/auth/oauth/{provider} - Get OAuth URL
+				r.Get("/{provider}/callback", auth.HandleOAuthCallback) // GET /api/auth/oauth/{provider}/callback - OAuth callback
+			})
 
 			// Protected OAuth endpoints
 			r.Group(func(r chi.Router) {
 				r.Use(auth.AuthMiddleware)
+				r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
 				r.Get("/providers", auth.GetLinkedProviders) // GET /api/auth/oauth/providers - List linked providers
 				r.Delete("/{provider}", auth.UnlinkProvider) // DELETE /api/auth/oauth/{provider} - Unlink provider
 			})
@@ -451,52 +484,60 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 			r.Post("/", handlers.CreateUser()) // POST /api/users - Create new user (admin only)
 		})
 
-		// Protected routes - require authentication
-		r.Route("/", func(r chi.Router) {
+		// Protected routes - require authentication (must be before /{id} to avoid "me" being matched as ID)
+		r.Route("/me", func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
 			r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
 
-			r.Get("/me", handlers.GetCurrentUser())    // GET /api/users/me - Get current user
-			r.Put("/me", handlers.UpdateCurrentUser()) // PUT /api/users/me - Update current user
+			r.Get("/", handlers.GetCurrentUser())    // GET /api/users/me - Get current user
+			r.Put("/", handlers.UpdateCurrentUser()) // PUT /api/users/me - Update current user
 
 			// User preferences
-			r.Get("/me/preferences", handlers.GetUserPreferences)    // GET /api/users/me/preferences
-			r.Put("/me/preferences", handlers.UpdateUserPreferences) // PUT /api/users/me/preferences
+			r.Get("/preferences", handlers.GetUserPreferences)    // GET /api/users/me/preferences
+			r.Put("/preferences", handlers.UpdateUserPreferences) // PUT /api/users/me/preferences
 
 			// Session management
-			r.Get("/me/sessions", handlers.GetUserSessions)       // GET /api/users/me/sessions
-			r.Delete("/me/sessions", handlers.RevokeAllSessions)  // DELETE /api/users/me/sessions - Revoke all other sessions
-			r.Delete("/me/sessions/{id}", handlers.RevokeSession) // DELETE /api/users/me/sessions/{id}
+			r.Get("/sessions", handlers.GetUserSessions)       // GET /api/users/me/sessions
+			r.Delete("/sessions", handlers.RevokeAllSessions)  // DELETE /api/users/me/sessions - Revoke all other sessions
+			r.Delete("/sessions/{id}", handlers.RevokeSession) // DELETE /api/users/me/sessions/{id}
 
 			// Login history
-			r.Get("/me/login-history", handlers.GetLoginHistory) // GET /api/users/me/login-history
+			r.Get("/login-history", handlers.GetLoginHistory) // GET /api/users/me/login-history
 
 			// Password change
-			r.Put("/me/password", handlers.ChangePassword) // PUT /api/users/me/password
+			r.Put("/password", handlers.ChangePassword) // PUT /api/users/me/password
 
 			// Two-factor authentication
-			r.Get("/me/2fa/status", handlers.Get2FAStatus)                 // GET /api/users/me/2fa/status
-			r.Post("/me/2fa/setup", handlers.Setup2FA)                     // POST /api/users/me/2fa/setup
-			r.Post("/me/2fa/verify", handlers.Verify2FA)                   // POST /api/users/me/2fa/verify
-			r.Post("/me/2fa/disable", handlers.Disable2FA)                 // POST /api/users/me/2fa/disable
-			r.Post("/me/2fa/backup-codes", handlers.RegenerateBackupCodes) // POST /api/users/me/2fa/backup-codes
+			r.Get("/2fa/status", handlers.Get2FAStatus)                 // GET /api/users/me/2fa/status
+			r.Post("/2fa/setup", handlers.Setup2FA)                     // POST /api/users/me/2fa/setup
+			r.Post("/2fa/verify", handlers.Verify2FA)                   // POST /api/users/me/2fa/verify
+			r.Post("/2fa/disable", handlers.Disable2FA)                 // POST /api/users/me/2fa/disable
+			r.Post("/2fa/backup-codes", handlers.RegenerateBackupCodes) // POST /api/users/me/2fa/backup-codes
 
 			// Account deletion
-			r.Post("/me/delete", handlers.RequestAccountDeletion)       // POST /api/users/me/delete
-			r.Delete("/me/delete", handlers.CancelAccountDeletion)      // DELETE /api/users/me/delete - Cancel deletion
-			r.Post("/me/delete/cancel", handlers.CancelAccountDeletion) // POST /api/users/me/delete/cancel (backward compat)
+			r.Post("/delete", handlers.RequestAccountDeletion)       // POST /api/users/me/delete
+			r.Delete("/delete", handlers.CancelAccountDeletion)      // DELETE /api/users/me/delete - Cancel deletion
+			r.Post("/delete/cancel", handlers.CancelAccountDeletion) // POST /api/users/me/delete/cancel (backward compat)
 
 			// Data export
-			r.Post("/me/export", handlers.RequestDataExport)  // POST /api/users/me/export
-			r.Get("/me/export", handlers.GetDataExportStatus) // GET /api/users/me/export
+			r.Post("/export", handlers.RequestDataExport)  // POST /api/users/me/export
+			r.Get("/export", handlers.GetDataExportStatus) // GET /api/users/me/export
 
 			// Avatar management
-			r.Post("/me/avatar", handlers.UploadAvatar)   // POST /api/users/me/avatar
-			r.Delete("/me/avatar", handlers.DeleteAvatar) // DELETE /api/users/me/avatar
+			r.Post("/avatar", handlers.UploadAvatar)   // POST /api/users/me/avatar
+			r.Delete("/avatar", handlers.DeleteAvatar) // DELETE /api/users/me/avatar
 
 			// Connected accounts (OAuth)
-			r.Get("/me/connected-accounts", handlers.GetConnectedAccounts)            // GET /api/users/me/connected-accounts
-			r.Delete("/me/connected-accounts/{provider}", handlers.DisconnectAccount) // DELETE /api/users/me/connected-accounts/{provider}
+			r.Get("/connected-accounts", handlers.GetConnectedAccounts)            // GET /api/users/me/connected-accounts
+			r.Delete("/connected-accounts/{provider}", handlers.DisconnectAccount) // DELETE /api/users/me/connected-accounts/{provider}
+
+			// API keys management
+			r.Get("/api-keys", handlers.GetUserAPIKeys)            // GET /api/users/me/api-keys
+			r.Post("/api-keys", handlers.CreateUserAPIKey)         // POST /api/users/me/api-keys
+			r.Get("/api-keys/{id}", handlers.GetUserAPIKey)        // GET /api/users/me/api-keys/{id}
+			r.Put("/api-keys/{id}", handlers.UpdateUserAPIKey)     // PUT /api/users/me/api-keys/{id}
+			r.Delete("/api-keys/{id}", handlers.DeleteUserAPIKey)  // DELETE /api/users/me/api-keys/{id}
+			r.Post("/api-keys/{id}/test", handlers.TestUserAPIKey) // POST /api/users/me/api-keys/{id}/test
 		})
 
 		// Specific user routes
@@ -577,6 +618,18 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 
 	// Webhook routes (no auth - uses signature verification)
 	r.Post("/webhooks/stripe", stripe.HandleWebhook(stripeConfig))
+
+	// AI routes (Gemini) - require authentication with separate rate limit tier
+	r.Route("/ai", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
+		r.Use(ratelimit.NewAIRateLimitMiddleware(rateLimitConfig))
+
+		r.Post("/chat", handlers.AIChat)                  // POST /api/ai/chat - Chat completion
+		r.Post("/chat/stream", handlers.AIChatStream)     // POST /api/ai/chat/stream - Streaming chat (SSE)
+		r.Post("/chat/advanced", handlers.AIChatAdvanced) // POST /api/ai/chat/advanced - Function calling & JSON mode
+		r.Post("/analyze-image", handlers.AIAnalyzeImage) // POST /api/ai/analyze-image - Image analysis
+		r.Post("/embeddings", handlers.AIEmbeddings)      // POST /api/ai/embeddings - Generate embeddings
+	})
 
 	// Feature flags - public endpoint for current user
 	r.Route("/feature-flags", func(r chi.Router) {

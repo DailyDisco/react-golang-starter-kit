@@ -194,7 +194,7 @@ func buildConnectionString() string {
 	port := getPoolEnv("PGPORT", getPoolEnv("DB_PORT", "5432"))
 	user := getPoolEnv("PGUSER", getPoolEnv("DB_USER", "devuser"))
 	password := getPoolEnv("PGPASSWORD", getPoolEnv("DB_PASSWORD", "devpass"))
-	dbname := getPoolEnv("PGDATABASE", getPoolEnv("DB_NAME", "devdb"))
+	dbname := getPoolEnv("PGDATABASE", getPoolEnv("DB_NAME", "starter_kit_db"))
 	sslmode := getPoolEnv("DB_SSLMODE", "disable")
 
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",

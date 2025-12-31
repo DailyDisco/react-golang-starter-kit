@@ -111,9 +111,10 @@ type AWSConfig struct {
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
-	// Try to load .env.local file (optional)
-	if err := godotenv.Load(".env.local"); err != nil {
-		log.Info().Msg("No .env.local file found, using system environment variables")
+	// Try to load .env file (optional)
+	// godotenv.Load looks in the current directory and parent directories
+	if err := godotenv.Load(); err != nil {
+		log.Info().Msg("No .env file found, using system environment variables")
 	}
 
 	config := &Config{
@@ -130,7 +131,7 @@ func Load() (*Config, error) {
 			Port:     getEnv("PGPORT", getEnv("DB_PORT", "5432")),
 			User:     getEnv("PGUSER", getEnv("DB_USER", "devuser")),
 			Password: getEnv("PGPASSWORD", getEnv("DB_PASSWORD", "devpass")),
-			Name:     getEnv("PGDATABASE", getEnv("DB_NAME", "devdb")),
+			Name:     getEnv("PGDATABASE", getEnv("DB_NAME", "starter_kit_db")),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 		},
 

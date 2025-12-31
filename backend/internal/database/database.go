@@ -27,7 +27,7 @@ func ConnectDB() {
 	port := getEnv("PGPORT", getEnv("DB_PORT", "5432"))
 	user := getEnv("PGUSER", getEnv("DB_USER", "devuser"))
 	password := getEnv("PGPASSWORD", getEnv("DB_PASSWORD", "devpass"))
-	dbname := getEnv("PGDATABASE", getEnv("DB_NAME", "devdb"))
+	dbname := getEnv("PGDATABASE", getEnv("DB_NAME", "starter_kit_db"))
 	sslmode := getEnv("DB_SSLMODE", "disable") // Default to disable for local development
 
 	log.Debug().

@@ -109,6 +109,11 @@ type TokenBlacklist struct {
 	Reason string `json:"reason" gorm:"type:varchar(50);default:'logout'"`
 }
 
+// TableName specifies the table name for GORM (matches migration: token_blacklist, not token_blacklists)
+func (TokenBlacklist) TableName() string {
+	return "token_blacklist"
+}
+
 // UserResponse represents the user data returned to the frontend (without sensitive fields)
 // swagger:model UserResponse
 type UserResponse struct {
@@ -940,4 +945,116 @@ type AdminStatsResponse struct {
 	TotalFileSize int64 `json:"total_file_size"` // in bytes
 
 	UsersByRole map[string]int64 `json:"users_by_role"`
+}
+
+// ============ User API Keys Models ============
+
+// API Key Provider constants
+const (
+	APIKeyProviderGemini    = "gemini"
+	APIKeyProviderOpenAI    = "openai"
+	APIKeyProviderAnthropic = "anthropic"
+)
+
+// UserAPIKey represents a user's API key for external services
+// swagger:model UserAPIKey
+type UserAPIKey struct {
+	// The unique ID of the API key
+	ID uint `json:"id" gorm:"primaryKey"`
+
+	// User ID (foreign key)
+	UserID uint `json:"user_id" gorm:"not null;index"`
+
+	// Provider name (gemini, openai, anthropic)
+	Provider string `json:"provider" gorm:"type:varchar(50);not null;index"`
+
+	// User-friendly name for the key
+	Name string `json:"name" gorm:"type:varchar(100);not null"`
+
+	// SHA-256 hash of the key for verification
+	KeyHash string `json:"-" gorm:"type:varchar(64);not null"`
+
+	// AES-256 encrypted API key
+	KeyEncrypted string `json:"-" gorm:"type:text;not null"`
+
+	// Preview of the key (last 4 chars)
+	KeyPreview string `json:"key_preview" gorm:"type:varchar(20)"`
+
+	// Whether the key is active
+	IsActive bool `json:"is_active" gorm:"default:true"`
+
+	// When the key was last used
+	LastUsedAt *string `json:"last_used_at,omitempty"`
+
+	// Number of times the key has been used
+	UsageCount int `json:"usage_count" gorm:"default:0"`
+
+	// When the key was created
+	CreatedAt string `json:"created_at"`
+
+	// When the key was last updated
+	UpdatedAt string `json:"updated_at"`
+}
+
+// TableName specifies the table name for GORM
+func (UserAPIKey) TableName() string {
+	return "user_api_keys"
+}
+
+// UserAPIKeyResponse represents API key data returned to the frontend
+// swagger:model UserAPIKeyResponse
+type UserAPIKeyResponse struct {
+	ID         uint    `json:"id"`
+	Provider   string  `json:"provider"`
+	Name       string  `json:"name"`
+	KeyPreview string  `json:"key_preview"`
+	IsActive   bool    `json:"is_active"`
+	LastUsedAt *string `json:"last_used_at,omitempty"`
+	UsageCount int     `json:"usage_count"`
+	CreatedAt  string  `json:"created_at"`
+	UpdatedAt  string  `json:"updated_at"`
+}
+
+// ToUserAPIKeyResponse converts a UserAPIKey to UserAPIKeyResponse
+func (k *UserAPIKey) ToUserAPIKeyResponse() UserAPIKeyResponse {
+	return UserAPIKeyResponse{
+		ID:         k.ID,
+		Provider:   k.Provider,
+		Name:       k.Name,
+		KeyPreview: k.KeyPreview,
+		IsActive:   k.IsActive,
+		LastUsedAt: k.LastUsedAt,
+		UsageCount: k.UsageCount,
+		CreatedAt:  k.CreatedAt,
+		UpdatedAt:  k.UpdatedAt,
+	}
+}
+
+// CreateUserAPIKeyRequest represents a request to create an API key
+// swagger:model CreateUserAPIKeyRequest
+type CreateUserAPIKeyRequest struct {
+	// Provider name (gemini, openai, anthropic)
+	Provider string `json:"provider" binding:"required"`
+	// User-friendly name for the key
+	Name string `json:"name" binding:"required"`
+	// The actual API key
+	APIKey string `json:"api_key" binding:"required"`
+}
+
+// UpdateUserAPIKeyRequest represents a request to update an API key
+// swagger:model UpdateUserAPIKeyRequest
+type UpdateUserAPIKeyRequest struct {
+	// New name for the key
+	Name *string `json:"name,omitempty"`
+	// New API key value
+	APIKey *string `json:"api_key,omitempty"`
+	// Whether the key is active
+	IsActive *bool `json:"is_active,omitempty"`
+}
+
+// UserAPIKeysResponse represents a list of user API keys
+// swagger:model UserAPIKeysResponse
+type UserAPIKeysResponse struct {
+	Keys  []UserAPIKeyResponse `json:"keys"`
+	Count int                  `json:"count"`
 }

@@ -234,3 +234,28 @@ func NewAPIRateLimitMiddleware(config *Config) func(http.Handler) http.Handler {
 		httprate.WithLimitHandler(createRateLimitHandler(int(config.GetAPIWindow().Seconds()))),
 	)
 }
+
+// NewAIRateLimitMiddleware creates middleware for AI endpoints
+// More restrictive limits to control API costs and prevent abuse.
+// Uses user-based limiting for authenticated requests.
+func NewAIRateLimitMiddleware(config *Config) func(http.Handler) http.Handler {
+	if !config.Enabled {
+		return func(next http.Handler) http.Handler {
+			return next
+		}
+	}
+
+	return httprate.Limit(
+		config.AIRequestsPerMinute,
+		config.GetAIWindow(),
+		httprate.WithKeyFuncs(func(r *http.Request) (string, error) {
+			// AI endpoints require authentication, so use user ID
+			if userID, ok := auth.GetUserIDFromContext(r.Context()); ok {
+				return "ai:user:" + strconv.FormatUint(uint64(userID), 10), nil
+			}
+			// Fallback to IP (shouldn't happen since AI requires auth)
+			return "ai:ip:" + getClientIP(r, config), nil
+		}),
+		httprate.WithLimitHandler(createRateLimitHandler(int(config.GetAIWindow().Seconds()))),
+	)
+}

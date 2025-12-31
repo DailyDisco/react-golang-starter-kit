@@ -140,6 +140,9 @@ func LoadSecurityConfig() *SecurityConfig {
 	return config
 }
 
+// SwaggerCSP is a relaxed CSP for Swagger UI that needs inline scripts and external resources
+const SwaggerCSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
 // SecurityHeaders returns a middleware that adds security headers to responses
 func SecurityHeaders(config *SecurityConfig) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -165,7 +168,10 @@ func SecurityHeaders(config *SecurityConfig) func(next http.Handler) http.Handle
 			}
 
 			// Content-Security-Policy
-			if config.ContentSecurityPolicy != "" {
+			// Use relaxed CSP for Swagger UI (needs external CDN resources)
+			if strings.HasPrefix(r.URL.Path, "/swagger") {
+				w.Header().Set("Content-Security-Policy", SwaggerCSP)
+			} else if config.ContentSecurityPolicy != "" {
 				w.Header().Set("Content-Security-Policy", config.ContentSecurityPolicy)
 			}
 
@@ -197,7 +203,10 @@ func SecurityHeaders(config *SecurityConfig) func(next http.Handler) http.Handle
 			}
 
 			// Cross-Origin-Embedder-Policy
-			if config.CrossOriginEmbedderPolicy != "" {
+			// Skip COEP for Swagger UI (CDN resources don't have CORP headers)
+			if strings.HasPrefix(r.URL.Path, "/swagger") {
+				// Don't set COEP for swagger - allows loading external CDN resources
+			} else if config.CrossOriginEmbedderPolicy != "" {
 				w.Header().Set("Cross-Origin-Embedder-Policy", config.CrossOriginEmbedderPolicy)
 			}
 

@@ -311,7 +311,7 @@ func setAuthCookies(w http.ResponseWriter, jwtToken, refreshToken string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
-		Path:     "/api/auth",
+		Path:     "/api/v1/auth",
 		HttpOnly: true,
 		Secure:   isSecureCookie(),
 		SameSite: getCookieSameSite(),

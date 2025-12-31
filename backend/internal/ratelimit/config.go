@@ -41,6 +41,11 @@ type Config struct {
 	APIRequestsPerMinute int
 	APIRequestsPerHour   int
 	APIBurstSize         int
+
+	// AI endpoints rate limiting (more restrictive to control costs)
+	AIRequestsPerMinute int
+	AIRequestsPerHour   int
+	AIBurstSize         int
 }
 
 // LoadConfig loads rate limiting configuration from environment variables
@@ -58,15 +63,20 @@ func LoadConfig() *Config {
 		UserRequestsPerHour:   2000,
 		UserBurstSize:         20,
 
-		// Default auth limits (more restrictive)
-		AuthRequestsPerMinute: 5,
-		AuthRequestsPerHour:   20,
-		AuthBurstSize:         2,
+		// Default auth limits (more restrictive for login, but allows token refresh)
+		AuthRequestsPerMinute: 20,
+		AuthRequestsPerHour:   100,
+		AuthBurstSize:         5,
 
 		// Default API limits
 		APIRequestsPerMinute: 100,
 		APIRequestsPerHour:   1500,
 		APIBurstSize:         15,
+
+		// Default AI limits (restrictive to control costs)
+		AIRequestsPerMinute: 20,
+		AIRequestsPerHour:   200,
+		AIBurstSize:         5,
 	}
 
 	// Override with environment variables
@@ -141,6 +151,23 @@ func LoadConfig() *Config {
 	if val := os.Getenv("RATE_LIMIT_API_BURST_SIZE"); val != "" {
 		if parsed, err := strconv.Atoi(val); err == nil && parsed >= 0 {
 			config.APIBurstSize = parsed
+		}
+	}
+
+	// AI limits
+	if val := os.Getenv("RATE_LIMIT_AI_PER_MINUTE"); val != "" {
+		if parsed, err := strconv.Atoi(val); err == nil && parsed >= 0 {
+			config.AIRequestsPerMinute = parsed
+		}
+	}
+	if val := os.Getenv("RATE_LIMIT_AI_PER_HOUR"); val != "" {
+		if parsed, err := strconv.Atoi(val); err == nil && parsed >= 0 {
+			config.AIRequestsPerHour = parsed
+		}
+	}
+	if val := os.Getenv("RATE_LIMIT_AI_BURST_SIZE"); val != "" {
+		if parsed, err := strconv.Atoi(val); err == nil && parsed >= 0 {
+			config.AIBurstSize = parsed
 		}
 	}
 
@@ -226,5 +253,10 @@ func (c *Config) GetAuthWindow() time.Duration {
 
 // GetAPIWindow returns the rate limiting window duration for API endpoints
 func (c *Config) GetAPIWindow() time.Duration {
+	return time.Minute
+}
+
+// GetAIWindow returns the rate limiting window duration for AI endpoints
+func (c *Config) GetAIWindow() time.Duration {
 	return time.Minute
 }

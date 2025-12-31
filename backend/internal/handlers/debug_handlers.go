@@ -52,7 +52,7 @@ func (h *DebugHandlers) GetConfig(w http.ResponseWriter, r *http.Request) {
 		Database: map[string]interface{}{
 			"host":     getEnvSafe("PGHOST", getEnvSafe("DB_HOST", "localhost")),
 			"port":     getEnvSafe("PGPORT", getEnvSafe("DB_PORT", "5432")),
-			"name":     getEnvSafe("PGDATABASE", getEnvSafe("DB_NAME", "devdb")),
+			"name":     getEnvSafe("PGDATABASE", getEnvSafe("DB_NAME", "starter_kit_db")),
 			"sslmode":  getEnvSafe("DB_SSLMODE", "disable"),
 			"user":     getEnvSafe("PGUSER", getEnvSafe("DB_USER", "[set]")),
 			"password": "[redacted]",

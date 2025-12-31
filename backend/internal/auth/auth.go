@@ -348,7 +348,7 @@ func SetRefreshCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     RefreshCookieName,
 		Value:    token,
-		Path:     "/api/auth", // Only sent to auth endpoints
+		Path:     "/api/v1/auth", // Only sent to auth endpoints (matches /api/v1/auth/refresh)
 		MaxAge:   int(expiration.Seconds()),
 		HttpOnly: true,
 		Secure:   isSecureCookie(),
@@ -361,7 +361,7 @@ func ClearRefreshCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     RefreshCookieName,
 		Value:    "",
-		Path:     "/api/auth",
+		Path:     "/api/v1/auth",
 		MaxAge:   -1,
 		HttpOnly: true,
 		Secure:   isSecureCookie(),

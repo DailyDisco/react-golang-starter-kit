@@ -24,8 +24,8 @@ func TestLoadConfig_Defaults(t *testing.T) {
 		t.Errorf("Expected IPRequestsPerMinute to be 60, got %d", config.IPRequestsPerMinute)
 	}
 
-	if config.AuthRequestsPerMinute != 5 {
-		t.Errorf("Expected AuthRequestsPerMinute to be 5, got %d", config.AuthRequestsPerMinute)
+	if config.AuthRequestsPerMinute != 20 {
+		t.Errorf("Expected AuthRequestsPerMinute to be 20, got %d", config.AuthRequestsPerMinute)
 	}
 
 	if config.UserRequestsPerMinute != 120 {

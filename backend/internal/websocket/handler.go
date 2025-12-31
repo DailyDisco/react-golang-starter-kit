@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/response"
 
 	"github.com/rs/zerolog/log"
 	"nhooyr.io/websocket"
@@ -18,7 +19,7 @@ func Handler(hub *Hub) http.HandlerFunc {
 		tokenString, err := extractTokenFromRequest(r)
 		if err != nil {
 			log.Debug().Err(err).Msg("WebSocket auth: no token found")
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			response.Unauthorized(w, r, "Unauthorized")
 			return
 		}
 
@@ -26,14 +27,14 @@ func Handler(hub *Hub) http.HandlerFunc {
 		claims, err := auth.ValidateJWT(tokenString)
 		if err != nil {
 			log.Debug().Err(err).Msg("WebSocket auth: invalid token")
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			response.TokenInvalid(w, r, "Invalid token")
 			return
 		}
 
 		// Check if token is blacklisted
 		if auth.IsTokenBlacklisted(tokenString) {
 			log.Debug().Msg("WebSocket auth: token is blacklisted")
-			http.Error(w, "Token has been revoked", http.StatusUnauthorized)
+			response.TokenInvalid(w, r, "Token has been revoked")
 			return
 		}
 
