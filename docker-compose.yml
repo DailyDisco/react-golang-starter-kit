@@ -139,6 +139,11 @@ volumes:
   dragonfly_data:
   caddy_data:
   caddy_config:
+  # Backup volumes (used in production)
+  pgbackrest_data:
+  pgbackrest_log:
+  pgbackrest_spool:
+  pgbackrest_config:
 
 networks:
   app-network:

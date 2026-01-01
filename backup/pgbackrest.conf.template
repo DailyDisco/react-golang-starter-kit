@@ -1,0 +1,74 @@
+# pgBackRest Configuration
+# Generated from template by entrypoint.sh
+
+[global]
+# ============================================
+# Repository Configuration (S3)
+# ============================================
+repo1-type=s3
+repo1-path=/postgres-backups
+repo1-s3-endpoint=s3.${AWS_REGION:-us-east-1}.amazonaws.com
+repo1-s3-bucket=${BACKUP_S3_BUCKET}
+repo1-s3-region=${AWS_REGION:-us-east-1}
+repo1-s3-key=${AWS_ACCESS_KEY_ID}
+repo1-s3-key-secret=${AWS_SECRET_ACCESS_KEY}
+repo1-s3-uri-style=host
+
+# ============================================
+# Encryption (AES-256-CBC)
+# ============================================
+repo1-cipher-type=aes-256-cbc
+repo1-cipher-pass=${BACKUP_ENCRYPTION_KEY}
+
+# ============================================
+# Compression (lz4 for speed)
+# ============================================
+compress-type=lz4
+compress-level=6
+
+# ============================================
+# Retention Policy
+# ============================================
+# Keep 4 full backups (weekly = ~1 month)
+repo1-retention-full=${BACKUP_RETENTION_FULL:-4}
+# Keep 30 days of differential/incremental
+repo1-retention-diff=${BACKUP_RETENTION_DIFF:-30}
+
+# ============================================
+# Performance Tuning
+# ============================================
+# Parallel processes for backup/restore
+process-max=${BACKUP_PROCESS_MAX:-2}
+# Buffer size for file operations
+buffer-size=64MB
+# Protocol timeout (5 minutes)
+protocol-timeout=300
+# Archive timeout for async operations
+archive-timeout=60
+
+# ============================================
+# Logging
+# ============================================
+log-level-console=info
+log-level-file=detail
+log-path=/var/log/pgbackrest
+log-timestamp=y
+
+# ============================================
+# Archive Settings
+# ============================================
+# Push WAL asynchronously for better performance
+archive-async=y
+# Spool path for async archiving
+spool-path=/var/spool/pgbackrest
+
+# ============================================
+# Stanza: main
+# ============================================
+[main]
+# PostgreSQL connection via Docker network (TCP)
+pg1-host=${PGHOST:-postgres}
+pg1-port=${PGPORT:-5432}
+pg1-path=/var/lib/postgresql/data
+pg1-user=${PGUSER:-postgres}
+pg1-database=${PGDATABASE:-postgres}
