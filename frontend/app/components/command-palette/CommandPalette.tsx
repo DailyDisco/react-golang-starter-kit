@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   CommandDialog,
@@ -11,53 +11,151 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useCommandContext } from "@/hooks/useCommandContext";
 import { useCommandPalette } from "@/hooks/useCommandPalette";
+import { useCommandSearch, useSearchProviders } from "@/hooks/useCommandSearch";
 import { formatShortcut, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useTheme } from "@/providers/theme-provider";
-import { useNavigate } from "@tanstack/react-router";
 import {
-  Activity,
-  Bell,
-  CreditCard,
-  FileText,
-  Flag,
-  History,
-  Home,
-  Key,
-  LayoutDashboard,
-  Link2,
+  adminProvider,
+  commandRegistry,
+  contextualProvider,
+  createActionProvider,
+  navigationProvider,
+  settingsProvider,
+  type Command,
+} from "@/services/command-palette";
+import type { SearchResult } from "@/services/command-palette/types";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Loader2,
   LogOut,
-  Mail,
   Moon,
-  Palette,
   Search,
-  Settings,
-  Shield,
   Sun,
+  ToggleLeft,
   User,
-  Users,
+  UserCog,
 } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
-interface CommandItemData {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  shortcut?: string;
-  action: () => void;
-  keywords?: string[];
-  group: "navigation" | "actions" | "admin" | "settings";
+// =============================================================================
+// Types
+// =============================================================================
+
+interface GroupedCommands {
+  navigation: Command[];
+  actions: Command[];
+  settings: Command[];
+  admin: Command[];
+  contextual: Command[];
 }
 
-export function CommandPalette() {
-  const { t } = useTranslation();
-  const { isOpen, close, toggle } = useCommandPalette();
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { setTheme, resolvedTheme } = useTheme();
-  const [search, setSearch] = useState("");
+// =============================================================================
+// Provider Registration
+// =============================================================================
 
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+/**
+ * Hook to register all command providers on mount
+ */
+function useCommandProviders() {
+  const { setTheme, resolvedTheme } = useTheme();
+  const { logout } = useAuth();
+
+  useEffect(() => {
+    // Register static providers
+    const unregisterNav = commandRegistry.registerProvider(navigationProvider);
+    const unregisterSettings = commandRegistry.registerProvider(settingsProvider);
+    const unregisterAdmin = commandRegistry.registerProvider(adminProvider);
+    const unregisterContextual = commandRegistry.registerProvider(contextualProvider);
+
+    // Register action provider with theme/logout
+    const actionProvider = createActionProvider({
+      resolvedTheme: resolvedTheme ?? "light",
+      setTheme,
+      logout,
+    });
+    const unregisterActions = commandRegistry.registerProvider(actionProvider);
+
+    // Also register theme toggle and sign out as individual commands
+    // so they're always available
+    const unregisterTheme = commandRegistry.register({
+      id: "toggle-theme",
+      label: resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
+      icon: resolvedTheme === "dark" ? Sun : Moon,
+      keywords: ["theme", "dark", "light", "mode"],
+      group: "actions",
+      action: () => setTheme(resolvedTheme === "dark" ? "light" : "dark"),
+    });
+
+    const unregisterSignOut = commandRegistry.register({
+      id: "sign-out",
+      label: "Sign Out",
+      icon: LogOut,
+      keywords: ["logout", "exit"],
+      group: "actions",
+      action: () => logout(),
+    });
+
+    return () => {
+      unregisterNav();
+      unregisterSettings();
+      unregisterAdmin();
+      unregisterContextual();
+      unregisterActions();
+      unregisterTheme();
+      unregisterSignOut();
+    };
+  }, [resolvedTheme, setTheme, logout]);
+}
+
+// =============================================================================
+// Component
+// =============================================================================
+
+export function CommandPalette() {
+  const {
+    isOpen,
+    close,
+    toggle,
+    mode,
+    setMode,
+    search,
+    setSearch,
+    searchResults,
+    isSearching,
+    confirmingActionId,
+    setConfirmingAction,
+    actionStatus,
+    setActionStatus,
+  } = useCommandPalette();
+
+  const ctx = useCommandContext();
+
+  // Register providers
+  useCommandProviders();
+
+  // Register search providers
+  useSearchProviders();
+
+  // Enable async search
+  useCommandSearch();
+
+  // Get commands from registry
+  const [commands, setCommands] = useState<Command[]>([]);
+
+  useEffect(() => {
+    // Initial load
+    setCommands(commandRegistry.getCommands(ctx));
+
+    // Subscribe to registry changes
+    const unsubscribe = commandRegistry.subscribe(() => {
+      setCommands(commandRegistry.getCommands(ctx));
+    });
+
+    return unsubscribe;
+  }, [ctx]);
 
   // Register Cmd+K shortcut
   useKeyboardShortcuts({
@@ -71,296 +169,364 @@ export function CommandPalette() {
     ],
   });
 
-  const runCommand = useCallback(
-    (command: () => void) => {
-      close();
-      command();
-    },
-    [close]
-  );
+  // Group commands by category
+  const groupedCommands = useMemo<GroupedCommands>(() => {
+    const groups: GroupedCommands = {
+      navigation: [],
+      actions: [],
+      settings: [],
+      admin: [],
+      contextual: [],
+    };
 
-  const commands = useMemo<CommandItemData[]>(() => {
-    const items: CommandItemData[] = [
-      // Navigation
-      {
-        id: "dashboard",
-        label: "Go to Dashboard",
-        icon: Home,
-        action: () => navigate({ to: "/dashboard" }),
-        keywords: ["home", "main"],
-        group: "navigation",
-      },
-      {
-        id: "billing",
-        label: "Go to Billing",
-        icon: CreditCard,
-        action: () => navigate({ to: "/billing" }),
-        keywords: ["payment", "subscription", "plan"],
-        group: "navigation",
-      },
-      {
-        id: "profile",
-        label: "Go to Profile",
-        icon: User,
-        action: () => navigate({ to: "/settings/profile" }),
-        keywords: ["account", "me"],
-        group: "navigation",
-      },
-      {
-        id: "security",
-        label: "Go to Security Settings",
-        icon: Shield,
-        action: () => navigate({ to: "/settings/security" }),
-        keywords: ["password", "2fa", "authentication"],
-        group: "navigation",
-      },
-      {
-        id: "preferences",
-        label: "Go to Preferences",
-        icon: Palette,
-        action: () => navigate({ to: "/settings/preferences" }),
-        keywords: ["theme", "language"],
-        group: "navigation",
-      },
-      {
-        id: "notifications",
-        label: "Go to Notifications",
-        icon: Bell,
-        action: () => navigate({ to: "/settings/notifications" }),
-        keywords: ["alerts", "email"],
-        group: "navigation",
-      },
-      {
-        id: "privacy",
-        label: "Go to Privacy Settings",
-        icon: Key,
-        action: () => navigate({ to: "/settings/privacy" }),
-        keywords: ["data"],
-        group: "navigation",
-      },
-      {
-        id: "login-history",
-        label: "Go to Login History",
-        icon: History,
-        action: () => navigate({ to: "/settings/login-history" }),
-        keywords: ["sessions", "activity"],
-        group: "navigation",
-      },
-      {
-        id: "connected-accounts",
-        label: "Go to Connected Accounts",
-        icon: Link2,
-        action: () => navigate({ to: "/settings/connected-accounts" }),
-        keywords: ["oauth", "social", "google", "github"],
-        group: "navigation",
-      },
-
-      // Actions
-      {
-        id: "toggle-theme",
-        label: resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
-        icon: resolvedTheme === "dark" ? Sun : Moon,
-        action: () => setTheme(resolvedTheme === "dark" ? "light" : "dark"),
-        keywords: ["theme", "dark", "light", "mode"],
-        group: "actions",
-      },
-      {
-        id: "sign-out",
-        label: "Sign Out",
-        icon: LogOut,
-        action: () => logout(),
-        keywords: ["logout", "exit"],
-        group: "actions",
-      },
-
-      // Settings shortcuts
-      {
-        id: "settings",
-        label: "Open Settings",
-        icon: Settings,
-        shortcut: formatShortcut({ key: ",", meta: true }),
-        action: () => navigate({ to: "/settings" }),
-        keywords: ["preferences", "options"],
-        group: "settings",
-      },
-    ];
-
-    // Admin commands
-    if (isAdmin) {
-      items.push(
-        {
-          id: "admin-overview",
-          label: "Admin Overview",
-          icon: LayoutDashboard,
-          action: () => navigate({ to: "/admin" }),
-          keywords: ["admin", "dashboard"],
-          group: "admin",
-        },
-        {
-          id: "admin-users",
-          label: "Manage Users",
-          icon: Users,
-          action: () => navigate({ to: "/admin/users" }),
-          keywords: ["admin", "users", "accounts"],
-          group: "admin",
-        },
-        {
-          id: "admin-audit",
-          label: "View Audit Logs",
-          icon: FileText,
-          action: () => navigate({ to: "/admin/audit-logs" }),
-          keywords: ["admin", "logs", "history"],
-          group: "admin",
-        },
-        {
-          id: "admin-flags",
-          label: "Feature Flags",
-          icon: Flag,
-          action: () => navigate({ to: "/admin/feature-flags" }),
-          keywords: ["admin", "features", "toggles"],
-          group: "admin",
-        },
-        {
-          id: "admin-health",
-          label: "System Health",
-          icon: Activity,
-          action: () => navigate({ to: "/admin/health" }),
-          keywords: ["admin", "status", "monitoring"],
-          group: "admin",
-        },
-        {
-          id: "admin-announcements",
-          label: "Announcements",
-          icon: Bell,
-          action: () => navigate({ to: "/admin/announcements" }),
-          keywords: ["admin", "banners", "messages"],
-          group: "admin",
-        },
-        {
-          id: "admin-email",
-          label: "Email Templates",
-          icon: Mail,
-          action: () => navigate({ to: "/admin/email-templates" }),
-          keywords: ["admin", "templates", "email"],
-          group: "admin",
-        },
-        {
-          id: "admin-settings",
-          label: "Admin Settings",
-          icon: Settings,
-          action: () => navigate({ to: "/admin/settings" }),
-          keywords: ["admin", "configuration"],
-          group: "admin",
-        }
-      );
+    for (const cmd of commands) {
+      if (cmd.group in groups) {
+        groups[cmd.group as keyof GroupedCommands].push(cmd);
+      }
     }
 
-    return items;
-  }, [isAdmin, navigate, logout, setTheme, resolvedTheme]);
+    return groups;
+  }, [commands]);
 
-  const navigationCommands = commands.filter((c) => c.group === "navigation");
-  const actionCommands = commands.filter((c) => c.group === "actions");
-  const settingsCommands = commands.filter((c) => c.group === "settings");
-  const adminCommands = commands.filter((c) => c.group === "admin");
+  // Handle command execution
+  const runCommand = useCallback(
+    async (command: Command) => {
+      // Check if command requires confirmation
+      if (command.requiresConfirmation && confirmingActionId !== command.id) {
+        setConfirmingAction(command.id);
+        return;
+      }
+
+      // Reset confirmation state
+      setConfirmingAction(null);
+
+      // Execute command
+      try {
+        setActionStatus("loading");
+        await command.action(ctx);
+        setActionStatus("success");
+
+        // Show success toast for actions
+        if (command.group === "actions" || command.group === "admin") {
+          toast.success(`${command.label} completed`);
+        }
+
+        // Close palette after successful action
+        setTimeout(() => {
+          close();
+          setActionStatus("idle");
+        }, 150);
+      } catch (error) {
+        setActionStatus("error");
+        toast.error(`Failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      }
+    },
+    [ctx, close, confirmingActionId, setConfirmingAction, setActionStatus]
+  );
+
+  // Handle mode-specific rendering
+  const getModeTitle = () => {
+    switch (mode) {
+      case "impersonate":
+        return "Impersonate User";
+      case "flag-toggle":
+        return "Toggle Feature Flag";
+      default:
+        return "Command Palette";
+    }
+  };
+
+  const getModeDescription = () => {
+    switch (mode) {
+      case "impersonate":
+        return "Search for a user to impersonate";
+      case "flag-toggle":
+        return "Search for a feature flag to toggle";
+      default:
+        return "Search for commands, pages, and actions";
+    }
+  };
+
+  const getModeIcon = () => {
+    switch (mode) {
+      case "impersonate":
+        return UserCog;
+      case "flag-toggle":
+        return ToggleLeft;
+      default:
+        return Search;
+    }
+  };
+
+  // Render command item
+  const renderCommandItem = (command: Command) => {
+    const Icon = command.icon;
+    const isConfirming = confirmingActionId === command.id;
+    const isLoading = actionStatus === "loading" && isConfirming;
+
+    return (
+      <CommandItem
+        key={command.id}
+        value={`${command.label} ${command.keywords?.join(" ") || ""}`}
+        onSelect={() => runCommand(command)}
+        className={isConfirming ? "bg-destructive/10" : undefined}
+      >
+        {isLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : isConfirming ? (
+          <AlertTriangle className="text-destructive mr-2 h-4 w-4" />
+        ) : Icon ? (
+          <Icon className="mr-2 h-4 w-4" />
+        ) : null}
+
+        <span className="flex-1">
+          {isConfirming ? command.confirmationMessage || `Confirm: ${command.label}?` : command.label}
+        </span>
+
+        {command.shortcut && !isConfirming && <CommandShortcut>{formatShortcut(command.shortcut)}</CommandShortcut>}
+
+        {isConfirming && <span className="text-muted-foreground text-xs">Enter to confirm</span>}
+      </CommandItem>
+    );
+  };
+
+  // Render back button for sub-modes
+  const renderBackButton = () => {
+    if (mode === "default") return null;
+
+    return (
+      <CommandItem
+        value="back"
+        onSelect={() => setMode("default")}
+        className="text-muted-foreground"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        <span>Back to commands</span>
+        <CommandShortcut>Esc</CommandShortcut>
+      </CommandItem>
+    );
+  };
+
+  const ModeIcon = getModeIcon();
+
+  // Handle search result execution
+  const runSearchResult = useCallback(
+    async (result: SearchResult) => {
+      try {
+        setActionStatus("loading");
+        await result.action(ctx);
+        setActionStatus("success");
+
+        // Show success toast
+        if (result.type === "feature_flag") {
+          const isEnabled = !(result.metadata?.enabled as boolean);
+          toast.success(`${result.title} ${isEnabled ? "enabled" : "disabled"}`);
+        } else {
+          toast.success(`${result.title} selected`);
+        }
+
+        // Close palette after successful action
+        setTimeout(() => {
+          close();
+          setMode("default");
+          setActionStatus("idle");
+        }, 150);
+      } catch (error) {
+        setActionStatus("error");
+        toast.error(`Failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      }
+    },
+    [ctx, close, setMode, setActionStatus]
+  );
+
+  // Render search result item
+  const renderSearchResult = (result: SearchResult) => {
+    const Icon = result.icon;
+
+    return (
+      <CommandItem
+        key={result.id}
+        value={`${result.title} ${result.subtitle || ""}`}
+        onSelect={() => runSearchResult(result)}
+      >
+        {Icon ? <Icon className="mr-2 h-4 w-4" /> : <Search className="mr-2 h-4 w-4" />}
+        <div className="flex flex-1 flex-col">
+          <span>{result.title}</span>
+          {result.subtitle && <span className="text-muted-foreground text-xs">{result.subtitle}</span>}
+        </div>
+        {result.type === "feature_flag" && (
+          <span className={`text-xs ${result.metadata?.enabled ? "text-green-500" : "text-muted-foreground"}`}>
+            {result.metadata?.enabled ? "ON" : "OFF"}
+          </span>
+        )}
+      </CommandItem>
+    );
+  };
 
   return (
     <CommandDialog
       open={isOpen}
-      onOpenChange={(open) => (open ? undefined : close())}
-      title="Command Palette"
-      description="Search for commands, pages, and actions"
+      onOpenChange={(open) => {
+        if (!open) {
+          close();
+          setMode("default");
+          setConfirmingAction(null);
+        }
+      }}
+      title={getModeTitle()}
+      description={getModeDescription()}
     >
       <CommandInput
-        placeholder="Type a command or search..."
+        placeholder={
+          mode === "impersonate"
+            ? "Search users by name or email..."
+            : mode === "flag-toggle"
+              ? "Search feature flags..."
+              : "Type a command or search..."
+        }
         value={search}
         onValueChange={setSearch}
       />
       <CommandList>
         <CommandEmpty>
           <div className="flex flex-col items-center gap-2 py-4">
-            <Search className="text-muted-foreground h-10 w-10" />
+            <ModeIcon className="text-muted-foreground h-10 w-10" />
             <p>No results found.</p>
-            <p className="text-muted-foreground text-sm">Try searching for something else.</p>
+            <p className="text-muted-foreground text-sm">
+              {mode === "impersonate"
+                ? "Try searching by name or email"
+                : mode === "flag-toggle"
+                  ? "No matching feature flags"
+                  : "Try searching for something else."}
+            </p>
           </div>
         </CommandEmpty>
 
-        <CommandGroup heading="Navigation">
-          {navigationCommands.map((command) => {
-            const Icon = command.icon;
-            return (
-              <CommandItem
-                key={command.id}
-                value={`${command.label} ${command.keywords?.join(" ") || ""}`}
-                onSelect={() => runCommand(command.action)}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{command.label}</span>
-                {command.shortcut && <CommandShortcut>{command.shortcut}</CommandShortcut>}
-              </CommandItem>
-            );
-          })}
-        </CommandGroup>
-
-        <CommandSeparator />
-
-        <CommandGroup heading="Actions">
-          {actionCommands.map((command) => {
-            const Icon = command.icon;
-            return (
-              <CommandItem
-                key={command.id}
-                value={`${command.label} ${command.keywords?.join(" ") || ""}`}
-                onSelect={() => runCommand(command.action)}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{command.label}</span>
-                {command.shortcut && <CommandShortcut>{command.shortcut}</CommandShortcut>}
-              </CommandItem>
-            );
-          })}
-        </CommandGroup>
-
-        <CommandSeparator />
-
-        <CommandGroup heading="Settings">
-          {settingsCommands.map((command) => {
-            const Icon = command.icon;
-            return (
-              <CommandItem
-                key={command.id}
-                value={`${command.label} ${command.keywords?.join(" ") || ""}`}
-                onSelect={() => runCommand(command.action)}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{command.label}</span>
-                {command.shortcut && <CommandShortcut>{command.shortcut}</CommandShortcut>}
-              </CommandItem>
-            );
-          })}
-        </CommandGroup>
-
-        {isAdmin && (
+        {/* Back button for sub-modes */}
+        {mode !== "default" && (
           <>
+            <CommandGroup>{renderBackButton()}</CommandGroup>
             <CommandSeparator />
-            <CommandGroup heading="Administration">
-              {adminCommands.map((command) => {
-                const Icon = command.icon;
-                return (
-                  <CommandItem
-                    key={command.id}
-                    value={`${command.label} ${command.keywords?.join(" ") || ""}`}
-                    onSelect={() => runCommand(command.action)}
-                  >
-                    <Icon className="mr-2 h-4 w-4" />
-                    <span>{command.label}</span>
-                    {command.shortcut && <CommandShortcut>{command.shortcut}</CommandShortcut>}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
           </>
         )}
+
+        {/* Default mode: Show all command groups */}
+        {mode === "default" && (
+          <>
+            {/* Contextual commands first (page-specific) */}
+            {groupedCommands.contextual.length > 0 && (
+              <>
+                <CommandGroup heading="Page Actions">{groupedCommands.contextual.map(renderCommandItem)}</CommandGroup>
+                <CommandSeparator />
+              </>
+            )}
+
+            {/* Navigation */}
+            <CommandGroup heading="Navigation">{groupedCommands.navigation.map(renderCommandItem)}</CommandGroup>
+
+            <CommandSeparator />
+
+            {/* Actions */}
+            <CommandGroup heading="Actions">{groupedCommands.actions.map(renderCommandItem)}</CommandGroup>
+
+            <CommandSeparator />
+
+            {/* Settings */}
+            <CommandGroup heading="Settings">{groupedCommands.settings.map(renderCommandItem)}</CommandGroup>
+
+            {/* Admin (only if there are admin commands) */}
+            {groupedCommands.admin.length > 0 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading="Administration">{groupedCommands.admin.map(renderCommandItem)}</CommandGroup>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Impersonate mode: Show user search results */}
+        {mode === "impersonate" && (
+          <CommandGroup heading="Users">
+            {isSearching && (
+              <CommandItem
+                value="loading"
+                disabled
+              >
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <span>Searching users...</span>
+              </CommandItem>
+            )}
+            {!isSearching && search.length < 2 && (
+              <CommandItem
+                value="hint"
+                disabled
+                className="text-muted-foreground"
+              >
+                <User className="mr-2 h-4 w-4" />
+                <span>Type at least 2 characters to search users</span>
+              </CommandItem>
+            )}
+            {!isSearching && search.length >= 2 && searchResults.length === 0 && (
+              <CommandItem
+                value="no-results"
+                disabled
+                className="text-muted-foreground"
+              >
+                <Search className="mr-2 h-4 w-4" />
+                <span>No users found matching "{search}"</span>
+              </CommandItem>
+            )}
+            {!isSearching && searchResults.filter((r) => r.type === "user").map(renderSearchResult)}
+          </CommandGroup>
+        )}
+
+        {/* Flag toggle mode: Show feature flag search results */}
+        {mode === "flag-toggle" && (
+          <CommandGroup heading="Feature Flags">
+            {isSearching && (
+              <CommandItem
+                value="loading"
+                disabled
+              >
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <span>Searching flags...</span>
+              </CommandItem>
+            )}
+            {!isSearching && search.length === 0 && (
+              <CommandItem
+                value="hint"
+                disabled
+                className="text-muted-foreground"
+              >
+                <ToggleLeft className="mr-2 h-4 w-4" />
+                <span>Type to search feature flags</span>
+              </CommandItem>
+            )}
+            {!isSearching &&
+              search.length > 0 &&
+              searchResults.filter((r) => r.type === "feature_flag").length === 0 && (
+                <CommandItem
+                  value="no-results"
+                  disabled
+                  className="text-muted-foreground"
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  <span>No flags found matching "{search}"</span>
+                </CommandItem>
+              )}
+            {!isSearching && searchResults.filter((r) => r.type === "feature_flag").map(renderSearchResult)}
+          </CommandGroup>
+        )}
       </CommandList>
+
+      {/* Footer with keyboard hints */}
+      <div className="text-muted-foreground border-t px-4 py-2 text-xs">
+        <span>↑↓ to navigate</span>
+        <span className="mx-2">•</span>
+        <span>↵ to select</span>
+        <span className="mx-2">•</span>
+        <span>esc to close</span>
+      </div>
     </CommandDialog>
   );
 }
