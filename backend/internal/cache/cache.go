@@ -73,7 +73,7 @@ func Initialize(config *Config) error {
 		redisCache, err := NewRedisCache(config)
 		if err != nil {
 			log.Warn().Err(err).Msg("failed to connect to Redis, falling back to in-memory cache")
-			instance = NewMemoryCache(config)
+			instance = NewMetricsCache(NewMemoryCache(config))
 			return nil
 		}
 
@@ -84,18 +84,18 @@ func Initialize(config *Config) error {
 		if err := redisCache.Ping(ctx); err != nil {
 			log.Warn().Err(err).Msg("Redis ping failed, falling back to in-memory cache")
 			redisCache.Close()
-			instance = NewMemoryCache(config)
+			instance = NewMetricsCache(NewMemoryCache(config))
 			return nil
 		}
 
 		log.Info().Str("url", config.RedisURL).Msg("Redis cache initialized")
-		instance = redisCache
+		instance = NewMetricsCache(redisCache)
 		return nil
 	}
 
 	// Default to in-memory cache
 	log.Info().Msg("using in-memory cache")
-	instance = NewMemoryCache(config)
+	instance = NewMetricsCache(NewMemoryCache(config))
 	return nil
 }
 

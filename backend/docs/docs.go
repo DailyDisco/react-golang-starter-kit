@@ -3244,6 +3244,114 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/announcements/unread-modals": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Announcements"
+                ],
+                "summary": "Get unread modal announcements",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.AnnouncementBannerResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/announcements/{id}/read": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Announcements"
+                ],
+                "summary": "Mark announcement as read",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Announcement ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/changelog": {
+            "get": {
+                "tags": [
+                    "Announcements"
+                ],
+                "summary": "Get changelog",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by category (update, feature, bugfix)",
+                        "name": "category",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ChangelogResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/webhooks/stripe": {
             "post": {
                 "description": "Receives and processes Stripe webhook events",
@@ -5506,6 +5614,12 @@ const docTemplate = `{
         "models.AnnouncementBannerResponse": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "display_type": {
+                    "type": "string"
+                },
                 "ends_at": {
                     "type": "string"
                 },
@@ -5529,6 +5643,9 @@ const docTemplate = `{
                 },
                 "priority": {
                     "type": "integer"
+                },
+                "published_at": {
+                    "type": "string"
                 },
                 "starts_at": {
                     "type": "string"
@@ -5732,6 +5849,37 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ChangelogMeta": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "perPage": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "totalPages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ChangelogResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.AnnouncementBannerResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/models.ChangelogMeta"
+                }
+            }
+        },
         "models.CheckoutSessionResponse": {
             "type": "object",
             "properties": {
@@ -5784,8 +5932,26 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "update",
+                        "feature",
+                        "bugfix"
+                    ]
+                },
+                "display_type": {
+                    "type": "string",
+                    "enum": [
+                        "banner",
+                        "modal"
+                    ]
+                },
                 "ends_at": {
                     "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
                 },
                 "is_dismissible": {
                     "type": "boolean"
@@ -5801,6 +5967,9 @@ const docTemplate = `{
                 },
                 "priority": {
                     "type": "integer"
+                },
+                "send_email": {
+                    "type": "boolean"
                 },
                 "show_on_pages": {
                     "type": "array",
@@ -6794,6 +6963,12 @@ const docTemplate = `{
         "models.UpdateAnnouncementRequest": {
             "type": "object",
             "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "display_type": {
+                    "type": "string"
+                },
                 "ends_at": {
                     "type": "string"
                 },
