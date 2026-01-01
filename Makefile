@@ -7,7 +7,8 @@
 	seed dev-fresh db-reset shell-backend shell-frontend shell-db restart ps tail \
 	observability-up observability-down observability-logs grafana-logs prometheus-logs \
 	deploy-vercel deploy-vercel-prod deploy-railway configure-features init \
-	rollback switch-blue switch-green
+	rollback switch-blue switch-green \
+	backup-info backup-now backup-incr backup-verify backup-logs backup-restore-list
 
 # ============================================
 # Configuration
@@ -263,3 +264,29 @@ configure-features: ## Interactive feature configuration wizard
 
 init: ## Initialize a new project from this template
 	@./init-project.sh
+
+# ============================================
+# Backup Management (pgBackRest)
+# ============================================
+
+backup-info: ## Show backup repository info and available backups
+	@docker exec react-golang-backup pgbackrest --stanza=main info
+
+backup-now: ## Run immediate full backup
+	@docker exec react-golang-backup /scripts/backup-full.sh
+
+backup-incr: ## Run incremental backup
+	@docker exec react-golang-backup /scripts/backup-incr.sh
+
+backup-verify: ## Verify latest backup integrity
+	@docker exec react-golang-backup /scripts/verify.sh
+
+backup-logs: ## View backup logs
+	@docker exec react-golang-backup tail -100 /var/log/pgbackrest/backup.log 2>/dev/null || \
+		docker exec react-golang-backup tail -100 /var/log/pgbackrest/cron.log 2>/dev/null || \
+		echo "No backup logs available yet"
+
+backup-restore-list: ## List available restore points
+	@docker exec react-golang-backup pgbackrest --stanza=main info --output=json | \
+		jq -r '.[0].backup[] | "\(.label) - \(.type) - \(.timestamp.start)"' 2>/dev/null || \
+		docker exec react-golang-backup pgbackrest --stanza=main info
