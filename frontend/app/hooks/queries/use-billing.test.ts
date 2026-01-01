@@ -1,6 +1,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { CACHE_TIMES } from "../../lib/cache-config";
 import { useBillingConfig, useBillingPlans, useHasActiveSubscription, useSubscription } from "./use-billing";
 
 // Mock dependencies
@@ -74,7 +75,7 @@ describe("useBillingConfig", () => {
 
     expect(useQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        staleTime: 60 * 60 * 1000, // 1 hour
+        staleTime: CACHE_TIMES.BILLING_CONFIG,
         retry: 1,
       })
     );
@@ -122,7 +123,7 @@ describe("useBillingPlans", () => {
 
     expect(useQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: CACHE_TIMES.BILLING_PLANS,
         retry: 1,
       })
     );

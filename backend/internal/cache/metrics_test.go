@@ -11,7 +11,7 @@ import (
 
 func TestMetricsCache_Get_Hit(t *testing.T) {
 	// Setup underlying cache with test data
-	underlying := NewMemoryCache(&Config{Enabled: true})
+	underlying := NewMemoryCache(&Config{Enabled: true, MemoryCleanupInterval: time.Minute})
 	ctx := context.Background()
 
 	key := "test_key"
@@ -35,7 +35,7 @@ func TestMetricsCache_Get_Hit(t *testing.T) {
 }
 
 func TestMetricsCache_Get_Miss(t *testing.T) {
-	underlying := NewMemoryCache(&Config{Enabled: true})
+	underlying := NewMemoryCache(&Config{Enabled: true, MemoryCleanupInterval: time.Minute})
 	ctx := context.Background()
 
 	metrics := NewMetricsCache(underlying)
@@ -52,7 +52,7 @@ func TestMetricsCache_Get_Miss(t *testing.T) {
 }
 
 func TestMetricsCache_MixedOperations(t *testing.T) {
-	underlying := NewMemoryCache(&Config{Enabled: true})
+	underlying := NewMemoryCache(&Config{Enabled: true, MemoryCleanupInterval: time.Minute})
 	ctx := context.Background()
 
 	metrics := NewMetricsCache(underlying)
@@ -84,7 +84,7 @@ func TestMetricsCache_MixedOperations(t *testing.T) {
 }
 
 func TestMetricsCache_ResetStats(t *testing.T) {
-	underlying := NewMemoryCache(&Config{Enabled: true})
+	underlying := NewMemoryCache(&Config{Enabled: true, MemoryCleanupInterval: time.Minute})
 	ctx := context.Background()
 
 	metrics := NewMetricsCache(underlying)
@@ -108,7 +108,7 @@ func TestMetricsCache_ResetStats(t *testing.T) {
 }
 
 func TestMetricsCache_DelegatesAllMethods(t *testing.T) {
-	underlying := NewMemoryCache(&Config{Enabled: true})
+	underlying := NewMemoryCache(&Config{Enabled: true, MemoryCleanupInterval: time.Minute})
 	ctx := context.Background()
 
 	metrics := NewMetricsCache(underlying)
@@ -145,7 +145,7 @@ func TestMetricsCache_DelegatesAllMethods(t *testing.T) {
 }
 
 func TestMetricsCache_HitRateZeroTotal(t *testing.T) {
-	underlying := NewMemoryCache(&Config{Enabled: true})
+	underlying := NewMemoryCache(&Config{Enabled: true, MemoryCleanupInterval: time.Minute})
 	metrics := NewMetricsCache(underlying)
 
 	// No operations yet, hit rate should be 0 (not NaN)
