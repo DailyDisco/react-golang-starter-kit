@@ -237,11 +237,17 @@ export interface CreateIPBlockRequest {
 }
 
 // Announcements
+export type AnnouncementDisplayType = "banner" | "modal";
+export type AnnouncementCategory = "update" | "feature" | "bugfix";
+export type AnnouncementType = "info" | "warning" | "success" | "error";
+
 export interface Announcement {
   id: number;
   title: string;
   message: string;
-  type: "info" | "warning" | "success" | "error";
+  type: AnnouncementType;
+  display_type: AnnouncementDisplayType;
+  category: AnnouncementCategory;
   link_url?: string;
   link_text?: string;
   is_dismissible: boolean;
@@ -250,12 +256,34 @@ export interface Announcement {
   target_roles?: string[];
   starts_at?: string;
   ends_at?: string;
+  published_at?: string;
+  email_sent?: boolean;
+  email_sent_at?: string;
 }
 
 export interface CreateAnnouncementRequest {
   title: string;
   message: string;
-  type?: "info" | "warning" | "success" | "error";
+  type?: AnnouncementType;
+  display_type?: AnnouncementDisplayType;
+  category?: AnnouncementCategory;
+  link_url?: string;
+  link_text?: string;
+  is_dismissible?: boolean;
+  priority?: number;
+  is_active?: boolean;
+  target_roles?: string[];
+  starts_at?: string;
+  ends_at?: string;
+  send_email?: boolean;
+}
+
+export interface UpdateAnnouncementRequest {
+  title?: string;
+  message?: string;
+  type?: AnnouncementType;
+  display_type?: AnnouncementDisplayType;
+  category?: AnnouncementCategory;
   link_url?: string;
   link_text?: string;
   is_dismissible?: boolean;
@@ -266,7 +294,28 @@ export interface CreateAnnouncementRequest {
   ends_at?: string;
 }
 
-export type UpdateAnnouncementRequest = Partial<CreateAnnouncementRequest>;
+// Changelog
+export interface ChangelogEntry {
+  id: number;
+  title: string;
+  message: string;
+  category: AnnouncementCategory;
+  link_url?: string;
+  link_text?: string;
+  published_at: string;
+}
+
+export interface ChangelogMeta {
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+}
+
+export interface ChangelogResponse {
+  data: ChangelogEntry[];
+  meta: ChangelogMeta;
+}
 
 // Email Templates
 export interface EmailTemplate {
@@ -469,5 +518,30 @@ export const AnnouncementService = {
 
   async dismissAnnouncement(id: number): Promise<void> {
     await apiClient.post(`/announcements/${id}/dismiss`, {});
+  },
+
+  async getUnreadModalAnnouncements(): Promise<Announcement[]> {
+    return apiClient.get<Announcement[]>("/v1/announcements/unread-modals");
+  },
+
+  async markAnnouncementRead(id: number): Promise<void> {
+    await apiClient.post(`/v1/announcements/${id}/read`, {});
+  },
+};
+
+// Public Changelog Service
+export const ChangelogService = {
+  async getChangelog(
+    page: number = 1,
+    limit: number = 10,
+    category?: AnnouncementCategory
+  ): Promise<ChangelogResponse> {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+    if (category) {
+      params.set("category", category);
+    }
+    return apiClient.get<ChangelogResponse>(`/v1/changelog?${params.toString()}`);
   },
 };

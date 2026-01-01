@@ -12,10 +12,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { requireAdmin } from "@/lib/guards";
-import { AdminSettingsService, type Announcement, type CreateAnnouncementRequest } from "@/services/admin";
+import {
+  AdminSettingsService,
+  type Announcement,
+  type AnnouncementCategory,
+  type AnnouncementDisplayType,
+  type CreateAnnouncementRequest,
+} from "@/services/admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, Bell, CheckCircle, Info, Plus, Trash2, XCircle } from "lucide-react";
+import {
+  AlertCircle,
+  Bell,
+  Bug,
+  CheckCircle,
+  Info,
+  Mail,
+  Monitor,
+  Plus,
+  Rocket,
+  Sparkles,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -98,6 +117,32 @@ function AnnouncementsPage() {
         return "destructive";
       default:
         return "secondary";
+    }
+  };
+
+  const getCategoryIcon = (category: AnnouncementCategory) => {
+    switch (category) {
+      case "feature":
+        return <Sparkles className="h-3.5 w-3.5" />;
+      case "bugfix":
+        return <Bug className="h-3.5 w-3.5" />;
+      case "update":
+        return <Rocket className="h-3.5 w-3.5" />;
+      default:
+        return <Bell className="h-3.5 w-3.5" />;
+    }
+  };
+
+  const getCategoryLabel = (category: AnnouncementCategory) => {
+    switch (category) {
+      case "feature":
+        return "Feature";
+      case "bugfix":
+        return "Bug Fix";
+      case "update":
+        return "Update";
+      default:
+        return category;
     }
   };
 
@@ -190,6 +235,29 @@ function AnnouncementsPage() {
                       {getTypeIcon(announcement.type)}
                       <CardTitle className="text-lg">{announcement.title}</CardTitle>
                       <Badge variant={getTypeBadgeVariant(announcement.type)}>{announcement.type}</Badge>
+                      <Badge
+                        variant="outline"
+                        className="gap-1 text-xs"
+                      >
+                        {getCategoryIcon(announcement.category)}
+                        {getCategoryLabel(announcement.category)}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="gap-1 text-xs"
+                      >
+                        <Monitor className="h-3 w-3" />
+                        {announcement.display_type === "modal" ? "Modal" : "Banner"}
+                      </Badge>
+                      {announcement.email_sent && (
+                        <Badge
+                          variant="secondary"
+                          className="gap-1 text-xs"
+                        >
+                          <Mail className="h-3 w-3" />
+                          Emailed
+                        </Badge>
+                      )}
                       {!announcement.is_active && <Badge variant="secondary">{t("announcements.card.inactive")}</Badge>}
                       {announcement.is_dismissible && (
                         <Badge
@@ -292,8 +360,11 @@ function CreateAnnouncementForm({
     title: "",
     message: "",
     type: "info",
+    display_type: "banner",
+    category: "update",
     is_dismissible: true,
     is_active: true,
+    send_email: false,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -336,6 +407,75 @@ function CreateAnnouncementForm({
               <SelectItem value="warning">{t("announcements.create.form.types.warning")}</SelectItem>
               <SelectItem value="success">{t("announcements.create.form.types.success")}</SelectItem>
               <SelectItem value="error">{t("announcements.create.form.types.error")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="display_type">Display Type</Label>
+          <Select
+            value={formData.display_type}
+            onValueChange={(value) =>
+              setFormData({
+                ...formData,
+                display_type: value as AnnouncementDisplayType,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="banner">
+                <span className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4" />
+                  Banner (minor updates)
+                </span>
+              </SelectItem>
+              <SelectItem value="modal">
+                <span className="flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  Modal (important announcements)
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="category">Category</Label>
+          <Select
+            value={formData.category}
+            onValueChange={(value) =>
+              setFormData({
+                ...formData,
+                category: value as AnnouncementCategory,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="update">
+                <span className="flex items-center gap-2">
+                  <Rocket className="h-4 w-4" />
+                  Update
+                </span>
+              </SelectItem>
+              <SelectItem value="feature">
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  New Feature
+                </span>
+              </SelectItem>
+              <SelectItem value="bugfix">
+                <span className="flex items-center gap-2">
+                  <Bug className="h-4 w-4" />
+                  Bug Fix
+                </span>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -402,7 +542,26 @@ function CreateAnnouncementForm({
             {t("announcements.create.form.isActive")}
           </Label>
         </div>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="send_email"
+            checked={formData.send_email}
+            onCheckedChange={(checked) => setFormData({ ...formData, send_email: checked })}
+          />
+          <Label
+            htmlFor="send_email"
+            className="flex cursor-pointer items-center gap-1.5"
+          >
+            <Mail className="h-4 w-4" />
+            Send email notification
+          </Label>
+        </div>
       </div>
+      {formData.send_email && (
+        <p className="text-muted-foreground text-sm">
+          Email will be sent to users who have enabled product update notifications and have verified their email.
+        </p>
+      )}
 
       <div className="flex justify-end gap-3">
         <Button

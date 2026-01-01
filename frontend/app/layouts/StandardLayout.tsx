@@ -1,5 +1,6 @@
 import React from "react";
 
+import { AnnouncementsContainer } from "@/components/announcements";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -31,6 +32,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/login": "Login",
   "/register": "Register",
+  "/changelog": "Changelog",
   // App routes
   "/billing": "Billing",
   "/admin": "Admin",
@@ -115,6 +117,7 @@ export default function StandardLayout() {
         Skip to main content
       </a>
       <Navbar />
+      <AnnouncementsContainer />
       <div className="bg-background/95 supports-backdrop-filter:bg-background/60 border-b backdrop-blur">
         <div className="mx-auto max-w-screen-2xl px-4 py-2 sm:px-6 lg:px-8">
           <Breadcrumb>

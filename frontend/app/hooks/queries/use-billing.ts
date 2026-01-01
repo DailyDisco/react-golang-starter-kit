@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { CACHE_TIMES } from "../../lib/cache-config";
 import { logger } from "../../lib/logger";
 import { BillingService } from "../../services/billing/billingService";
 import { useAuthStore } from "../../stores/auth-store";
@@ -12,7 +13,7 @@ export function useBillingConfig() {
   return useQuery({
     queryKey: ["billing", "config"],
     queryFn: () => BillingService.getConfig(),
-    staleTime: 60 * 60 * 1000, // 1 hour - config rarely changes
+    staleTime: CACHE_TIMES.BILLING_CONFIG,
     retry: 1,
   });
 }
@@ -24,7 +25,7 @@ export function useBillingPlans() {
   return useQuery({
     queryKey: ["billing", "plans"],
     queryFn: () => BillingService.getPlans(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_TIMES.BILLING_PLANS,
     retry: 1,
   });
 }
@@ -39,7 +40,7 @@ export function useSubscription() {
     queryKey: ["billing", "subscription"],
     queryFn: () => BillingService.getSubscription(),
     enabled: isAuthenticated,
-    staleTime: 60 * 1000, // 1 minute - subscription status may change
+    staleTime: CACHE_TIMES.SUBSCRIPTION,
     retry: 1,
   });
 }
