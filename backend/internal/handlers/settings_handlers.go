@@ -1,14 +1,19 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
+	"react-golang-starter/internal/cache"
+	"react-golang-starter/internal/jobs"
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/response"
 	"react-golang-starter/internal/services"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog/log"
 )
 
 var settingsService = services.NewSettingsService()
@@ -101,6 +106,9 @@ func UpdateSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate settings cache
+	cache.InvalidateSettings(r.Context())
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
 		Success: true,
@@ -150,6 +158,9 @@ func UpdateEmailSettings(w http.ResponseWriter, r *http.Request) {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
+
+	// Invalidate settings cache
+	cache.InvalidateSettings(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
@@ -221,6 +232,9 @@ func UpdateSecuritySettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate settings cache
+	cache.InvalidateSettings(r.Context())
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
 		Success: true,
@@ -270,6 +284,9 @@ func UpdateSiteSettings(w http.ResponseWriter, r *http.Request) {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
+
+	// Invalidate settings cache
+	cache.InvalidateSettings(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
@@ -417,24 +434,7 @@ func GetAnnouncements(w http.ResponseWriter, r *http.Request) {
 
 	responses := make([]models.AnnouncementBannerResponse, len(announcements))
 	for i, a := range announcements {
-		responses[i] = models.AnnouncementBannerResponse{
-			ID:            a.ID,
-			Title:         a.Title,
-			Message:       a.Message,
-			Type:          a.Type,
-			LinkURL:       a.LinkURL,
-			LinkText:      a.LinkText,
-			IsDismissible: a.IsDismissible,
-			Priority:      a.Priority,
-			IsActive:      a.IsActive,
-			TargetRoles:   a.TargetRoles,
-		}
-		if a.StartsAt != nil {
-			responses[i].StartsAt = *a.StartsAt
-		}
-		if a.EndsAt != nil {
-			responses[i].EndsAt = *a.EndsAt
-		}
+		responses[i] = a.ToResponse()
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -464,17 +464,11 @@ func GetActiveAnnouncements(w http.ResponseWriter, r *http.Request) {
 
 	responses := make([]models.AnnouncementBannerResponse, len(announcements))
 	for i, a := range announcements {
-		responses[i] = models.AnnouncementBannerResponse{
-			ID:            a.ID,
-			Title:         a.Title,
-			Message:       a.Message,
-			Type:          a.Type,
-			LinkURL:       a.LinkURL,
-			LinkText:      a.LinkText,
-			IsDismissible: a.IsDismissible,
-			Priority:      a.Priority,
-		}
+		responses[i] = a.ToResponse()
 	}
+
+	// Set cache headers - private since user-specific, 1 minute
+	response.SetCachePrivate(w, 60)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(responses)
@@ -509,22 +503,80 @@ func CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := models.AnnouncementBannerResponse{
-		ID:            announcement.ID,
-		Title:         announcement.Title,
-		Message:       announcement.Message,
-		Type:          announcement.Type,
-		LinkURL:       announcement.LinkURL,
-		LinkText:      announcement.LinkText,
-		IsDismissible: announcement.IsDismissible,
-		Priority:      announcement.Priority,
-		IsActive:      announcement.IsActive,
-		TargetRoles:   announcement.TargetRoles,
+	// Invalidate announcements cache
+	cache.InvalidateAnnouncements(r.Context())
+
+	// Queue emails if send_email is true and the announcement is active
+	if req.SendEmail && announcement.IsActive {
+		go enqueueAnnouncementEmails(r.Context(), announcement)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(announcement.ToResponse())
+}
+
+// enqueueAnnouncementEmails queues announcement emails to eligible users
+func enqueueAnnouncementEmails(ctx context.Context, announcement *models.AnnouncementBanner) {
+	// Get eligible users (respects email preferences and email_verified)
+	users, err := settingsService.GetUsersForAnnouncementEmail(announcement.ID, announcement.TargetRoles)
+	if err != nil {
+		log.Error().Err(err).
+			Uint("announcement_id", announcement.ID).
+			Msg("failed to get users for announcement email")
+		return
+	}
+
+	if len(users) == 0 {
+		log.Info().
+			Uint("announcement_id", announcement.ID).
+			Msg("no eligible users for announcement email")
+		return
+	}
+
+	log.Info().
+		Uint("announcement_id", announcement.ID).
+		Int("user_count", len(users)).
+		Msg("queueing announcement emails")
+
+	// Queue email jobs for each user
+	enqueued := 0
+	for _, user := range users {
+		err := jobs.EnqueueAnnouncementEmail(ctx, jobs.SendAnnouncementEmailArgs{
+			AnnouncementID: announcement.ID,
+			UserID:         user.ID,
+			UserEmail:      user.Email,
+			UserName:       user.Name,
+			Title:          announcement.Title,
+			Message:        announcement.Message,
+			Category:       announcement.Category,
+			LinkURL:        announcement.LinkURL,
+			LinkText:       announcement.LinkText,
+		})
+		if err != nil {
+			log.Error().Err(err).
+				Uint("user_id", user.ID).
+				Str("email", user.Email).
+				Msg("failed to enqueue announcement email")
+			continue
+		}
+		enqueued++
+	}
+
+	// Mark announcement as email sent
+	if enqueued > 0 {
+		if err := settingsService.MarkAnnouncementEmailSent(announcement.ID); err != nil {
+			log.Error().Err(err).
+				Uint("announcement_id", announcement.ID).
+				Msg("failed to mark announcement email as sent")
+		}
+	}
+
+	log.Info().
+		Uint("announcement_id", announcement.ID).
+		Int("enqueued", enqueued).
+		Int("total_users", len(users)).
+		Msg("announcement emails queued")
 }
 
 // UpdateAnnouncement updates an announcement
@@ -563,21 +615,11 @@ func UpdateAnnouncement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := models.AnnouncementBannerResponse{
-		ID:            announcement.ID,
-		Title:         announcement.Title,
-		Message:       announcement.Message,
-		Type:          announcement.Type,
-		LinkURL:       announcement.LinkURL,
-		LinkText:      announcement.LinkText,
-		IsDismissible: announcement.IsDismissible,
-		Priority:      announcement.Priority,
-		IsActive:      announcement.IsActive,
-		TargetRoles:   announcement.TargetRoles,
-	}
+	// Invalidate announcements cache
+	cache.InvalidateAnnouncements(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(announcement.ToResponse())
 }
 
 // DeleteAnnouncement deletes an announcement
@@ -607,6 +649,9 @@ func DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
+
+	// Invalidate announcements cache
+	cache.InvalidateAnnouncements(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
@@ -647,6 +692,112 @@ func DismissAnnouncement(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(models.SuccessResponse{
 		Success: true,
 		Message: "Announcement dismissed",
+	})
+}
+
+// GetChangelog returns paginated changelog entries (public)
+// @Summary Get changelog
+// @Tags Announcements
+// @Param page query int false "Page number"
+// @Param limit query int false "Items per page"
+// @Param category query string false "Filter by category (update, feature, bugfix)"
+// @Success 200 {object} models.ChangelogResponse
+// @Router /api/v1/changelog [get]
+func GetChangelog(w http.ResponseWriter, r *http.Request) {
+	page := 1
+	limit := 10
+
+	if p := r.URL.Query().Get("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 50 {
+			limit = parsed
+		}
+	}
+
+	category := r.URL.Query().Get("category")
+
+	changelog, err := settingsService.GetChangelog(page, limit, category)
+	if err != nil {
+		WriteInternalError(w, r, "Failed to retrieve changelog")
+		return
+	}
+
+	// Set cache headers for public caching
+	w.Header().Set("Cache-Control", "public, max-age=60")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(changelog)
+}
+
+// GetUnreadModalAnnouncements returns unread modal announcements for current user
+// @Summary Get unread modal announcements
+// @Tags Announcements
+// @Security BearerAuth
+// @Success 200 {array} models.AnnouncementBannerResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Router /api/v1/announcements/unread-modals [get]
+func GetUnreadModalAnnouncements(w http.ResponseWriter, r *http.Request) {
+	userID := getUserIDFromContext(r)
+	if userID == 0 {
+		WriteUnauthorized(w, r, "Authentication required")
+		return
+	}
+
+	userRole := getUserRoleFromContext(r)
+
+	announcements, err := settingsService.GetUnreadModalAnnouncements(userID, userRole)
+	if err != nil {
+		WriteInternalError(w, r, "Failed to retrieve unread announcements")
+		return
+	}
+
+	responses := make([]models.AnnouncementBannerResponse, len(announcements))
+	for i, a := range announcements {
+		responses[i] = a.ToResponse()
+	}
+
+	// Set cache headers - private since user-specific, 1 minute
+	response.SetCachePrivate(w, 60)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(responses)
+}
+
+// MarkAnnouncementRead marks a modal announcement as read for current user
+// @Summary Mark announcement as read
+// @Tags Announcements
+// @Security BearerAuth
+// @Param id path int true "Announcement ID"
+// @Success 200 {object} models.SuccessResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Router /api/v1/announcements/{id}/read [post]
+func MarkAnnouncementRead(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	announcementID, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		WriteBadRequest(w, r, "Invalid ID")
+		return
+	}
+
+	userID := getUserIDFromContext(r)
+	if userID == 0 {
+		WriteUnauthorized(w, r, "Authentication required")
+		return
+	}
+
+	if err := settingsService.MarkAnnouncementRead(userID, uint(announcementID)); err != nil {
+		WriteInternalError(w, r, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(models.SuccessResponse{
+		Success: true,
+		Message: "Announcement marked as read",
 	})
 }
 

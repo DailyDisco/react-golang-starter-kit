@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/response"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/lib/pq"
@@ -96,6 +98,9 @@ func CreateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate feature flags cache
+	cache.InvalidateFeatureFlags(r.Context())
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(toFeatureFlagResponse(flag))
@@ -155,6 +160,9 @@ func UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate feature flags cache
+	cache.InvalidateFeatureFlags(r.Context())
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(toFeatureFlagResponse(flag))
 }
@@ -185,13 +193,16 @@ func DeleteFeatureFlag(w http.ResponseWriter, r *http.Request) {
 	// Also delete user overrides
 	database.DB.Where("feature_flag_id IN (SELECT id FROM feature_flags WHERE key = ?)", key).Delete(&models.UserFeatureFlag{})
 
-	response := models.SuccessResponse{
+	// Invalidate feature flags cache
+	cache.InvalidateFeatureFlags(r.Context())
+
+	resp := models.SuccessResponse{
 		Success: true,
 		Message: "Feature flag deleted successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(resp)
 }
 
 // GetFeatureFlagsForUser returns feature flags with their enabled status for the current user
@@ -238,6 +249,9 @@ func GetFeatureFlagsForUser(w http.ResponseWriter, r *http.Request) {
 
 		result[flag.Key] = isFeatureEnabledForUser(flag, claims.UserID, claims.Role)
 	}
+
+	// Set cache headers - private since user-specific, 5 minutes
+	response.SetCachePrivate(w, 300)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)

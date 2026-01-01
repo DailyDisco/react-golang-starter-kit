@@ -420,24 +420,34 @@ func (s *SettingsService) CreateAnnouncement(req *models.CreateAnnouncementReque
 		showOnPages = []byte(`["*"]`)
 	}
 
+	now := time.Now().Format(time.RFC3339)
 	announcement := &models.AnnouncementBanner{
 		Title:         req.Title,
 		Message:       req.Message,
 		Type:          req.Type,
+		DisplayType:   req.DisplayType,
+		Category:      req.Category,
 		LinkURL:       req.LinkURL,
 		LinkText:      req.LinkText,
-		IsActive:      true,
+		IsActive:      req.IsActive,
 		IsDismissible: req.IsDismissible,
 		ShowOnPages:   showOnPages,
 		TargetRoles:   req.TargetRoles,
 		Priority:      req.Priority,
+		PublishedAt:   &now,
 		CreatedBy:     &createdBy,
-		CreatedAt:     time.Now().Format(time.RFC3339),
-		UpdatedAt:     time.Now().Format(time.RFC3339),
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 
 	if req.Type == "" {
 		announcement.Type = "info"
+	}
+	if req.DisplayType == "" {
+		announcement.DisplayType = "banner"
+	}
+	if req.Category == "" {
+		announcement.Category = "update"
 	}
 	if req.StartsAt != "" {
 		announcement.StartsAt = &req.StartsAt
@@ -503,6 +513,12 @@ func (s *SettingsService) UpdateAnnouncement(id uint, req *models.UpdateAnnounce
 	if req.EndsAt != nil {
 		updates["ends_at"] = *req.EndsAt
 	}
+	if req.DisplayType != nil {
+		updates["display_type"] = *req.DisplayType
+	}
+	if req.Category != nil {
+		updates["category"] = *req.Category
+	}
 
 	if err := s.db().Model(&announcement).Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("failed to update announcement: %w", err)
@@ -543,6 +559,186 @@ func (s *SettingsService) DismissAnnouncement(userID, announcementID uint) error
 		Where("id = ?", announcementID).
 		UpdateColumn("dismiss_count", gorm.Expr("dismiss_count + 1"))
 
+	return nil
+}
+
+// GetChangelog retrieves paginated changelog entries (public)
+func (s *SettingsService) GetChangelog(page, limit int, category string) (*models.ChangelogResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 50 {
+		limit = 10
+	}
+	offset := (page - 1) * limit
+
+	query := s.db().Model(&models.AnnouncementBanner{}).
+		Where("is_active = ?", true).
+		Where("published_at IS NOT NULL")
+
+	if category != "" {
+		query = query.Where("category = ?", category)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, fmt.Errorf("failed to count changelog entries: %w", err)
+	}
+
+	var announcements []models.AnnouncementBanner
+	if err := query.Order("published_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&announcements).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve changelog: %w", err)
+	}
+
+	// Convert to response format
+	data := make([]models.AnnouncementBannerResponse, len(announcements))
+	for i, a := range announcements {
+		data[i] = a.ToResponse()
+	}
+
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
+
+	return &models.ChangelogResponse{
+		Data: data,
+		Meta: models.ChangelogMeta{
+			Page:       page,
+			PerPage:    limit,
+			Total:      int(total),
+			TotalPages: totalPages,
+		},
+	}, nil
+}
+
+// GetUnreadModalAnnouncements retrieves modal announcements user hasn't seen
+func (s *SettingsService) GetUnreadModalAnnouncements(userID uint, userRole string) ([]models.AnnouncementBanner, error) {
+	now := time.Now().Format(time.RFC3339)
+
+	// Get IDs of announcements user has already read
+	var readIDs []uint
+	s.db().Model(&models.UserAnnouncementRead{}).
+		Where("user_id = ?", userID).
+		Pluck("announcement_id", &readIDs)
+
+	query := s.db().Where("is_active = ?", true).
+		Where("display_type = ?", "modal").
+		Where("(starts_at IS NULL OR starts_at <= ?)", now).
+		Where("(ends_at IS NULL OR ends_at > ?)", now)
+
+	if len(readIDs) > 0 {
+		query = query.Where("id NOT IN ?", readIDs)
+	}
+
+	var announcements []models.AnnouncementBanner
+	if err := query.Order("priority DESC, published_at DESC").Find(&announcements).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve unread modal announcements: %w", err)
+	}
+
+	// Filter by target roles
+	var filtered []models.AnnouncementBanner
+	for _, a := range announcements {
+		if len(a.TargetRoles) == 0 {
+			filtered = append(filtered, a)
+		} else {
+			for _, role := range a.TargetRoles {
+				if role == userRole {
+					filtered = append(filtered, a)
+					break
+				}
+			}
+		}
+	}
+
+	return filtered, nil
+}
+
+// MarkAnnouncementRead records that a user has viewed a modal announcement
+func (s *SettingsService) MarkAnnouncementRead(userID, announcementID uint) error {
+	read := &models.UserAnnouncementRead{
+		UserID:         userID,
+		AnnouncementID: announcementID,
+		ReadAt:         time.Now().Format(time.RFC3339),
+	}
+
+	// Use upsert to handle duplicate reads
+	if err := s.db().Save(read).Error; err != nil {
+		return fmt.Errorf("failed to mark announcement as read: %w", err)
+	}
+
+	// Increment view count
+	s.db().Model(&models.AnnouncementBanner{}).
+		Where("id = ?", announcementID).
+		UpdateColumn("view_count", gorm.Expr("view_count + 1"))
+
+	return nil
+}
+
+// GetUsersForAnnouncementEmail returns users who should receive announcement emails
+func (s *SettingsService) GetUsersForAnnouncementEmail(announcementID uint, targetRoles []string) ([]models.User, error) {
+	// Get users who:
+	// 1. Have email_verified = true
+	// 2. Have is_active = true
+	// 3. Have updates notification preference enabled
+	// 4. Match target roles (if specified)
+
+	query := s.db().Model(&models.User{}).
+		Where("email_verified = ?", true).
+		Where("is_active = ?", true)
+
+	if len(targetRoles) > 0 {
+		query = query.Where("role IN ?", targetRoles)
+	}
+
+	var users []models.User
+	if err := query.Find(&users).Error; err != nil {
+		return nil, fmt.Errorf("failed to get users for announcement email: %w", err)
+	}
+
+	// Filter by email notification preferences
+	var eligibleUsers []models.User
+	for _, user := range users {
+		// Get user preferences
+		var prefs models.UserPreferences
+		if err := s.db().Where("user_id = ?", user.ID).First(&prefs).Error; err != nil {
+			// No preferences found, skip this user (conservative approach)
+			continue
+		}
+
+		// Parse email notifications
+		var emailNotifs models.EmailNotificationSettings
+		if prefs.EmailNotifications != nil {
+			if err := json.Unmarshal(prefs.EmailNotifications, &emailNotifs); err != nil {
+				continue
+			}
+		}
+
+		// Check if updates notifications are enabled
+		if emailNotifs.Updates {
+			eligibleUsers = append(eligibleUsers, user)
+		}
+	}
+
+	return eligibleUsers, nil
+}
+
+// MarkAnnouncementEmailSent marks an announcement as having had emails sent
+func (s *SettingsService) MarkAnnouncementEmailSent(announcementID uint) error {
+	now := time.Now().Format(time.RFC3339)
+	result := s.db().Model(&models.AnnouncementBanner{}).
+		Where("id = ?", announcementID).
+		Updates(map[string]interface{}{
+			"email_sent":    true,
+			"email_sent_at": now,
+		})
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to mark announcement email sent: %w", result.Error)
+	}
 	return nil
 }
 

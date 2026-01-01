@@ -797,6 +797,19 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 		})
 	})
 
+	// API v1 routes
+	r.Route("/v1", func(r chi.Router) {
+		// Public changelog (cached)
+		r.Get("/changelog", handlers.GetChangelog) // GET /api/v1/changelog
+
+		// Authenticated announcement actions
+		r.Route("/announcements", func(r chi.Router) {
+			r.Use(auth.AuthMiddleware)
+			r.Get("/unread-modals", handlers.GetUnreadModalAnnouncements) // GET /api/v1/announcements/unread-modals
+			r.Post("/{id}/read", handlers.MarkAnnouncementRead)           // POST /api/v1/announcements/{id}/read
+		})
+	})
+
 	// Organization routes (multi-tenancy)
 	r.Route("/organizations", func(r chi.Router) {
 		r.Use(auth.AuthMiddleware)

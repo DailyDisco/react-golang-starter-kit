@@ -274,3 +274,107 @@ func EnqueueStripeWebhook(ctx context.Context, eventID, eventType string, payloa
 		Payload:   payload,
 	}, nil)
 }
+
+// ============================================
+// Announcement Email Worker
+// ============================================
+
+// SendAnnouncementEmailArgs contains the job arguments for announcement emails
+type SendAnnouncementEmailArgs struct {
+	AnnouncementID uint   `json:"announcement_id"`
+	UserID         uint   `json:"user_id"`
+	UserEmail      string `json:"user_email"`
+	UserName       string `json:"user_name"`
+	Title          string `json:"title"`
+	Message        string `json:"message"`
+	Category       string `json:"category"`
+	LinkURL        string `json:"link_url,omitempty"`
+	LinkText       string `json:"link_text,omitempty"`
+}
+
+// Kind returns the job type identifier
+func (SendAnnouncementEmailArgs) Kind() string {
+	return "send_announcement_email"
+}
+
+// InsertOpts returns default insert options for this job type
+func (SendAnnouncementEmailArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{
+		Queue:       "email",
+		MaxAttempts: 5,
+	}
+}
+
+// SendAnnouncementEmailWorker processes announcement email jobs
+type SendAnnouncementEmailWorker struct {
+	river.WorkerDefaults[SendAnnouncementEmailArgs]
+}
+
+// Work executes the announcement email job
+func (w *SendAnnouncementEmailWorker) Work(ctx context.Context, job *river.Job[SendAnnouncementEmailArgs]) error {
+	args := job.Args
+
+	log.Info().
+		Uint("announcement_id", args.AnnouncementID).
+		Uint("user_id", args.UserID).
+		Str("email", args.UserEmail).
+		Msg("sending announcement email")
+
+	// Build URLs
+	frontendURL := email.GetFrontendURL()
+	changelogURL := fmt.Sprintf("%s/changelog", frontendURL)
+	unsubscribeURL := fmt.Sprintf("%s/settings/notifications", frontendURL)
+
+	// Map category to display label
+	categoryLabel := "Update"
+	switch args.Category {
+	case "feature":
+		categoryLabel = "New Feature"
+	case "bugfix":
+		categoryLabel = "Bug Fix"
+	case "update":
+		categoryLabel = "Update"
+	}
+
+	// Send email using email service
+	err := email.Send(ctx, email.SendParams{
+		To:           args.UserEmail,
+		TemplateName: "announcement",
+		Data: map[string]interface{}{
+			"Name":           args.UserName,
+			"Title":          args.Title,
+			"Message":        args.Message,
+			"Category":       args.Category,
+			"CategoryLabel":  categoryLabel,
+			"LinkURL":        args.LinkURL,
+			"LinkText":       args.LinkText,
+			"ChangelogURL":   changelogURL,
+			"UnsubscribeURL": unsubscribeURL,
+		},
+	})
+
+	if err != nil {
+		log.Error().Err(err).
+			Uint("announcement_id", args.AnnouncementID).
+			Str("email", args.UserEmail).
+			Msg("failed to send announcement email")
+		return fmt.Errorf("failed to send announcement email: %w", err)
+	}
+
+	log.Info().
+		Uint("announcement_id", args.AnnouncementID).
+		Uint("user_id", args.UserID).
+		Str("email", args.UserEmail).
+		Msg("announcement email sent successfully")
+
+	return nil
+}
+
+// EnqueueAnnouncementEmail queues an announcement email job for a single user
+func EnqueueAnnouncementEmail(ctx context.Context, args SendAnnouncementEmailArgs) error {
+	if !IsAvailable() {
+		return fmt.Errorf("job system not available")
+	}
+
+	return Insert(ctx, args, nil)
+}

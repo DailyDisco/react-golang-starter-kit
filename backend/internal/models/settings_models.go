@@ -326,6 +326,8 @@ type AnnouncementBanner struct {
 	Title         string          `json:"title" gorm:"type:varchar(255);not null"`
 	Message       string          `json:"message" gorm:"type:text;not null"`
 	Type          string          `json:"type" gorm:"type:varchar(20);default:'info'"`
+	DisplayType   string          `json:"display_type" gorm:"type:varchar(20);default:'banner'"`
+	Category      string          `json:"category" gorm:"type:varchar(20);default:'update'"`
 	LinkURL       string          `json:"link_url,omitempty" gorm:"type:varchar(500)"`
 	LinkText      string          `json:"link_text,omitempty" gorm:"type:varchar(100)"`
 	IsActive      bool            `json:"is_active" gorm:"default:true"`
@@ -335,6 +337,9 @@ type AnnouncementBanner struct {
 	Priority      int             `json:"priority" gorm:"default:0"`
 	StartsAt      *string         `json:"starts_at,omitempty"`
 	EndsAt        *string         `json:"ends_at,omitempty"`
+	PublishedAt   *string         `json:"published_at,omitempty"`
+	EmailSent     bool            `json:"email_sent" gorm:"default:false"`
+	EmailSentAt   *string         `json:"email_sent_at,omitempty"`
 	ViewCount     int             `json:"view_count" gorm:"default:0"`
 	DismissCount  int             `json:"dismiss_count" gorm:"default:0"`
 	CreatedBy     *uint           `json:"created_by,omitempty"`
@@ -349,12 +354,15 @@ type AnnouncementBannerResponse struct {
 	Title         string   `json:"title"`
 	Message       string   `json:"message"`
 	Type          string   `json:"type"`
+	DisplayType   string   `json:"display_type"`
+	Category      string   `json:"category"`
 	LinkURL       string   `json:"link_url,omitempty"`
 	LinkText      string   `json:"link_text,omitempty"`
 	IsDismissible bool     `json:"is_dismissible"`
 	Priority      int      `json:"priority"`
 	StartsAt      string   `json:"starts_at,omitempty"`
 	EndsAt        string   `json:"ends_at,omitempty"`
+	PublishedAt   string   `json:"published_at,omitempty"`
 	IsActive      bool     `json:"is_active"`
 	TargetRoles   []string `json:"target_roles,omitempty"`
 }
@@ -365,6 +373,8 @@ type CreateAnnouncementRequest struct {
 	Title         string   `json:"title" binding:"required,max=255"`
 	Message       string   `json:"message" binding:"required"`
 	Type          string   `json:"type" binding:"omitempty,oneof=info warning error success maintenance"`
+	DisplayType   string   `json:"display_type" binding:"omitempty,oneof=banner modal"`
+	Category      string   `json:"category" binding:"omitempty,oneof=update feature bugfix"`
 	LinkURL       string   `json:"link_url,omitempty"`
 	LinkText      string   `json:"link_text,omitempty"`
 	IsDismissible bool     `json:"is_dismissible"`
@@ -373,6 +383,8 @@ type CreateAnnouncementRequest struct {
 	Priority      int      `json:"priority"`
 	StartsAt      string   `json:"starts_at,omitempty"`
 	EndsAt        string   `json:"ends_at,omitempty"`
+	SendEmail     bool     `json:"send_email"`
+	IsActive      bool     `json:"is_active"`
 }
 
 // UpdateAnnouncementRequest represents a request to update an announcement
@@ -381,6 +393,8 @@ type UpdateAnnouncementRequest struct {
 	Title         *string   `json:"title,omitempty"`
 	Message       *string   `json:"message,omitempty"`
 	Type          *string   `json:"type,omitempty"`
+	DisplayType   *string   `json:"display_type,omitempty"`
+	Category      *string   `json:"category,omitempty"`
 	LinkURL       *string   `json:"link_url,omitempty"`
 	LinkText      *string   `json:"link_text,omitempty"`
 	IsActive      *bool     `json:"is_active,omitempty"`
@@ -390,6 +404,62 @@ type UpdateAnnouncementRequest struct {
 	Priority      *int      `json:"priority,omitempty"`
 	StartsAt      *string   `json:"starts_at,omitempty"`
 	EndsAt        *string   `json:"ends_at,omitempty"`
+}
+
+// ToResponse converts AnnouncementBanner to AnnouncementBannerResponse
+func (a *AnnouncementBanner) ToResponse() AnnouncementBannerResponse {
+	startsAt := ""
+	if a.StartsAt != nil {
+		startsAt = *a.StartsAt
+	}
+	endsAt := ""
+	if a.EndsAt != nil {
+		endsAt = *a.EndsAt
+	}
+	publishedAt := ""
+	if a.PublishedAt != nil {
+		publishedAt = *a.PublishedAt
+	}
+	return AnnouncementBannerResponse{
+		ID:            a.ID,
+		Title:         a.Title,
+		Message:       a.Message,
+		Type:          a.Type,
+		DisplayType:   a.DisplayType,
+		Category:      a.Category,
+		LinkURL:       a.LinkURL,
+		LinkText:      a.LinkText,
+		IsDismissible: a.IsDismissible,
+		Priority:      a.Priority,
+		StartsAt:      startsAt,
+		EndsAt:        endsAt,
+		PublishedAt:   publishedAt,
+		IsActive:      a.IsActive,
+		TargetRoles:   a.TargetRoles,
+	}
+}
+
+// UserAnnouncementRead tracks which modal announcements a user has seen
+// swagger:model UserAnnouncementRead
+type UserAnnouncementRead struct {
+	UserID         uint   `gorm:"primaryKey"`
+	AnnouncementID uint   `gorm:"primaryKey"`
+	ReadAt         string `json:"read_at"`
+}
+
+// ChangelogResponse represents paginated changelog data
+// swagger:model ChangelogResponse
+type ChangelogResponse struct {
+	Data []AnnouncementBannerResponse `json:"data"`
+	Meta ChangelogMeta                `json:"meta"`
+}
+
+// ChangelogMeta represents pagination metadata for changelog
+type ChangelogMeta struct {
+	Page       int `json:"page"`
+	PerPage    int `json:"perPage"`
+	Total      int `json:"total"`
+	TotalPages int `json:"totalPages"`
 }
 
 // UserDismissedAnnouncement tracks which announcements a user has dismissed
