@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+  BarChart3,
   Bell,
   ChevronLeft,
   ChevronRight,
@@ -34,6 +35,7 @@ const settingsNavItems: NavItem[] = [
   { href: "/settings/login-history", labelKey: "nav.loginHistory.title", icon: History },
   { href: "/settings/preferences", labelKey: "nav.preferences.title", icon: Palette },
   { href: "/settings/notifications", labelKey: "nav.notifications.title", icon: Bell },
+  { href: "/settings/usage", labelKey: "nav.usage.title", icon: BarChart3 },
   { href: "/settings/privacy", labelKey: "nav.privacy.title", icon: Key },
   { href: "/settings/connected-accounts", labelKey: "nav.connectedAccounts.title", icon: Link2 },
   { href: "/settings/api-keys", labelKey: "nav.apiKeys.title", icon: KeyRound },

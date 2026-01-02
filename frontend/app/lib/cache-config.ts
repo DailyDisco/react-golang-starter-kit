@@ -52,6 +52,9 @@ export const CACHE_TIMES = {
 
   /** Organization data - may change (2 minutes) */
   ORGANIZATIONS: 2 * 60 * 1000,
+
+  /** Usage data - may change frequently (1 minute) */
+  USAGE: 60 * 1000,
 } as const;
 
 /**

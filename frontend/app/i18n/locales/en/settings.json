@@ -140,6 +140,10 @@
     "apiKeys": {
       "title": "API Keys",
       "description": "Manage your AI service API keys"
+    },
+    "usage": {
+      "title": "Usage",
+      "description": "Monitor your resource usage"
     }
   },
   "notifications": {
@@ -408,5 +412,41 @@
     }
   },
   "subtitle": "Manage your account settings and preferences",
-  "title": "Settings"
+  "title": "Settings",
+  "usage": {
+    "title": "Usage",
+    "subtitle": "Monitor your resource usage and limits",
+    "error": "Failed to load usage data",
+    "of": "of",
+    "exceeded": "Exceeded",
+    "nearLimit": "Near Limit",
+    "metrics": {
+      "apiCalls": "API Calls",
+      "storage": "Storage",
+      "computeTime": "Compute Time",
+      "fileUploads": "File Uploads"
+    },
+    "currentPeriod": {
+      "title": "Current Billing Period",
+      "description": "Track your resource consumption for this billing cycle",
+      "exceeded": "You have exceeded your usage limits"
+    },
+    "alerts": {
+      "title": "Usage Alerts",
+      "description": "Active alerts that require your attention",
+      "used": "used",
+      "acknowledge": "Acknowledge",
+      "acknowledged": "Alert acknowledged",
+      "acknowledgeFailed": "Failed to acknowledge alert"
+    },
+    "history": {
+      "title": "Usage History",
+      "description": "Your resource usage over the past 6 months",
+      "noData": "No usage history available yet"
+    },
+    "info": {
+      "title": "Need more resources?",
+      "description": "Upgrade your plan to get higher limits and unlock additional features."
+    }
+  }
 }
