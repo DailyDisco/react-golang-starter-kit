@@ -2,18 +2,25 @@ package cache
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/singleflight"
 )
 
-// CacheAside implements the cache-aside pattern with graceful fallback.
-// It first tries to get the value from cache, and if not found,
-// loads it from the source and caches the result.
+// sfGroup coalesces concurrent requests for the same cache key during cache misses.
+// This prevents cache stampedes where many goroutines simultaneously try to load
+// the same data when the cache expires.
+var sfGroup singleflight.Group
+
+// CacheAside implements the cache-aside pattern with graceful fallback
+// and singleflight protection against cache stampedes.
 //
-// On cache miss: calls loader, caches result, returns value
-// On cache hit: returns cached value
-// On cache error: logs warning, calls loader, returns value without caching
+// On cache hit: returns cached value immediately
+// On cache miss: uses singleflight to coalesce concurrent requests,
+// calls loader once, caches result asynchronously, returns value to all waiters
+// On cache error: logs warning, falls through to loader
 func CacheAside[T any](
 	ctx context.Context,
 	key string,
@@ -22,33 +29,54 @@ func CacheAside[T any](
 ) (T, error) {
 	var result T
 
-	// Try to get from cache
+	// Try to get from cache first
 	err := GetJSON(ctx, key, &result)
 	if err == nil {
 		// Cache hit
 		return result, nil
 	}
 
-	// Cache miss or error - load from source
-	result, err = loader()
+	// Cache miss - use singleflight to prevent stampede
+	// All concurrent requests for the same key will wait for the first one to complete
+	v, err, shared := sfGroup.Do(key, func() (interface{}, error) {
+		// Double-check cache in case another goroutine populated it while we waited
+		var cachedResult T
+		if cacheErr := GetJSON(ctx, key, &cachedResult); cacheErr == nil {
+			return cachedResult, nil
+		}
+
+		// Load from source
+		loaded, loadErr := loader()
+		if loadErr != nil {
+			return loaded, loadErr
+		}
+
+		// Cache the result asynchronously (don't block the response)
+		go func() {
+			cacheCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			if setErr := SetJSON(cacheCtx, key, loaded, ttl); setErr != nil {
+				log.Debug().Err(setErr).Str("key", key).Msg("failed to cache result")
+			}
+		}()
+
+		return loaded, nil
+	})
+
 	if err != nil {
 		return result, err
 	}
 
-	// Cache the result asynchronously (don't block the response)
-	go func() {
-		cacheCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		if setErr := SetJSON(cacheCtx, key, result, ttl); setErr != nil {
-			log.Debug().Err(setErr).Str("key", key).Msg("failed to cache result")
-		}
-	}()
+	if shared {
+		log.Debug().Str("key", key).Msg("cache request coalesced via singleflight")
+	}
 
-	return result, nil
+	return v.(T), nil
 }
 
 // CacheAsideSync is like CacheAside but caches synchronously.
 // Use this when you need to ensure the value is cached before returning.
+// Also uses singleflight for stampede protection.
 func CacheAsideSync[T any](
 	ctx context.Context,
 	key string,
@@ -57,24 +85,39 @@ func CacheAsideSync[T any](
 ) (T, error) {
 	var result T
 
-	// Try to get from cache
+	// Try to get from cache first
 	err := GetJSON(ctx, key, &result)
 	if err == nil {
 		return result, nil
 	}
 
-	// Load from source
-	result, err = loader()
+	// Cache miss - use singleflight to prevent stampede
+	v, err, _ := sfGroup.Do(key, func() (interface{}, error) {
+		// Double-check cache
+		var cachedResult T
+		if cacheErr := GetJSON(ctx, key, &cachedResult); cacheErr == nil {
+			return cachedResult, nil
+		}
+
+		// Load from source
+		loaded, loadErr := loader()
+		if loadErr != nil {
+			return loaded, loadErr
+		}
+
+		// Cache synchronously
+		if setErr := SetJSON(ctx, key, loaded, ttl); setErr != nil {
+			log.Debug().Err(setErr).Str("key", key).Msg("failed to cache result")
+		}
+
+		return loaded, nil
+	})
+
 	if err != nil {
 		return result, err
 	}
 
-	// Cache synchronously
-	if setErr := SetJSON(ctx, key, result, ttl); setErr != nil {
-		log.Debug().Err(setErr).Str("key", key).Msg("failed to cache result")
-	}
-
-	return result, nil
+	return v.(T), nil
 }
 
 // Invalidate removes a key from the cache.
@@ -127,7 +170,7 @@ func BlacklistCacheKey(tokenHashPrefix string) string {
 
 // UserCacheKey generates a cache key for user data.
 func UserCacheKey(userID uint) string {
-	return "user:" + string(rune(userID))
+	return "user:" + strconv.FormatUint(uint64(userID), 10)
 }
 
 // FeatureFlagsCacheKey is the cache key for all feature flags.
