@@ -5,18 +5,20 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"react-golang-starter/internal/config"
 )
 
-// ============ getAllowedOrigins Tests ============
+// ============ config.GetAllowedOrigins Tests ============
 
 func TestGetAllowedOrigins_Default(t *testing.T) {
 	// Clear env var to get defaults
 	os.Unsetenv("CORS_ALLOWED_ORIGINS")
 
-	origins := getAllowedOrigins()
+	origins := config.GetAllowedOrigins()
 
 	if len(origins) == 0 {
-		t.Error("getAllowedOrigins() should return default origins when CORS_ALLOWED_ORIGINS is not set")
+		t.Error("GetAllowedOrigins() should return default origins when CORS_ALLOWED_ORIGINS is not set")
 	}
 
 	// Check that default includes localhost:3000
@@ -28,7 +30,7 @@ func TestGetAllowedOrigins_Default(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Error("getAllowedOrigins() default should include http://localhost:3000")
+		t.Error("GetAllowedOrigins() default should include http://localhost:3000")
 	}
 }
 
@@ -36,10 +38,10 @@ func TestGetAllowedOrigins_FromEnv(t *testing.T) {
 	os.Setenv("CORS_ALLOWED_ORIGINS", "https://example.com,https://api.example.com")
 	defer os.Unsetenv("CORS_ALLOWED_ORIGINS")
 
-	origins := getAllowedOrigins()
+	origins := config.GetAllowedOrigins()
 
 	if len(origins) != 2 {
-		t.Errorf("getAllowedOrigins() with env var returned %d origins, want 2", len(origins))
+		t.Errorf("GetAllowedOrigins() with env var returned %d origins, want 2", len(origins))
 	}
 
 	expected := map[string]bool{
@@ -49,7 +51,7 @@ func TestGetAllowedOrigins_FromEnv(t *testing.T) {
 
 	for _, origin := range origins {
 		if !expected[origin] {
-			t.Errorf("getAllowedOrigins() unexpected origin: %s", origin)
+			t.Errorf("GetAllowedOrigins() unexpected origin: %s", origin)
 		}
 	}
 }
@@ -58,14 +60,14 @@ func TestGetAllowedOrigins_SingleOrigin(t *testing.T) {
 	os.Setenv("CORS_ALLOWED_ORIGINS", "https://myapp.com")
 	defer os.Unsetenv("CORS_ALLOWED_ORIGINS")
 
-	origins := getAllowedOrigins()
+	origins := config.GetAllowedOrigins()
 
 	if len(origins) != 1 {
-		t.Errorf("getAllowedOrigins() returned %d origins, want 1", len(origins))
+		t.Errorf("GetAllowedOrigins() returned %d origins, want 1", len(origins))
 	}
 
 	if origins[0] != "https://myapp.com" {
-		t.Errorf("getAllowedOrigins() = %v, want ['https://myapp.com']", origins)
+		t.Errorf("GetAllowedOrigins() = %v, want ['https://myapp.com']", origins)
 	}
 }
 

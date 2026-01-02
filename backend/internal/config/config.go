@@ -12,6 +12,30 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// DefaultAllowedOrigins contains the default CORS allowed origins for development.
+// This is the single source of truth for CORS origins across all middleware.
+var DefaultAllowedOrigins = []string{
+	"http://localhost:3000",
+	"http://localhost:3001",
+	"http://localhost:3002",
+	"http://localhost:5173",
+	"http://localhost:5174",
+	"http://localhost:5175",
+	"http://localhost:5193",
+	"http://localhost:8080",
+	"http://localhost:8081",
+	"http://localhost:8082",
+}
+
+// GetAllowedOrigins returns CORS allowed origins from environment or defaults.
+// Use this function in all CORS-related middleware to ensure consistency.
+func GetAllowedOrigins() []string {
+	if origins := os.Getenv("CORS_ALLOWED_ORIGINS"); origins != "" {
+		return strings.Split(origins, ",")
+	}
+	return DefaultAllowedOrigins
+}
+
 // Config holds all configuration for the application
 type Config struct {
 	// Server configuration
@@ -174,17 +198,7 @@ func Load() (*Config, error) {
 		},
 
 		CORS: CORSConfig{
-			AllowedOrigins: getEnvSlice("CORS_ALLOWED_ORIGINS", []string{
-				"http://localhost:3000",
-				"http://localhost:3001",
-				"http://localhost:3002",
-				"http://localhost:5173",
-				"http://localhost:5174",
-				"http://localhost:5175",
-				"http://localhost:8080",
-				"http://localhost:8081",
-				"http://localhost:8082",
-			}),
+			AllowedOrigins: GetAllowedOrigins(),
 		},
 
 		FileUpload: FileUploadConfig{

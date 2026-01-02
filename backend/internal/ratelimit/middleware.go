@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
-	"os"
-	"react-golang-starter/internal/auth"
 	"strconv"
 	"strings"
 	"time"
+
+	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/config"
 
 	"github.com/go-chi/httprate"
 )
@@ -62,35 +63,13 @@ func setCORSErrorHeaders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if origin is allowed
-	allowedOrigins := getAllowedOriginsForRateLimit()
+	allowedOrigins := config.GetAllowedOrigins()
 	for _, allowed := range allowedOrigins {
 		if origin == allowed {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			return
 		}
-	}
-}
-
-// getAllowedOriginsForRateLimit returns the allowed CORS origins from environment variables
-func getAllowedOriginsForRateLimit() []string {
-	originsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
-	if originsEnv != "" {
-		return strings.Split(originsEnv, ",")
-	}
-
-	// Default development origins
-	return []string{
-		"http://localhost:3000",
-		"http://localhost:3001",
-		"http://localhost:3002",
-		"http://localhost:5173",
-		"http://localhost:5174",
-		"http://localhost:5175",
-		"http://localhost:5193",
-		"http://localhost:8080",
-		"http://localhost:8081",
-		"http://localhost:8082",
 	}
 }
 
