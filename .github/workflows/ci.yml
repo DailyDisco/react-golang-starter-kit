@@ -290,6 +290,74 @@ jobs:
           migrate -path ./migrations -database "$DB_URL" version
         working-directory: ${{ env.BACKEND_DIR }}
 
+  # Integration Tests with real database
+  backend-integration:
+    name: Backend Integration Tests
+    runs-on: ubuntu-latest
+    needs: [changes, backend-checks]
+    if: needs.changes.outputs.backend == 'true'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: starter_kit_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6382:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: ${{ env.BACKEND_DIR }}/go.sum
+
+      - name: Install golang-migrate
+        run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+      - name: Run migrations
+        run: |
+          DB_URL="postgres://testuser:testpass@localhost:5433/starter_kit_test?sslmode=disable"
+          migrate -path ./migrations -database "$DB_URL" up
+        working-directory: ${{ env.BACKEND_DIR }}
+
+      - name: Run integration tests
+        run: |
+          go test -v -race -timeout 10m -coverprofile=coverage-integration.out -covermode=atomic ./...
+        working-directory: ${{ env.BACKEND_DIR }}
+        env:
+          INTEGRATION_TEST: "true"
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: "5433"
+          TEST_DB_USER: testuser
+          TEST_DB_PASSWORD: testpass
+          TEST_DB_NAME: starter_kit_test
+          REDIS_URL: "redis://localhost:6382"
+
+      - name: Upload integration coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-integration-coverage
+          path: ${{ env.BACKEND_DIR }}/coverage-integration.out
+          retention-days: 7
+
   # Matrix testing only on main branch pushes
   backend-compat:
     name: Backend Compat (Go ${{ matrix.go-version }})
@@ -322,7 +390,7 @@ jobs:
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
-    needs: [changes, frontend-checks, frontend-e2e, backend-checks, backend-migrations]
+    needs: [changes, frontend-checks, frontend-e2e, backend-checks, backend-migrations, backend-integration]
     if: always()
     steps:
       - name: Check results
@@ -343,6 +411,7 @@ jobs:
             echo "### Backend" >> $GITHUB_STEP_SUMMARY
             echo "- Checks: ${{ needs.backend-checks.result }}" >> $GITHUB_STEP_SUMMARY
             echo "- Migrations: ${{ needs.backend-migrations.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Integration: ${{ needs.backend-integration.result }}" >> $GITHUB_STEP_SUMMARY
           else
             echo "### Backend: skipped (no changes)" >> $GITHUB_STEP_SUMMARY
           fi
@@ -358,7 +427,7 @@ jobs:
           fi
 
           if [[ "${{ needs.changes.outputs.backend }}" == "true" ]]; then
-            if [[ "${{ needs.backend-checks.result }}" != "success" || "${{ needs.backend-migrations.result }}" != "success" ]]; then
+            if [[ "${{ needs.backend-checks.result }}" != "success" || "${{ needs.backend-migrations.result }}" != "success" || "${{ needs.backend-integration.result }}" != "success" ]]; then
               BACKEND_OK=false
             fi
           fi

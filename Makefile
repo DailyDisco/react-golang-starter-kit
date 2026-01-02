@@ -8,7 +8,9 @@
 	observability-up observability-down observability-logs grafana-logs prometheus-logs \
 	deploy-vercel deploy-vercel-prod deploy-railway configure-features init \
 	rollback switch-blue switch-green \
-	backup-info backup-now backup-incr backup-verify backup-logs backup-restore-list
+	backup-info backup-now backup-incr backup-verify backup-logs backup-restore-list \
+	test-db-up test-db-down test-db-reset test-services-up test-services-down test-integration \
+	test-backend-coverage test-frontend-coverage test-e2e coverage coverage-html coverage-check test-clean
 
 # ============================================
 # Configuration
@@ -179,13 +181,89 @@ health: ## Check health of all services
 
 test: test-backend test-frontend ## Run all tests
 
-test-backend: ## Run backend tests
+test-backend: ## Run backend unit tests
 	@echo "Running backend tests..."
 	@$(DC_DEV) exec -T backend go test ./internal/... 2>/dev/null || (cd backend && go test ./internal/...)
 
 test-frontend: ## Run frontend tests
 	@echo "Running frontend tests..."
 	@cd frontend && npm run test:fast
+
+# ============================================
+# Testing (Extended)
+# ============================================
+
+test-db-up: ## Start test database
+	@echo "Starting test database..."
+	@docker compose -f docker-compose.test.yml up -d postgres-test dragonfly-test
+	@echo "Waiting for database to be ready..."
+	@until docker exec react-golang-postgres-test pg_isready -U testuser -d starter_kit_test > /dev/null 2>&1; do \
+		sleep 1; \
+	done
+	@echo "Test database is ready!"
+
+test-db-down: ## Stop test database
+	@docker compose -f docker-compose.test.yml down -v
+
+test-db-reset: test-db-down test-db-up ## Reset test database
+
+test-services-up: ## Start all test services (DB, Redis, LocalStack, Mailpit)
+	@echo "Starting all test services..."
+	@docker compose -f docker-compose.test.yml up -d
+	@echo "Waiting for services to be ready..."
+	@sleep 5
+	@echo "Test services are ready!"
+
+test-services-down: ## Stop all test services
+	@docker compose -f docker-compose.test.yml down -v
+
+test-integration: test-db-up ## Run Go integration tests with Docker database
+	@echo "Running integration tests..."
+	@cd backend && INTEGRATION_TEST=true \
+		TEST_DB_HOST=localhost \
+		TEST_DB_PORT=5433 \
+		TEST_DB_USER=testuser \
+		TEST_DB_PASSWORD=testpass \
+		TEST_DB_NAME=starter_kit_test \
+		go test -v -race -timeout 10m ./internal/...
+	@echo "Integration tests complete!"
+
+test-backend-coverage: ## Run backend tests with coverage
+	@echo "Running backend tests with coverage..."
+	@cd backend && go test -v -race -timeout 5m -coverprofile=coverage.out -covermode=atomic ./internal/...
+	@cd backend && go tool cover -func=coverage.out | tail -1
+
+test-frontend-coverage: ## Run frontend tests with coverage
+	@echo "Running frontend tests with coverage..."
+	@cd frontend && npm run test:coverage
+
+test-e2e: ## Run Playwright E2E tests
+	@echo "Running E2E tests..."
+	@cd frontend && npm run test:e2e
+
+coverage: test-backend-coverage test-frontend-coverage ## Generate all coverage reports
+
+coverage-html: ## Generate HTML coverage reports
+	@echo "Generating backend coverage HTML..."
+	@cd backend && go tool cover -html=coverage.out -o coverage.html
+	@echo "Backend coverage report: backend/coverage.html"
+	@echo "Frontend coverage report: frontend/coverage/"
+
+coverage-check: ## Check coverage meets 70% threshold
+	@echo "Checking coverage thresholds..."
+	@cd backend && go test -coverprofile=coverage.out ./internal/... 2>/dev/null && \
+		coverage=$$(go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//'); \
+		echo "Backend coverage: $${coverage}%"; \
+		if [ $$(echo "$$coverage < 70" | bc -l) -eq 1 ]; then \
+			echo "ERROR: Coverage $${coverage}% is below 70% threshold"; \
+			exit 1; \
+		fi
+	@echo "Coverage check passed!"
+
+test-clean: ## Clean test artifacts
+	@rm -f backend/coverage.out backend/coverage.html backend/coverage-integration.out
+	@rm -rf frontend/coverage frontend/playwright-report frontend/playwright-results
+	@echo "Test artifacts cleaned"
 
 # ============================================
 # Code Quality
