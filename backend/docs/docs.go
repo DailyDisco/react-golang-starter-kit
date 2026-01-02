@@ -2255,6 +2255,165 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/usage": {
+            "get": {
+                "description": "Returns usage metrics for the current billing period",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usage"
+                ],
+                "summary": "Get current usage summary",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.UsageSummaryResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/usage/alerts": {
+            "get": {
+                "description": "Returns unacknowledged usage alerts",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usage"
+                ],
+                "summary": "Get usage alerts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/usage/alerts/{id}/acknowledge": {
+            "post": {
+                "description": "Marks a usage alert as acknowledged",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usage"
+                ],
+                "summary": "Acknowledge usage alert",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Alert ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/usage/history": {
+            "get": {
+                "description": "Returns usage metrics for past billing periods",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usage"
+                ],
+                "summary": "Get usage history",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of months to retrieve (default 6)",
+                        "name": "months",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.UsageSummaryResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users/me/2fa/backup-codes": {
             "post": {
                 "security": [
@@ -2975,8 +3134,47 @@ const docTemplate = `{
                             "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/me/export/download": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "User Settings"
+                ],
+                "summary": "Download data export",
+                "responses": {
+                    "200": {
+                        "description": "ZIP file with user data",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -7102,6 +7300,80 @@ const docTemplate = `{
                 }
             }
         },
+        "models.UsageLimits": {
+            "type": "object",
+            "properties": {
+                "api_calls": {
+                    "type": "integer"
+                },
+                "compute_ms": {
+                    "type": "integer"
+                },
+                "file_uploads": {
+                    "type": "integer"
+                },
+                "storage_bytes": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.UsagePercentages": {
+            "type": "object",
+            "properties": {
+                "api_calls": {
+                    "type": "integer"
+                },
+                "compute_ms": {
+                    "type": "integer"
+                },
+                "file_uploads": {
+                    "type": "integer"
+                },
+                "storage_bytes": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.UsageSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "limits": {
+                    "$ref": "#/definitions/models.UsageLimits"
+                },
+                "limits_exceeded": {
+                    "type": "boolean"
+                },
+                "percentages": {
+                    "$ref": "#/definitions/models.UsagePercentages"
+                },
+                "period_end": {
+                    "type": "string"
+                },
+                "period_start": {
+                    "type": "string"
+                },
+                "totals": {
+                    "$ref": "#/definitions/models.UsageTotals"
+                }
+            }
+        },
+        "models.UsageTotals": {
+            "type": "object",
+            "properties": {
+                "api_calls": {
+                    "type": "integer"
+                },
+                "compute_ms": {
+                    "type": "integer"
+                },
+                "file_uploads": {
+                    "type": "integer"
+                },
+                "storage_bytes": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.UserAPIKeyResponse": {
             "type": "object",
             "properties": {
@@ -7313,6 +7585,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "A comprehensive REST API for the React Go Starter Kit application built with Fiber, GORM, and PostgreSQL. This API provides secure user authentication, user management, and system health monitoring.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

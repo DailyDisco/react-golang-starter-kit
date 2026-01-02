@@ -1210,6 +1210,54 @@ definitions:
       timezone:
         type: string
     type: object
+  models.UsageLimits:
+    properties:
+      api_calls:
+        type: integer
+      compute_ms:
+        type: integer
+      file_uploads:
+        type: integer
+      storage_bytes:
+        type: integer
+    type: object
+  models.UsagePercentages:
+    properties:
+      api_calls:
+        type: integer
+      compute_ms:
+        type: integer
+      file_uploads:
+        type: integer
+      storage_bytes:
+        type: integer
+    type: object
+  models.UsageSummaryResponse:
+    properties:
+      limits:
+        $ref: '#/definitions/models.UsageLimits'
+      limits_exceeded:
+        type: boolean
+      percentages:
+        $ref: '#/definitions/models.UsagePercentages'
+      period_end:
+        type: string
+      period_start:
+        type: string
+      totals:
+        $ref: '#/definitions/models.UsageTotals'
+    type: object
+  models.UsageTotals:
+    properties:
+      api_calls:
+        type: integer
+      compute_ms:
+        type: integer
+      file_uploads:
+        type: integer
+      storage_bytes:
+        type: integer
+    type: object
   models.UserAPIKeyResponse:
     properties:
       created_at:
@@ -2762,6 +2810,111 @@ paths:
       summary: Get feature flags for current user
       tags:
       - Feature Flags
+  /api/usage:
+    get:
+      description: Returns usage metrics for the current billing period
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UsageSummaryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get current usage summary
+      tags:
+      - Usage
+  /api/usage/alerts:
+    get:
+      description: Returns unacknowledged usage alerts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get usage alerts
+      tags:
+      - Usage
+  /api/usage/alerts/{id}/acknowledge:
+    post:
+      consumes:
+      - application/json
+      description: Marks a usage alert as acknowledged
+      parameters:
+      - description: Alert ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Acknowledge usage alert
+      tags:
+      - Usage
+  /api/usage/history:
+    get:
+      description: Returns usage metrics for past billing periods
+      parameters:
+      - description: Number of months to retrieve (default 6)
+        in: query
+        name: months
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.UsageSummaryResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get usage history
+      tags:
+      - Usage
   /api/users/me/2fa/backup-codes:
     post:
       parameters:
@@ -3201,6 +3354,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
@@ -3208,6 +3365,26 @@ paths:
       security:
       - BearerAuth: []
       summary: Request data export
+      tags:
+      - User Settings
+  /api/users/me/export/download:
+    get:
+      responses:
+        "200":
+          description: ZIP file with user data
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Download data export
       tags:
       - User Settings
   /api/users/me/login-history:

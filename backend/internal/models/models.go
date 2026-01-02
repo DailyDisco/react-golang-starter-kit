@@ -40,13 +40,15 @@ type User struct {
 	EmailVerified bool `json:"email_verified" gorm:"default:false;index"`
 
 	// Email verification token (indexed for fast lookups during verification)
-	VerificationToken string `json:"-" gorm:"uniqueIndex"`
+	// Pointer type to allow NULL values that don't conflict with unique index
+	VerificationToken *string `json:"-" gorm:"uniqueIndex"`
 
 	// Verification token expiration time
 	VerificationExpires string `json:"-"`
 
 	// Password reset token (separate from verification token for security)
-	PasswordResetToken string `json:"-" gorm:"uniqueIndex"`
+	// Pointer type to allow NULL values that don't conflict with unique index
+	PasswordResetToken *string `json:"-" gorm:"uniqueIndex"`
 
 	// Password reset token expiration time
 	PasswordResetExpires string `json:"-"`
@@ -60,12 +62,15 @@ type User struct {
 	// Whether the user account is active
 	IsActive bool `json:"is_active" gorm:"default:true;index"`
 
+	// Whether 2FA is enabled for this user (denormalized from UserTwoFactor for quick access)
+	TwoFactorEnabled bool `json:"two_factor_enabled" gorm:"column:two_factor_enabled;default:false"`
+
 	// The role of the user (e.g., "super_admin", "admin", "premium", "user")
 	// example: user
 	Role string `json:"role" gorm:"type:varchar(50);default:'user';index"`
 
-	// Stripe customer ID for billing
-	StripeCustomerID string `json:"-" gorm:"uniqueIndex"`
+	// Stripe customer ID for billing (pointer to allow NULL for users without Stripe accounts)
+	StripeCustomerID *string `json:"-" gorm:"uniqueIndex"`
 
 	// OAuth provider (if user signed up via OAuth)
 	// example: google
@@ -1065,4 +1070,145 @@ type UpdateUserAPIKeyRequest struct {
 type UserAPIKeysResponse struct {
 	Keys  []UserAPIKeyResponse `json:"keys"`
 	Count int                  `json:"count"`
+}
+
+// ============================================================================
+// Usage Metering Models
+// ============================================================================
+
+// UsageEvent represents a single usage event for metering
+type UsageEvent struct {
+	ID        uint   `json:"id" gorm:"primaryKey"`
+	CreatedAt string `json:"created_at"`
+
+	// Who generated this usage
+	UserID         *uint `json:"user_id,omitempty" gorm:"index"`
+	OrganizationID *uint `json:"organization_id,omitempty" gorm:"index"`
+
+	// What type of usage (api_call, storage, compute, etc.)
+	EventType string `json:"event_type" gorm:"type:varchar(50);not null;index"`
+
+	// Resource identifier (endpoint path, feature name, etc.)
+	Resource string `json:"resource" gorm:"type:varchar(255);not null"`
+
+	// Quantity consumed
+	Quantity int64 `json:"quantity" gorm:"default:1"`
+
+	// Unit of measurement
+	Unit string `json:"unit" gorm:"type:varchar(20);default:'count'"`
+
+	// Additional metadata
+	Metadata string `json:"metadata,omitempty" gorm:"type:jsonb;default:'{}'"`
+
+	// Request context
+	IPAddress string `json:"ip_address,omitempty" gorm:"type:varchar(45)"`
+	UserAgent string `json:"user_agent,omitempty" gorm:"type:text"`
+
+	// Billing period
+	BillingPeriodStart string `json:"billing_period_start" gorm:"type:date;not null"`
+	BillingPeriodEnd   string `json:"billing_period_end" gorm:"type:date;not null"`
+}
+
+// UsagePeriod represents aggregated usage totals for a billing period
+type UsagePeriod struct {
+	ID        uint   `json:"id" gorm:"primaryKey"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+
+	// Who this period belongs to
+	UserID         *uint `json:"user_id,omitempty" gorm:"index"`
+	OrganizationID *uint `json:"organization_id,omitempty" gorm:"index"`
+
+	// Billing period
+	PeriodStart string `json:"period_start" gorm:"type:date;not null"`
+	PeriodEnd   string `json:"period_end" gorm:"type:date;not null"`
+
+	// Aggregated usage counts by type (JSONB)
+	UsageTotals string `json:"usage_totals" gorm:"type:jsonb;default:'{}'"`
+
+	// Limit configuration for this period
+	UsageLimits string `json:"usage_limits,omitempty" gorm:"type:jsonb;default:'{}'"`
+
+	// Whether limits were exceeded
+	LimitsExceeded bool `json:"limits_exceeded" gorm:"default:false"`
+
+	// When limits were last checked/updated
+	LastAggregatedAt *string `json:"last_aggregated_at,omitempty"`
+}
+
+// UsageAlert represents a notification when approaching or exceeding limits
+type UsageAlert struct {
+	ID        uint   `json:"id" gorm:"primaryKey"`
+	CreatedAt string `json:"created_at"`
+
+	// Who this alert is for
+	UserID         *uint `json:"user_id,omitempty" gorm:"index"`
+	OrganizationID *uint `json:"organization_id,omitempty" gorm:"index"`
+
+	// Alert type (warning_80, warning_90, exceeded, etc.)
+	AlertType string `json:"alert_type" gorm:"type:varchar(50);not null"`
+
+	// Which usage type triggered this
+	UsageType string `json:"usage_type" gorm:"type:varchar(50);not null"`
+
+	// Current usage and limit at time of alert
+	CurrentUsage int64 `json:"current_usage"`
+	UsageLimit   int64 `json:"usage_limit"`
+
+	// Percentage of limit used
+	PercentageUsed int `json:"percentage_used"`
+
+	// Whether the alert has been acknowledged
+	Acknowledged   bool    `json:"acknowledged" gorm:"default:false"`
+	AcknowledgedAt *string `json:"acknowledged_at,omitempty"`
+	AcknowledgedBy *uint   `json:"acknowledged_by,omitempty"`
+
+	// Billing period
+	PeriodStart string `json:"period_start" gorm:"type:date;not null"`
+	PeriodEnd   string `json:"period_end" gorm:"type:date;not null"`
+}
+
+// UsageTotals represents the aggregated usage counts
+type UsageTotals struct {
+	APICalls     int64 `json:"api_calls"`
+	StorageBytes int64 `json:"storage_bytes"`
+	ComputeMS    int64 `json:"compute_ms"`
+	FileUploads  int64 `json:"file_uploads"`
+}
+
+// UsageLimits represents the limits for a billing period
+type UsageLimits struct {
+	APICalls     int64 `json:"api_calls"`
+	StorageBytes int64 `json:"storage_bytes"`
+	ComputeMS    int64 `json:"compute_ms"`
+	FileUploads  int64 `json:"file_uploads"`
+}
+
+// UsagePercentages represents percentage of limits used
+type UsagePercentages struct {
+	APICalls     int `json:"api_calls"`
+	StorageBytes int `json:"storage_bytes"`
+	ComputeMS    int `json:"compute_ms"`
+	FileUploads  int `json:"file_uploads"`
+}
+
+// UsageSummaryResponse represents usage summary returned to frontend
+// swagger:model UsageSummaryResponse
+type UsageSummaryResponse struct {
+	PeriodStart    string           `json:"period_start"`
+	PeriodEnd      string           `json:"period_end"`
+	Totals         UsageTotals      `json:"totals"`
+	Limits         UsageLimits      `json:"limits"`
+	LimitsExceeded bool             `json:"limits_exceeded"`
+	Percentages    UsagePercentages `json:"percentages"`
+}
+
+// UsageEventRequest represents a request to record usage
+// swagger:model UsageEventRequest
+type UsageEventRequest struct {
+	EventType string            `json:"event_type" binding:"required"`
+	Resource  string            `json:"resource" binding:"required"`
+	Quantity  int64             `json:"quantity"`
+	Unit      string            `json:"unit"`
+	Metadata  map[string]string `json:"metadata,omitempty"`
 }
