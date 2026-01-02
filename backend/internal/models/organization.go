@@ -44,8 +44,10 @@ type Organization struct {
 	Slug string `gorm:"not null;uniqueIndex;size:100" json:"slug"`
 
 	// Billing
-	Plan             OrganizationPlan `gorm:"type:varchar(20);default:'free'" json:"plan"`
-	StripeCustomerID *string          `gorm:"size:100" json:"stripe_customer_id,omitempty"`
+	Plan                 OrganizationPlan `gorm:"type:varchar(20);default:'free'" json:"plan"`
+	StripeCustomerID     *string          `gorm:"size:100" json:"stripe_customer_id,omitempty"`
+	StripeSubscriptionID *string          `gorm:"size:255" json:"stripe_subscription_id,omitempty"`
+	PlanFeatures         datatypes.JSON   `gorm:"type:jsonb;default:'{}'" json:"plan_features"`
 
 	// Settings stored as JSON
 	Settings datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"settings"`
@@ -175,4 +177,52 @@ func (r OrganizationRole) IsHigherOrEqualTo(other OrganizationRole) bool {
 		OrgRoleMember: 1,
 	}
 	return roleHierarchy[r] >= roleHierarchy[other]
+}
+
+// PlanFeaturesData represents the plan-specific features for an organization
+type PlanFeaturesData struct {
+	SeatLimit    int `json:"seat_limit"`
+	StorageLimit int `json:"storage_limit_mb"`
+	APICallLimit int `json:"api_call_limit"`
+}
+
+// DefaultPlanFeatures returns default features for each plan
+func DefaultPlanFeatures(plan OrganizationPlan) PlanFeaturesData {
+	switch plan {
+	case OrgPlanPro:
+		return PlanFeaturesData{
+			SeatLimit:    25,
+			StorageLimit: 10240, // 10GB
+			APICallLimit: 100000,
+		}
+	case OrgPlanEnterprise:
+		return PlanFeaturesData{
+			SeatLimit:    0, // unlimited
+			StorageLimit: 0, // unlimited
+			APICallLimit: 0, // unlimited
+		}
+	default: // Free
+		return PlanFeaturesData{
+			SeatLimit:    5,
+			StorageLimit: 1024, // 1GB
+			APICallLimit: 10000,
+		}
+	}
+}
+
+// GetSeatLimit returns the seat limit for this organization based on its plan
+// Returns 0 for unlimited seats (enterprise)
+func (o *Organization) GetSeatLimit() int {
+	features := DefaultPlanFeatures(o.Plan)
+	return features.SeatLimit
+}
+
+// HasSubscription returns true if the organization has an active subscription
+func (o *Organization) HasSubscription() bool {
+	return o.StripeSubscriptionID != nil && *o.StripeSubscriptionID != ""
+}
+
+// IsOrganizationSubscription checks if a subscription is org-level
+func (s *Subscription) IsOrganizationSubscription() bool {
+	return s.OrganizationID != nil && *s.OrganizationID > 0
 }

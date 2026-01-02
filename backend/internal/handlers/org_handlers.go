@@ -6,10 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/rs/zerolog/log"
+
 	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/middleware"
 	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/services"
+	"react-golang-starter/internal/stripe"
 )
 
 // respondWithError sends an error response with request ID for tracing
@@ -250,6 +254,9 @@ func (h *OrgHandler) UpdateOrganization(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Invalidate org cache after update
+	cache.InvalidateOrganization(r.Context(), org.Slug, org.ID)
+
 	response := OrganizationResponse{
 		ID:        org.ID,
 		Name:      org.Name,
@@ -284,6 +291,10 @@ func (h *OrgHandler) DeleteOrganization(w http.ResponseWriter, r *http.Request) 
 		respondWithError(w, r, http.StatusInternalServerError, "Failed to delete organization")
 		return
 	}
+
+	// Invalidate org cache after deletion
+	cache.InvalidateOrganization(r.Context(), org.Slug, org.ID)
+	cache.InvalidateOrgMemberships(r.Context(), org.ID)
 
 	respondWithSuccess(w, http.StatusOK, map[string]string{"message": "Organization deleted successfully"})
 }
@@ -456,6 +467,9 @@ func (h *OrgHandler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate membership cache after role update
+	cache.InvalidateMembership(r.Context(), org.ID, uint(targetUserID))
+
 	respondWithSuccess(w, http.StatusOK, map[string]string{"message": "Role updated successfully"})
 }
 
@@ -498,6 +512,9 @@ func (h *OrgHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	// Invalidate membership cache after removal
+	cache.InvalidateMembership(r.Context(), org.ID, uint(targetUserID))
 
 	respondWithSuccess(w, http.StatusOK, map[string]string{"message": "Member removed successfully"})
 }
@@ -676,5 +693,190 @@ func (h *OrgHandler) LeaveOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate membership cache after leaving
+	cache.InvalidateMembership(r.Context(), org.ID, user.ID)
+
 	respondWithSuccess(w, http.StatusOK, map[string]string{"message": "Left organization successfully"})
+}
+
+// OrgBillingResponse represents organization billing information
+type OrgBillingResponse struct {
+	Plan             models.OrganizationPlan      `json:"plan"`
+	HasSubscription  bool                         `json:"has_subscription"`
+	Subscription     *models.SubscriptionResponse `json:"subscription,omitempty"`
+	SeatLimit        int                          `json:"seat_limit"`
+	SeatCount        int64                        `json:"seat_count"`
+	StripeCustomerID *string                      `json:"stripe_customer_id,omitempty"`
+}
+
+// OrgCheckoutRequest represents the request body for org checkout
+type OrgCheckoutRequest struct {
+	PriceID string `json:"price_id" validate:"required"`
+}
+
+// GetOrganizationBilling returns the organization's billing information
+// @Summary Get organization billing
+// @Description Get organization billing and subscription details (admin+ only)
+// @Tags organizations
+// @Accept json
+// @Produce json
+// @Param orgSlug path string true "Organization slug"
+// @Success 200 {object} models.SuccessResponse{data=OrgBillingResponse}
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Router /organizations/{orgSlug}/billing [get]
+func (h *OrgHandler) GetOrganizationBilling(w http.ResponseWriter, r *http.Request) {
+	org := auth.GetOrganizationFromContext(r.Context())
+
+	if org == nil {
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
+		return
+	}
+
+	// Get member count
+	memberCount, err := h.orgService.GetMemberCount(org.ID)
+	if err != nil {
+		log.Error().Err(err).Uint("org_id", org.ID).Msg("failed to get member count")
+		memberCount = 0
+	}
+
+	response := OrgBillingResponse{
+		Plan:             org.Plan,
+		HasSubscription:  org.HasSubscription(),
+		SeatLimit:        org.GetSeatLimit(),
+		SeatCount:        memberCount,
+		StripeCustomerID: org.StripeCustomerID,
+	}
+
+	// Get subscription if exists
+	sub, err := h.orgService.GetOrganizationSubscription(org.ID)
+	if err == nil && sub != nil {
+		subResponse := sub.ToSubscriptionResponse()
+		response.Subscription = &subResponse
+	}
+
+	respondWithSuccess(w, http.StatusOK, response)
+}
+
+// CreateOrganizationCheckout creates a Stripe checkout session for the organization
+// @Summary Create organization checkout session
+// @Description Create a Stripe checkout session for organization subscription (owner only)
+// @Tags organizations
+// @Accept json
+// @Produce json
+// @Param orgSlug path string true "Organization slug"
+// @Param request body OrgCheckoutRequest true "Checkout request"
+// @Success 200 {object} models.SuccessResponse{data=models.CheckoutSessionResponse}
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /organizations/{orgSlug}/billing/checkout [post]
+func (h *OrgHandler) CreateOrganizationCheckout(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetUserFromContext(r.Context())
+	org := auth.GetOrganizationFromContext(r.Context())
+
+	if !ok || org == nil || user == nil {
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
+		return
+	}
+
+	svc := stripe.GetService()
+	if !svc.IsAvailable() {
+		respondWithError(w, r, http.StatusServiceUnavailable, "Billing is not configured")
+		return
+	}
+
+	var req OrgCheckoutRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, r, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.PriceID == "" {
+		respondWithError(w, r, http.StatusBadRequest, "Price ID is required")
+		return
+	}
+
+	// Get or create Stripe customer for org
+	var customerID string
+	if org.StripeCustomerID != nil && *org.StripeCustomerID != "" {
+		customerID = *org.StripeCustomerID
+	} else {
+		// Create customer using the org owner's info but with org metadata
+		newCustomerID, err := svc.CreateCustomer(r.Context(), user)
+		if err != nil {
+			log.Error().Err(err).Uint("org_id", org.ID).Msg("failed to create stripe customer for org")
+			respondWithError(w, r, http.StatusInternalServerError, "Failed to create billing account")
+			return
+		}
+		customerID = newCustomerID
+
+		// Save customer ID to organization
+		if err := h.orgService.SetOrganizationStripeCustomer(org.ID, customerID); err != nil {
+			log.Error().Err(err).Uint("org_id", org.ID).Msg("failed to save stripe customer ID")
+		}
+	}
+
+	// Get config for URLs
+	stripeConfig := stripe.LoadConfig()
+
+	// Create checkout session
+	session, err := svc.CreateCheckoutSession(r.Context(), customerID, req.PriceID, stripeConfig.SuccessURL, stripeConfig.CancelURL)
+	if err != nil {
+		log.Error().Err(err).Uint("org_id", org.ID).Msg("failed to create checkout session")
+		respondWithError(w, r, http.StatusInternalServerError, "Failed to create checkout session")
+		return
+	}
+
+	respondWithSuccess(w, http.StatusOK, models.CheckoutSessionResponse{
+		SessionID: session.ID,
+		URL:       session.URL,
+	})
+}
+
+// CreateOrganizationBillingPortal creates a Stripe billing portal session
+// @Summary Create organization billing portal
+// @Description Create a Stripe billing portal session for subscription management (owner only)
+// @Tags organizations
+// @Accept json
+// @Produce json
+// @Param orgSlug path string true "Organization slug"
+// @Success 200 {object} models.SuccessResponse{data=models.PortalSessionResponse}
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /organizations/{orgSlug}/billing/portal [post]
+func (h *OrgHandler) CreateOrganizationBillingPortal(w http.ResponseWriter, r *http.Request) {
+	org := auth.GetOrganizationFromContext(r.Context())
+
+	if org == nil {
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
+		return
+	}
+
+	svc := stripe.GetService()
+	if !svc.IsAvailable() {
+		respondWithError(w, r, http.StatusServiceUnavailable, "Billing is not configured")
+		return
+	}
+
+	if org.StripeCustomerID == nil || *org.StripeCustomerID == "" {
+		respondWithError(w, r, http.StatusBadRequest, "No billing account found for this organization")
+		return
+	}
+
+	// Get config for return URL
+	stripeConfig := stripe.LoadConfig()
+
+	// Create portal session
+	session, err := svc.CreatePortalSession(r.Context(), *org.StripeCustomerID, stripeConfig.PortalReturnURL)
+	if err != nil {
+		log.Error().Err(err).Uint("org_id", org.ID).Msg("failed to create portal session")
+		respondWithError(w, r, http.StatusInternalServerError, "Failed to create billing portal")
+		return
+	}
+
+	respondWithSuccess(w, http.StatusOK, models.PortalSessionResponse{
+		URL: session.URL,
+	})
 }

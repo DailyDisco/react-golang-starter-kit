@@ -11,10 +11,35 @@ import (
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/webhook"
 
+	"gorm.io/gorm"
+
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/services"
 )
+
+// customerOwner represents either a user or organization that owns a Stripe customer
+type customerOwner struct {
+	User *models.User
+	Org  *models.Organization
+}
+
+// findCustomerOwner finds the user or organization that owns a Stripe customer ID
+func findCustomerOwner(customerID string) (*customerOwner, error) {
+	// Check for organization first (org billing takes precedence)
+	var org models.Organization
+	if err := database.DB.Where("stripe_customer_id = ?", customerID).First(&org).Error; err == nil {
+		return &customerOwner{Org: &org}, nil
+	}
+
+	// Check for user
+	var user models.User
+	if err := database.DB.Where("stripe_customer_id = ?", customerID).First(&user).Error; err == nil {
+		return &customerOwner{User: &user}, nil
+	}
+
+	return nil, gorm.ErrRecordNotFound
+}
 
 // HandleWebhook handles incoming Stripe webhook events
 // @Summary Handle Stripe webhook
@@ -148,10 +173,10 @@ func handleSubscriptionCreated(sub *stripe.Subscription) {
 		Str("status", string(sub.Status)).
 		Msg("subscription created")
 
-	// Find user by Stripe customer ID
-	var user models.User
-	if err := database.DB.Where("stripe_customer_id = ?", sub.Customer.ID).First(&user).Error; err != nil {
-		log.Error().Err(err).Str("customer_id", sub.Customer.ID).Msg("user not found for customer")
+	// Find owner (user or org) by Stripe customer ID
+	owner, err := findCustomerOwner(sub.Customer.ID)
+	if err != nil {
+		log.Error().Err(err).Str("customer_id", sub.Customer.ID).Msg("customer owner not found")
 		return
 	}
 
@@ -161,7 +186,17 @@ func handleSubscriptionCreated(sub *stripe.Subscription) {
 		priceID = sub.Items.Data[0].Price.ID
 	}
 
-	// Create subscription record
+	if owner.Org != nil {
+		// Organization subscription
+		handleOrgSubscriptionCreated(owner.Org, sub, priceID)
+	} else {
+		// User subscription
+		handleUserSubscriptionCreated(owner.User, sub, priceID)
+	}
+}
+
+// handleUserSubscriptionCreated processes user-level subscription creation
+func handleUserSubscriptionCreated(user *models.User, sub *stripe.Subscription, priceID string) {
 	subscription := models.Subscription{
 		UserID:               user.ID,
 		StripeSubscriptionID: sub.ID,
@@ -183,15 +218,65 @@ func handleSubscriptionCreated(sub *stripe.Subscription) {
 	if sub.Status == stripe.SubscriptionStatusActive || sub.Status == stripe.SubscriptionStatusTrialing {
 		user.Role = models.RolePremium
 		user.UpdatedAt = time.Now().Format(time.RFC3339)
-		if err := database.DB.Save(&user).Error; err != nil {
+		if err := database.DB.Save(user).Error; err != nil {
 			log.Error().Err(err).Uint("user_id", user.ID).Msg("failed to update user role")
 		}
 	}
 
-	// Sync usage limits based on subscription tier
 	syncUsageLimits(user.ID, priceID)
-
 	log.Info().Uint("user_id", user.ID).Msg("subscription created for user")
+}
+
+// handleOrgSubscriptionCreated processes organization-level subscription creation
+func handleOrgSubscriptionCreated(org *models.Organization, sub *stripe.Subscription, priceID string) {
+	// Get the org owner to set as billing contact
+	var owner models.OrganizationMember
+	if err := database.DB.Where("organization_id = ? AND role = ?", org.ID, models.OrgRoleOwner).First(&owner).Error; err != nil {
+		log.Error().Err(err).Uint("org_id", org.ID).Msg("org owner not found")
+		return
+	}
+
+	orgID := org.ID
+	subscription := models.Subscription{
+		UserID:               owner.UserID,
+		OrganizationID:       &orgID,
+		StripeSubscriptionID: sub.ID,
+		StripePriceID:        priceID,
+		Status:               string(sub.Status),
+		CurrentPeriodStart:   time.Unix(sub.CurrentPeriodStart, 0).Format(time.RFC3339),
+		CurrentPeriodEnd:     time.Unix(sub.CurrentPeriodEnd, 0).Format(time.RFC3339),
+		CancelAtPeriodEnd:    sub.CancelAtPeriodEnd,
+		CreatedAt:            time.Now().Format(time.RFC3339),
+		UpdatedAt:            time.Now().Format(time.RFC3339),
+	}
+
+	if err := database.DB.Create(&subscription).Error; err != nil {
+		log.Error().Err(err).Uint("org_id", org.ID).Msg("failed to create org subscription record")
+		return
+	}
+
+	// Update org plan based on price ID
+	newPlan := getPlanFromPriceID(priceID)
+	if err := database.DB.Model(org).Updates(map[string]interface{}{
+		"plan":                   newPlan,
+		"stripe_subscription_id": sub.ID,
+	}).Error; err != nil {
+		log.Error().Err(err).Uint("org_id", org.ID).Msg("failed to update org plan")
+	}
+
+	log.Info().Uint("org_id", org.ID).Str("plan", string(newPlan)).Msg("subscription created for organization")
+}
+
+// getPlanFromPriceID maps Stripe price IDs to organization plans
+func getPlanFromPriceID(priceID string) models.OrganizationPlan {
+	// TODO: Configure these mappings via environment or config
+	// For now, default to pro for any paid plan
+	if priceID == "" {
+		return models.OrgPlanFree
+	}
+	// Check for enterprise tier (could be configured via env vars)
+	// For now, assume all paid plans are pro
+	return models.OrgPlanPro
 }
 
 // handleSubscriptionUpdated processes subscription updates
@@ -231,13 +316,21 @@ func handleSubscriptionUpdated(sub *stripe.Subscription) {
 		return
 	}
 
-	// Sync user role based on subscription status
-	syncUserRole(subscription.UserID, sub.Status)
-
-	// Sync usage limits based on subscription tier
-	syncUsageLimits(subscription.UserID, priceID)
-
-	log.Info().Uint("user_id", subscription.UserID).Msg("subscription updated for user")
+	// Handle org vs user subscription updates
+	if subscription.OrganizationID != nil && *subscription.OrganizationID > 0 {
+		// Organization subscription - update org plan
+		newPlan := getPlanFromPriceID(priceID)
+		if err := database.DB.Model(&models.Organization{}).Where("id = ?", *subscription.OrganizationID).
+			Update("plan", newPlan).Error; err != nil {
+			log.Error().Err(err).Uint("org_id", *subscription.OrganizationID).Msg("failed to update org plan")
+		}
+		log.Info().Uint("org_id", *subscription.OrganizationID).Str("plan", string(newPlan)).Msg("subscription updated for organization")
+	} else {
+		// User subscription
+		syncUserRole(subscription.UserID, sub.Status)
+		syncUsageLimits(subscription.UserID, priceID)
+		log.Info().Uint("user_id", subscription.UserID).Msg("subscription updated for user")
+	}
 }
 
 // handleSubscriptionDeleted processes subscription cancellation/deletion
@@ -263,13 +356,23 @@ func handleSubscriptionDeleted(sub *stripe.Subscription) {
 		return
 	}
 
-	// Downgrade user role
-	syncUserRole(subscription.UserID, stripe.SubscriptionStatusCanceled)
-
-	// Reset usage limits to free tier
-	syncUsageLimits(subscription.UserID, "")
-
-	log.Info().Uint("user_id", subscription.UserID).Msg("subscription deleted for user")
+	// Handle org vs user subscription deletion
+	if subscription.OrganizationID != nil && *subscription.OrganizationID > 0 {
+		// Organization subscription - downgrade to free plan
+		if err := database.DB.Model(&models.Organization{}).Where("id = ?", *subscription.OrganizationID).
+			Updates(map[string]any{
+				"plan":                   models.OrgPlanFree,
+				"stripe_subscription_id": nil,
+			}).Error; err != nil {
+			log.Error().Err(err).Uint("org_id", *subscription.OrganizationID).Msg("failed to downgrade org plan")
+		}
+		log.Info().Uint("org_id", *subscription.OrganizationID).Msg("subscription deleted for organization")
+	} else {
+		// User subscription
+		syncUserRole(subscription.UserID, stripe.SubscriptionStatusCanceled)
+		syncUsageLimits(subscription.UserID, "")
+		log.Info().Uint("user_id", subscription.UserID).Msg("subscription deleted for user")
+	}
 }
 
 // handlePaymentFailed processes failed payment events

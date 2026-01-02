@@ -28,6 +28,7 @@ var (
 	ErrCannotChangeOwnRole  = errors.New("cannot change your own role")
 	ErrMustHaveOwner        = errors.New("organization must have at least one owner")
 	ErrInvitationEmailTaken = errors.New("an invitation for this email already exists")
+	ErrSeatLimitExceeded    = errors.New("organization has reached its seat limit")
 )
 
 // slugRegex validates organization slugs
@@ -283,6 +284,15 @@ func (s *OrgService) RemoveMember(orgID, userID uint) error {
 func (s *OrgService) CreateInvitation(orgID, inviterID uint, email string, role models.OrganizationRole) (*models.OrganizationInvitation, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 
+	// Check seat limit before inviting
+	canAdd, err := s.CanAddMember(orgID)
+	if err != nil {
+		return nil, err
+	}
+	if !canAdd {
+		return nil, ErrSeatLimitExceeded
+	}
+
 	// Check if user is already a member
 	var user models.User
 	if err := s.db.Where("email = ?", email).First(&user).Error; err == nil {
@@ -443,4 +453,112 @@ func generateInvitationToken() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes), nil
+}
+
+// =====================
+// Billing-related methods
+// =====================
+
+// GetOrganizationByStripeCustomerID retrieves an organization by its Stripe customer ID
+func (s *OrgService) GetOrganizationByStripeCustomerID(customerID string) (*models.Organization, error) {
+	var org models.Organization
+	if err := s.db.Where("stripe_customer_id = ?", customerID).First(&org).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrOrgNotFound
+		}
+		return nil, err
+	}
+	return &org, nil
+}
+
+// UpdateOrganizationPlan updates the organization's plan and Stripe subscription info
+func (s *OrgService) UpdateOrganizationPlan(orgID uint, plan models.OrganizationPlan, stripeSubID *string) error {
+	updates := map[string]interface{}{
+		"plan": plan,
+	}
+	if stripeSubID != nil {
+		updates["stripe_subscription_id"] = *stripeSubID
+	}
+	return s.db.Model(&models.Organization{}).Where("id = ?", orgID).Updates(updates).Error
+}
+
+// SetOrganizationStripeCustomer sets the Stripe customer ID for an organization
+func (s *OrgService) SetOrganizationStripeCustomer(orgID uint, customerID string) error {
+	return s.db.Model(&models.Organization{}).Where("id = ?", orgID).
+		Update("stripe_customer_id", customerID).Error
+}
+
+// GetMemberCount returns the number of active members in an organization
+func (s *OrgService) GetMemberCount(orgID uint) (int64, error) {
+	var count int64
+	if err := s.db.Model(&models.OrganizationMember{}).
+		Where("organization_id = ? AND status = ?", orgID, models.MemberStatusActive).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// CanAddMember checks if the organization can add another member based on seat limits
+// Returns true if the organization has available seats or has unlimited seats
+func (s *OrgService) CanAddMember(orgID uint) (bool, error) {
+	org, err := s.GetOrganizationByID(orgID)
+	if err != nil {
+		return false, err
+	}
+
+	seatLimit := org.GetSeatLimit()
+	if seatLimit == 0 {
+		// Unlimited seats (enterprise)
+		return true, nil
+	}
+
+	memberCount, err := s.GetMemberCount(orgID)
+	if err != nil {
+		return false, err
+	}
+
+	// Count pending invitations as well
+	var inviteCount int64
+	if err := s.db.Model(&models.OrganizationInvitation{}).
+		Where("organization_id = ? AND accepted_at IS NULL AND expires_at > ?", orgID, time.Now()).
+		Count(&inviteCount).Error; err != nil {
+		return false, err
+	}
+
+	return int(memberCount)+int(inviteCount) < seatLimit, nil
+}
+
+// GetOrganizationSubscription retrieves the subscription for an organization
+func (s *OrgService) GetOrganizationSubscription(orgID uint) (*models.Subscription, error) {
+	var sub models.Subscription
+	if err := s.db.Where("organization_id = ?", orgID).First(&sub).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // No subscription
+		}
+		return nil, err
+	}
+	return &sub, nil
+}
+
+// CreateOrganizationSubscription creates a subscription for an organization
+func (s *OrgService) CreateOrganizationSubscription(sub *models.Subscription) error {
+	return s.db.Create(sub).Error
+}
+
+// UpdateOrganizationSubscription updates an organization's subscription
+func (s *OrgService) UpdateOrganizationSubscription(sub *models.Subscription) error {
+	return s.db.Save(sub).Error
+}
+
+// GetOrganizationByStripeSubscriptionID retrieves an organization by its Stripe subscription ID
+func (s *OrgService) GetOrganizationByStripeSubscriptionID(stripeSubID string) (*models.Organization, error) {
+	var org models.Organization
+	if err := s.db.Where("stripe_subscription_id = ?", stripeSubID).First(&org).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrOrgNotFound
+		}
+		return nil, err
+	}
+	return &org, nil
 }
