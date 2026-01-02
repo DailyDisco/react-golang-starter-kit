@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/response"
 	"react-golang-starter/internal/services"
 )
 
@@ -33,17 +33,17 @@ func (h *UsageHandler) GetCurrentUsage(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserIDFromContext(ctx)
 
 	if !ok || userID == 0 {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		response.Unauthorized(w, r, "unauthorized")
 		return
 	}
 
 	summary, err := h.usageService.GetCurrentUsageSummary(ctx, &userID, nil)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to get usage summary")
+		response.HandleErrorWithMessage(w, r, err, "failed to get usage summary")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, summary)
+	response.JSON(w, http.StatusOK, summary)
 }
 
 // GetUsageHistory returns usage history for past billing periods
@@ -61,7 +61,7 @@ func (h *UsageHandler) GetUsageHistory(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserIDFromContext(ctx)
 
 	if !ok || userID == 0 {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		response.Unauthorized(w, r, "unauthorized")
 		return
 	}
 
@@ -74,11 +74,11 @@ func (h *UsageHandler) GetUsageHistory(w http.ResponseWriter, r *http.Request) {
 
 	history, err := h.usageService.GetUsageHistory(ctx, &userID, nil, months)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to get usage history")
+		response.HandleErrorWithMessage(w, r, err, "failed to get usage history")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.JSON(w, http.StatusOK, map[string]interface{}{
 		"history": history,
 		"count":   len(history),
 	})
@@ -98,17 +98,17 @@ func (h *UsageHandler) GetAlerts(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserIDFromContext(ctx)
 
 	if !ok || userID == 0 {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		response.Unauthorized(w, r, "unauthorized")
 		return
 	}
 
 	alerts, err := h.usageService.GetUnacknowledgedAlerts(ctx, &userID, nil)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to get alerts")
+		response.HandleErrorWithMessage(w, r, err, "failed to get alerts")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.JSON(w, http.StatusOK, map[string]interface{}{
 		"alerts": alerts,
 		"count":  len(alerts),
 	})
@@ -131,40 +131,29 @@ func (h *UsageHandler) AcknowledgeAlert(w http.ResponseWriter, r *http.Request) 
 	userID, ok := auth.GetUserIDFromContext(ctx)
 
 	if !ok || userID == 0 {
-		writeError(w, http.StatusUnauthorized, "unauthorized")
+		response.Unauthorized(w, r, "unauthorized")
 		return
 	}
 
 	// Get alert ID from URL
 	alertIDStr := r.PathValue("id")
 	if alertIDStr == "" {
-		writeError(w, http.StatusBadRequest, "alert ID required")
+		response.BadRequest(w, r, "alert ID required")
 		return
 	}
 
 	alertID, err := strconv.ParseUint(alertIDStr, 10, 32)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid alert ID")
+		response.BadRequest(w, r, "invalid alert ID")
 		return
 	}
 
 	if err := h.usageService.AcknowledgeAlert(ctx, uint(alertID), userID); err != nil {
-		writeError(w, http.StatusNotFound, "alert not found")
+		response.NotFound(w, r, "alert not found")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.JSON(w, http.StatusOK, map[string]interface{}{
 		"message": "alert acknowledged",
 	})
-}
-
-// Helper functions for consistent responses
-func writeJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
 }

@@ -13,6 +13,7 @@ import (
 	"react-golang-starter/internal/ai"
 	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/cache"
+	"react-golang-starter/internal/config"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/email"
 	"react-golang-starter/internal/handlers"
@@ -64,7 +65,6 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 //
-// @host localhost:8080
 // @BasePath /api/v1
 //
 // @securityDefinitions.apikey BearerAuth
@@ -330,11 +330,11 @@ func main() {
 	r.Use(middleware.SentryMiddleware(sentryConfig))
 
 	r.Use(middleware.StructuredLoggerWithConfig(logConfig))
-	r.Use(chimiddleware.Recoverer)
+	r.Use(middleware.RecoveryMiddleware)
 
 	// CORS middleware for React frontend (MUST be before rate limiting so preflight OPTIONS requests work)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   getAllowedOrigins(),
+		AllowedOrigins:   config.GetAllowedOrigins(),
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Requested-With", "X-Request-ID", "Origin"},
 		ExposedHeaders:   []string{"Link"},
@@ -887,12 +887,19 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 				// Invitation management
 				r.Get("/invitations", orgHandler.ListInvitations)                    // GET /api/organizations/{orgSlug}/invitations
 				r.Delete("/invitations/{invitationId}", orgHandler.CancelInvitation) // DELETE /api/organizations/{orgSlug}/invitations/{invitationId}
+
+				// Billing (view only for admin+)
+				r.Get("/billing", orgHandler.GetOrganizationBilling) // GET /api/organizations/{orgSlug}/billing
 			})
 
 			// Owner only routes
 			r.Group(func(r chi.Router) {
 				r.Use(tenantMiddleware.RequireOrgRole(models.OrgRoleOwner))
 				r.Delete("/", orgHandler.DeleteOrganization) // DELETE /api/organizations/{orgSlug}
+
+				// Billing management (owner only)
+				r.Post("/billing/checkout", orgHandler.CreateOrganizationCheckout)    // POST /api/organizations/{orgSlug}/billing/checkout
+				r.Post("/billing/portal", orgHandler.CreateOrganizationBillingPortal) // POST /api/organizations/{orgSlug}/billing/portal
 			})
 		})
 	})
@@ -902,27 +909,4 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 		r.Use(auth.AuthMiddleware)
 		r.Post("/accept", orgHandler.AcceptInvitation) // POST /api/invitations/accept?token=xxx
 	})
-}
-
-// getAllowedOrigins returns the allowed CORS origins from environment variables
-// Falls back to common development origins if not set
-func getAllowedOrigins() []string {
-	originsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
-	if originsEnv != "" {
-		return strings.Split(originsEnv, ",")
-	}
-
-	// Default development origins - no wildcard to allow credentials
-	return []string{
-		"http://localhost:3000",
-		"http://localhost:3001",
-		"http://localhost:3002",
-		"http://localhost:5173",
-		"http://localhost:5174",
-		"http://localhost:5175",
-		"http://localhost:5193",
-		"http://localhost:8080",
-		"http://localhost:8081",
-		"http://localhost:8082",
-	}
 }

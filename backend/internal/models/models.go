@@ -500,8 +500,11 @@ type Subscription struct {
 	// When the subscription was soft deleted (null if not deleted)
 	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 
-	// User ID (foreign key)
-	UserID uint `json:"user_id" gorm:"uniqueIndex;not null"`
+	// User ID (foreign key) - required for billing contact
+	UserID uint `json:"user_id" gorm:"not null;index"`
+
+	// Organization ID (foreign key) - NULL for user subscriptions, set for org subscriptions
+	OrganizationID *uint `json:"organization_id,omitempty" gorm:"index"`
 
 	// Stripe subscription ID
 	StripeSubscriptionID string `json:"stripe_subscription_id" gorm:"uniqueIndex;not null"`
@@ -530,6 +533,7 @@ type Subscription struct {
 type SubscriptionResponse struct {
 	ID                 uint   `json:"id"`
 	UserID             uint   `json:"user_id"`
+	OrganizationID     *uint  `json:"organization_id,omitempty"`
 	Status             string `json:"status"`
 	StripePriceID      string `json:"stripe_price_id"`
 	CurrentPeriodStart string `json:"current_period_start"`
@@ -545,6 +549,7 @@ func (s *Subscription) ToSubscriptionResponse() SubscriptionResponse {
 	return SubscriptionResponse{
 		ID:                 s.ID,
 		UserID:             s.UserID,
+		OrganizationID:     s.OrganizationID,
 		Status:             s.Status,
 		StripePriceID:      s.StripePriceID,
 		CurrentPeriodStart: s.CurrentPeriodStart,

@@ -60,6 +60,28 @@ definitions:
       user_id:
         type: integer
     type: object
+  handlers.OrgBillingResponse:
+    properties:
+      has_subscription:
+        type: boolean
+      plan:
+        $ref: '#/definitions/models.OrganizationPlan'
+      seat_count:
+        type: integer
+      seat_limit:
+        type: integer
+      stripe_customer_id:
+        type: string
+      subscription:
+        $ref: '#/definitions/models.SubscriptionResponse'
+    type: object
+  handlers.OrgCheckoutRequest:
+    properties:
+      price_id:
+        type: string
+    required:
+    - price_id
+    type: object
   handlers.OrganizationResponse:
     properties:
       created_at:
@@ -1008,6 +1030,8 @@ definitions:
         type: string
       id:
         type: integer
+      organization_id:
+        type: integer
       status:
         type: string
       stripe_price_id:
@@ -1396,7 +1420,6 @@ definitions:
       version:
         type: string
     type: object
-host: localhost:8080
 info:
   contact:
     email: support@example.com
@@ -4289,6 +4312,124 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       summary: Update organization
+      tags:
+      - organizations
+  /organizations/{orgSlug}/billing:
+    get:
+      consumes:
+      - application/json
+      description: Get organization billing and subscription details (admin+ only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.OrgBillingResponse'
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get organization billing
+      tags:
+      - organizations
+  /organizations/{orgSlug}/billing/checkout:
+    post:
+      consumes:
+      - application/json
+      description: Create a Stripe checkout session for organization subscription
+        (owner only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      - description: Checkout request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.OrgCheckoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.CheckoutSessionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create organization checkout session
+      tags:
+      - organizations
+  /organizations/{orgSlug}/billing/portal:
+    post:
+      consumes:
+      - application/json
+      description: Create a Stripe billing portal session for subscription management
+        (owner only)
+      parameters:
+      - description: Organization slug
+        in: path
+        name: orgSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PortalSessionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create organization billing portal
       tags:
       - organizations
   /organizations/{orgSlug}/invitations:

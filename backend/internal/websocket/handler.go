@@ -2,10 +2,10 @@ package websocket
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/config"
 	"react-golang-starter/internal/response"
 
 	"github.com/rs/zerolog/log"
@@ -88,16 +88,10 @@ func extractTokenFromRequest(r *http.Request) (string, error) {
 	return "", http.ErrNoCookie
 }
 
-// getAllowedOrigins returns the list of allowed WebSocket origins
+// getAllowedOrigins returns the list of allowed WebSocket origins.
+// Uses the centralized CORS_ALLOWED_ORIGINS config and converts to WebSocket patterns.
 func getAllowedOrigins() []string {
-	origins := os.Getenv("ALLOWED_ORIGINS")
-	if origins == "" {
-		// Default to allowing localhost for development
-		return []string{"localhost:*", "127.0.0.1:*"}
-	}
-
-	// Parse comma-separated origins
-	originList := strings.Split(origins, ",")
+	originList := config.GetAllowedOrigins()
 	patterns := make([]string, 0, len(originList))
 
 	for _, origin := range originList {
@@ -106,7 +100,7 @@ func getAllowedOrigins() []string {
 			// Allow all origins (not recommended for production)
 			return []string{"*"}
 		}
-		// Convert http(s)://host to just host pattern
+		// Convert http(s)://host to just host pattern for WebSocket
 		origin = strings.TrimPrefix(origin, "https://")
 		origin = strings.TrimPrefix(origin, "http://")
 		patterns = append(patterns, origin)
