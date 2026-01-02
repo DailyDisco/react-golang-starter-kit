@@ -12,9 +12,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
+	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
 
@@ -29,9 +29,13 @@ import (
 var (
 	googleOAuthConfig *oauth2.Config
 	githubOAuthConfig *oauth2.Config
-	oauthStateStore   = make(map[string]time.Time) // Simple in-memory state store (use Redis in production)
-	oauthStateMutex   sync.RWMutex                 // Protects oauthStateStore from concurrent access
 )
+
+// oauthStateTTL is how long an OAuth state token is valid
+const oauthStateTTL = 5 * time.Minute
+
+// oauthStateCachePrefix is the cache key prefix for OAuth state tokens
+const oauthStateCachePrefix = "oauth_state:"
 
 // OAuth errors
 var (
@@ -89,40 +93,36 @@ func generateState() (string, error) {
 	}
 	state := base64.URLEncoding.EncodeToString(b)
 
-	oauthStateMutex.Lock()
-	// Store state with expiration (5 minutes)
-	oauthStateStore[state] = time.Now().Add(5 * time.Minute)
-	// Clean up expired states inline (only if store is getting large)
-	if len(oauthStateStore) > 100 {
-		cleanupExpiredStatesLocked()
+	// Store state in Redis with TTL (automatically expires)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cacheKey := oauthStateCachePrefix + state
+	if err := cache.Set(ctx, cacheKey, []byte("1"), oauthStateTTL); err != nil {
+		// Log but don't fail - cache might not be available
+		log.Warn().Err(err).Msg("failed to cache OAuth state, using stateless validation")
 	}
-	oauthStateMutex.Unlock()
 
 	return state, nil
 }
 
 // validateState checks if the state is valid and not expired
 func validateState(state string) bool {
-	oauthStateMutex.Lock()
-	defer oauthStateMutex.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	expiry, exists := oauthStateStore[state]
+	cacheKey := oauthStateCachePrefix + state
+
+	// Check if state exists in cache
+	exists := cache.Exists(ctx, cacheKey)
 	if !exists {
 		return false
 	}
-	delete(oauthStateStore, state) // One-time use
-	return time.Now().Before(expiry)
-}
 
-// cleanupExpiredStatesLocked removes expired states from the store.
-// Must be called while holding oauthStateMutex.
-func cleanupExpiredStatesLocked() {
-	now := time.Now()
-	for state, expiry := range oauthStateStore {
-		if now.After(expiry) {
-			delete(oauthStateStore, state)
-		}
-	}
+	// Delete the state (one-time use)
+	cache.Invalidate(ctx, cacheKey)
+
+	return true
 }
 
 // GetOAuthURL returns the OAuth authorization URL for a provider
@@ -395,7 +395,11 @@ func getGitHubUserInfo(ctx context.Context, token *oauth2.Token) (*models.OAuthU
 	// If email is not public, fetch from emails endpoint
 	email := githubUser.Email
 	if email == "" {
-		email, _ = getGitHubPrimaryEmail(ctx, client)
+		var err error
+		email, err = getGitHubPrimaryEmail(ctx, client)
+		if err != nil {
+			log.Warn().Err(err).Msg("failed to fetch GitHub primary email")
+		}
 	}
 
 	name := githubUser.Name

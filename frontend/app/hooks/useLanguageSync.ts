@@ -22,7 +22,7 @@ export function useLanguageSync() {
 
   // Fetch user preferences when authenticated
   const { data: preferences } = useQuery({
-    queryKey: queryKeys.settings.preferences,
+    queryKey: queryKeys.settings.preferences(),
     queryFn: () => SettingsService.getPreferences(),
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -33,7 +33,7 @@ export function useLanguageSync() {
     mutationFn: (newLanguage: string) => SettingsService.updatePreferences({ language: newLanguage }),
     onSuccess: () => {
       // Invalidate preferences cache
-      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.preferences });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.preferences() });
     },
   });
 

@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 
+import { handleCacheInvalidation, type CacheInvalidatePayload } from "../lib/cache-invalidation";
 import { logger } from "../lib/logger";
 import { useAuthStore } from "../stores/auth-store";
 import { useNotificationStore } from "../stores/notification-store";
 
 // WebSocket message types (must match backend)
-type MessageType = "notification" | "user_update" | "broadcast" | "ping" | "pong";
+type MessageType = "notification" | "user_update" | "broadcast" | "ping" | "pong" | "cache_invalidate" | "usage_alert";
 
 interface WebSocketMessage {
   type: MessageType;
@@ -26,6 +27,15 @@ interface NotificationPayload {
 interface UserUpdatePayload {
   field: string;
   value?: unknown;
+}
+
+interface UsageAlertPayload {
+  alertType: string;
+  usageType: string;
+  currentUsage: number;
+  limit: number;
+  percentageUsed: number;
+  message: string;
 }
 
 interface UseWebSocketOptions {
@@ -141,6 +151,32 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         case "pong":
           // Server responded to our ping
           break;
+
+        case "cache_invalidate": {
+          // Server is telling us to invalidate specific TanStack Query caches
+          // This happens when admin actions modify shared data (feature flags, settings, etc.)
+          const payload = message.payload as CacheInvalidatePayload;
+          handleCacheInvalidation(queryClient, payload);
+          break;
+        }
+
+        case "usage_alert": {
+          // Server is alerting us about usage limits
+          const payload = message.payload as UsageAlertPayload;
+          const notificationType = payload.alertType === "exceeded" ? "error" : "warning";
+          const title = payload.alertType === "exceeded" ? "Usage Limit Exceeded" : "Usage Warning";
+
+          addNotification({
+            title,
+            message: payload.message,
+            type: notificationType,
+            data: { usageType: payload.usageType, percentageUsed: payload.percentageUsed },
+          });
+
+          // Invalidate usage queries so dashboard reflects latest data
+          queryClient.invalidateQueries({ queryKey: ["usage"] });
+          break;
+        }
 
         default:
           logger.debug("Unknown WebSocket message type", { type: message.type });

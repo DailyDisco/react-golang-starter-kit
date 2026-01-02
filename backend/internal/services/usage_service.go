@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/websocket"
 
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -14,12 +15,49 @@ import (
 
 // UsageService handles usage metering operations
 type UsageService struct {
-	db *gorm.DB
+	db  *gorm.DB
+	hub *websocket.Hub
 }
 
 // NewUsageService creates a new usage service
 func NewUsageService(db *gorm.DB) *UsageService {
 	return &UsageService{db: db}
+}
+
+// SetHub sets the WebSocket hub for broadcasting alerts
+func (s *UsageService) SetHub(hub *websocket.Hub) {
+	s.hub = hub
+}
+
+// broadcastUsageAlert sends a usage alert to the user via WebSocket
+func (s *UsageService) broadcastUsageAlert(userID uint, alertType, usageType string, current, limit int64, percentage int) {
+	if s.hub == nil {
+		return
+	}
+
+	var message string
+	switch alertType {
+	case "exceeded":
+		message = fmt.Sprintf("You have exceeded your %s limit", usageType)
+	case "warning_90":
+		message = fmt.Sprintf("You have used 90%% of your %s limit", usageType)
+	case "warning_80":
+		message = fmt.Sprintf("You have used 80%% of your %s limit", usageType)
+	default:
+		message = fmt.Sprintf("Usage alert for %s", usageType)
+	}
+
+	payload := websocket.UsageAlertPayload{
+		AlertType:      alertType,
+		UsageType:      usageType,
+		CurrentUsage:   current,
+		Limit:          limit,
+		PercentageUsed: percentage,
+		Message:        message,
+	}
+
+	s.hub.SendToUser(userID, websocket.MessageTypeUsageAlert, payload)
+	log.Debug().Uint("user_id", userID).Str("alert_type", alertType).Str("usage_type", usageType).Msg("usage alert broadcasted")
 }
 
 // Common usage event types
@@ -306,11 +344,16 @@ func (s *UsageService) CheckLimits(ctx context.Context, userID *uint, orgID *uin
 					CreatedAt:      time.Now().Format(time.RFC3339),
 				}
 
-				// Use ON CONFLICT to avoid duplicates
-				s.db.WithContext(ctx).
+				// Use ON CONFLICT to avoid duplicates - check if it's a new alert
+				result := s.db.WithContext(ctx).
 					Where("user_id = ? AND alert_type = ? AND usage_type = ? AND period_start = ?",
 						userID, alertType, usageType, summary.PeriodStart).
 					FirstOrCreate(alert)
+
+				// If a new alert was created, broadcast via WebSocket
+				if result.RowsAffected > 0 && s.hub != nil && userID != nil {
+					s.broadcastUsageAlert(*userID, alertType, usageType, current, limit, percentage)
+				}
 			}
 		}
 	}

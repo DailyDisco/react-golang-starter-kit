@@ -2,6 +2,7 @@ package stripe
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
@@ -100,7 +101,7 @@ func (s *stripeService) CreateCustomer(ctx context.Context, user *models.User) (
 		Email: stripe.String(user.Email),
 		Name:  stripe.String(user.Name),
 		Metadata: map[string]string{
-			"user_id": string(rune(user.ID)),
+			"user_id": strconv.FormatUint(uint64(user.ID), 10),
 		},
 	}
 
@@ -115,8 +116,8 @@ func (s *stripeService) CreateCustomer(ctx context.Context, user *models.User) (
 // GetOrCreateCustomer returns existing customer ID or creates a new one
 func (s *stripeService) GetOrCreateCustomer(ctx context.Context, user *models.User) (string, error) {
 	// Check if user already has a Stripe customer ID
-	if user.StripeCustomerID != "" {
-		return user.StripeCustomerID, nil
+	if user.StripeCustomerID != nil && *user.StripeCustomerID != "" {
+		return *user.StripeCustomerID, nil
 	}
 
 	// Create new customer
@@ -126,7 +127,7 @@ func (s *stripeService) GetOrCreateCustomer(ctx context.Context, user *models.Us
 	}
 
 	// Update user with customer ID
-	user.StripeCustomerID = customerID
+	user.StripeCustomerID = &customerID
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 	if err := database.DB.Save(user).Error; err != nil {
 		log.Error().Err(err).Uint("user_id", user.ID).Msg("failed to save stripe customer ID")

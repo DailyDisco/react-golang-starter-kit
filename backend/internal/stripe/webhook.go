@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/services"
 )
 
 // HandleWebhook handles incoming Stripe webhook events
@@ -186,6 +188,9 @@ func handleSubscriptionCreated(sub *stripe.Subscription) {
 		}
 	}
 
+	// Sync usage limits based on subscription tier
+	syncUsageLimits(user.ID, priceID)
+
 	log.Info().Uint("user_id", user.ID).Msg("subscription created for user")
 }
 
@@ -203,8 +208,15 @@ func handleSubscriptionUpdated(sub *stripe.Subscription) {
 		return
 	}
 
+	// Get the price ID from the first item (may have changed on plan upgrade/downgrade)
+	var priceID string
+	if len(sub.Items.Data) > 0 {
+		priceID = sub.Items.Data[0].Price.ID
+	}
+
 	// Update subscription record
 	subscription.Status = string(sub.Status)
+	subscription.StripePriceID = priceID
 	subscription.CurrentPeriodStart = time.Unix(sub.CurrentPeriodStart, 0).Format(time.RFC3339)
 	subscription.CurrentPeriodEnd = time.Unix(sub.CurrentPeriodEnd, 0).Format(time.RFC3339)
 	subscription.CancelAtPeriodEnd = sub.CancelAtPeriodEnd
@@ -221,6 +233,9 @@ func handleSubscriptionUpdated(sub *stripe.Subscription) {
 
 	// Sync user role based on subscription status
 	syncUserRole(subscription.UserID, sub.Status)
+
+	// Sync usage limits based on subscription tier
+	syncUsageLimits(subscription.UserID, priceID)
 
 	log.Info().Uint("user_id", subscription.UserID).Msg("subscription updated for user")
 }
@@ -250,6 +265,9 @@ func handleSubscriptionDeleted(sub *stripe.Subscription) {
 
 	// Downgrade user role
 	syncUserRole(subscription.UserID, stripe.SubscriptionStatusCanceled)
+
+	// Reset usage limits to free tier
+	syncUsageLimits(subscription.UserID, "")
 
 	log.Info().Uint("user_id", subscription.UserID).Msg("subscription deleted for user")
 }
@@ -318,4 +336,15 @@ func syncUserRole(userID uint, status stripe.SubscriptionStatus) {
 		}
 		log.Info().Uint("user_id", userID).Str("new_role", newRole).Msg("user role synced")
 	}
+}
+
+// syncUsageLimits updates the user's usage limits based on their subscription tier
+func syncUsageLimits(userID uint, priceID string) {
+	ctx := context.Background()
+	usageService := services.NewUsageService(database.DB)
+	if err := usageService.UpdateUserLimits(ctx, userID, priceID); err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Str("price_id", priceID).Msg("failed to sync usage limits")
+		return
+	}
+	log.Info().Uint("user_id", userID).Str("price_id", priceID).Msg("usage limits synced")
 }

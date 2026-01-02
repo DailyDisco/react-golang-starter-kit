@@ -13,12 +13,48 @@ type MessageType string
 
 const (
 	// Message types for different events
-	MessageTypeNotification MessageType = "notification"
-	MessageTypeUserUpdate   MessageType = "user_update"
-	MessageTypeBroadcast    MessageType = "broadcast"
-	MessageTypePing         MessageType = "ping"
-	MessageTypePong         MessageType = "pong"
+	MessageTypeNotification    MessageType = "notification"
+	MessageTypeUserUpdate      MessageType = "user_update"
+	MessageTypeBroadcast       MessageType = "broadcast"
+	MessageTypePing            MessageType = "ping"
+	MessageTypePong            MessageType = "pong"
+	MessageTypeCacheInvalidate MessageType = "cache_invalidate"
+	MessageTypeUsageAlert      MessageType = "usage_alert"
 )
+
+// CacheInvalidatePayload is sent to clients when server-side cache is invalidated.
+// Clients should invalidate their corresponding TanStack Query cache entries.
+type CacheInvalidatePayload struct {
+	// QueryKeys are the TanStack Query keys to invalidate (e.g., ["featureFlags"], ["settings"])
+	QueryKeys []string `json:"queryKeys"`
+
+	// Event is the cache event type (e.g., "feature_flags:updated")
+	Event string `json:"event,omitempty"`
+
+	// Timestamp is the Unix timestamp when invalidation occurred
+	Timestamp int64 `json:"timestamp"`
+}
+
+// UsageAlertPayload is sent to clients when usage approaches or exceeds limits
+type UsageAlertPayload struct {
+	// AlertType is the type of alert (warning_80, warning_90, exceeded)
+	AlertType string `json:"alertType"`
+
+	// UsageType is the type of usage (api_calls, storage, etc.)
+	UsageType string `json:"usageType"`
+
+	// CurrentUsage is the current usage amount
+	CurrentUsage int64 `json:"currentUsage"`
+
+	// Limit is the maximum allowed usage
+	Limit int64 `json:"limit"`
+
+	// PercentageUsed is the percentage of the limit used
+	PercentageUsed int `json:"percentageUsed"`
+
+	// Message is a human-readable alert message
+	Message string `json:"message"`
+}
 
 // Message represents a WebSocket message
 type Message struct {

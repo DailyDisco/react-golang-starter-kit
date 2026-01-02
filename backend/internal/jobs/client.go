@@ -84,6 +84,7 @@ func InitializeWithPool(config *Config, pool *pgxpool.Pool) error {
 	river.AddWorker(workers, &SendPasswordResetEmailWorker{})
 	river.AddWorker(workers, &SendAnnouncementEmailWorker{})
 	river.AddWorker(workers, &ProcessStripeWebhookWorker{})
+	river.AddWorker(workers, &DataExportWorker{})
 
 	// Create River client
 	riverClient, err := river.NewClient(riverpgxv5.New(pool), &river.Config{

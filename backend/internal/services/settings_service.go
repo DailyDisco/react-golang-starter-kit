@@ -811,6 +811,9 @@ func (s *SettingsService) MarkAnnouncementEmailSent(announcementID uint) error {
 	if result.Error != nil {
 		return fmt.Errorf("failed to mark announcement email sent: %w", result.Error)
 	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("announcement not found: %d", announcementID)
+	}
 	return nil
 }
 

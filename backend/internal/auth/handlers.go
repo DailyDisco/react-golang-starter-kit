@@ -102,7 +102,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Name:                req.Name,
 		Email:               normalizedEmail,
 		Password:            hashedPassword,
-		VerificationToken:   verificationToken,
+		VerificationToken:   &verificationToken,
 		VerificationExpires: time.Now().Add(24 * time.Hour).Format(time.RFC3339),
 		EmailVerified:       false, // In production, you might want to send verification email
 		IsActive:            true,
@@ -443,7 +443,7 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	// Update user verification status
 	user.EmailVerified = true
-	user.VerificationToken = ""
+	user.VerificationToken = nil
 	user.VerificationExpires = ""
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 
@@ -508,7 +508,7 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	hashedResetToken := HashToken(resetToken)
 
 	// Update user with hashed reset token (separate from email verification token)
-	user.PasswordResetToken = hashedResetToken
+	user.PasswordResetToken = &hashedResetToken
 	user.PasswordResetExpires = time.Now().Add(1 * time.Hour).Format(time.RFC3339)
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 
@@ -595,7 +595,7 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	// Update user password and clear reset token
 	user.Password = hashedPassword
-	user.PasswordResetToken = ""
+	user.PasswordResetToken = nil
 	user.PasswordResetExpires = ""
 	user.UpdatedAt = time.Now().Format(time.RFC3339)
 

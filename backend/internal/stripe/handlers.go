@@ -291,7 +291,7 @@ func CreatePortalSession(config *Config) http.HandlerFunc {
 			return
 		}
 
-		if user.StripeCustomerID == "" {
+		if user.StripeCustomerID == nil || *user.StripeCustomerID == "" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			if err := json.NewEncoder(w).Encode(models.ErrorResponse{
@@ -305,7 +305,7 @@ func CreatePortalSession(config *Config) http.HandlerFunc {
 		}
 
 		// Create portal session
-		session, err := svc.CreatePortalSession(r.Context(), user.StripeCustomerID, config.PortalReturnURL)
+		session, err := svc.CreatePortalSession(r.Context(), *user.StripeCustomerID, config.PortalReturnURL)
 		if err != nil {
 			log.Error().Err(err).Uint("user_id", user.ID).Msg("failed to create portal session")
 			w.Header().Set("Content-Type", "application/json")

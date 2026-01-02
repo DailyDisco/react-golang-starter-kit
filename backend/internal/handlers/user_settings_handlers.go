@@ -3,18 +3,22 @@ package handlers
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/database"
+	"react-golang-starter/internal/jobs"
 	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/services"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -584,6 +588,7 @@ func CancelAccountDeletion(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Success 200 {object} models.SuccessResponse
 // @Failure 401 {object} models.ErrorResponse
+// @Failure 400 {object} models.ErrorResponse
 // @Router /api/users/me/export [post]
 func RequestDataExport(w http.ResponseWriter, r *http.Request) {
 	userID := getUserIDFromContext(r)
@@ -592,13 +597,120 @@ func RequestDataExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// In production, this would create a background job to generate the export
-	// and send an email when it's ready
+	// Check if there's already a pending or processing export
+	var existingExport models.DataExport
+	err := database.DB.Where(
+		"user_id = ? AND status IN ?",
+		userID,
+		[]string{models.ExportStatusPending, models.ExportStatusProcessing},
+	).First(&existingExport).Error
+	if err == nil {
+		WriteBadRequest(w, r, "An export is already in progress. Please wait for it to complete.")
+		return
+	}
+
+	// Get user for email
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		WriteNotFound(w, r, "User not found")
+		return
+	}
+
+	// Create export record
+	now := time.Now()
+	export := models.DataExport{
+		UserID:      userID,
+		Status:      models.ExportStatusPending,
+		RequestedAt: now.Format(time.RFC3339),
+		ExpiresAt:   now.AddDate(0, 0, 7).Format(time.RFC3339), // 7 days
+		CreatedAt:   now.Format(time.RFC3339),
+		UpdatedAt:   now.Format(time.RFC3339),
+	}
+	if err := database.DB.Create(&export).Error; err != nil {
+		log.Error().Err(err).Msg("failed to create data export record")
+		WriteInternalError(w, r, "Failed to create export request")
+		return
+	}
+
+	// Queue async job if job system is available
+	if jobs.IsAvailable() {
+		if err := jobs.EnqueueDataExport(r.Context(), userID, user.Email, export.ID); err != nil {
+			log.Error().Err(err).Msg("failed to queue data export job")
+			// Update export status to failed
+			database.DB.Model(&export).Update("status", models.ExportStatusFailed)
+			WriteInternalError(w, r, "Failed to queue export job")
+			return
+		}
+	} else {
+		// Job system not available - mark as failed
+		database.DB.Model(&export).Updates(map[string]interface{}{
+			"status":        models.ExportStatusFailed,
+			"error_message": "Job system not available",
+		})
+		WriteInternalError(w, r, "Export service temporarily unavailable")
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
 		Success: true,
 		Message: "Data export requested. You will receive an email when your export is ready for download.",
 	})
+}
+
+// DownloadDataExport handles downloading the exported data
+// @Summary Download data export
+// @Tags User Settings
+// @Security BearerAuth
+// @Success 200 {file} binary "ZIP file with user data"
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Router /api/users/me/export/download [get]
+func DownloadDataExport(w http.ResponseWriter, r *http.Request) {
+	userID := getUserIDFromContext(r)
+	if userID == 0 {
+		WriteUnauthorized(w, r, "Authentication required")
+		return
+	}
+
+	var export models.DataExport
+	if err := database.DB.
+		Where("user_id = ? AND status = ?", userID, models.ExportStatusCompleted).
+		Order("completed_at DESC").
+		First(&export).Error; err != nil {
+		WriteNotFound(w, r, "No completed export found")
+		return
+	}
+
+	// Check if export is expired
+	if export.ExpiresAt != "" {
+		expiresAt, err := time.Parse(time.RFC3339, export.ExpiresAt)
+		if err == nil && time.Now().After(expiresAt) {
+			database.DB.Model(&export).Update("status", models.ExportStatusExpired)
+			WriteNotFound(w, r, "Export has expired. Please request a new export.")
+			return
+		}
+	}
+
+	// Check if file exists
+	if export.FilePath == "" {
+		WriteNotFound(w, r, "Export file not found")
+		return
+	}
+
+	content, err := os.ReadFile(export.FilePath)
+	if err != nil {
+		log.Error().Err(err).Str("path", export.FilePath).Msg("failed to read export file")
+		WriteInternalError(w, r, "Failed to read export file")
+		return
+	}
+
+	// Set headers for file download
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="user_data_%d.zip"`, userID))
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Length", strconv.FormatInt(int64(len(content)), 10))
+
+	w.Write(content)
 }
 
 // ============ Avatar Management Handlers ============

@@ -20,6 +20,8 @@ export function createAppRouter() {
     },
     scrollRestoration: true,
     defaultPreload: "intent",
+    // Cache preloaded routes for 30 seconds (stale-while-revalidate)
+    defaultPreloadStaleTime: 30_000,
     // Add default error boundary and loading components
     defaultErrorComponent: ({ error }: { error: Error }) => (
       <div className="flex min-h-screen items-center justify-center">

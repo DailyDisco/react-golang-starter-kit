@@ -545,7 +545,7 @@ func CreateUser() http.HandlerFunc {
 			Name:                req.Name,
 			Email:               req.Email,
 			Password:            hashedPassword,
-			VerificationToken:   verificationToken,
+			VerificationToken:   &verificationToken,
 			VerificationExpires: time.Now().Add(24 * time.Hour).Format(time.RFC3339),
 			EmailVerified:       true, // Admin-created users are pre-verified
 			IsActive:            true,

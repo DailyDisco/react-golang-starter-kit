@@ -138,6 +138,23 @@ func validateProductionSecrets() {
 	zerologlog.Info().Msg("production secrets validation passed")
 }
 
+// HubBroadcaster adapts websocket.Hub to implement cache.CacheBroadcaster interface.
+// This breaks the import cycle between cache and websocket packages.
+type HubBroadcaster struct {
+	hub *websocket.Hub
+}
+
+// BroadcastCacheInvalidation implements cache.CacheBroadcaster interface
+func (h *HubBroadcaster) BroadcastCacheInvalidation(payload cache.CacheInvalidatePayload) {
+	// Convert to websocket payload format
+	wsPayload := websocket.CacheInvalidatePayload{
+		QueryKeys: payload.QueryKeys,
+		Event:     payload.Event,
+		Timestamp: payload.Timestamp,
+	}
+	h.hub.Broadcast(websocket.MessageTypeCacheInvalidate, wsPayload)
+}
+
 func main() {
 	// Load environment variables - try multiple locations
 	err := godotenv.Load(".env.local")
@@ -293,6 +310,9 @@ func main() {
 	wsHub := websocket.NewHub()
 	zerologlog.Info().Msg("WebSocket hub initialized")
 
+	// Initialize cache broadcaster for real-time cache invalidation via WebSocket
+	cache.InitBroadcaster(&HubBroadcaster{hub: wsHub})
+
 	// Create Chi router
 	r := chi.NewRouter()
 
@@ -330,6 +350,13 @@ func main() {
 	r.Use(middleware.SecurityHeaders(securityConfig))
 	if securityConfig.Enabled {
 		zerologlog.Info().Msg("security headers enabled")
+	}
+
+	// Cache headers middleware (applies Cache-Control based on route patterns)
+	cacheHeadersConfig := middleware.LoadCacheHeadersConfig()
+	r.Use(middleware.CacheHeaders(cacheHeadersConfig))
+	if cacheHeadersConfig.Enabled {
+		zerologlog.Info().Msg("cache headers middleware enabled")
 	}
 
 	// CSRF protection middleware
@@ -371,7 +398,7 @@ func main() {
 	r.Get("/ws", websocket.Handler(wsHub))
 
 	// Routes
-	setupRoutes(r, rateLimitConfig, stripeConfig, appService, fileService)
+	setupRoutes(r, rateLimitConfig, stripeConfig, appService, fileService, wsHub)
 
 	// Create server with timeouts to prevent slowloris and other DoS attacks
 	server := &http.Server{
@@ -437,7 +464,7 @@ func main() {
 	zerologlog.Info().Msg("server stopped gracefully")
 }
 
-func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *stripe.Config, appService *handlers.Service, fileService *services.FileService) {
+func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *stripe.Config, appService *handlers.Service, fileService *services.FileService, wsHub *websocket.Hub) {
 	// Simple test route at root level
 	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -455,7 +482,7 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *
 			}
 		})
 		r.Get("/health", appService.HealthCheck)
-		setupAPIRoutes(r, rateLimitConfig, stripeConfig, appService, fileService)
+		setupAPIRoutes(r, rateLimitConfig, stripeConfig, appService, fileService, wsHub)
 	}
 
 	// Mount API routes
@@ -477,13 +504,19 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *
 }
 
 // setupAPIRoutes configures all API endpoints
-func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *stripe.Config, appService *handlers.Service, fileService *services.FileService) {
-	_ = appService // Avoid unused variable warning
-
+func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *stripe.Config, appService *handlers.Service, fileService *services.FileService, wsHub *websocket.Hub) {
 	// Initialize organization service and handlers
 	orgService := services.NewOrgService(database.DB)
 	orgHandler := handlers.NewOrgHandler(orgService)
 	tenantMiddleware := auth.NewTenantMiddleware(database.DB)
+
+	// Initialize usage service and handlers
+	usageService := services.NewUsageService(database.DB)
+	usageService.SetHub(wsHub) // Enable WebSocket alerts
+	usageHandler := handlers.NewUsageHandler(usageService)
+
+	// Usage metering middleware (records API calls for authenticated users)
+	r.Use(middleware.UsageMiddleware(usageService))
 
 	// CSRF token endpoint - allows frontend to get a fresh CSRF token
 	csrfConfig := middleware.LoadCSRFConfig()
@@ -583,8 +616,9 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 			r.Post("/delete/cancel", handlers.CancelAccountDeletion) // POST /api/users/me/delete/cancel (backward compat)
 
 			// Data export
-			r.Post("/export", handlers.RequestDataExport)  // POST /api/users/me/export
-			r.Get("/export", handlers.GetDataExportStatus) // GET /api/users/me/export
+			r.Post("/export", handlers.RequestDataExport)          // POST /api/users/me/export
+			r.Get("/export", handlers.GetDataExportStatus)         // GET /api/users/me/export
+			r.Get("/export/download", handlers.DownloadDataExport) // GET /api/users/me/export/download
 
 			// Avatar management
 			r.Post("/avatar", handlers.UploadAvatar)   // POST /api/users/me/avatar
@@ -681,6 +715,19 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 
 	// Webhook routes (no auth - uses signature verification)
 	r.Post("/webhooks/stripe", stripe.HandleWebhook(stripeConfig))
+
+	// Usage metering routes
+	r.Route("/usage", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
+		r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
+
+		r.Get("/", usageHandler.GetCurrentUsage)        // GET /api/usage - Current period usage
+		r.Get("/history", usageHandler.GetUsageHistory) // GET /api/usage/history - Usage history
+
+		// Alerts
+		r.Get("/alerts", usageHandler.GetAlerts)                          // GET /api/usage/alerts
+		r.Post("/alerts/{id}/acknowledge", usageHandler.AcknowledgeAlert) // POST /api/usage/alerts/{id}/acknowledge
+	})
 
 	// AI routes (Gemini) - require authentication with separate rate limit tier
 	r.Route("/ai", func(r chi.Router) {

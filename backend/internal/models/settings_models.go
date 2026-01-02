@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -333,7 +334,7 @@ type AnnouncementBanner struct {
 	IsActive      bool            `json:"is_active" gorm:"default:true"`
 	IsDismissible bool            `json:"is_dismissible" gorm:"default:true"`
 	ShowOnPages   json.RawMessage `json:"show_on_pages" gorm:"type:jsonb"`
-	TargetRoles   []string        `json:"target_roles,omitempty" gorm:"type:text[]"`
+	TargetRoles   pq.StringArray  `json:"target_roles,omitempty" gorm:"type:text[]"`
 	Priority      int             `json:"priority" gorm:"default:0"`
 	StartsAt      *string         `json:"starts_at,omitempty"`
 	EndsAt        *string         `json:"ends_at,omitempty"`
