@@ -47,6 +47,31 @@ export interface UpdateMemberRoleRequest {
   role: "owner" | "admin" | "member";
 }
 
+export interface OrgBillingInfo {
+  plan: "free" | "pro" | "enterprise";
+  has_subscription: boolean;
+  subscription?: {
+    id: number;
+    status: string;
+    plan: string;
+    current_period_start: string;
+    current_period_end: string;
+    cancel_at_period_end: boolean;
+  };
+  seat_limit: number;
+  seat_count: number;
+  stripe_customer_id?: string;
+}
+
+export interface CheckoutSessionResponse {
+  session_id: string;
+  url: string;
+}
+
+export interface PortalSessionResponse {
+  url: string;
+}
+
 // API response types
 interface SuccessResponse<T> {
   success: boolean;
@@ -247,6 +272,56 @@ export class OrganizationService {
     }
 
     const data: SuccessResponse<Organization> = await response.json();
+    return data.data;
+  }
+
+  // ==================== Billing Methods ====================
+
+  /**
+   * Get organization billing information
+   */
+  static async getBilling(slug: string): Promise<OrgBillingInfo> {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/organizations/${slug}/billing`);
+
+    if (!response.ok) {
+      throw await parseErrorResponse(response, "Failed to fetch billing information");
+    }
+
+    const data: SuccessResponse<OrgBillingInfo> = await response.json();
+    return data.data;
+  }
+
+  /**
+   * Create a checkout session for organization subscription
+   */
+  static async createCheckoutSession(slug: string, priceId: string): Promise<CheckoutSessionResponse> {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/organizations/${slug}/billing/checkout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ price_id: priceId }),
+    });
+
+    if (!response.ok) {
+      throw await parseErrorResponse(response, "Failed to create checkout session");
+    }
+
+    const data: SuccessResponse<CheckoutSessionResponse> = await response.json();
+    return data.data;
+  }
+
+  /**
+   * Create a billing portal session for organization
+   */
+  static async createPortalSession(slug: string): Promise<PortalSessionResponse> {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/organizations/${slug}/billing/portal`, {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      throw await parseErrorResponse(response, "Failed to create billing portal session");
+    }
+
+    const data: SuccessResponse<PortalSessionResponse> = await response.json();
     return data.data;
   }
 }

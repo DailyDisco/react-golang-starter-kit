@@ -66,6 +66,7 @@ export const queryKeys = {
     all: ["organizations"] as const,
     members: (orgSlug: string) => [...queryKeys.organizations.all, orgSlug, "members"] as const,
     invitations: (orgSlug: string) => [...queryKeys.organizations.all, orgSlug, "invitations"] as const,
+    billing: (orgSlug: string) => [...queryKeys.organizations.all, orgSlug, "billing"] as const,
   },
 
   // Usage metering
