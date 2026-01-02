@@ -1,0 +1,95 @@
+# Test Docker Compose Configuration
+# Usage: docker compose -f docker-compose.test.yml up -d
+#
+# Services:
+#   - postgres-test: PostgreSQL 17 with tmpfs for fast I/O
+#   - dragonfly-test: Dragonfly/Redis for cache testing
+#   - localstack: S3 mock for file storage testing
+#   - mailpit: Email capture for testing email flows
+
+services:
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: react-golang-postgres-test
+    restart: "no"
+    environment:
+      POSTGRES_DB: starter_kit_test
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./scripts/test-db-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    tmpfs:
+      # Use tmpfs for faster I/O during tests
+      - /var/lib/postgresql/data
+    command:
+      - postgres
+      - -c
+      - fsync=off
+      - -c
+      - synchronous_commit=off
+      - -c
+      - full_page_writes=off
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=256MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d starter_kit_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
+    networks:
+      - test-network
+
+  dragonfly-test:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: react-golang-dragonfly-test
+    restart: "no"
+    ports:
+      - "6382:6379"
+    command: dragonfly --requirepass ""
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 5
+    networks:
+      - test-network
+
+  # LocalStack for S3 mock (optional - comment out if not needed)
+  localstack:
+    image: localstack/localstack:latest
+    container_name: react-golang-localstack-test
+    restart: "no"
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3
+      DEBUG: 0
+      DATA_DIR: /tmp/localstack/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - test-network
+
+  # Mailpit for email capture testing
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: react-golang-mailpit-test
+    restart: "no"
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
