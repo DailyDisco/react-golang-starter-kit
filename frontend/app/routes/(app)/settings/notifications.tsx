@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { queryKeys } from "@/lib/query-keys";
 import { SettingsService, type EmailNotificationSettings } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -21,7 +22,7 @@ function NotificationsSettingsPage() {
   const queryClient = useQueryClient();
 
   const { data: preferences, isLoading } = useQuery({
-    queryKey: ["user-preferences"],
+    queryKey: queryKeys.settings.preferences(),
     queryFn: () => SettingsService.getPreferences(),
   });
 
@@ -41,7 +42,7 @@ function NotificationsSettingsPage() {
   const updateMutation = useMutation({
     mutationFn: (data: EmailNotificationSettings) => SettingsService.updatePreferences({ email_notifications: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-preferences"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.preferences() });
       toast.success(t("notifications.toast.saved"));
     },
     onError: (error: Error) => {

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { queryKeys } from "@/lib/query-keys";
 import { AuthService } from "@/services/auth/authService";
 import { SettingsService, type TwoFactorSetupResponse, type UserSession } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,14 +29,20 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { sessionsQueryOptions } from "@/lib/route-query-options";
+
 export const Route = createFileRoute("/(app)/settings/security")({
+  // Prefetch sessions data before component renders for faster navigation
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(sessionsQueryOptions());
+  },
   component: SecuritySettingsPage,
 });
 
 function SecuritySettingsPage() {
   const { t } = useTranslation("settings");
   const { data: sessions, isLoading: sessionsLoading } = useQuery({
-    queryKey: ["user-sessions"],
+    queryKey: queryKeys.settings.sessions(),
     queryFn: () => SettingsService.getSessions(),
   });
 
@@ -199,7 +206,7 @@ function TwoFactorCard() {
   const [showBackupCodes, setShowBackupCodes] = useState(false);
 
   const { data: user } = useQuery({
-    queryKey: ["currentUser"],
+    queryKey: queryKeys.auth.user,
     queryFn: () => AuthService.getCurrentUser(),
     staleTime: 60 * 1000,
   });
@@ -219,7 +226,7 @@ function TwoFactorCard() {
   const verify2FAMutation = useMutation({
     mutationFn: (code: string) => SettingsService.verify2FA(code),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
       setBackupCodes(data.backup_codes);
       setShowBackupCodes(true);
       setSetupData(null);
@@ -234,7 +241,7 @@ function TwoFactorCard() {
   const disable2FAMutation = useMutation({
     mutationFn: (code: string) => SettingsService.disable2FA(code),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
       setShowDisable(false);
       setDisableCode("");
       toast.success(t("security.twoFactor.toast.disabled"));
@@ -443,7 +450,7 @@ function SessionsCard({ sessions, isLoading }: { sessions: UserSession[]; isLoad
   const revokeSessionMutation = useMutation({
     mutationFn: (sessionId: number) => SettingsService.revokeSession(sessionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-sessions"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.sessions() });
       toast.success(t("security.sessions.toast.revoked"));
     },
     onError: (error: Error) => {
@@ -454,7 +461,7 @@ function SessionsCard({ sessions, isLoading }: { sessions: UserSession[]; isLoad
   const revokeAllMutation = useMutation({
     mutationFn: () => SettingsService.revokeAllSessions(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-sessions"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.sessions() });
       toast.success(t("security.sessions.toast.allRevoked"));
     },
     onError: (error: Error) => {

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { ChangelogService, type AnnouncementCategory, type ChangelogEntry } from "@/services/admin/adminService";
 import { useQuery } from "@tanstack/react-query";
@@ -40,7 +41,7 @@ function ChangelogPage() {
   const limit = 10;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["changelog", page, limit, selectedCategory],
+    queryKey: queryKeys.changelog.entries(page, limit, selectedCategory),
     queryFn: () => ChangelogService.getChangelog(page, limit, selectedCategory),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

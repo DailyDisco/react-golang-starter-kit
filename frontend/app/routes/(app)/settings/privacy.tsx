@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { queryKeys } from "@/lib/query-keys";
 import { SettingsService, type DataExportStatus } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -45,7 +46,7 @@ function DataExportCard() {
   const queryClient = useQueryClient();
 
   const { data: exportStatus, isLoading } = useQuery({
-    queryKey: ["data-export-status"],
+    queryKey: queryKeys.settings.dataExportStatus(),
     queryFn: () => SettingsService.getDataExportStatus(),
     refetchInterval: (query) => {
       const data = query.state.data;
@@ -59,7 +60,7 @@ function DataExportCard() {
   const requestExportMutation = useMutation({
     mutationFn: () => SettingsService.requestDataExport(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["data-export-status"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.dataExportStatus() });
       toast.success(t("privacy.export.toast.requested"));
     },
     onError: (error: Error) => {
@@ -181,7 +182,7 @@ function AccountDeletionCard() {
     mutationFn: ({ password, reason }: { password: string; reason?: string }) =>
       SettingsService.requestAccountDeletion(password, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
       toast.success(t("privacy.delete.toast.scheduled"));
       setShowConfirm(false);
       setPassword("");

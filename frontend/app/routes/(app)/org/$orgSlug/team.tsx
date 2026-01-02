@@ -21,8 +21,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { orgMembersQueryOptions } from "@/lib/route-query-options";
+import { queryKeys } from "@/lib/query-keys";
 import {
   OrganizationService,
   type OrganizationInvitation,
@@ -30,12 +33,30 @@ import {
 } from "@/services/organizations/organizationService";
 import { useAuthStore } from "@/stores/auth-store";
 import { useCurrentOrg, useIsOrgAdmin } from "@/stores/org-store";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Crown, Loader2, MoreHorizontal, Shield, Trash2, User, UserPlus } from "lucide-react";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  AlertTriangle,
+  Building2,
+  Crown,
+  Loader2,
+  MoreHorizontal,
+  RefreshCw,
+  Shield,
+  Trash2,
+  User,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/(app)/org/$orgSlug/team")({
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(orgMembersQueryOptions(params.orgSlug)),
+  pendingMs: 200,
+  pendingComponent: TeamPagePending,
+  errorComponent: TeamPageError,
+  notFoundComponent: OrgNotFound,
   component: TeamPage,
 });
 
@@ -50,15 +71,12 @@ function TeamPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
 
-  // Fetch members
-  const { data: members = [], isLoading: membersLoading } = useQuery({
-    queryKey: ["org-members", orgSlug],
-    queryFn: () => OrganizationService.listMembers(orgSlug),
-  });
+  // Members are guaranteed by the loader - use suspense query
+  const { data: members } = useSuspenseQuery(orgMembersQueryOptions(orgSlug));
 
-  // Fetch invitations
-  const { data: invitations = [], isLoading: invitationsLoading } = useQuery({
-    queryKey: ["org-invitations", orgSlug],
+  // Fetch invitations (still using regular query since it depends on isAdmin)
+  const { data: invitations = [] } = useQuery({
+    queryKey: queryKeys.organizations.invitations(orgSlug),
     queryFn: () => OrganizationService.listInvitations(orgSlug),
     enabled: isAdmin,
   });
@@ -67,7 +85,7 @@ function TeamPage() {
   const inviteMutation = useMutation({
     mutationFn: () => OrganizationService.inviteMember(orgSlug, { email: inviteEmail, role: inviteRole }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["org-invitations", orgSlug] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.invitations(orgSlug) });
       toast.success("Invitation sent successfully");
       setInviteDialogOpen(false);
       setInviteEmail("");
@@ -83,7 +101,7 @@ function TeamPage() {
     mutationFn: ({ userId, role }: { userId: number; role: "owner" | "admin" | "member" }) =>
       OrganizationService.updateMemberRole(orgSlug, userId, { role }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["org-members", orgSlug] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.members(orgSlug) });
       toast.success("Role updated successfully");
     },
     onError: (error: Error) => {
@@ -95,7 +113,7 @@ function TeamPage() {
   const removeMemberMutation = useMutation({
     mutationFn: (userId: number) => OrganizationService.removeMember(orgSlug, userId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["org-members", orgSlug] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.members(orgSlug) });
       toast.success("Member removed successfully");
     },
     onError: (error: Error) => {
@@ -107,7 +125,7 @@ function TeamPage() {
   const cancelInvitationMutation = useMutation({
     mutationFn: (invitationId: number) => OrganizationService.cancelInvitation(orgSlug, invitationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["org-invitations", orgSlug] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.invitations(orgSlug) });
       toast.success("Invitation cancelled");
     },
     onError: (error: Error) => {
@@ -136,14 +154,6 @@ function TeamPage() {
         return <Badge variant="outline">Member</Badge>;
     }
   };
-
-  if (membersLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -348,6 +358,109 @@ function TeamPage() {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function TeamPagePending() {
+  return (
+    <div className="space-y-6">
+      {/* Header skeleton */}
+      <div className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="mt-2 h-4 w-64" />
+        </div>
+        <Skeleton className="h-10 w-32" />
+      </div>
+
+      {/* Members table skeleton */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-4 w-32" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center justify-between py-2">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-16" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function TeamPageError({ error, reset }: { error: Error; reset?: () => void }) {
+  const { orgSlug } = Route.useParams();
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-destructive/30 bg-destructive/5">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="bg-destructive/10 rounded-full p-2">
+              <AlertTriangle className="text-destructive h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="text-destructive">Failed to load team</CardTitle>
+              <CardDescription className="text-destructive/80">
+                {error.message || "An unexpected error occurred while loading the team."}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex gap-3">
+          {reset && (
+            <Button variant="outline" onClick={reset} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </Button>
+          )}
+          <Button variant="ghost" asChild>
+            <Link to="/org/$orgSlug/settings" params={{ orgSlug }}>
+              Go to Settings
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function OrgNotFound() {
+  return (
+    <div className="flex min-h-[400px] flex-col items-center justify-center">
+      <div className="text-center">
+        <div className="bg-muted mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+          <Building2 className="text-muted-foreground h-8 w-8" />
+        </div>
+        <h2 className="mb-2 text-xl font-semibold">Organization not found</h2>
+        <p className="text-muted-foreground mb-6 max-w-sm">
+          The organization you're looking for doesn't exist or you don't have permission to view it.
+        </p>
+        <div className="flex justify-center gap-3">
+          <Button variant="outline" asChild>
+            <Link to="/dashboard">Go to Dashboard</Link>
+          </Button>
+          <Button asChild>
+            <Link to="/settings">
+              <Users className="mr-2 h-4 w-4" />
+              View Your Organizations
+            </Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

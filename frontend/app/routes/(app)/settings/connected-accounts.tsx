@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { queryKeys } from "@/lib/query-keys";
 import { API_BASE_URL } from "@/services/api/client";
 import { SettingsService, type ConnectedAccount } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -37,14 +38,14 @@ function ConnectedAccountsPage() {
   ];
 
   const { data: connectedAccounts, isLoading } = useQuery({
-    queryKey: ["connected-accounts"],
+    queryKey: queryKeys.settings.connectedAccounts(),
     queryFn: () => SettingsService.getConnectedAccounts(),
   });
 
   const disconnectMutation = useMutation({
     mutationFn: (provider: string) => SettingsService.disconnectAccount(provider),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["connected-accounts"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.connectedAccounts() });
       toast.success(t("connectedAccounts.toast.disconnected"));
     },
     onError: (error: Error) => {

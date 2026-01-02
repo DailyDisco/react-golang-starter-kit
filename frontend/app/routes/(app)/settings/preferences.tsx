@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import {
   DATE_FORMATS,
@@ -20,7 +21,13 @@ import { Calendar, Clock, Globe, Loader2, Moon, Palette, Save, Sun } from "lucid
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { preferencesQueryOptions } from "@/lib/route-query-options";
+
 export const Route = createFileRoute("/(app)/settings/preferences")({
+  // Prefetch preferences data before component renders for faster navigation
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(preferencesQueryOptions());
+  },
   component: PreferencesSettingsPage,
 });
 
@@ -29,7 +36,7 @@ function PreferencesSettingsPage() {
   const queryClient = useQueryClient();
 
   const { data: preferences, isLoading } = useQuery({
-    queryKey: ["user-preferences"],
+    queryKey: queryKeys.settings.preferences(),
     queryFn: () => SettingsService.getPreferences(),
   });
 
@@ -56,7 +63,7 @@ function PreferencesSettingsPage() {
   const updateMutation = useMutation({
     mutationFn: (data: UpdatePreferencesRequest) => SettingsService.updatePreferences(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-preferences"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.preferences() });
       toast.success(t("preferences.toast.saved"));
     },
     onError: (error: Error) => {

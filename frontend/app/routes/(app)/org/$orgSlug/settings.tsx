@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { queryKeys } from "@/lib/query-keys";
 import { OrganizationService } from "@/services/organizations/organizationService";
 import { useCurrentOrg, useIsOrgOwner, useOrgStore } from "@/stores/org-store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,7 +43,7 @@ function OrgSettingsPage() {
     mutationFn: () => OrganizationService.updateOrganization(orgSlug, { name }),
     onSuccess: (updatedOrg) => {
       updateOrganization(orgSlug, { name: updatedOrg.name });
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.all });
       toast.success("Organization updated successfully");
     },
     onError: (error: Error) => {
@@ -55,7 +56,7 @@ function OrgSettingsPage() {
     mutationFn: () => OrganizationService.deleteOrganization(orgSlug),
     onSuccess: () => {
       removeOrganization(orgSlug);
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.all });
       toast.success("Organization deleted successfully");
       navigate({ to: "/" });
     },
@@ -69,7 +70,7 @@ function OrgSettingsPage() {
     mutationFn: () => OrganizationService.leaveOrganization(orgSlug),
     onSuccess: () => {
       removeOrganization(orgSlug);
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.all });
       toast.success("You have left the organization");
       navigate({ to: "/" });
     },

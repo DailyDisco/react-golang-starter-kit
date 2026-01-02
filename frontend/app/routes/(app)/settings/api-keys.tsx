@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { queryKeys } from "@/lib/query-keys";
 import { SettingsService, type CreateAPIKeyRequest, type UserAPIKey } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -23,7 +24,13 @@ import { AlertTriangle, Brain, Check, Eye, EyeOff, Key, Loader2, Plus, Sparkles,
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { apiKeysQueryOptions } from "@/lib/route-query-options";
+
 export const Route = createFileRoute("/(app)/settings/api-keys")({
+  // Prefetch API keys data before component renders for faster navigation
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(apiKeysQueryOptions());
+  },
   component: APIKeysSettingsPage,
 });
 
@@ -55,14 +62,14 @@ function APIKeysSettingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState<UserAPIKey | null>(null);
 
   const { data: apiKeys, isLoading } = useQuery({
-    queryKey: ["user-api-keys"],
+    queryKey: queryKeys.settings.apiKeys(),
     queryFn: () => SettingsService.getAPIKeys(),
   });
 
   const deleteKeyMutation = useMutation({
     mutationFn: (id: number) => SettingsService.deleteAPIKey(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-api-keys"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.apiKeys() });
       toast.success(t("apiKeys.toast.deleted"));
       setShowDeleteDialog(null);
     },
@@ -89,7 +96,7 @@ function APIKeysSettingsPage() {
     mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
       SettingsService.updateAPIKey(id, { is_active: isActive }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-api-keys"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.apiKeys() });
       toast.success(t("apiKeys.toast.updated"));
     },
     onError: (error: Error) => {
@@ -318,7 +325,7 @@ function AddAPIKeyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const createKeyMutation = useMutation({
     mutationFn: (req: CreateAPIKeyRequest) => SettingsService.createAPIKey(req),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-api-keys"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.apiKeys() });
       toast.success(t("apiKeys.toast.created"));
       onOpenChange(false);
       setFormData({ provider: "gemini", name: "", api_key: "" });

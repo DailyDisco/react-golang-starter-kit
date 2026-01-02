@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { CACHE_TIMES } from "@/lib/cache-config";
+import { queryKeys } from "@/lib/query-keys";
 import { AuthService } from "@/services/auth/authService";
 import { SettingsService } from "@/services/settings/settingsService";
 import type { SocialLinks } from "@/services/types";
@@ -61,9 +63,9 @@ function ProfileSettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: user, isLoading } = useQuery({
-    queryKey: ["currentUser"],
+    queryKey: queryKeys.auth.user,
     queryFn: () => AuthService.getCurrentUser(),
-    staleTime: 60 * 1000,
+    staleTime: CACHE_TIMES.USER_DATA,
   });
 
   const [formData, setFormData] = useState({
@@ -97,7 +99,7 @@ function ProfileSettingsPage() {
     mutationFn: (data: { name?: string; email?: string; bio?: string; location?: string; social_links?: string }) =>
       SettingsService.updateProfile(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
       toast.success(t("profile.toast.profileUpdated"));
     },
     onError: (error: Error) => {
@@ -108,7 +110,7 @@ function ProfileSettingsPage() {
   const uploadAvatarMutation = useMutation({
     mutationFn: (file: File) => SettingsService.uploadAvatar(file),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
       toast.success(t("profile.toast.avatarUploaded"));
     },
     onError: (error: Error) => {
@@ -119,7 +121,7 @@ function ProfileSettingsPage() {
   const deleteAvatarMutation = useMutation({
     mutationFn: () => SettingsService.deleteAvatar(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
       toast.success(t("profile.toast.avatarRemoved"));
     },
     onError: (error: Error) => {

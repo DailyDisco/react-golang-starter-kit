@@ -2,13 +2,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { queryKeys } from "@/lib/query-keys";
 import { SettingsService, type LoginHistoryEntry } from "@/services/settings/settingsService";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Check, Chrome, Clock, Globe, MapPin, Monitor, RefreshCw, Smartphone, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { loginHistoryQueryOptions } from "@/lib/route-query-options";
+
 export const Route = createFileRoute("/(app)/settings/login-history")({
+  // Prefetch login history data before component renders for faster navigation
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(loginHistoryQueryOptions());
+  },
   component: LoginHistoryPage,
 });
 
@@ -20,7 +27,7 @@ function LoginHistoryPage() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["login-history"],
+    queryKey: queryKeys.settings.loginHistory(),
     queryFn: () => SettingsService.getLoginHistory(50),
   });
 
