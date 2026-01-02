@@ -17,6 +17,10 @@ Full-stack SaaS starter with React 19 + Go 1.25. Multi-tenant, WebSocket, Stripe
 | "Review architecture", "review this design" | Load `prompts/stack-review.md` |
 | "Security review", "check for vulnerabilities" | Load `prompts/security-audit.md` |
 | "Is feature complete?", "what am I missing?" | Load `prompts/feature-checklist.md` |
+| "Check my environment", "setup issues", "env not working" | `/env-check` |
+| "Test this endpoint", "debug API", "curl command" | `/debug-api` |
+| "Check types match", "API contract", "Go ↔ TypeScript" | Load `prompts/api-contract-review.md` |
+| "Ready to deploy?", "deployment checklist" | Load `prompts/deployment-checklist.md` |
 
 **After completing scaffolding tasks**, always remind the user of next steps (e.g., "Run `make migrate-up` to apply the migration").
 
@@ -124,6 +128,48 @@ make seed             # Seed test data
 | Main routes | `backend/cmd/main.go` |
 | Models | `backend/internal/models/models.go` |
 | Auth middleware | `backend/internal/auth/middleware.go` |
+
+---
+
+## Project Memory
+
+This project uses `.claude/memory/memory.md` for persistent context across sessions.
+
+**Location:** [.claude/memory/memory.md](.claude/memory/memory.md)
+
+**Features:**
+
+- Automatically loaded at session start (via `memory-sync.sh` hook)
+- Timestamp updated at session end
+- Version controlled - committed to git
+
+**Usage:**
+
+- Add notes: `.claude/hooks/memory-sync.sh add-note "Your note"`
+- Add learnings: `.claude/hooks/memory-sync.sh add-learning "What you learned"`
+- Add decisions: `.claude/hooks/memory-sync.sh add-decision "Decision made"`
+
+---
+
+## Architecture Decision Records
+
+Decisions are tracked in `.claude/decisions/` using MADR format.
+
+**Index:** [.claude/decisions/index.md](.claude/decisions/index.md)
+
+**Creating a new ADR:**
+
+1. Copy template: `cp .claude/decisions/0000-template.md .claude/decisions/0001-my-decision.md`
+2. Fill in the template (Status, Context, Decision, Consequences)
+3. Index auto-updates on save (via `adr-index.sh` hook)
+4. Commit: `git commit -m "docs(adr): add ADR-0001 my decision"`
+
+**Status Lifecycle:**
+
+- **Proposed** - Under discussion
+- **Accepted** - Approved and in effect
+- **Deprecated** - No longer applies
+- **Superseded** - Replaced by another ADR
 
 ---
 
@@ -236,6 +282,34 @@ Keep frontend types aligned with backend models:
 - Detects drift between Go and TS types
 - Preserves custom type extensions
 
+### `/env-check` - Environment Validation
+
+Validate environment setup before starting development:
+
+```bash
+/env-check
+```
+
+**Features:**
+- Checks `.env` file exists and has required vars
+- Validates formats (JWT_SECRET length, DB_PORT numeric, etc.)
+- Verifies Docker containers are running
+- Tests database and cache connectivity
+
+### `/debug-api` - API Testing Helper
+
+Generate curl commands for testing API endpoints:
+
+```bash
+/debug-api
+```
+
+**Features:**
+- Generates curl commands with proper JWT cookie auth
+- Handles CSRF tokens for mutations
+- Shows expected response shapes
+- Includes troubleshooting tips
+
 ---
 
 ## Project Prompts
@@ -247,6 +321,8 @@ Load these prompts for specialized analysis:
 | `stack-review.md` | Architecture review for React+Go |
 | `feature-checklist.md` | Full-stack feature completion checklist |
 | `security-audit.md` | Security review specific to this stack |
+| `api-contract-review.md` | Go ↔ TypeScript type alignment |
+| `deployment-checklist.md` | Pre-production readiness checklist |
 
 Usage: Reference in conversation or use `/prompt` skill.
 
@@ -311,19 +387,30 @@ Pre-configured MCP servers in `.mcp.json`:
 .claude/
 ├── CLAUDE.md                          # This file
 ├── settings.local.json.template       # Settings template
+├── memory/
+│   └── memory.md                      # Persistent session context
+├── decisions/
+│   ├── 0000-template.md               # MADR template
+│   └── index.md                       # Auto-generated index
 ├── skills/
 │   ├── scaffold-service/              # Go service scaffolding
 │   ├── scaffold-feature/              # Full-stack feature scaffolding
 │   ├── add-migration/                 # Database migration generator
-│   └── sync-models/                   # Go → TypeScript sync
+│   ├── sync-models/                   # Go → TypeScript sync
+│   ├── env-check/                     # Environment validation
+│   └── debug-api/                     # API testing helper
 ├── hooks/
+│   ├── memory-sync.sh                 # SessionStart/Stop memory hook
+│   ├── adr-index.sh                   # ADR auto-indexing
 │   ├── go-service-pattern.sh          # Go service validation
 │   ├── query-key-pattern.sh           # Query key validation
 │   └── hook-naming.sh                 # Hook naming validation
 ├── prompts/
 │   ├── stack-review.md                # Architecture review
 │   ├── feature-checklist.md           # Feature completion checklist
-│   └── security-audit.md              # Security review
+│   ├── security-audit.md              # Security review
+│   ├── api-contract-review.md         # Go ↔ TypeScript alignment
+│   └── deployment-checklist.md        # Pre-production checklist
 └── agents/
     └── fullstack-reviewer/            # Stack-aware code reviewer
 ```

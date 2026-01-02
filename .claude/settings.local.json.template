@@ -3,6 +3,18 @@
   "description": "Claude Code settings template for React + Go Starter Kit. Copy to settings.local.json and customize.",
 
   "hooks": {
+    "SessionStart": [
+      {
+        "command": ".claude/hooks/memory-sync.sh load",
+        "description": "Load project memory at session start"
+      }
+    ],
+    "SessionStop": [
+      {
+        "command": ".claude/hooks/memory-sync.sh save",
+        "description": "Save project memory timestamp at session end"
+      }
+    ],
     "PostEdit": [
       {
         "matcher": "backend/internal/services/*_service.go",
@@ -18,6 +30,11 @@
         "matcher": "frontend/app/hooks/**/*.ts",
         "command": ".claude/hooks/hook-naming.sh \"$FILE\" \"$CONTENT\"",
         "description": "Validate hook naming conventions"
+      },
+      {
+        "matcher": ".claude/decisions/[0-9]*.md",
+        "command": ".claude/hooks/adr-index.sh",
+        "description": "Auto-update ADR index when decisions change"
       }
     ]
   },
@@ -58,6 +75,8 @@
   "context": {
     "include": [
       ".claude/CLAUDE.md",
+      ".claude/memory/memory.md",
+      ".claude/decisions/index.md",
       "README.md",
       "backend/internal/models/models.go",
       "frontend/app/lib/query-keys.ts"
