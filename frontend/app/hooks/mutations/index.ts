@@ -14,3 +14,33 @@ export { useCreateCheckout, useCreatePortalSession, useRefreshSubscription } fro
 
 // AI
 export { useAIChat, useAIChatAdvanced, useAIAnalyzeImage, useAIEmbeddings } from "./use-ai-mutations";
+
+// Settings
+export {
+  useChangePassword,
+  useCreateAPIKey,
+  useDeleteAPIKey,
+  useDeleteAvatar,
+  useDisable2FA,
+  useRevokeAllSessions,
+  useRevokeSession,
+  useSetup2FA,
+  useTestAPIKey,
+  useUpdateAPIKey,
+  useUpdateNotifications,
+  useUpdatePreferences,
+  useUpdateProfile,
+  useUploadAvatar,
+  useVerify2FA,
+} from "./use-settings-mutations";
+
+// Organizations
+export {
+  useCancelInvitation,
+  useDeleteOrganization,
+  useInviteMember,
+  useLeaveOrganization,
+  useRemoveMember,
+  useUpdateMemberRole,
+  useUpdateOrganization,
+} from "./use-org-mutations";

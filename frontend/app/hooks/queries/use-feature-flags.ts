@@ -1,13 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { GC_TIMES, SWR_CONFIG } from "../../lib/cache-config";
 import { queryKeys } from "../../lib/query-keys";
 import { FeatureFlagService } from "../../services/admin/adminService";
 import type { UseFeatureFlagResult, UseFeatureFlagsResult } from "../../services/feature-flags/types";
 import { useAuthStore } from "../../stores/auth-store";
 
 /**
- * Hook to fetch all feature flags for the current user
- * Automatically fetches when user is authenticated and caches for 5 minutes
+ * Hook to fetch all feature flags for the current user.
+ * Uses stale-while-revalidate pattern since flags rarely change.
+ * Shows cached data immediately while refreshing in background.
+ * Real-time updates are handled via WebSocket cache_invalidate messages.
  */
 export function useFeatureFlags(): UseFeatureFlagsResult {
   const user = useAuthStore((state) => state.user);
@@ -18,8 +21,8 @@ export function useFeatureFlags(): UseFeatureFlagsResult {
     queryKey: queryKeys.featureFlags.user(),
     queryFn: () => FeatureFlagService.getFlags(),
     enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000, // 5 minutes - flags don't change often
-    gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
+    ...SWR_CONFIG.STABLE,
+    gcTime: GC_TIMES.FEATURE_FLAGS,
     placeholderData: {},
   });
 

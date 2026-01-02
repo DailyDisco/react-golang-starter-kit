@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "../services/api/client";
+import { isNotModifiedError } from "./etag-cache";
 import { logger } from "./logger";
 
 /**
@@ -54,9 +55,14 @@ export const queryClient = new QueryClient({
       // Keep unused data in cache for 5 minutes
       gcTime: 1000 * 60 * 5, // 5 minutes (formerly cacheTime)
       retry: (failureCount, error) => {
+        // Don't retry on 304 Not Modified - this is expected behavior for ETag caching
+        if (isNotModifiedError(error)) {
+          return false;
+        }
         // Don't retry on 4xx client errors (bad request, unauthorized, etc.)
         // These are client-side issues that won't be fixed by retrying
-        if (error instanceof Error && isClientError(error)) {
+        const errorObj = error as Error;
+        if (errorObj && typeof errorObj === "object" && isClientError(errorObj)) {
           return false;
         }
         // Retry up to 2 times for other errors (network issues, 5xx server errors, etc.)

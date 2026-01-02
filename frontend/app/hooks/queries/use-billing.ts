@@ -1,31 +1,36 @@
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
 
-import { CACHE_TIMES } from "../../lib/cache-config";
-import { logger } from "../../lib/logger";
+import { CACHE_TIMES, GC_TIMES, SWR_CONFIG } from "../../lib/cache-config";
+import { queryKeys } from "../../lib/query-keys";
 import { BillingService } from "../../services/billing/billingService";
 import { useAuthStore } from "../../stores/auth-store";
 
 /**
- * Hook to fetch billing configuration (publishable key)
+ * Hook to fetch billing configuration (publishable key).
+ * Uses stale-while-revalidate pattern since billing config almost never changes.
+ * Shows cached data immediately while refreshing in background.
  */
 export function useBillingConfig() {
   return useQuery({
-    queryKey: ["billing", "config"],
+    queryKey: queryKeys.billing.config(),
     queryFn: () => BillingService.getConfig(),
-    staleTime: CACHE_TIMES.BILLING_CONFIG,
+    ...SWR_CONFIG.STABLE,
+    gcTime: GC_TIMES.BILLING,
     retry: 1,
   });
 }
 
 /**
- * Hook to fetch available subscription plans
+ * Hook to fetch available subscription plans.
+ * Uses stale-while-revalidate pattern since plans rarely change.
+ * Shows cached data immediately while refreshing in background.
  */
 export function useBillingPlans() {
   return useQuery({
-    queryKey: ["billing", "plans"],
+    queryKey: queryKeys.billing.plans(),
     queryFn: () => BillingService.getPlans(),
-    staleTime: CACHE_TIMES.BILLING_PLANS,
+    ...SWR_CONFIG.STABLE,
+    gcTime: GC_TIMES.BILLING,
     retry: 1,
   });
 }
@@ -37,7 +42,7 @@ export function useSubscription() {
   const { isAuthenticated } = useAuthStore();
 
   return useQuery({
-    queryKey: ["billing", "subscription"],
+    queryKey: queryKeys.billing.subscription(),
     queryFn: () => BillingService.getSubscription(),
     enabled: isAuthenticated,
     staleTime: CACHE_TIMES.SUBSCRIPTION,

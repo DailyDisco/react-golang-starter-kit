@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { CACHE_TIMES } from "../../lib/cache-config";
 import { logger } from "../../lib/logger";
+import { queryKeys } from "../../lib/query-keys";
 import { FileService, type FileResponse, type StorageStatus } from "../../services";
 import { useAuthStore } from "../../stores/auth-store";
 
@@ -11,29 +13,29 @@ export function useFiles(limit?: number, offset?: number) {
   const { isAuthenticated } = useAuthStore();
 
   return useQuery<FileResponse[], Error>({
-    queryKey: ["files", limit, offset],
+    queryKey: queryKeys.files.list(limit, offset),
     queryFn: () => FileService.fetchFiles(limit, offset),
     enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_TIMES.FILES,
     retry: 2,
   });
 }
 
 export function useFileUrl(fileId: number) {
   return useQuery<string, Error>({
-    queryKey: ["file-url", fileId],
+    queryKey: queryKeys.files.url(fileId),
     queryFn: () => FileService.getFileUrl(fileId),
     enabled: !!fileId && fileId > 0,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: CACHE_TIMES.FILE_URL,
     retry: 1,
   });
 }
 
 export function useStorageStatus() {
   return useQuery<StorageStatus, Error>({
-    queryKey: ["storage-status"],
+    queryKey: queryKeys.files.storageStatus(),
     queryFn: () => FileService.getStorageStatus(),
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: CACHE_TIMES.STORAGE_STATUS,
     retry: 1,
   });
 }
