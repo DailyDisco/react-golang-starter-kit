@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/models"
 
 	"gorm.io/gorm"
@@ -31,10 +32,13 @@ func NewTenantMiddleware(db *gorm.DB) *TenantMiddleware {
 
 // RequireOrganization middleware requires a valid organization context
 // It extracts the org slug from chi URL param "orgSlug" or X-Organization-Slug header
+// Uses cache-first lookup to reduce database queries
 func (m *TenantMiddleware) RequireOrganization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		// Get authenticated user
-		user, ok := GetUserFromContext(r.Context())
+		user, ok := GetUserFromContext(ctx)
 		if !ok || user == nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
@@ -51,32 +55,52 @@ func (m *TenantMiddleware) RequireOrganization(next http.Handler) http.Handler {
 			return
 		}
 
-		// Find organization
-		var org models.Organization
-		if err := m.db.Where("slug = ?", orgSlug).First(&org).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				http.Error(w, "Organization not found", http.StatusNotFound)
+		// Try cache first for organization
+		var org *models.Organization
+		cachedOrg, _ := cache.GetOrganization(ctx, orgSlug)
+		if cachedOrg != nil {
+			org = cachedOrg
+		} else {
+			// Cache miss - query database
+			var dbOrg models.Organization
+			if err := m.db.Where("slug = ?", orgSlug).First(&dbOrg).Error; err != nil {
+				if err == gorm.ErrRecordNotFound {
+					http.Error(w, "Organization not found", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "Database error", http.StatusInternalServerError)
 				return
 			}
-			http.Error(w, "Database error", http.StatusInternalServerError)
-			return
+			org = &dbOrg
+			// Cache the result
+			cache.SetOrganization(ctx, org)
 		}
 
-		// Check membership
-		var membership models.OrganizationMember
-		if err := m.db.Where("organization_id = ? AND user_id = ? AND status = ?",
-			org.ID, user.ID, models.MemberStatusActive).First(&membership).Error; err != nil {
-			if err == gorm.ErrRecordNotFound {
-				http.Error(w, "Not a member of this organization", http.StatusForbidden)
+		// Try cache first for membership
+		var membership *models.OrganizationMember
+		cachedMembership, _ := cache.GetMembership(ctx, org.ID, user.ID)
+		if cachedMembership != nil && cachedMembership.Status == models.MemberStatusActive {
+			membership = cachedMembership
+		} else {
+			// Cache miss or stale - query database
+			var dbMembership models.OrganizationMember
+			if err := m.db.Where("organization_id = ? AND user_id = ? AND status = ?",
+				org.ID, user.ID, models.MemberStatusActive).First(&dbMembership).Error; err != nil {
+				if err == gorm.ErrRecordNotFound {
+					http.Error(w, "Not a member of this organization", http.StatusForbidden)
+					return
+				}
+				http.Error(w, "Database error", http.StatusInternalServerError)
 				return
 			}
-			http.Error(w, "Database error", http.StatusInternalServerError)
-			return
+			membership = &dbMembership
+			// Cache the result
+			cache.SetMembership(ctx, membership)
 		}
 
 		// Add organization and membership to context
-		ctx := context.WithValue(r.Context(), OrganizationContextKey, &org)
-		ctx = context.WithValue(ctx, MembershipContextKey, &membership)
+		ctx = context.WithValue(ctx, OrganizationContextKey, org)
+		ctx = context.WithValue(ctx, MembershipContextKey, membership)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -104,9 +128,12 @@ func (m *TenantMiddleware) RequireOrgRole(minRole models.OrganizationRole) func(
 
 // OptionalOrganization middleware optionally extracts organization context
 // Use this when org context is optional (e.g., listing all user's organizations)
+// Uses cache-first lookup to reduce database queries
 func (m *TenantMiddleware) OptionalOrganization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, ok := GetUserFromContext(r.Context())
+		ctx := r.Context()
+
+		user, ok := GetUserFromContext(ctx)
 		if !ok || user == nil {
 			next.ServeHTTP(w, r)
 			return
@@ -123,26 +150,46 @@ func (m *TenantMiddleware) OptionalOrganization(next http.Handler) http.Handler 
 			return
 		}
 
-		// Find organization
-		var org models.Organization
-		if err := m.db.Where("slug = ?", orgSlug).First(&org).Error; err != nil {
-			// Continue without org context
-			next.ServeHTTP(w, r)
-			return
+		// Try cache first for organization
+		var org *models.Organization
+		cachedOrg, _ := cache.GetOrganization(ctx, orgSlug)
+		if cachedOrg != nil {
+			org = cachedOrg
+		} else {
+			// Cache miss - query database
+			var dbOrg models.Organization
+			if err := m.db.Where("slug = ?", orgSlug).First(&dbOrg).Error; err != nil {
+				// Continue without org context
+				next.ServeHTTP(w, r)
+				return
+			}
+			org = &dbOrg
+			// Cache the result
+			cache.SetOrganization(ctx, org)
 		}
 
-		// Check membership
-		var membership models.OrganizationMember
-		if err := m.db.Where("organization_id = ? AND user_id = ? AND status = ?",
-			org.ID, user.ID, models.MemberStatusActive).First(&membership).Error; err != nil {
-			// Continue without org context
-			next.ServeHTTP(w, r)
-			return
+		// Try cache first for membership
+		var membership *models.OrganizationMember
+		cachedMembership, _ := cache.GetMembership(ctx, org.ID, user.ID)
+		if cachedMembership != nil && cachedMembership.Status == models.MemberStatusActive {
+			membership = cachedMembership
+		} else {
+			// Cache miss - query database
+			var dbMembership models.OrganizationMember
+			if err := m.db.Where("organization_id = ? AND user_id = ? AND status = ?",
+				org.ID, user.ID, models.MemberStatusActive).First(&dbMembership).Error; err != nil {
+				// Continue without org context
+				next.ServeHTTP(w, r)
+				return
+			}
+			membership = &dbMembership
+			// Cache the result
+			cache.SetMembership(ctx, membership)
 		}
 
 		// Add organization and membership to context
-		ctx := context.WithValue(r.Context(), OrganizationContextKey, &org)
-		ctx = context.WithValue(ctx, MembershipContextKey, &membership)
+		ctx = context.WithValue(ctx, OrganizationContextKey, org)
+		ctx = context.WithValue(ctx, MembershipContextKey, membership)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
