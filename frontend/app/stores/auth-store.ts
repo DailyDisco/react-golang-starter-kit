@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 
+import { broadcastLogout, broadcastSessionExpired, subscribeToAuthEvents } from "../lib/auth-channel";
 import { logger } from "../lib/logger";
 import type { User } from "../services";
 import { AuthService } from "../services/auth/authService";
@@ -14,7 +15,7 @@ interface AuthState {
   // Actions
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
-  logout: () => void;
+  logout: (broadcast?: boolean) => void;
   login: (user: User) => void;
   initialize: () => Promise<void>;
 }
@@ -34,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: !!user,
           }),
         setLoading: (isLoading) => set({ isLoading }),
-        logout: () => {
+        logout: (broadcast = true) => {
           // Stop session heartbeat
           AuthService.stopSessionHeartbeat();
           // Clear auth state
@@ -44,6 +45,10 @@ export const useAuthStore = create<AuthState>()(
           });
           // Clear localStorage
           AuthService.clearStorage();
+          // Broadcast logout to other tabs (unless this was triggered by another tab)
+          if (broadcast) {
+            broadcastLogout();
+          }
         },
         login: (user) =>
           set({
@@ -55,6 +60,18 @@ export const useAuthStore = create<AuthState>()(
           if (get().isInitialized) {
             return;
           }
+
+          // Subscribe to auth events from other tabs (logout, session expired)
+          subscribeToAuthEvents((event) => {
+            if (event.type === "logout" || event.type === "session_expired") {
+              // Another tab logged out or session expired - sync this tab
+              logger.info("Auth event from another tab", { type: event.type });
+              get().logout(false); // Don't broadcast back
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("session-expired"));
+              }
+            }
+          });
 
           // Load cached user data from localStorage for faster UI rendering
           const storedUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
@@ -87,8 +104,9 @@ export const useAuthStore = create<AuthState>()(
             if (isValid) {
               // Session is valid - start heartbeat to detect future expiration
               AuthService.startSessionHeartbeat(5 * 60 * 1000, () => {
-                // Session expired - logout the user
-                get().logout();
+                // Session expired - logout and notify other tabs
+                broadcastSessionExpired();
+                get().logout(false); // Already broadcast via broadcastSessionExpired
                 if (typeof window !== "undefined") {
                   window.dispatchEvent(new CustomEvent("session-expired"));
                 }

@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { handleCacheInvalidation, type CacheInvalidatePayload } from "../lib/cache-invalidation";
 import { logger } from "../lib/logger";
+import { AuthService } from "../services/auth/authService";
 import { useAuthStore } from "../stores/auth-store";
 import { useNotificationStore } from "../stores/notification-store";
 
@@ -240,7 +241,22 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
             code: event.code,
           });
 
-          reconnectTimeoutRef.current = setTimeout(() => connectRef.current?.(), delay);
+          // Validate session before reconnecting
+          reconnectTimeoutRef.current = setTimeout(async () => {
+            try {
+              const isValid = await AuthService.validateSession();
+              if (isValid) {
+                connectRef.current?.();
+              } else {
+                logger.warn("Session invalid during WebSocket reconnect, skipping reconnection");
+                retriesRef.current = maxRetries; // Prevent further reconnect attempts
+              }
+            } catch (err) {
+              logger.error("Failed to validate session during WebSocket reconnect", err);
+              // On validation error, still attempt reconnect (network might be temporarily down)
+              connectRef.current?.();
+            }
+          }, delay);
         } else if (retriesRef.current >= maxRetries) {
           logger.warn("WebSocket max reconnection attempts reached");
         }
