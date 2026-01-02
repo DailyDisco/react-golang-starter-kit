@@ -39,7 +39,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/(app)/admin/announcements")({
-  beforeLoad: () => requireAdmin(),
+  beforeLoad: async (ctx) => requireAdmin(ctx),
   component: AnnouncementsPage,
 });
 

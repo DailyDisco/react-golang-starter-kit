@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { requireAdmin } from "@/lib/guards";
+import { queryKeys } from "@/lib/query-keys";
 import { AdminService } from "@/services/admin";
 import { apiClient } from "@/services/api/client";
 import type { User } from "@/services/types";
@@ -43,7 +44,7 @@ interface UsersResponse {
 }
 
 export const Route = createFileRoute("/(app)/admin/users")({
-  beforeLoad: () => requireAdmin(),
+  beforeLoad: async (ctx) => requireAdmin(ctx),
   component: AdminUsersPage,
 });
 
@@ -91,7 +92,7 @@ function AdminUsersPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error, refetch } = useQuery<UsersResponse>({
-    queryKey: ["users", page, search],
+    queryKey: queryKeys.users.list({ page, search }),
     queryFn: async () => {
       const result = await apiClient.get<{ data: UsersResponse }>(`/users?page=${page}&limit=20`);
       return (result as unknown as { data: UsersResponse }).data || (result as unknown as UsersResponse);
@@ -153,7 +154,7 @@ function AdminUsersPage() {
     mutationFn: (userId: number) => AdminService.deactivateUser(userId),
     onSuccess: () => {
       toast.success(t("users.toast.deactivated"));
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       setConfirmDialog((prev) => ({ ...prev, open: false }));
     },
     onError: (error) => {
@@ -165,7 +166,7 @@ function AdminUsersPage() {
     mutationFn: (userId: number) => AdminService.reactivateUser(userId),
     onSuccess: () => {
       toast.success(t("users.toast.reactivated"));
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       setConfirmDialog((prev) => ({ ...prev, open: false }));
     },
     onError: (error) => {
@@ -179,7 +180,7 @@ function AdminUsersPage() {
     },
     onSuccess: () => {
       toast.success(t("users.toast.bulkDeactivated", { count: selectedUsers.size }));
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       setSelectedUsers(new Set());
       setConfirmDialog((prev) => ({ ...prev, open: false }));
     },
@@ -194,7 +195,7 @@ function AdminUsersPage() {
     },
     onSuccess: () => {
       toast.success(t("users.toast.bulkReactivated", { count: selectedUsers.size }));
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       setSelectedUsers(new Set());
       setConfirmDialog((prev) => ({ ...prev, open: false }));
     },

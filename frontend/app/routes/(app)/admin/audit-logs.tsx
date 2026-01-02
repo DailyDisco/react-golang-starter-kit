@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/(app)/admin/audit-logs")({
-  beforeLoad: () => requireAdmin(),
+  beforeLoad: async (ctx) => requireAdmin(ctx),
   component: AuditLogsPage,
 });
 

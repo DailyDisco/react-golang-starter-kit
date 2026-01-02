@@ -4,17 +4,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { requireAdmin } from "@/lib/guards";
-import { AdminService, type AdminStats } from "@/services/admin";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { adminStatsQueryOptions } from "@/lib/route-query-options";
+import { type AdminStats } from "@/services/admin";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
+  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
   Bell,
   Download,
   FileText,
+  RefreshCw,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -22,50 +25,18 @@ import { useTranslation } from "react-i18next";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/(app)/admin/")({
-  beforeLoad: () => requireAdmin(),
+  beforeLoad: async (ctx) => requireAdmin(ctx),
+  loader: ({ context }) => context.queryClient.ensureQueryData(adminStatsQueryOptions()),
+  pendingMs: 200,
+  pendingComponent: AdminDashboardPending,
+  errorComponent: AdminDashboardError,
   component: AdminDashboard,
 });
 
 function AdminDashboard() {
   const { t } = useTranslation("admin");
-  const {
-    data: stats,
-    isLoading,
-    error,
-  } = useQuery<AdminStats>({
-    queryKey: ["admin", "stats"],
-    queryFn: () => AdminService.getStats(),
-  });
-
-  if (isLoading) {
-    return (
-      <AdminLayout>
-        <DashboardSkeleton />
-      </AdminLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <AdminLayout>
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="text-destructive">{t("dashboard.error.title")}</CardTitle>
-            <CardDescription className="text-destructive/80">
-              {error instanceof Error ? error.message : t("dashboard.error.default")}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </AdminLayout>
-    );
-  }
-
-  if (!stats)
-    return (
-      <AdminLayout>
-        <div />
-      </AdminLayout>
-    );
+  // Data is guaranteed by the loader - use suspense query for type safety
+  const { data: stats } = useSuspenseQuery(adminStatsQueryOptions());
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -372,35 +343,74 @@ function MetricCard({
   );
 }
 
-function DashboardSkeleton() {
+function AdminDashboardPending() {
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="bg-muted h-8 w-48 animate-pulse rounded" />
-        <div className="bg-muted/50 mt-2 h-4 w-64 animate-pulse rounded" />
+    <AdminLayout>
+      <div className="space-y-6">
+        <div>
+          <div className="bg-muted h-8 w-48 animate-pulse rounded" />
+          <div className="bg-muted/50 mt-2 h-4 w-64 animate-pulse rounded" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <div className="bg-muted h-4 w-24 animate-pulse rounded" />
+                <div className="bg-muted mt-2 h-8 w-16 animate-pulse rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[...Array(2)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <div className="bg-muted h-5 w-32 animate-pulse rounded" />
+              </CardHeader>
+              <CardContent>
+                <div className="bg-muted/50 h-[200px] animate-pulse rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-4">
-              <div className="bg-muted h-4 w-24 animate-pulse rounded" />
-              <div className="bg-muted mt-2 h-8 w-16 animate-pulse rounded" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {[...Array(2)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <div className="bg-muted h-5 w-32 animate-pulse rounded" />
-            </CardHeader>
-            <CardContent>
-              <div className="bg-muted/50 h-[200px] animate-pulse rounded" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+    </AdminLayout>
+  );
+}
+
+function AdminDashboardError({ error, reset }: { error: Error; reset?: () => void }) {
+  const { t } = useTranslation("admin");
+
+  return (
+    <AdminLayout>
+      <Card className="border-destructive/30 bg-destructive/5">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="bg-destructive/10 rounded-full p-2">
+              <AlertTriangle className="text-destructive h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="text-destructive">
+                {t("dashboard.error.title", "Failed to load dashboard")}
+              </CardTitle>
+              <CardDescription className="text-destructive/80">
+                {error.message || t("dashboard.error.default", "An unexpected error occurred")}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex gap-3">
+          {reset && (
+            <Button variant="outline" onClick={reset} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              {t("common.retry", "Try Again")}
+            </Button>
+          )}
+          <Button variant="ghost" asChild>
+            <Link to="/admin">{t("common.goBack", "Go Back")}</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </AdminLayout>
   );
 }

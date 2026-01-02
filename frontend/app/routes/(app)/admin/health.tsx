@@ -11,7 +11,7 @@ import { Activity, Database, HardDrive, RefreshCw, Server, Wifi } from "lucide-r
 import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/(app)/admin/health")({
-  beforeLoad: () => requireAdmin(),
+  beforeLoad: async (ctx) => requireAdmin(ctx),
   component: SystemHealthPage,
 });
 
