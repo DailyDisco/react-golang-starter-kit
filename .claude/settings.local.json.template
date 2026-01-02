@@ -1,0 +1,96 @@
+{
+  "$schema": "https://claude.ai/schemas/settings.json",
+  "description": "Claude Code settings template for React + Go Starter Kit. Copy to settings.local.json and customize.",
+
+  "hooks": {
+    "PostEdit": [
+      {
+        "matcher": "backend/internal/services/*_service.go",
+        "command": ".claude/hooks/go-service-pattern.sh \"$FILE\" \"$CONTENT\"",
+        "description": "Validate Go service follows project patterns"
+      },
+      {
+        "matcher": "frontend/app/lib/query-keys.ts",
+        "command": ".claude/hooks/query-key-pattern.sh \"$FILE\" \"$CONTENT\"",
+        "description": "Validate query keys follow factory pattern"
+      },
+      {
+        "matcher": "frontend/app/hooks/**/*.ts",
+        "command": ".claude/hooks/hook-naming.sh \"$FILE\" \"$CONTENT\"",
+        "description": "Validate hook naming conventions"
+      }
+    ]
+  },
+
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)",
+      "Bash(go build:*)",
+      "Bash(go test:*)",
+      "Bash(go fmt:*)",
+      "Bash(go vet:*)",
+      "Bash(make:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Read(*)",
+      "Edit(backend/**)",
+      "Edit(frontend/**)",
+      "Edit(.claude/**)",
+      "Write(backend/**)",
+      "Write(frontend/**)",
+      "Write(.claude/**)",
+      "mcp__dbhub__*"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(git push --force)",
+      "Bash(drop database)",
+      "Bash(DROP TABLE)"
+    ]
+  },
+
+  "context": {
+    "include": [
+      ".claude/CLAUDE.md",
+      "README.md",
+      "backend/internal/models/models.go",
+      "frontend/app/lib/query-keys.ts"
+    ],
+    "exclude": [
+      "node_modules/**",
+      "vendor/**",
+      "dist/**",
+      "coverage/**",
+      ".git/**"
+    ]
+  },
+
+  "skills": {
+    "project": [
+      ".claude/skills/scaffold-service",
+      ".claude/skills/scaffold-feature",
+      ".claude/skills/add-migration",
+      ".claude/skills/sync-models"
+    ]
+  },
+
+  "prompts": {
+    "project": [
+      ".claude/prompts/stack-review.md",
+      ".claude/prompts/feature-checklist.md",
+      ".claude/prompts/security-audit.md"
+    ]
+  },
+
+  "agents": {
+    "project": [
+      ".claude/agents/fullstack-reviewer"
+    ]
+  }
+}
