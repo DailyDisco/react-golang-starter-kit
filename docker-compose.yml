@@ -108,7 +108,7 @@ services:
       - app-network
 
   dragonfly:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.35.1
     restart: unless-stopped
     volumes:
       - dragonfly_data:/data

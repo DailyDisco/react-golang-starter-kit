@@ -46,7 +46,7 @@ services:
       - test-network
 
   dragonfly-test:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.35.1
     container_name: react-golang-dragonfly-test
     restart: "no"
     ports:
