@@ -2,7 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { User } from "../services/types";
-import { requireAdmin, requireAuth, requireAuthSync, requireRole, requireSuperAdmin } from "./guards";
+import { requireAdmin, requireAuth, requireRole, requireSuperAdmin } from "./guards";
 
 // Mock @tanstack/react-router redirect
 vi.mock("@tanstack/react-router", () => ({
@@ -60,7 +60,6 @@ describe("guards", () => {
   describe("requireAuth", () => {
     it("returns user when authenticated and verified", async () => {
       const mockUser = createMockUser();
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       const result = await requireAuth(ctx);
@@ -92,20 +91,11 @@ describe("guards", () => {
         });
       }
     });
-
-    it("clears storage and redirects when user data is invalid JSON", async () => {
-      localStorage.setItem("auth_user", "invalid-json");
-      const ctx = createMockContext();
-
-      await expect(requireAuth(ctx)).rejects.toThrow("REDIRECT");
-      expect(localStorage.getItem("auth_user")).toBeNull();
-    });
   });
 
   describe("requireRole", () => {
     it("returns user when user has allowed role", async () => {
       const mockUser = createMockUser({ role: "admin" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       const result = await requireRole(ctx, ["admin", "super_admin"]);
@@ -125,7 +115,6 @@ describe("guards", () => {
 
     it("redirects to / when authenticated but not authorized", async () => {
       const mockUser = createMockUser({ role: "user" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       try {
@@ -137,7 +126,6 @@ describe("guards", () => {
 
     it("respects custom unauthorizedRedirect", async () => {
       const mockUser = createMockUser({ role: "user" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       try {
@@ -150,7 +138,6 @@ describe("guards", () => {
     it("handles user with no role", async () => {
       const mockUser = createMockUser();
       delete (mockUser as Partial<User>).role;
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       try {
@@ -164,7 +151,6 @@ describe("guards", () => {
   describe("requireAdmin", () => {
     it("allows admin role", async () => {
       const mockUser = createMockUser({ role: "admin" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       const result = await requireAdmin(ctx);
@@ -174,7 +160,6 @@ describe("guards", () => {
 
     it("allows super_admin role", async () => {
       const mockUser = createMockUser({ role: "super_admin" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       const result = await requireAdmin(ctx);
@@ -184,7 +169,6 @@ describe("guards", () => {
 
     it("redirects regular user to /", async () => {
       const mockUser = createMockUser({ role: "user" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       try {
@@ -196,7 +180,6 @@ describe("guards", () => {
 
     it("redirects premium user to /", async () => {
       const mockUser = createMockUser({ role: "premium" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       try {
@@ -210,7 +193,6 @@ describe("guards", () => {
   describe("requireSuperAdmin", () => {
     it("allows super_admin role", async () => {
       const mockUser = createMockUser({ role: "super_admin" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       const result = await requireSuperAdmin(ctx);
@@ -220,7 +202,6 @@ describe("guards", () => {
 
     it("redirects admin to /admin", async () => {
       const mockUser = createMockUser({ role: "admin" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       try {
@@ -232,45 +213,12 @@ describe("guards", () => {
 
     it("redirects regular user to /admin", async () => {
       const mockUser = createMockUser({ role: "user" });
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
       const ctx = createMockContext(mockUser);
 
       try {
         await requireSuperAdmin(ctx);
       } catch (error) {
         expect((error as Error & { to: string }).to).toBe("/admin");
-      }
-    });
-  });
-
-  describe("requireAuthSync (deprecated)", () => {
-    it("returns user when authenticated", () => {
-      const mockUser = createMockUser();
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
-
-      const result = requireAuthSync();
-
-      expect(result.user).toEqual(mockUser);
-    });
-
-    it("redirects to /login when not authenticated", () => {
-      expect(() => requireAuthSync()).toThrow("REDIRECT");
-
-      try {
-        requireAuthSync();
-      } catch (error) {
-        expect((error as Error & { to: string }).to).toBe("/login");
-      }
-    });
-
-    it("includes redirect path in search params when provided", () => {
-      try {
-        requireAuthSync("/dashboard");
-      } catch (error) {
-        expect((error as Error & { to: string; search?: { redirect: string } }).to).toBe("/login");
-        expect((error as Error & { to: string; search?: { redirect: string } }).search).toEqual({
-          redirect: "/dashboard",
-        });
       }
     });
   });

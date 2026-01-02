@@ -52,8 +52,26 @@ describe("useFiles", () => {
     const { useAuthStore } = await import("../../stores/auth-store");
 
     const mockFiles: FileResponse[] = [
-      { id: 1, name: "test.pdf", size: 1024, mime_type: "application/pdf", created_at: "2024-01-01" },
-      { id: 2, name: "image.png", size: 2048, mime_type: "image/png", created_at: "2024-01-02" },
+      {
+        id: 1,
+        file_name: "test.pdf",
+        file_size: 1024,
+        content_type: "application/pdf",
+        location: "/files/1",
+        storage_type: "s3",
+        created_at: "2024-01-01",
+        updated_at: "2024-01-01",
+      },
+      {
+        id: 2,
+        file_name: "image.png",
+        file_size: 2048,
+        content_type: "image/png",
+        location: "/files/2",
+        storage_type: "s3",
+        created_at: "2024-01-02",
+        updated_at: "2024-01-02",
+      },
     ];
 
     vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: true });
@@ -121,7 +139,7 @@ describe("useFiles", () => {
 
     expect(useQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ["files", 10, 20],
+        queryKey: ["files", { limit: 10, offset: 20 }],
       })
     );
   });
@@ -200,9 +218,8 @@ describe("useStorageStatus", () => {
     const { useQuery } = await import("@tanstack/react-query");
 
     const mockStatus: StorageStatus = {
-      used: 1024000,
-      total: 10240000,
-      remaining: 9216000,
+      storage_type: "s3",
+      message: "Storage is available",
     };
 
     vi.mocked(useQuery).mockReturnValue({

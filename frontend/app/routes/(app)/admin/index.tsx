@@ -401,12 +401,19 @@ function AdminDashboardError({ error, reset }: { error: Error; reset?: () => voi
         </CardHeader>
         <CardContent className="flex gap-3">
           {reset && (
-            <Button variant="outline" onClick={reset} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={reset}
+              className="gap-2"
+            >
               <RefreshCw className="h-4 w-4" />
               {t("common.retry", "Try Again")}
             </Button>
           )}
-          <Button variant="ghost" asChild>
+          <Button
+            variant="ghost"
+            asChild
+          >
             <Link to="/admin">{t("common.goBack", "Go Back")}</Link>
           </Button>
         </CardContent>

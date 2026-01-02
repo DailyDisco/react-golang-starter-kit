@@ -249,7 +249,15 @@ describe("useAuth", () => {
       const { useAuthStore } = await import("../../stores/auth-store");
       const { AuthService } = await import("../../services/auth/authService");
 
-      const freshUser = { id: 1, name: "Fresh User", email: "fresh@example.com" };
+      const freshUser = {
+        id: 1,
+        name: "Fresh User",
+        email: "fresh@example.com",
+        email_verified: true,
+        is_active: true,
+        created_at: "2024-01-01T00:00:00Z",
+        updated_at: "2024-01-01T00:00:00Z",
+      };
       vi.mocked(AuthService.getCurrentUser).mockResolvedValue(freshUser);
 
       vi.mocked(useAuthStore).mockReturnValue({

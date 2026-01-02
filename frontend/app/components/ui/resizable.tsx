@@ -1,16 +1,12 @@
 import { GripVerticalIcon } from 'lucide-react';
 import * as React from 'react';
- 
-import ResizablePrimitive from 'react-resizable-panels';
+import {
+  Group as PanelGroupComponent,
+  Panel as PanelComponent,
+  Separator as PanelResizeHandleComponent,
+} from 'react-resizable-panels';
 
 import { cn } from '@/lib/utils';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PanelGroupComponent = (ResizablePrimitive as any).PanelGroup || ResizablePrimitive;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PanelComponent = (ResizablePrimitive as any).Panel || ResizablePrimitive;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PanelResizeHandleComponent = (ResizablePrimitive as any).PanelResizeHandle || ResizablePrimitive;
 
 function ResizablePanelGroup({
   className,

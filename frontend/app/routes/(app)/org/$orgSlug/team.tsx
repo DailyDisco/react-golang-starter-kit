@@ -21,11 +21,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { orgMembersQueryOptions } from "@/lib/route-query-options";
 import { queryKeys } from "@/lib/query-keys";
+import { orgMembersQueryOptions } from "@/lib/route-query-options";
 import {
   OrganizationService,
   type OrganizationInvitation,
@@ -51,8 +51,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/(app)/org/$orgSlug/team")({
-  loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(orgMembersQueryOptions(params.orgSlug)),
+  loader: ({ context, params }) => context.queryClient.ensureQueryData(orgMembersQueryOptions(params.orgSlug)),
   pendingMs: 200,
   pendingComponent: TeamPagePending,
   errorComponent: TeamPageError,
@@ -383,7 +382,10 @@ function TeamPagePending() {
         <CardContent>
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center justify-between py-2">
+              <div
+                key={i}
+                className="flex items-center justify-between py-2"
+              >
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-10 w-10 rounded-full" />
                   <div className="space-y-2">
@@ -422,13 +424,23 @@ function TeamPageError({ error, reset }: { error: Error; reset?: () => void }) {
         </CardHeader>
         <CardContent className="flex gap-3">
           {reset && (
-            <Button variant="outline" onClick={reset} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={reset}
+              className="gap-2"
+            >
               <RefreshCw className="h-4 w-4" />
               Try Again
             </Button>
           )}
-          <Button variant="ghost" asChild>
-            <Link to="/org/$orgSlug/settings" params={{ orgSlug }}>
+          <Button
+            variant="ghost"
+            asChild
+          >
+            <Link
+              to="/org/$orgSlug/settings"
+              params={{ orgSlug }}
+            >
               Go to Settings
             </Link>
           </Button>
@@ -450,7 +462,10 @@ function OrgNotFound() {
           The organization you're looking for doesn't exist or you don't have permission to view it.
         </p>
         <div className="flex justify-center gap-3">
-          <Button variant="outline" asChild>
+          <Button
+            variant="outline"
+            asChild
+          >
             <Link to="/dashboard">Go to Dashboard</Link>
           </Button>
           <Button asChild>

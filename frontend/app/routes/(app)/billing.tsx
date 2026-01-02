@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { UsageSummaryCard } from "@/components/usage/UsageSummaryCard";
 import { useCreateCheckout, useCreatePortalSession } from "@/hooks/mutations/use-billing-mutations";
 import { useBillingPlans, useSubscription } from "@/hooks/queries/use-billing";
 import { BillingService } from "@/services/billing/billingService";
@@ -47,6 +48,13 @@ function BillingPage() {
         subscription={subscription}
         onManage={handleManageSubscription}
         isManaging={portalMutation.isPending}
+      />
+
+      {/* Usage Summary - shows current usage with upgrade prompts */}
+      <UsageSummaryCard
+        maxMetrics={2}
+        warningThreshold={80}
+        showDetailsLink={true}
       />
 
       {/* Available Plans */}

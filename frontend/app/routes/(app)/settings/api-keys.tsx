@@ -17,14 +17,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { queryKeys } from "@/lib/query-keys";
+import { apiKeysQueryOptions } from "@/lib/route-query-options";
 import { SettingsService, type CreateAPIKeyRequest, type UserAPIKey } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Brain, Check, Eye, EyeOff, Key, Loader2, Plus, Sparkles, TestTube, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
-import { apiKeysQueryOptions } from "@/lib/route-query-options";
 
 export const Route = createFileRoute("/(app)/settings/api-keys")({
   // Prefetch API keys data before component renders for faster navigation

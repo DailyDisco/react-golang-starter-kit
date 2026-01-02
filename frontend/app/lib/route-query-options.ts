@@ -131,7 +131,7 @@ export const apiKeysQueryOptions = () =>
  */
 export const loginHistoryQueryOptions = (limit: number = 50) =>
   queryOptions({
-    queryKey: queryKeys.settings.loginHistory(),
+    queryKey: [...queryKeys.settings.loginHistory(), { limit }],
     queryFn: () => SettingsService.getLoginHistory(limit),
     staleTime: CACHE_TIMES.LOGIN_HISTORY,
   });

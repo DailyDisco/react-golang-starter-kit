@@ -36,9 +36,7 @@ export function SessionExpiredModal() {
 
   const handleSignIn = () => {
     setIsOpen(false);
-    // Clear any stored auth data (refresh token is in httpOnly cookie, cleared by backend)
-    localStorage.removeItem("auth_user");
-    // Navigate to login
+    // Navigate to login - auth cookies are httpOnly and cleared by backend on logout
     void navigate({ to: "/login" });
   };
 
@@ -49,6 +47,7 @@ export function SessionExpiredModal() {
     >
       <DialogContent showCloseButton={false}>
         <DialogHeader>
+          {/* @ts-expect-error - Deep type instantiation with react-i18next TFunction */}
           <DialogTitle>{t("session.expired")}</DialogTitle>
           <DialogDescription>{t("session.expiredDescription")}</DialogDescription>
         </DialogHeader>

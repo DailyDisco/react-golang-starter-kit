@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { queryKeys } from "@/lib/query-keys";
+import { sessionsQueryOptions } from "@/lib/route-query-options";
 import { AuthService } from "@/services/auth/authService";
 import { SettingsService, type TwoFactorSetupResponse, type UserSession } from "@/services/settings/settingsService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,8 +29,6 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
-import { sessionsQueryOptions } from "@/lib/route-query-options";
 
 export const Route = createFileRoute("/(app)/settings/security")({
   // Prefetch sessions data before component renders for faster navigation

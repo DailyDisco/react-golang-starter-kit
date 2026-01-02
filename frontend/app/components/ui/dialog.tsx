@@ -101,29 +101,37 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function DialogTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+type DialogTitleProps = {
+  className?: string;
+  children?: React.ReactNode;
+};
+
+function DialogTitle({ className, children }: DialogTitleProps) {
   return (
     <DialogPrimitive.Title
       data-slot='dialog-title'
       className={cn('text-lg leading-none font-semibold', className)}
-      {...props}
-    />
+    >
+      {children}
+    </DialogPrimitive.Title>
   );
 }
 
-function DialogDescription({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+type DialogDescriptionProps = {
+  className?: string;
+  children?: React.ReactNode;
+  id?: string;
+};
+
+function DialogDescription({ className, children, id }: DialogDescriptionProps) {
   return (
     <DialogPrimitive.Description
       data-slot='dialog-description'
       className={cn('text-muted-foreground text-sm', className)}
-      {...props}
-    />
+      id={id}
+    >
+      {children}
+    </DialogPrimitive.Description>
   );
 }
 

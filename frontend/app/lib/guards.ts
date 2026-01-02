@@ -29,27 +29,6 @@ interface BeforeLoadContext {
 }
 
 /**
- * Parses and validates the stored user from localStorage
- * Used as a fast fallback when backend verification is not needed.
- */
-function getStoredUser(): User | null {
-  if (typeof window === "undefined") return null;
-
-  const storedUser = localStorage.getItem("auth_user");
-
-  if (!storedUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(storedUser) as User;
-  } catch {
-    localStorage.removeItem("auth_user");
-    return null;
-  }
-}
-
-/**
  * Requires the user to be authenticated.
  * Verifies the session with the backend using TanStack Query.
  * Redirects to /login if not authenticated.
@@ -66,22 +45,12 @@ function getStoredUser(): User | null {
 export async function requireAuth(ctx: BeforeLoadContext, redirectTo?: string): Promise<{ user: User }> {
   const { queryClient } = ctx.context;
 
-  // First check localStorage for cached user (fast path)
-  const storedUser = getStoredUser();
-  if (!storedUser) {
-    throw redirect({
-      to: "/login",
-      search: redirectTo ? { redirect: redirectTo } : undefined,
-    });
-  }
-
   try {
-    // Verify with backend - uses cache if available and not stale
+    // Verify with backend - uses TanStack Query cache if available and not stale
     const user = await queryClient.ensureQueryData(currentUserQueryOptions());
     return { user };
   } catch {
-    // Session is invalid - clear local state and redirect
-    localStorage.removeItem("auth_user");
+    // Session is invalid - redirect to login
     throw redirect({
       to: "/login",
       search: redirectTo ? { redirect: redirectTo } : undefined,
@@ -114,17 +83,8 @@ export async function requireRole(
 ): Promise<{ user: User }> {
   const { queryClient } = ctx.context;
 
-  // First check localStorage for cached user (fast path)
-  const storedUser = getStoredUser();
-  if (!storedUser) {
-    throw redirect({
-      to: "/login",
-      search: options?.redirectTo ? { redirect: options.redirectTo } : undefined,
-    });
-  }
-
   try {
-    // Verify with backend
+    // Verify with backend - uses TanStack Query cache if available and not stale
     const user = await queryClient.ensureQueryData(currentUserQueryOptions());
 
     // Check role
@@ -141,8 +101,7 @@ export async function requireRole(
       throw error;
     }
 
-    // Session is invalid - clear local state and redirect
-    localStorage.removeItem("auth_user");
+    // Session is invalid - redirect to login
     throw redirect({
       to: "/login",
       search: options?.redirectTo ? { redirect: options.redirectTo } : undefined,
@@ -180,23 +139,4 @@ export async function requireSuperAdmin(ctx: BeforeLoadContext): Promise<{ user:
     redirectTo: "/admin",
     unauthorizedRedirect: "/admin",
   });
-}
-
-/**
- * Sync version of requireAuth for cases where async is not needed
- * Uses only localStorage - does NOT verify with backend
- *
- * @deprecated Prefer async requireAuth for proper session validation
- */
-export function requireAuthSync(redirectTo?: string): { user: User } {
-  const user = getStoredUser();
-
-  if (!user) {
-    throw redirect({
-      to: "/login",
-      search: redirectTo ? { redirect: redirectTo } : undefined,
-    });
-  }
-
-  return { user };
 }

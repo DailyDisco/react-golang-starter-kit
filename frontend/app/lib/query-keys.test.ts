@@ -64,8 +64,8 @@ describe("queryKeys", () => {
   });
 
   describe("settings", () => {
-    it("has correct 'preferences' key", () => {
-      expect(queryKeys.settings.preferences).toEqual(["settings", "preferences"]);
+    it("preferences() returns correct key", () => {
+      expect(queryKeys.settings.preferences()).toEqual(["settings", "preferences"]);
     });
   });
 
@@ -77,7 +77,7 @@ describe("queryKeys", () => {
       expect(Array.isArray(queryKeys.auth.user)).toBe(true);
       expect(Array.isArray(queryKeys.health.status)).toBe(true);
       expect(Array.isArray(queryKeys.featureFlags.all)).toBe(true);
-      expect(Array.isArray(queryKeys.settings.preferences)).toBe(true);
+      expect(Array.isArray(queryKeys.settings.preferences())).toBe(true);
     });
 
     it("factory functions return new arrays each time", () => {

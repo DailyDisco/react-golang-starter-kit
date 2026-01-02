@@ -7,7 +7,7 @@ import { useAcknowledgeAlert, useCurrentUsage, useUsageAlerts, useUsageHistory }
 import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { cn } from "@/lib/utils";
 import { UsageService } from "@/services/usage/usageService";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
   AlertTriangle,
@@ -147,7 +147,9 @@ function UsageSettingsPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">{t("usage.title", "Usage")}</h1>
-              <p className="text-primary-foreground/80 mt-1">{t("usage.subtitle", "Monitor your resource usage and limits")}</p>
+              <p className="text-primary-foreground/80 mt-1">
+                {t("usage.subtitle", "Monitor your resource usage and limits")}
+              </p>
             </div>
           </div>
         </div>
@@ -186,9 +188,7 @@ function UsageSettingsPage() {
                         </div>
                         <span className="font-medium">{metric.label}</span>
                       </div>
-                      <span className="text-muted-foreground text-sm">
-                        {metric.percentage}%
-                      </span>
+                      <span className="text-muted-foreground text-sm">{metric.percentage}%</span>
                     </div>
                     <Progress
                       value={Math.min(metric.percentage, 100)}
@@ -199,8 +199,13 @@ function UsageSettingsPage() {
                         {metric.format(metric.current)} {t("usage.of", "of")} {metric.format(metric.limit)}
                       </span>
                       {metric.percentage >= 90 && (
-                        <Badge variant="destructive" className="text-xs">
-                          {metric.percentage >= 100 ? t("usage.exceeded", "Exceeded") : t("usage.nearLimit", "Near Limit")}
+                        <Badge
+                          variant="destructive"
+                          className="text-xs"
+                        >
+                          {metric.percentage >= 100
+                            ? t("usage.exceeded", "Exceeded")
+                            : t("usage.nearLimit", "Near Limit")}
                         </Badge>
                       )}
                     </div>
@@ -212,7 +217,7 @@ function UsageSettingsPage() {
         </Card>
 
         {/* Alerts Section */}
-        {alertsData && alertsData.alerts && alertsData.alerts.length > 0 && (
+        {alertsData?.alerts && alertsData.alerts.length > 0 && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -230,7 +235,7 @@ function UsageSettingsPage() {
                   return (
                     <div
                       key={alert.id}
-                      className="flex items-center justify-between rounded-lg border border-warning/30 bg-warning/5 p-4"
+                      className="border-warning/30 bg-warning/5 flex items-center justify-between rounded-lg border p-4"
                     >
                       <div className="flex items-center gap-3">
                         <AlertTriangle className="text-warning h-5 w-5" />
@@ -239,7 +244,8 @@ function UsageSettingsPage() {
                             {UsageService.getUsageTypeLabel(alert.usage_type)} - {alertInfo.label}
                           </p>
                           <p className="text-muted-foreground text-sm">
-                            {alert.percentage_used}% {t("usage.alerts.used", "used")} ({alert.current_usage.toLocaleString()} / {alert.usage_limit.toLocaleString()})
+                            {alert.percentage_used}% {t("usage.alerts.used", "used")} (
+                            {alert.current_usage.toLocaleString()} / {alert.usage_limit.toLocaleString()})
                           </p>
                         </div>
                       </div>
@@ -275,10 +281,13 @@ function UsageSettingsPage() {
             {historyLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-20" />
+                  <Skeleton
+                    key={i}
+                    className="h-20"
+                  />
                 ))}
               </div>
-            ) : history && history.history && history.history.length > 0 ? (
+            ) : history?.history && history.history.length > 0 ? (
               <div className="space-y-4">
                 {history.history.map((period, index) => (
                   <div
@@ -289,9 +298,7 @@ function UsageSettingsPage() {
                       <span className="font-medium">
                         {formatPeriodDate(period.period_start)} - {formatPeriodDate(period.period_end)}
                       </span>
-                      {period.limits_exceeded && (
-                        <Badge variant="destructive">{t("usage.exceeded", "Exceeded")}</Badge>
-                      )}
+                      {period.limits_exceeded && <Badge variant="destructive">{t("usage.exceeded", "Exceeded")}</Badge>}
                     </div>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                       <div className="text-center">
@@ -335,19 +342,36 @@ function UsageSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Info Card */}
-        <Card>
+        {/* Upgrade CTA Card */}
+        <Card className={cn(usage.limits_exceeded && "border-destructive/50 bg-destructive/5")}>
           <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="bg-info/10 rounded-full p-3">
-                <Zap className="text-info h-5 w-5" />
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className={cn("rounded-full p-3", usage.limits_exceeded ? "bg-destructive/10" : "bg-info/10")}>
+                  <Zap className={cn("h-5 w-5", usage.limits_exceeded ? "text-destructive" : "text-info")} />
+                </div>
+                <div>
+                  <h4 className="font-medium">
+                    {usage.limits_exceeded
+                      ? t("usage.info.exceededTitle", "You've exceeded your plan limits")
+                      : t("usage.info.title", "Need more resources?")}
+                  </h4>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {usage.limits_exceeded
+                      ? t("usage.info.exceededDescription", "Upgrade now to restore full access and get higher limits.")
+                      : t(
+                          "usage.info.description",
+                          "Upgrade your plan to get higher limits and unlock additional features."
+                        )}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-medium">{t("usage.info.title", "Need more resources?")}</h4>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {t("usage.info.description", "Upgrade your plan to get higher limits and unlock additional features.")}
-                </p>
-              </div>
+              <Button
+                asChild
+                variant={usage.limits_exceeded ? "destructive" : "default"}
+              >
+                <Link to="/billing">{t("usage.info.upgrade", "Upgrade Plan")}</Link>
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -2,12 +2,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OrganizationService, type Organization } from "./organizationService";
 
-// Mock the API client functions
-vi.mock("../api/client", () => ({
-  API_BASE_URL: "http://localhost:8080",
-  authenticatedFetch: vi.fn(),
-  parseErrorResponse: vi.fn(),
-}));
+// Mock the API client functions - define MockApiError inside factory to avoid hoisting issues
+vi.mock("../api/client", () => {
+  class MockApiError extends Error {
+    code: string;
+    statusCode: number;
+    constructor(message: string, code: string, statusCode: number) {
+      super(message);
+      this.name = "ApiError";
+      this.code = code;
+      this.statusCode = statusCode;
+    }
+  }
+
+  return {
+    API_BASE_URL: "http://localhost:8080",
+    authenticatedFetch: vi.fn(),
+    parseErrorResponse: vi.fn(),
+    ApiError: MockApiError,
+  };
+});
 
 const createMockOrg = (overrides?: Partial<Organization>): Organization => ({
   id: 1,
@@ -55,9 +69,9 @@ describe("OrganizationService", () => {
     });
 
     it("throws error when request fails", async () => {
-      const { authenticatedFetch, parseErrorResponse } = await import("../api/client");
+      const { authenticatedFetch, parseErrorResponse, ApiError } = await import("../api/client");
 
-      const mockError = new Error("Failed to fetch organizations");
+      const mockError = new ApiError("Failed to fetch organizations", "FETCH_ERROR", 500);
       vi.mocked(authenticatedFetch).mockResolvedValue({
         ok: false,
       } as unknown as Response);

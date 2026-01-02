@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { queryKeys } from "@/lib/query-keys";
+import { preferencesQueryOptions } from "@/lib/route-query-options";
 import { cn } from "@/lib/utils";
 import {
   DATE_FORMATS,
@@ -20,8 +21,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Calendar, Clock, Globe, Loader2, Moon, Palette, Save, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-
-import { preferencesQueryOptions } from "@/lib/route-query-options";
 
 export const Route = createFileRoute("/(app)/settings/preferences")({
   // Prefetch preferences data before component renders for faster navigation
