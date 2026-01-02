@@ -32,9 +32,11 @@ type Config struct {
 	DefaultTTL time.Duration
 
 	// TTL for specific cache types
-	HealthCheckTTL time.Duration
-	UserProfileTTL time.Duration
-	SessionTTL     time.Duration
+	HealthCheckTTL  time.Duration
+	UserProfileTTL  time.Duration
+	SessionTTL      time.Duration
+	OrganizationTTL time.Duration
+	MembershipTTL   time.Duration
 }
 
 // DefaultConfig returns sensible default cache configuration
@@ -57,10 +59,12 @@ func DefaultConfig() *Config {
 		MemoryCleanupInterval: 1 * time.Minute,
 
 		// TTL defaults
-		DefaultTTL:     5 * time.Minute,
-		HealthCheckTTL: 30 * time.Second,
-		UserProfileTTL: 2 * time.Minute,
-		SessionTTL:     15 * time.Minute,
+		DefaultTTL:      5 * time.Minute,
+		HealthCheckTTL:  30 * time.Second,
+		UserProfileTTL:  2 * time.Minute,
+		SessionTTL:      15 * time.Minute,
+		OrganizationTTL: 5 * time.Minute,
+		MembershipTTL:   5 * time.Minute,
 	}
 }
 
@@ -134,6 +138,18 @@ func LoadConfig() *Config {
 	if ttl := os.Getenv("CACHE_SESSION_TTL"); ttl != "" {
 		if seconds, err := strconv.Atoi(ttl); err == nil && seconds > 0 {
 			config.SessionTTL = time.Duration(seconds) * time.Second
+		}
+	}
+
+	if ttl := os.Getenv("CACHE_ORGANIZATION_TTL"); ttl != "" {
+		if seconds, err := strconv.Atoi(ttl); err == nil && seconds > 0 {
+			config.OrganizationTTL = time.Duration(seconds) * time.Second
+		}
+	}
+
+	if ttl := os.Getenv("CACHE_MEMBERSHIP_TTL"); ttl != "" {
+		if seconds, err := strconv.Atoi(ttl); err == nil && seconds > 0 {
+			config.MembershipTTL = time.Duration(seconds) * time.Second
 		}
 	}
 
