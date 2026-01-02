@@ -7,18 +7,21 @@ import (
 	"strconv"
 
 	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/middleware"
 	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/services"
 )
 
-// respondWithError sends an error response
-func respondWithError(w http.ResponseWriter, code int, message string) {
+// respondWithError sends an error response with request ID for tracing
+func respondWithError(w http.ResponseWriter, r *http.Request, code int, message string) {
+	requestID := middleware.GetRequestID(r.Context())
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(models.ErrorResponse{
-		Error:   http.StatusText(code),
-		Message: message,
-		Code:    code,
+		Error:     http.StatusText(code),
+		Message:   message,
+		Code:      code,
+		RequestID: requestID,
 	})
 }
 
@@ -107,31 +110,27 @@ type InvitationResponse struct {
 func (h *OrgHandler) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.GetUserFromContext(r.Context())
 	if !ok || user == nil {
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		respondWithError(w, r, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	orgs, err := h.orgService.GetUserOrganizations(user.ID)
+	// Use single query to get orgs with roles (no N+1)
+	orgsWithRoles, err := h.orgService.GetUserOrganizationsWithRoles(user.ID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to fetch organizations")
+		respondWithError(w, r, http.StatusInternalServerError, "Failed to fetch organizations")
 		return
 	}
 
-	// Build response with user's role in each org
-	response := make([]OrganizationResponse, 0, len(orgs))
-	for _, org := range orgs {
-		membership, _ := h.orgService.GetUserMembership(org.ID, user.ID)
-		role := models.OrgRoleMember
-		if membership != nil {
-			role = membership.Role
-		}
+	// Build response
+	response := make([]OrganizationResponse, 0, len(orgsWithRoles))
+	for _, owr := range orgsWithRoles {
 		response = append(response, OrganizationResponse{
-			ID:        org.ID,
-			Name:      org.Name,
-			Slug:      org.Slug,
-			Plan:      org.Plan,
-			CreatedAt: org.CreatedAt.Format("2006-01-02T15:04:05Z"),
-			Role:      role,
+			ID:        owr.Organization.ID,
+			Name:      owr.Organization.Name,
+			Slug:      owr.Organization.Slug,
+			Plan:      owr.Organization.Plan,
+			CreatedAt: owr.Organization.CreatedAt.Format("2006-01-02T15:04:05Z"),
+			Role:      owr.Role,
 		})
 	}
 
@@ -152,13 +151,13 @@ func (h *OrgHandler) ListOrganizations(w http.ResponseWriter, r *http.Request) {
 func (h *OrgHandler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.GetUserFromContext(r.Context())
 	if !ok || user == nil {
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		respondWithError(w, r, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	var req CreateOrganizationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		respondWithError(w, r, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -166,11 +165,11 @@ func (h *OrgHandler) CreateOrganization(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrInvalidSlug):
-			respondWithError(w, http.StatusBadRequest, "Invalid slug format. Use lowercase letters, numbers, and hyphens only.")
+			respondWithError(w, r, http.StatusBadRequest, "Invalid slug format. Use lowercase letters, numbers, and hyphens only.")
 		case errors.Is(err, services.ErrOrgSlugTaken):
-			respondWithError(w, http.StatusConflict, "Organization slug is already taken")
+			respondWithError(w, r, http.StatusConflict, "Organization slug is already taken")
 		default:
-			respondWithError(w, http.StatusInternalServerError, "Failed to create organization")
+			respondWithError(w, r, http.StatusInternalServerError, "Failed to create organization")
 		}
 		return
 	}
@@ -203,7 +202,7 @@ func (h *OrgHandler) GetOrganization(w http.ResponseWriter, r *http.Request) {
 	membership := auth.GetMembershipFromContext(r.Context())
 
 	if org == nil || membership == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
@@ -236,18 +235,18 @@ func (h *OrgHandler) UpdateOrganization(w http.ResponseWriter, r *http.Request) 
 	membership := auth.GetMembershipFromContext(r.Context())
 
 	if org == nil || membership == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
 	var req UpdateOrganizationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		respondWithError(w, r, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if err := h.orgService.UpdateOrganization(org, req.Name); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to update organization")
+		respondWithError(w, r, http.StatusInternalServerError, "Failed to update organization")
 		return
 	}
 
@@ -277,12 +276,12 @@ func (h *OrgHandler) DeleteOrganization(w http.ResponseWriter, r *http.Request) 
 	org := auth.GetOrganizationFromContext(r.Context())
 
 	if org == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
 	if err := h.orgService.DeleteOrganization(org.ID); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to delete organization")
+		respondWithError(w, r, http.StatusInternalServerError, "Failed to delete organization")
 		return
 	}
 
@@ -303,13 +302,13 @@ func (h *OrgHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
 	org := auth.GetOrganizationFromContext(r.Context())
 
 	if org == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
 	members, err := h.orgService.GetMembers(org.ID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to fetch members")
+		respondWithError(w, r, http.StatusInternalServerError, "Failed to fetch members")
 		return
 	}
 
@@ -359,19 +358,19 @@ func (h *OrgHandler) InviteMember(w http.ResponseWriter, r *http.Request) {
 	org := auth.GetOrganizationFromContext(r.Context())
 
 	if !ok || org == nil || user == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
 	var req InviteMemberRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		respondWithError(w, r, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Cannot invite as owner
 	if req.Role == models.OrgRoleOwner {
-		respondWithError(w, http.StatusBadRequest, "Cannot invite as owner. Use role transfer instead.")
+		respondWithError(w, r, http.StatusBadRequest, "Cannot invite as owner. Use role transfer instead.")
 		return
 	}
 
@@ -379,11 +378,11 @@ func (h *OrgHandler) InviteMember(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrAlreadyMember):
-			respondWithError(w, http.StatusConflict, "User is already a member")
+			respondWithError(w, r, http.StatusConflict, "User is already a member")
 		case errors.Is(err, services.ErrInvitationEmailTaken):
-			respondWithError(w, http.StatusConflict, "An invitation for this email already exists")
+			respondWithError(w, r, http.StatusConflict, "An invitation for this email already exists")
 		default:
-			respondWithError(w, http.StatusInternalServerError, "Failed to create invitation")
+			respondWithError(w, r, http.StatusInternalServerError, "Failed to create invitation")
 		}
 		return
 	}
@@ -419,26 +418,26 @@ func (h *OrgHandler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {
 	membership := auth.GetMembershipFromContext(r.Context())
 
 	if !ok || org == nil || user == nil || membership == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
 	userIDStr := r.PathValue("userId")
 	targetUserID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		respondWithError(w, r, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	var req UpdateMemberRoleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		respondWithError(w, r, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Only owners can promote to owner
 	if req.Role == models.OrgRoleOwner && membership.Role != models.OrgRoleOwner {
-		respondWithError(w, http.StatusForbidden, "Only owners can promote to owner")
+		respondWithError(w, r, http.StatusForbidden, "Only owners can promote to owner")
 		return
 	}
 
@@ -446,13 +445,13 @@ func (h *OrgHandler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrNotMember):
-			respondWithError(w, http.StatusNotFound, "Member not found")
+			respondWithError(w, r, http.StatusNotFound, "Member not found")
 		case errors.Is(err, services.ErrCannotChangeOwnRole):
-			respondWithError(w, http.StatusBadRequest, "Cannot change your own role")
+			respondWithError(w, r, http.StatusBadRequest, "Cannot change your own role")
 		case errors.Is(err, services.ErrMustHaveOwner):
-			respondWithError(w, http.StatusBadRequest, "Organization must have at least one owner")
+			respondWithError(w, r, http.StatusBadRequest, "Organization must have at least one owner")
 		default:
-			respondWithError(w, http.StatusInternalServerError, "Failed to update role")
+			respondWithError(w, r, http.StatusInternalServerError, "Failed to update role")
 		}
 		return
 	}
@@ -476,14 +475,14 @@ func (h *OrgHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	org := auth.GetOrganizationFromContext(r.Context())
 
 	if org == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
 	userIDStr := r.PathValue("userId")
 	targetUserID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		respondWithError(w, r, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
@@ -491,11 +490,11 @@ func (h *OrgHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrNotMember):
-			respondWithError(w, http.StatusNotFound, "Member not found")
+			respondWithError(w, r, http.StatusNotFound, "Member not found")
 		case errors.Is(err, services.ErrCannotRemoveOwner):
-			respondWithError(w, http.StatusBadRequest, "Cannot remove the only owner")
+			respondWithError(w, r, http.StatusBadRequest, "Cannot remove the only owner")
 		default:
-			respondWithError(w, http.StatusInternalServerError, "Failed to remove member")
+			respondWithError(w, r, http.StatusInternalServerError, "Failed to remove member")
 		}
 		return
 	}
@@ -517,13 +516,13 @@ func (h *OrgHandler) ListInvitations(w http.ResponseWriter, r *http.Request) {
 	org := auth.GetOrganizationFromContext(r.Context())
 
 	if org == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
 	invitations, err := h.orgService.GetPendingInvitations(org.ID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to fetch invitations")
+		respondWithError(w, r, http.StatusInternalServerError, "Failed to fetch invitations")
 		return
 	}
 
@@ -562,24 +561,24 @@ func (h *OrgHandler) CancelInvitation(w http.ResponseWriter, r *http.Request) {
 	org := auth.GetOrganizationFromContext(r.Context())
 
 	if org == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
 	invIDStr := r.PathValue("invitationId")
 	invID, err := strconv.ParseUint(invIDStr, 10, 32)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid invitation ID")
+		respondWithError(w, r, http.StatusBadRequest, "Invalid invitation ID")
 		return
 	}
 
 	err = h.orgService.CancelInvitation(uint(invID), org.ID)
 	if err != nil {
 		if errors.Is(err, services.ErrInvitationNotFound) {
-			respondWithError(w, http.StatusNotFound, "Invitation not found")
+			respondWithError(w, r, http.StatusNotFound, "Invitation not found")
 			return
 		}
-		respondWithError(w, http.StatusInternalServerError, "Failed to cancel invitation")
+		respondWithError(w, r, http.StatusInternalServerError, "Failed to cancel invitation")
 		return
 	}
 
@@ -600,13 +599,13 @@ func (h *OrgHandler) CancelInvitation(w http.ResponseWriter, r *http.Request) {
 func (h *OrgHandler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.GetUserFromContext(r.Context())
 	if !ok || user == nil {
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		respondWithError(w, r, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		respondWithError(w, http.StatusBadRequest, "Invitation token required")
+		respondWithError(w, r, http.StatusBadRequest, "Invitation token required")
 		return
 	}
 
@@ -614,21 +613,21 @@ func (h *OrgHandler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrInvitationNotFound):
-			respondWithError(w, http.StatusNotFound, "Invitation not found")
+			respondWithError(w, r, http.StatusNotFound, "Invitation not found")
 		case errors.Is(err, services.ErrInvitationExpired):
-			respondWithError(w, http.StatusBadRequest, "Invitation has expired")
+			respondWithError(w, r, http.StatusBadRequest, "Invitation has expired")
 		case errors.Is(err, services.ErrInvitationAccepted):
-			respondWithError(w, http.StatusBadRequest, "Invitation has already been accepted")
+			respondWithError(w, r, http.StatusBadRequest, "Invitation has already been accepted")
 		case errors.Is(err, services.ErrAlreadyMember):
-			respondWithError(w, http.StatusConflict, "You are already a member of this organization")
+			respondWithError(w, r, http.StatusConflict, "You are already a member of this organization")
 		default:
-			respondWithError(w, http.StatusInternalServerError, "Failed to accept invitation")
+			respondWithError(w, r, http.StatusInternalServerError, "Failed to accept invitation")
 		}
 		return
 	}
 
-	// Fetch the organization details
-	org, err := h.orgService.GetOrganization(r.PathValue("orgSlug"))
+	// Fetch the organization details using the member's organization ID
+	org, err := h.orgService.GetOrganizationByID(member.OrganizationID)
 	if err == nil && org != nil {
 		response := OrganizationResponse{
 			ID:        org.ID,
@@ -662,18 +661,18 @@ func (h *OrgHandler) LeaveOrganization(w http.ResponseWriter, r *http.Request) {
 	membership := auth.GetMembershipFromContext(r.Context())
 
 	if !ok || org == nil || user == nil || membership == nil {
-		respondWithError(w, http.StatusNotFound, "Organization not found")
+		respondWithError(w, r, http.StatusNotFound, "Organization not found")
 		return
 	}
 
 	if membership.Role == models.OrgRoleOwner {
-		respondWithError(w, http.StatusBadRequest, "Owners cannot leave. Transfer ownership first.")
+		respondWithError(w, r, http.StatusBadRequest, "Owners cannot leave. Transfer ownership first.")
 		return
 	}
 
 	err := h.orgService.RemoveMember(org.ID, user.ID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to leave organization")
+		respondWithError(w, r, http.StatusInternalServerError, "Failed to leave organization")
 		return
 	}
 

@@ -82,10 +82,10 @@ class CommandRegistry {
    * @returns Unregister function for all
    */
   registerMany(commands: Command[]): () => void {
-    commands.forEach((cmd) => this.commands.set(cmd.id, cmd));
+    for (const cmd of commands) this.commands.set(cmd.id, cmd);
     this.notify();
     return () => {
-      commands.forEach((cmd) => this.commands.delete(cmd.id));
+      for (const cmd of commands) this.commands.delete(cmd.id);
       this.notify();
     };
   }
@@ -151,10 +151,7 @@ class CommandRegistry {
    */
   getCommands(ctx: CommandContext): Command[] {
     // Collect commands from static registrations and providers
-    const allCommands = [
-      ...this.commands.values(),
-      ...Array.from(this.providers.values()).flatMap((p) => p.getCommands(ctx)),
-    ];
+    const allCommands = [...this.commands.values(), ...[...this.providers.values()].flatMap((p) => p.getCommands(ctx))];
 
     // Filter by role, route, and custom conditions
     return allCommands.filter((cmd) => {
@@ -189,7 +186,7 @@ class CommandRegistry {
    * Get all registered search providers filtered by user role
    */
   getSearchProviders(ctx: CommandContext): SearchProvider[] {
-    return Array.from(this.searchProviders.values()).filter((p) => hasRole(ctx.user?.role, p.roles));
+    return [...this.searchProviders.values()].filter((p) => hasRole(ctx.user?.role, p.roles));
   }
 
   /**
@@ -236,7 +233,7 @@ class CommandRegistry {
    * Notify all listeners of changes
    */
   private notify(): void {
-    this.listeners.forEach((listener) => listener());
+    for (const listener of this.listeners) listener();
   }
 
   // ===========================================================================

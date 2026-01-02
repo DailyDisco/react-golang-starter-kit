@@ -26,18 +26,7 @@ import {
   type Command,
 } from "@/services/command-palette";
 import type { SearchResult } from "@/services/command-palette/types";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Loader2,
-  LogOut,
-  Moon,
-  Search,
-  Sun,
-  ToggleLeft,
-  User,
-  UserCog,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, LogOut, Moon, Search, Sun, ToggleLeft, User, UserCog } from "lucide-react";
 import { toast } from "sonner";
 
 // =============================================================================
@@ -247,7 +236,7 @@ export function CommandPalette() {
     }
   };
 
-  const getModeIcon = () => {
+  const ModeIcon = useMemo(() => {
     switch (mode) {
       case "impersonate":
         return UserCog;
@@ -256,7 +245,7 @@ export function CommandPalette() {
       default:
         return Search;
     }
-  };
+  }, [mode]);
 
   // Render command item
   const renderCommandItem = (command: Command) => {
@@ -306,8 +295,6 @@ export function CommandPalette() {
       </CommandItem>
     );
   };
-
-  const ModeIcon = getModeIcon();
 
   // Handle search result execution
   const runSearchResult = useCallback(

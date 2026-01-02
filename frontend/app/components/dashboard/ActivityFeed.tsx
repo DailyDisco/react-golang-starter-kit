@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -126,7 +126,13 @@ const activityConfig: Record<ActivityType, { icon: LucideIcon; color: string; bg
   },
 };
 
-function ActivityItemRow({ activity, showAvatar }: { activity: ActivityItem; showAvatar?: boolean }) {
+const ActivityItemRow = memo(function ActivityItemRow({
+  activity,
+  showAvatar,
+}: {
+  activity: ActivityItem;
+  showAvatar?: boolean;
+}) {
   const config = activityConfig[activity.type] || activityConfig.success;
   const Icon = config.icon;
   const timestamp = typeof activity.timestamp === "string" ? new Date(activity.timestamp) : activity.timestamp;
@@ -164,7 +170,7 @@ function ActivityItemRow({ activity, showAvatar }: { activity: ActivityItem; sho
       </div>
     </div>
   );
-}
+});
 
 function ActivityFeedSkeleton() {
   return (

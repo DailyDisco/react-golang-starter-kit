@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { memo, useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -100,7 +100,7 @@ interface DashboardWidgetProps {
   onDragOver?: () => void;
 }
 
-function DashboardWidget({
+const DashboardWidget = memo(function DashboardWidget({
   widget,
   isCollapsed,
   onToggleCollapse,
@@ -162,7 +162,7 @@ function DashboardWidget({
       )}
     </Card>
   );
-}
+});
 
 interface DashboardWidgetsProps {
   /** Available widgets */

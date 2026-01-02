@@ -64,7 +64,7 @@ export function useAnnouncements() {
   }, [unreadModals, modalQueue.length]);
 
   // Dismiss banner mutation
-  const dismissMutation = useMutation({
+  const { mutate: dismissMutate, isPending: isDismissing } = useMutation({
     mutationFn: AnnouncementService.dismissAnnouncement,
     onSuccess: (_, announcementId) => {
       // Update local state
@@ -78,11 +78,11 @@ export function useAnnouncements() {
   });
 
   // Mark modal as read mutation
-  const markReadMutation = useMutation({
+  const { mutate: markReadMutate } = useMutation({
     mutationFn: AnnouncementService.markAnnouncementRead,
     onSuccess: () => {
       // Invalidate the unread modals query
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ["announcements", "unread-modals"],
       });
     },
@@ -90,16 +90,16 @@ export function useAnnouncements() {
 
   const dismissBanner = useCallback(
     (id: number) => {
-      dismissMutation.mutate(id);
+      dismissMutate(id);
     },
-    [dismissMutation]
+    [dismissMutate]
   );
 
   const markModalRead = useCallback(
     (id: number) => {
-      markReadMutation.mutate(id);
+      markReadMutate(id);
     },
-    [markReadMutation]
+    [markReadMutate]
   );
 
   const closeCurrentModal = useCallback(() => {
@@ -122,7 +122,7 @@ export function useAnnouncements() {
     isLoadingBanners,
     bannersError,
     dismissBanner,
-    isDismissing: dismissMutation.isPending,
+    isDismissing,
 
     // Modal announcements
     currentModal,

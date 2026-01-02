@@ -449,7 +449,8 @@ func TestUpdateMemberRoleRequest_JSONMarshal(t *testing.T) {
 
 func TestRespondWithError(t *testing.T) {
 	w := httptest.NewRecorder()
-	respondWithError(w, http.StatusBadRequest, "Test error")
+	r := httptest.NewRequest(http.MethodGet, "/test", nil)
+	respondWithError(w, r, http.StatusBadRequest, "Test error")
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("respondWithError() status = %v, want %v", w.Code, http.StatusBadRequest)

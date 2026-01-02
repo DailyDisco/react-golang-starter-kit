@@ -1,4 +1,5 @@
 import { type Column } from "@tanstack/react-table";
+import { memo } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ interface SortableHeaderProps<TData, TValue> {
  *   header: ({ column }) => <SortableHeader column={column}>Name</SortableHeader>,
  * }
  */
-export function SortableHeader<TData, TValue>({ column, children, className }: SortableHeaderProps<TData, TValue>) {
+function SortableHeaderInner<TData, TValue>({ column, children, className }: SortableHeaderProps<TData, TValue>) {
   const isSorted = column.getIsSorted();
 
   return (
@@ -40,3 +41,5 @@ export function SortableHeader<TData, TValue>({ column, children, className }: S
     </Button>
   );
 }
+
+export const SortableHeader = memo(SortableHeaderInner) as typeof SortableHeaderInner;

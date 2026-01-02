@@ -65,6 +65,20 @@ func (s *SettingsService) GetSettingValue(key string, dest interface{}) error {
 	return nil
 }
 
+// GetSettingsByKeys retrieves multiple settings by keys in a single query
+func (s *SettingsService) GetSettingsByKeys(keys []string) (map[string]models.SystemSetting, error) {
+	var settings []models.SystemSetting
+	if err := s.db().Where("key IN ?", keys).Find(&settings).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve settings: %w", err)
+	}
+
+	result := make(map[string]models.SystemSetting, len(settings))
+	for _, setting := range settings {
+		result[setting.Key] = setting
+	}
+	return result, nil
+}
+
 // UpdateSetting updates a setting value by key
 func (s *SettingsService) UpdateSetting(key string, value interface{}) error {
 	// Marshal the value to JSON
@@ -90,31 +104,53 @@ func (s *SettingsService) UpdateSetting(key string, value interface{}) error {
 	return nil
 }
 
-// GetEmailSettings retrieves email/SMTP configuration
+// GetEmailSettings retrieves email/SMTP configuration (single query)
 func (s *SettingsService) GetEmailSettings() (*models.EmailSettings, error) {
 	settings := &models.EmailSettings{}
 
-	var smtpHost, smtpUser, fromEmail, fromName string
-	var smtpPort int
-	var enabled bool
+	// Fetch all email settings in a single query
+	keys := []string{"smtp_host", "smtp_port", "smtp_user", "smtp_from_email", "smtp_from_name", "smtp_enabled"}
+	settingsMap, err := s.GetSettingsByKeys(keys)
+	if err != nil {
+		return nil, err
+	}
 
-	if err := s.GetSettingValue("smtp_host", &smtpHost); err == nil {
-		settings.SMTPHost = smtpHost
+	// Unmarshal each setting if present
+	if setting, ok := settingsMap["smtp_host"]; ok {
+		var val string
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.SMTPHost = val
+		}
 	}
-	if err := s.GetSettingValue("smtp_port", &smtpPort); err == nil {
-		settings.SMTPPort = smtpPort
+	if setting, ok := settingsMap["smtp_port"]; ok {
+		var val int
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.SMTPPort = val
+		}
 	}
-	if err := s.GetSettingValue("smtp_user", &smtpUser); err == nil {
-		settings.SMTPUser = smtpUser
+	if setting, ok := settingsMap["smtp_user"]; ok {
+		var val string
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.SMTPUser = val
+		}
 	}
-	if err := s.GetSettingValue("smtp_from_email", &fromEmail); err == nil {
-		settings.FromEmail = fromEmail
+	if setting, ok := settingsMap["smtp_from_email"]; ok {
+		var val string
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.FromEmail = val
+		}
 	}
-	if err := s.GetSettingValue("smtp_from_name", &fromName); err == nil {
-		settings.FromName = fromName
+	if setting, ok := settingsMap["smtp_from_name"]; ok {
+		var val string
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.FromName = val
+		}
 	}
-	if err := s.GetSettingValue("smtp_enabled", &enabled); err == nil {
-		settings.Enabled = enabled
+	if setting, ok := settingsMap["smtp_enabled"]; ok {
+		var val bool
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.Enabled = val
+		}
 	}
 
 	// Note: Password is never returned
@@ -159,39 +195,75 @@ func (s *SettingsService) UpdateEmailSettings(settings *models.EmailSettings) er
 	return nil
 }
 
-// GetSecuritySettings retrieves security configuration
+// GetSecuritySettings retrieves security configuration (single query)
 func (s *SettingsService) GetSecuritySettings() (*models.SecuritySettings, error) {
 	settings := &models.SecuritySettings{}
 
-	var minLen, timeout, maxAttempts, lockoutDuration int
-	var reqUpper, reqLower, reqNumber, reqSpecial, req2FA bool
+	// Fetch all security settings in a single query
+	keys := []string{
+		"password_min_length", "password_require_uppercase", "password_require_lowercase",
+		"password_require_number", "password_require_special", "session_timeout_minutes",
+		"max_login_attempts", "lockout_duration_minutes", "require_2fa_for_admins",
+	}
+	settingsMap, err := s.GetSettingsByKeys(keys)
+	if err != nil {
+		return nil, err
+	}
 
-	if err := s.GetSettingValue("password_min_length", &minLen); err == nil {
-		settings.PasswordMinLength = minLen
+	// Unmarshal each setting if present
+	if setting, ok := settingsMap["password_min_length"]; ok {
+		var val int
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.PasswordMinLength = val
+		}
 	}
-	if err := s.GetSettingValue("password_require_uppercase", &reqUpper); err == nil {
-		settings.PasswordRequireUppercase = reqUpper
+	if setting, ok := settingsMap["password_require_uppercase"]; ok {
+		var val bool
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.PasswordRequireUppercase = val
+		}
 	}
-	if err := s.GetSettingValue("password_require_lowercase", &reqLower); err == nil {
-		settings.PasswordRequireLowercase = reqLower
+	if setting, ok := settingsMap["password_require_lowercase"]; ok {
+		var val bool
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.PasswordRequireLowercase = val
+		}
 	}
-	if err := s.GetSettingValue("password_require_number", &reqNumber); err == nil {
-		settings.PasswordRequireNumber = reqNumber
+	if setting, ok := settingsMap["password_require_number"]; ok {
+		var val bool
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.PasswordRequireNumber = val
+		}
 	}
-	if err := s.GetSettingValue("password_require_special", &reqSpecial); err == nil {
-		settings.PasswordRequireSpecial = reqSpecial
+	if setting, ok := settingsMap["password_require_special"]; ok {
+		var val bool
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.PasswordRequireSpecial = val
+		}
 	}
-	if err := s.GetSettingValue("session_timeout_minutes", &timeout); err == nil {
-		settings.SessionTimeoutMinutes = timeout
+	if setting, ok := settingsMap["session_timeout_minutes"]; ok {
+		var val int
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.SessionTimeoutMinutes = val
+		}
 	}
-	if err := s.GetSettingValue("max_login_attempts", &maxAttempts); err == nil {
-		settings.MaxLoginAttempts = maxAttempts
+	if setting, ok := settingsMap["max_login_attempts"]; ok {
+		var val int
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.MaxLoginAttempts = val
+		}
 	}
-	if err := s.GetSettingValue("lockout_duration_minutes", &lockoutDuration); err == nil {
-		settings.LockoutDurationMinutes = lockoutDuration
+	if setting, ok := settingsMap["lockout_duration_minutes"]; ok {
+		var val int
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.LockoutDurationMinutes = val
+		}
 	}
-	if err := s.GetSettingValue("require_2fa_for_admins", &req2FA); err == nil {
-		settings.Require2FAForAdmins = req2FA
+	if setting, ok := settingsMap["require_2fa_for_admins"]; ok {
+		var val bool
+		if json.Unmarshal(setting.Value, &val) == nil {
+			settings.Require2FAForAdmins = val
+		}
 	}
 
 	return settings, nil

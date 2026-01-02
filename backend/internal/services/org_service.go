@@ -106,6 +106,18 @@ func (s *OrgService) GetOrganization(slug string) (*models.Organization, error) 
 	return &org, nil
 }
 
+// GetOrganizationByID retrieves an organization by ID
+func (s *OrgService) GetOrganizationByID(id uint) (*models.Organization, error) {
+	var org models.Organization
+	if err := s.db.First(&org, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrOrgNotFound
+		}
+		return nil, err
+	}
+	return &org, nil
+}
+
 // GetOrganizationWithMembers retrieves an organization with its members
 func (s *OrgService) GetOrganizationWithMembers(slug string) (*models.Organization, error) {
 	var org models.Organization
@@ -118,6 +130,12 @@ func (s *OrgService) GetOrganizationWithMembers(slug string) (*models.Organizati
 	return &org, nil
 }
 
+// OrgWithRole represents an organization with the user's role
+type OrgWithRole struct {
+	Organization models.Organization
+	Role         models.OrganizationRole
+}
+
 // GetUserOrganizations returns all organizations a user is a member of
 func (s *OrgService) GetUserOrganizations(userID uint) ([]models.Organization, error) {
 	var orgs []models.Organization
@@ -128,6 +146,33 @@ func (s *OrgService) GetUserOrganizations(userID uint) ([]models.Organization, e
 		return nil, err
 	}
 	return orgs, nil
+}
+
+// GetUserOrganizationsWithRoles returns all organizations with the user's role in each (single query, no N+1)
+func (s *OrgService) GetUserOrganizationsWithRoles(userID uint) ([]OrgWithRole, error) {
+	type result struct {
+		models.Organization
+		Role models.OrganizationRole `gorm:"column:member_role"`
+	}
+
+	var results []result
+	if err := s.db.
+		Table("organizations").
+		Select("organizations.*, organization_members.role as member_role").
+		Joins("JOIN organization_members ON organization_members.organization_id = organizations.id").
+		Where("organization_members.user_id = ? AND organization_members.status = ?", userID, models.MemberStatusActive).
+		Scan(&results).Error; err != nil {
+		return nil, err
+	}
+
+	orgsWithRoles := make([]OrgWithRole, len(results))
+	for i, r := range results {
+		orgsWithRoles[i] = OrgWithRole{
+			Organization: r.Organization,
+			Role:         r.Role,
+		}
+	}
+	return orgsWithRoles, nil
 }
 
 // GetUserMembership returns a user's membership in an organization
