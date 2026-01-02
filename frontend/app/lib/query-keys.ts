@@ -67,6 +67,14 @@ export const queryKeys = {
     members: (orgSlug: string) => [...queryKeys.organizations.all, orgSlug, "members"] as const,
     invitations: (orgSlug: string) => [...queryKeys.organizations.all, orgSlug, "invitations"] as const,
   },
+
+  // Usage metering
+  usage: {
+    all: ["usage"] as const,
+    current: () => [...queryKeys.usage.all, "current"] as const,
+    history: (months?: number) => [...queryKeys.usage.all, "history", { months }] as const,
+    alerts: () => [...queryKeys.usage.all, "alerts"] as const,
+  },
 } as const;
 
 // Type-safe query key inference
