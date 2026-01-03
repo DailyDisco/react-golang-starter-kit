@@ -7,8 +7,16 @@ import { UserMenu } from "./UserMenu";
 
 // Mock lucide-react icons
 vi.mock("lucide-react", () => ({
+  CreditCard: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "credit-card-icon" }, "💳"),
+  DollarSign: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "dollar-icon" }, "$"),
   LogOut: ({ className }: { className?: string }) =>
     React.createElement("span", { className, "data-testid": "logout-icon" }, "X"),
+  Settings: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "settings-icon" }, "⚙"),
+  Shield: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "shield-icon" }, "🛡"),
   User: ({ className }: { className?: string }) =>
     React.createElement("span", { className, "data-testid": "user-icon" }, "U"),
 }));

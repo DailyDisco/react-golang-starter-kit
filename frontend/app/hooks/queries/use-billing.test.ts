@@ -73,9 +73,10 @@ describe("useBillingConfig", () => {
 
     useBillingConfig();
 
+    // Uses SWR_CONFIG.STABLE which has staleTime: Infinity
     expect(useQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        staleTime: CACHE_TIMES.BILLING_CONFIG,
+        staleTime: Infinity,
         retry: 1,
       })
     );
@@ -121,9 +122,10 @@ describe("useBillingPlans", () => {
 
     useBillingPlans();
 
+    // Uses SWR_CONFIG.STABLE which has staleTime: Infinity
     expect(useQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        staleTime: CACHE_TIMES.BILLING_PLANS,
+        staleTime: Infinity,
         retry: 1,
       })
     );

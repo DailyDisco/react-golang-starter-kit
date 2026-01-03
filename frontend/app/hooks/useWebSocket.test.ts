@@ -429,32 +429,41 @@ describe("useWebSocket", () => {
       renderHook(() => useWebSocket({ reconnectInterval: 100, maxRetries: 2 }));
 
       await act(async () => {
-        await vi.runAllTimersAsync();
+        await vi.advanceTimersByTimeAsync(0);
         MockWebSocket.instances[0].simulateOpen();
       });
 
-      // First close and reconnect (retry 1)
+      // First close triggers reconnect attempt 1 (retry counter: 0 -> 1)
       await act(async () => {
         MockWebSocket.instances[0].simulateClose();
         await vi.advanceTimersByTimeAsync(100);
-        await vi.runAllTimersAsync();
+        // Flush the validateSession Promise
+        await Promise.resolve();
+        await Promise.resolve();
       });
 
-      // Open the new connection to reset state, then close for retry 2
+      expect(MockWebSocket.instances).toHaveLength(2);
+
+      // Second close triggers reconnect attempt 2 (retry counter: 1 -> 2)
+      // Don't call simulateOpen() - this simulates a failed reconnection
       await act(async () => {
-        MockWebSocket.instances[1].simulateOpen();
         MockWebSocket.instances[1].simulateClose();
         await vi.advanceTimersByTimeAsync(200);
-        await vi.runAllTimersAsync();
+        // Flush the validateSession Promise
+        await Promise.resolve();
+        await Promise.resolve();
       });
 
-      // Third close - should not reconnect (max retries = 2)
+      expect(MockWebSocket.instances).toHaveLength(3);
+
+      // Third close - retry counter is 2, which is NOT < maxRetries (2)
+      // So no reconnect should be scheduled
       const countBeforeThirdClose = MockWebSocket.instances.length;
       await act(async () => {
-        MockWebSocket.instances[2].simulateOpen();
         MockWebSocket.instances[2].simulateClose();
-        await vi.advanceTimersByTimeAsync(10000);
-        await vi.runAllTimersAsync();
+        await vi.advanceTimersByTimeAsync(300);
+        await Promise.resolve();
+        await Promise.resolve();
       });
 
       expect(MockWebSocket.instances).toHaveLength(countBeforeThirdClose);
@@ -480,7 +489,7 @@ describe("useWebSocket", () => {
       renderHook(() => useWebSocket({ reconnectInterval: 100 }));
 
       await act(async () => {
-        await vi.runAllTimersAsync();
+        await vi.advanceTimersByTimeAsync(0);
         MockWebSocket.instances[0].simulateOpen();
       });
 
@@ -489,10 +498,12 @@ describe("useWebSocket", () => {
       await act(async () => {
         MockWebSocket.instances[0].simulateClose();
         await vi.advanceTimersByTimeAsync(100);
-        await vi.runAllTimersAsync(); // Flush the async validateSession call
+        // Flush the validateSession Promise chain
+        await Promise.resolve();
+        await Promise.resolve();
       });
 
-      // Should not create new connection
+      // Should not create new connection (validateSession returned false)
       expect(MockWebSocket.instances).toHaveLength(initialCount);
     });
   });

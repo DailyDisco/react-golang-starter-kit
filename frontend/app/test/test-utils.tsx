@@ -106,6 +106,10 @@ vi.mock("@tanstack/react-router", () => {
     useNavigate: vi.fn(() => navigateMock),
     useLocation: vi.fn(() => locationMock),
 
+    // Mock Navigate component for redirects
+    Navigate: (props: { to: string; replace?: boolean; search?: unknown }) =>
+      React.createElement("div", { "data-testid": "navigate-mock", "data-to": props.to }),
+
     // Provide a simple RouterProvider that just renders its children
     RouterProvider: ({ children }: { children: React.ReactNode }) =>
       React.createElement("div", { "data-testid": "router-provider" }, children),

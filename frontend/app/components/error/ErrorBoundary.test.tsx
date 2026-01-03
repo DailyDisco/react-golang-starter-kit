@@ -10,10 +10,78 @@ import { ErrorFallback } from "./ErrorFallback";
 vi.mock("lucide-react", () => ({
   AlertCircle: ({ className }: { className?: string }) =>
     React.createElement("span", { className, "data-testid": "alert-icon" }, "!"),
+  Bug: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "bug-icon" }, "🐛"),
+  ChevronDown: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "chevron-down-icon" }, "▼"),
+  ChevronUp: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "chevron-up-icon" }, "▲"),
+  Copy: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "copy-icon" }, "📋"),
   Home: ({ className }: { className?: string }) =>
     React.createElement("span", { className, "data-testid": "home-icon" }, "H"),
   RefreshCw: ({ className }: { className?: string }) =>
     React.createElement("span", { className, "data-testid": "refresh-icon" }, "R"),
+  Wifi: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "wifi-icon" }, "📶"),
+  WifiOff: ({ className }: { className?: string }) =>
+    React.createElement("span", { className, "data-testid": "wifi-off-icon" }, "📵"),
+}));
+
+// Mock Button component with asChild support
+vi.mock("../../ui/button", () => ({
+  Button: ({
+    children,
+    asChild,
+    onClick,
+    ...props
+  }: {
+    children: React.ReactNode;
+    asChild?: boolean;
+    onClick?: () => void;
+    className?: string;
+    variant?: string;
+    disabled?: boolean;
+    size?: string;
+  }) => {
+    if (asChild && React.isValidElement(children)) {
+      return React.cloneElement(children as React.ReactElement, { onClick, ...props });
+    }
+    return React.createElement("button", { onClick, ...props }, children);
+  },
+}));
+
+// Mock Card components
+vi.mock("../../ui/card", () => ({
+  Card: ({ children, className }: { children: React.ReactNode; className?: string }) =>
+    React.createElement("div", { className }, children),
+  CardContent: ({ children, className }: { children: React.ReactNode; className?: string }) =>
+    React.createElement("div", { className }, children),
+  CardDescription: ({ children, className }: { children: React.ReactNode; className?: string }) =>
+    React.createElement("p", { className }, children),
+  CardHeader: ({ children, className }: { children: React.ReactNode; className?: string }) =>
+    React.createElement("div", { className }, children),
+  CardTitle: ({ children, className }: { children: React.ReactNode; className?: string }) =>
+    React.createElement("h2", { className }, children),
+}));
+
+// Mock react-i18next
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string, defaultValue: string) => defaultValue,
+  }),
+}));
+
+// Mock sentry
+vi.mock("../../lib/sentry", () => ({
+  captureError: vi.fn(),
+}));
+
+// Mock query client
+vi.mock("../../lib/query-client", () => ({
+  queryClient: {
+    invalidateQueries: vi.fn(),
+  },
 }));
 
 // Component that throws an error
@@ -52,7 +120,7 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>
     );
 
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText("Something Went Wrong")).toBeInTheDocument();
     expect(screen.getByText("Test error message")).toBeInTheDocument();
   });
 
@@ -93,7 +161,7 @@ describe("ErrorBoundary", () => {
     );
 
     // Error should be displayed
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText("Something Went Wrong")).toBeInTheDocument();
 
     // Click the reset button
     const resetButton = screen.getByRole("button", { name: /try again/i });
@@ -134,7 +202,7 @@ describe("ErrorFallback", () => {
 
     render(<ErrorFallback error={error} />);
 
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText("Something Went Wrong")).toBeInTheDocument();
     expect(screen.getByText("Test error")).toBeInTheDocument();
   });
 
@@ -143,7 +211,8 @@ describe("ErrorFallback", () => {
 
     render(<ErrorFallback error={error} />);
 
-    expect(screen.getByText("An unexpected error occurred")).toBeInTheDocument();
+    // When error has no message, the description fallback is shown
+    expect(screen.getByText("An unexpected error occurred.")).toBeInTheDocument();
   });
 
   it("renders reset button when resetError is provided", () => {

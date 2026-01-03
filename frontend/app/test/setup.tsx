@@ -37,16 +37,31 @@ vi.mock("../hooks/mutations/use-auth-mutations", () => ({
 // Mock react-hook-form
 vi.mock("react-hook-form", () => ({
   useForm: vi.fn(() => ({
-    register: vi.fn(),
+    register: vi.fn((name: string) => ({
+      name,
+      onChange: vi.fn(),
+      onBlur: vi.fn(),
+      ref: vi.fn(),
+    })),
     handleSubmit: vi.fn((fn) => fn),
     formState: {
       errors: {},
+      isSubmitting: false,
+      isValid: true,
+      isDirty: false,
     },
-    watch: vi.fn(),
+    // Return the default value (second argument) when watch is called
+    watch: vi.fn((_name: string, defaultValue: unknown = "") => defaultValue),
     setValue: vi.fn(),
-    getValues: vi.fn(),
+    getValues: vi.fn(() => ({})),
     reset: vi.fn(),
     control: {},
+    trigger: vi.fn(),
+  })),
+  useFormContext: vi.fn(() => ({
+    register: vi.fn(),
+    formState: { errors: {} },
+    watch: vi.fn((_name: string, defaultValue: unknown = "") => defaultValue),
   })),
 }));
 
@@ -59,7 +74,29 @@ vi.mock("@hookform/resolvers/zod", () => ({
 type MockComponentProps = React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode };
 
 vi.mock("../components/ui/button", () => ({
-  Button: ({ children, ...props }: MockComponentProps) => <button {...props}>{children}</button>,
+  Button: ({
+    children,
+    loading,
+    disabled,
+    asChild,
+    ...props
+  }: MockComponentProps & { loading?: boolean; disabled?: boolean; asChild?: boolean }) => {
+    // If asChild is true and children is a valid React element, render the child directly
+    if (asChild && React.isValidElement(children)) {
+      return React.cloneElement(children as React.ReactElement, {
+        disabled: disabled || loading,
+        ...props,
+      });
+    }
+    return (
+      <button
+        disabled={disabled || loading}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  },
 }));
 
 vi.mock("../components/ui/input", () => ({
@@ -85,7 +122,9 @@ vi.mock("../components/ui/alert", () => ({
 
 // Mock lucide-react icons
 vi.mock("lucide-react", () => ({
-  Loader2: () => <div>Loading...</div>,
-  Eye: () => <div>👁️</div>,
-  EyeOff: () => <div>👁️‍🗨️</div>,
+  AlertCircle: () => <div data-testid="alert-circle-icon">⚠️</div>,
+  Check: () => <div data-testid="check-icon">✓</div>,
+  Eye: () => <div data-testid="eye-icon">👁️</div>,
+  EyeOff: () => <div data-testid="eye-off-icon">👁️‍🗨️</div>,
+  Loader2: () => <div data-testid="loader-icon">Loading...</div>,
 }));

@@ -1,5 +1,3 @@
-import React from "react";
-
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,23 +6,8 @@ import { useAuth } from "../../hooks/auth/useAuth";
 import { createMockUser } from "../../test/test-utils";
 import { ProtectedRoute } from "./ProtectedRoute";
 
-// Track Navigate calls
-interface NavigateProps {
-  to: string;
-  replace?: boolean;
-  state?: unknown;
-}
-let navigateProps: NavigateProps | null = null;
-
-// Mock both modules before any imports
+// Mock auth hook
 vi.mock("../../hooks/auth/useAuth");
-vi.mock("@tanstack/react-router", () => ({
-  Navigate: (props: NavigateProps) => {
-    navigateProps = props;
-    return React.createElement("div", { "data-testid": "navigate-mock" });
-  },
-  useLocation: () => ({ pathname: "/dashboard" }),
-}));
 
 // Type the mock
 const mockUseAuth = vi.mocked(useAuth);
@@ -45,7 +28,6 @@ const createAuthMock = (overrides: Partial<ReturnType<typeof useAuth>> = {}) => 
 describe("ProtectedRoute", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    navigateProps = null;
   });
 
   describe("when loading", () => {
@@ -78,12 +60,11 @@ describe("ProtectedRoute", () => {
       );
 
       // Should render the Navigate mock
-      expect(screen.getByTestId("navigate-mock")).toBeTruthy();
+      const navigateMock = screen.getByTestId("navigate-mock");
+      expect(navigateMock).toBeTruthy();
 
       // Navigate should have been called with login redirect
-      expect(navigateProps).not.toBeNull();
-      expect(navigateProps?.to).toBe("/login");
-      expect(navigateProps?.replace).toBe(true);
+      expect(navigateMock.getAttribute("data-to")).toBe("/login");
     });
 
     it("should redirect to custom redirectTo path when specified", () => {
@@ -95,8 +76,8 @@ describe("ProtectedRoute", () => {
         </ProtectedRoute>
       );
 
-      expect(navigateProps).not.toBeNull();
-      expect(navigateProps?.to).toBe("/custom-login");
+      const navigateMock = screen.getByTestId("navigate-mock");
+      expect(navigateMock.getAttribute("data-to")).toBe("/custom-login");
     });
   });
 
@@ -119,8 +100,8 @@ describe("ProtectedRoute", () => {
       expect(screen.getByTestId("protected-content")).toBeTruthy();
       expect(screen.getByText("Protected Content")).toBeTruthy();
 
-      // Navigate should not have been called
-      expect(navigateProps).toBeNull();
+      // Navigate should not have been rendered
+      expect(screen.queryByTestId("navigate-mock")).toBeNull();
     });
   });
 });

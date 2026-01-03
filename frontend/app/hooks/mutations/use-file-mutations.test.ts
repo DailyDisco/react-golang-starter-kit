@@ -55,9 +55,9 @@ function createWrapper() {
 describe("useFileUpload", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock auth store with valid token
+    // Mock auth store as authenticated
     vi.mocked(useAuthStore).mockReturnValue({
-      accessToken: "test-token",
+      isAuthenticated: true,
     } as any);
   });
 
@@ -85,13 +85,13 @@ describe("useFileUpload", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(FileService.uploadFile).toHaveBeenCalledWith(mockFile, "test-token");
+    expect(FileService.uploadFile).toHaveBeenCalledWith(mockFile);
   });
 
-  it("should throw error when no auth token", async () => {
-    // Mock auth store without token
+  it("should throw error when not authenticated", async () => {
+    // Mock auth store as not authenticated
     vi.mocked(useAuthStore).mockReturnValue({
-      accessToken: null,
+      isAuthenticated: false,
     } as any);
 
     const mockFile = new File(["test"], "test.txt", { type: "text/plain" });
@@ -106,7 +106,7 @@ describe("useFileUpload", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error?.message).toBe("Authentication token not found.");
+    expect(result.current.error?.message).toBe("Authentication required.");
   });
 
   it("should handle upload failure", async () => {
@@ -186,16 +186,16 @@ describe("useFileUpload", () => {
 
     // Wait for success and verify the flow completed
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(FileService.uploadFile).toHaveBeenCalledWith(mockFile, "test-token");
+    expect(FileService.uploadFile).toHaveBeenCalledWith(mockFile);
   });
 });
 
 describe("useFileDelete", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock auth store with valid token
+    // Mock auth store as authenticated
     vi.mocked(useAuthStore).mockReturnValue({
-      accessToken: "test-token",
+      isAuthenticated: true,
     } as any);
   });
 
@@ -212,13 +212,13 @@ describe("useFileDelete", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(FileService.deleteFile).toHaveBeenCalledWith(1, "test-token");
+    expect(FileService.deleteFile).toHaveBeenCalledWith(1);
   });
 
-  it("should throw error when no auth token", async () => {
-    // Mock auth store without token
+  it("should throw error when not authenticated", async () => {
+    // Mock auth store as not authenticated
     vi.mocked(useAuthStore).mockReturnValue({
-      accessToken: null,
+      isAuthenticated: false,
     } as any);
 
     const { result } = renderHook(() => useFileDelete(), {
@@ -231,7 +231,7 @@ describe("useFileDelete", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error?.message).toBe("Authentication token not found.");
+    expect(result.current.error?.message).toBe("Authentication required.");
   });
 
   it("should handle delete failure", async () => {
@@ -263,14 +263,14 @@ describe("useFileDelete", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(FileService.deleteFile).toHaveBeenCalledWith(42, "test-token");
+    expect(FileService.deleteFile).toHaveBeenCalledWith(42);
   });
 });
 
 describe("Mutation hooks mock compatibility", () => {
   beforeEach(() => {
     vi.mocked(useAuthStore).mockReturnValue({
-      accessToken: "test-token",
+      isAuthenticated: true,
     } as any);
   });
 

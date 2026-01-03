@@ -53,7 +53,7 @@ describe("LoginForm", () => {
     renderWithProviders(<LoginForm />);
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/enter your password/i)).toBeInTheDocument();
   });
 
   it("renders sign in button", () => {
@@ -75,7 +75,7 @@ describe("LoginForm", () => {
     expect(form).toBeInTheDocument();
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
 
     expect(emailInput).toHaveAttribute("type", "email");
     expect(passwordInput).toHaveAttribute("type", "password");
@@ -84,7 +84,7 @@ describe("LoginForm", () => {
   it("has password field with password type by default", () => {
     renderWithProviders(<LoginForm />);
 
-    const passwordInput = screen.getByLabelText(/password/i);
+    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
     expect(passwordInput).toHaveAttribute("type", "password");
   });
 });
@@ -119,7 +119,8 @@ describe("LoginForm - Pending State", () => {
     renderWithProviders(<LoginForm />);
 
     expect(screen.getByLabelText(/email/i)).toBeDisabled();
-    expect(screen.getByLabelText(/password/i)).toBeDisabled();
+    // Use getByPlaceholderText to avoid matching "Show password" button
+    expect(screen.getByPlaceholderText(/enter your password/i)).toBeDisabled();
     expect(screen.getByRole("button", { name: /sign in/i })).toBeDisabled();
   });
 });
