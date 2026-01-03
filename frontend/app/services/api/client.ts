@@ -100,6 +100,31 @@ let refreshPromise: Promise<boolean> | null = null;
 type QueuedRequest = { resolve: (response: Response) => void; retry: () => Promise<Response> };
 const failedRequestsQueue: QueuedRequest[] = [];
 
+// Circuit breaker to prevent infinite 401 retry cascades
+let consecutive401Failures = 0;
+const MAX_CONSECUTIVE_401_FAILURES = 3;
+const CIRCUIT_BREAKER_RESET_MS = 10000; // 10 seconds
+let circuitBreakerResetTimeout: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Reset the 401 circuit breaker counter
+ * Called when authentication succeeds
+ */
+export const resetAuthCircuitBreaker = (): void => {
+  consecutive401Failures = 0;
+  if (circuitBreakerResetTimeout) {
+    clearTimeout(circuitBreakerResetTimeout);
+    circuitBreakerResetTimeout = null;
+  }
+};
+
+/**
+ * Check if the circuit breaker is tripped
+ */
+const isCircuitBreakerOpen = (): boolean => {
+  return consecutive401Failures >= MAX_CONSECUTIVE_401_FAILURES;
+};
+
 // Grace period after login/registration to allow cookies to propagate
 // During this window, we don't fire session-expired events on 401s
 let authGraceUntil: number = 0;
@@ -198,6 +223,15 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
       return response;
     }
 
+    // Circuit breaker: stop retrying after too many consecutive 401 failures
+    if (isCircuitBreakerOpen()) {
+      logger.warn("Circuit breaker open: too many consecutive 401s, skipping retry");
+      if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
+        window.dispatchEvent(new CustomEvent("session-expired"));
+      }
+      return response;
+    }
+
     // Create a retry function for this request
     const retryRequest = async (): Promise<Response> => {
       const retryHeaders = createHeaders(needsCSRF);
@@ -222,18 +256,28 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
             const AuthService = await getAuthService();
             const refreshed = await AuthService.initializeFromStorage();
 
-            // Small delay to ensure cookies are fully propagated
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // Delay to ensure cookies are fully propagated through Docker/Vite proxy
+            await new Promise((resolve) => setTimeout(resolve, 200));
 
             // Process all queued requests
             const queue = [...failedRequestsQueue];
             failedRequestsQueue.length = 0;
 
             if (refreshed) {
+              // Reset circuit breaker on successful refresh
+              resetAuthCircuitBreaker();
               // Retry all queued requests with new token
               for (const request of queue) {
                 try {
-                  const retryResponse = await request.retry();
+                  let retryResponse = await request.retry();
+
+                  // If retry still gets 401, wait longer for cookie propagation and try once more
+                  if (retryResponse.status === 401) {
+                    logger.info("Retry got 401, waiting for cookie propagation...");
+                    await new Promise((resolve) => setTimeout(resolve, 150));
+                    retryResponse = await request.retry();
+                  }
+
                   request.resolve(retryResponse);
                 } catch (retryError) {
                   logger.warn("Failed to retry request after token refresh", { error: retryError });
@@ -247,6 +291,15 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
                 }
               }
             } else {
+              // Increment circuit breaker counter on refresh failure
+              consecutive401Failures++;
+              // Schedule automatic reset after cooldown period
+              if (!circuitBreakerResetTimeout) {
+                circuitBreakerResetTimeout = setTimeout(() => {
+                  consecutive401Failures = 0;
+                  circuitBreakerResetTimeout = null;
+                }, CIRCUIT_BREAKER_RESET_MS);
+              }
               // Refresh failed - dispatch session-expired and reject all queued requests
               if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
                 window.dispatchEvent(new CustomEvent("session-expired"));
@@ -258,6 +311,14 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
             }
           } catch (refreshError) {
             logger.warn("Token refresh failed during 401 recovery", { error: refreshError });
+            // Increment circuit breaker counter on refresh exception
+            consecutive401Failures++;
+            if (!circuitBreakerResetTimeout) {
+              circuitBreakerResetTimeout = setTimeout(() => {
+                consecutive401Failures = 0;
+                circuitBreakerResetTimeout = null;
+              }, CIRCUIT_BREAKER_RESET_MS);
+            }
             // Dispatch session-expired event
             if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
               window.dispatchEvent(new CustomEvent("session-expired"));
@@ -374,18 +435,17 @@ export const parseErrorResponse = async (response: Response, defaultMessage: str
  * Parse API response and extract data from success responses
  */
 export const parseApiResponse = async <T = any>(response: Response): Promise<T> => {
+  // Handle error responses first, before trying to parse JSON
+  if (!response.ok) {
+    const error = await parseErrorResponse(response, "Request failed");
+    throw error;
+  }
+
+  // For successful responses, parse JSON
   try {
     const responseData = (await response.json()) as ApiResponse<T>;
 
-    if (!response.ok) {
-      // Handle error responses
-      if ("error" in responseData) {
-        throw new Error(responseData.message || responseData.error);
-      }
-      throw new Error(`Request failed with status ${response.status}`);
-    }
-
-    // Handle success responses
+    // Handle success responses with { success: true, data: ... } format
     if ("success" in responseData && responseData.success === true) {
       return responseData.data as T;
     }
@@ -394,7 +454,7 @@ export const parseApiResponse = async <T = any>(response: Response): Promise<T> 
     return responseData as T;
   } catch (parseError) {
     logger.error("Failed to parse API response", parseError);
-    throw new Error("Invalid response format from server");
+    throw new ApiError("Invalid response format from server", "PARSE_ERROR", response.status);
   }
 };
 
