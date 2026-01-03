@@ -265,7 +265,7 @@ export class SettingsService {
       throw apiError;
     }
     const data = await response.json();
-    return data.success ? data.data : data;
+    return data.history || [];
   }
 
   // ==================== Password ====================

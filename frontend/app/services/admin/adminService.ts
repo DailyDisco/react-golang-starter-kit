@@ -521,11 +521,11 @@ export const AnnouncementService = {
   },
 
   async getUnreadModalAnnouncements(): Promise<Announcement[]> {
-    return apiClient.get<Announcement[]>("/v1/announcements/unread-modals");
+    return apiClient.get<Announcement[]>("/announcements/unread-modals");
   },
 
   async markAnnouncementRead(id: number): Promise<void> {
-    await apiClient.post(`/v1/announcements/${id}/read`, {});
+    await apiClient.post(`/announcements/${id}/read`, {});
   },
 };
 
@@ -542,6 +542,6 @@ export const ChangelogService = {
     if (category) {
       params.set("category", category);
     }
-    return apiClient.get<ChangelogResponse>(`/v1/changelog?${params.toString()}`);
+    return apiClient.get<ChangelogResponse>(`/changelog?${params.toString()}`);
   },
 };
