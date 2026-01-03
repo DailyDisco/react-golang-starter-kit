@@ -37,7 +37,7 @@ func TestImpersonateUser_NonSuperAdmin(t *testing.T) {
 
 	// Add regular admin user to context
 	claims := &auth.Claims{UserID: 1, Role: models.RoleAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	ImpersonateUser(w, req)
@@ -57,7 +57,7 @@ func TestImpersonateUser_AlreadyImpersonating(t *testing.T) {
 
 	// Add super admin who is already impersonating
 	claims := &auth.Claims{UserID: 1, Role: models.RoleSuperAdmin, OriginalUserID: 3}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	ImpersonateUser(w, req)
@@ -73,7 +73,7 @@ func TestImpersonateUser_InvalidJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleSuperAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	ImpersonateUser(w, req)
@@ -92,7 +92,7 @@ func TestImpersonateUser_CannotImpersonateSelf(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleSuperAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	ImpersonateUser(w, req)
@@ -121,7 +121,7 @@ func TestStopImpersonation_NotImpersonating(t *testing.T) {
 
 	// User not currently impersonating
 	claims := &auth.Claims{UserID: 1, Role: models.RoleSuperAdmin, OriginalUserID: 0}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	StopImpersonation(w, req)
@@ -157,7 +157,7 @@ func TestAdminUpdateUserRole_NonSuperAdmin(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	AdminUpdateUserRole(w, req)
@@ -176,7 +176,7 @@ func TestAdminUpdateUserRole_InvalidID(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleSuperAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	AdminUpdateUserRole(w, req)
@@ -196,7 +196,7 @@ func TestAdminUpdateUserRole_InvalidJSON(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleSuperAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	AdminUpdateUserRole(w, req)
@@ -230,7 +230,7 @@ func TestAdminUpdateUserRole_InvalidRole(t *testing.T) {
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 			claims := &auth.Claims{UserID: 1, Role: models.RoleSuperAdmin}
-			ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+			ctx := auth.SetClaimsContext(req.Context(), claims)
 			req = req.WithContext(ctx)
 
 			AdminUpdateUserRole(w, req)
@@ -268,7 +268,7 @@ func TestDeactivateUser_RegularUser(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	DeactivateUser(w, req)
@@ -287,7 +287,7 @@ func TestDeactivateUser_InvalidID(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	DeactivateUser(w, req)
@@ -306,7 +306,7 @@ func TestDeactivateUser_CannotDeactivateSelf(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	DeactivateUser(w, req)
@@ -342,7 +342,7 @@ func TestReactivateUser_RegularUser(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	ReactivateUser(w, req)
@@ -361,7 +361,7 @@ func TestReactivateUser_InvalidID(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	ReactivateUser(w, req)
@@ -397,7 +397,7 @@ func TestRestoreUser_NonSuperAdmin(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	RestoreUser(w, req)
@@ -416,7 +416,7 @@ func TestRestoreUser_InvalidID(t *testing.T) {
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleSuperAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	RestoreUser(w, req)
@@ -444,7 +444,7 @@ func TestGetDeletedUsers_NonSuperAdmin(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	claims := &auth.Claims{UserID: 1, Role: models.RoleAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	ctx := auth.SetClaimsContext(req.Context(), claims)
 	req = req.WithContext(ctx)
 
 	GetDeletedUsers(w, req)

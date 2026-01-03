@@ -201,15 +201,10 @@ func GetAuditLogs(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} models.ErrorResponse
 // @Router /api/admin/impersonate [post]
 func ImpersonateUser(w http.ResponseWriter, r *http.Request) {
-	// Get current user from context
-	userCtx := r.Context().Value(auth.UserContextKey)
-	if userCtx == nil {
-		WriteUnauthorized(w, r, "Unauthorized")
-		return
-	}
-	claims, ok := userCtx.(*auth.Claims)
+	// Get current user claims from context
+	claims, ok := auth.GetClaimsFromContext(r.Context())
 	if !ok {
-		WriteInternalError(w, r, "Invalid user context")
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
 
@@ -279,15 +274,10 @@ func ImpersonateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} models.ErrorResponse
 // @Router /api/admin/stop-impersonate [post]
 func StopImpersonation(w http.ResponseWriter, r *http.Request) {
-	// Get current user from context
-	userCtx := r.Context().Value(auth.UserContextKey)
-	if userCtx == nil {
-		WriteUnauthorized(w, r, "Unauthorized")
-		return
-	}
-	claims, ok := userCtx.(*auth.Claims)
+	// Get current user claims from context
+	claims, ok := auth.GetClaimsFromContext(r.Context())
 	if !ok {
-		WriteInternalError(w, r, "Invalid user context")
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
 
@@ -336,15 +326,10 @@ func StopImpersonation(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} models.ErrorResponse
 // @Router /api/admin/users/{id}/role [put]
 func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
-	// Get current user from context
-	userCtx := r.Context().Value(auth.UserContextKey)
-	if userCtx == nil {
-		WriteUnauthorized(w, r, "Unauthorized")
-		return
-	}
-	claims, ok := userCtx.(*auth.Claims)
+	// Get current user claims from context
+	claims, ok := auth.GetClaimsFromContext(r.Context())
 	if !ok {
-		WriteInternalError(w, r, "Invalid user context")
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
 
@@ -404,7 +389,7 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 
 	// Update role
 	user.Role = req.Role
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 	if err := database.DB.Save(&user).Error; err != nil {
 		WriteInternalError(w, r, "Failed to update user role")
 		return
@@ -429,15 +414,10 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} models.ErrorResponse
 // @Router /api/admin/users/{id}/deactivate [post]
 func DeactivateUser(w http.ResponseWriter, r *http.Request) {
-	// Get current user from context
-	userCtx := r.Context().Value(auth.UserContextKey)
-	if userCtx == nil {
-		WriteUnauthorized(w, r, "Unauthorized")
-		return
-	}
-	claims, ok := userCtx.(*auth.Claims)
+	// Get current user claims from context
+	claims, ok := auth.GetClaimsFromContext(r.Context())
 	if !ok {
-		WriteInternalError(w, r, "Invalid user context")
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
 
@@ -476,7 +456,7 @@ func DeactivateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Deactivate
 	user.IsActive = false
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 	if err := database.DB.Save(&user).Error; err != nil {
 		WriteInternalError(w, r, "Failed to deactivate user")
 		return
@@ -509,15 +489,10 @@ func DeactivateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} models.ErrorResponse
 // @Router /api/admin/users/{id}/reactivate [post]
 func ReactivateUser(w http.ResponseWriter, r *http.Request) {
-	// Get current user from context
-	userCtx := r.Context().Value(auth.UserContextKey)
-	if userCtx == nil {
-		WriteUnauthorized(w, r, "Unauthorized")
-		return
-	}
-	claims, ok := userCtx.(*auth.Claims)
+	// Get current user claims from context
+	claims, ok := auth.GetClaimsFromContext(r.Context())
 	if !ok {
-		WriteInternalError(w, r, "Invalid user context")
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
 
@@ -544,7 +519,7 @@ func ReactivateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Reactivate
 	user.IsActive = true
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 	if err := database.DB.Save(&user).Error; err != nil {
 		WriteInternalError(w, r, "Failed to reactivate user")
 		return
@@ -577,15 +552,10 @@ func ReactivateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} models.ErrorResponse
 // @Router /api/admin/users/{id}/restore [post]
 func RestoreUser(w http.ResponseWriter, r *http.Request) {
-	// Get current user from context
-	userCtx := r.Context().Value(auth.UserContextKey)
-	if userCtx == nil {
-		WriteUnauthorized(w, r, "Unauthorized")
-		return
-	}
-	claims, ok := userCtx.(*auth.Claims)
+	// Get current user claims from context
+	claims, ok := auth.GetClaimsFromContext(r.Context())
 	if !ok {
-		WriteInternalError(w, r, "Invalid user context")
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
 
@@ -646,15 +616,10 @@ func RestoreUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} models.ErrorResponse
 // @Router /api/admin/users/deleted [get]
 func GetDeletedUsers(w http.ResponseWriter, r *http.Request) {
-	// Get current user from context
-	userCtx := r.Context().Value(auth.UserContextKey)
-	if userCtx == nil {
-		WriteUnauthorized(w, r, "Unauthorized")
-		return
-	}
-	claims, ok := userCtx.(*auth.Claims)
+	// Get current user claims from context
+	claims, ok := auth.GetClaimsFromContext(r.Context())
 	if !ok {
-		WriteInternalError(w, r, "Invalid user context")
+		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
 

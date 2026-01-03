@@ -549,8 +549,8 @@ func CreateUser() http.HandlerFunc {
 			VerificationExpires: time.Now().Add(24 * time.Hour).Format(time.RFC3339),
 			EmailVerified:       true, // Admin-created users are pre-verified
 			IsActive:            true,
-			CreatedAt:           time.Now().Format(time.RFC3339),
-			UpdatedAt:           time.Now().Format(time.RFC3339),
+			CreatedAt:           time.Now(),
+			UpdatedAt:           time.Now(),
 		}
 
 		if err := database.DB.Create(&user).Error; err != nil {
@@ -670,7 +670,7 @@ func UpdateUser() http.HandlerFunc {
 			user.Name = updateData.Name
 		}
 
-		user.UpdatedAt = time.Now().Format(time.RFC3339)
+		user.UpdatedAt = time.Now()
 
 		if err := database.DB.Save(&user).Error; err != nil {
 			WriteInternalError(w, r, "Failed to update user")
@@ -808,7 +808,7 @@ func UpdateUserRole() http.HandlerFunc {
 		}
 
 		user.Role = req.Role
-		user.UpdatedAt = time.Now().Format(time.RFC3339)
+		user.UpdatedAt = time.Now()
 
 		if err := database.DB.Save(&user).Error; err != nil {
 			WriteInternalError(w, r, "Failed to update user role")
@@ -923,7 +923,7 @@ func UpdateCurrentUser() http.HandlerFunc {
 		if req.Email != "" {
 			currentUser.Email = req.Email
 		}
-		currentUser.UpdatedAt = time.Now().Format(time.RFC3339)
+		currentUser.UpdatedAt = time.Now()
 
 		if err := database.DB.Save(&currentUser).Error; err != nil {
 			WriteInternalError(w, r, "Failed to update user")

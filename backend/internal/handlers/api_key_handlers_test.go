@@ -52,8 +52,8 @@ func TestGetUserAPIKey_InvalidID(t *testing.T) {
 	rctx.URLParams.Add("id", "abc")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	GetUserAPIKey(w, req)
@@ -81,8 +81,8 @@ func TestCreateUserAPIKey_InvalidJSON(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	CreateUserAPIKey(w, req)
@@ -115,8 +115,8 @@ func TestCreateUserAPIKey_InvalidProvider(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
-			claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-			ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+			user := &models.User{ID: 1, Role: models.RoleUser}
+			ctx := auth.SetUserContext(req.Context(), user)
 			req = req.WithContext(ctx)
 
 			CreateUserAPIKey(w, req)
@@ -150,8 +150,8 @@ func TestCreateUserAPIKey_InvalidName(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
-			claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-			ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+			user := &models.User{ID: 1, Role: models.RoleUser}
+			ctx := auth.SetUserContext(req.Context(), user)
 			req = req.WithContext(ctx)
 
 			CreateUserAPIKey(w, req)
@@ -175,8 +175,8 @@ func TestCreateUserAPIKey_ShortAPIKey(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	CreateUserAPIKey(w, req)
@@ -211,8 +211,8 @@ func TestUpdateUserAPIKey_InvalidID(t *testing.T) {
 	rctx.URLParams.Add("id", "abc")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	UpdateUserAPIKey(w, req)
@@ -250,8 +250,8 @@ func TestDeleteUserAPIKey_InvalidID(t *testing.T) {
 	rctx.URLParams.Add("id", "abc")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	DeleteUserAPIKey(w, req)
@@ -286,8 +286,8 @@ func TestTestUserAPIKey_InvalidID(t *testing.T) {
 	rctx.URLParams.Add("id", "abc")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	TestUserAPIKey(w, req)

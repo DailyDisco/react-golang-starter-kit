@@ -214,12 +214,11 @@ func DeleteFeatureFlag(w http.ResponseWriter, r *http.Request) {
 // @Router /api/feature-flags [get]
 func GetFeatureFlagsForUser(w http.ResponseWriter, r *http.Request) {
 	// Get current user from context
-	userCtx := r.Context().Value(auth.UserContextKey)
-	if userCtx == nil {
+	user, ok := auth.GetUserFromContext(r.Context())
+	if !ok {
 		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
-	claims := userCtx.(*auth.Claims)
 
 	// Get all feature flags
 	var flags []models.FeatureFlag
@@ -230,7 +229,7 @@ func GetFeatureFlagsForUser(w http.ResponseWriter, r *http.Request) {
 
 	// Get user overrides
 	var overrides []models.UserFeatureFlag
-	database.DB.Where("user_id = ?", claims.UserID).Find(&overrides)
+	database.DB.Where("user_id = ?", user.ID).Find(&overrides)
 
 	// Build override map
 	overrideMap := make(map[uint]bool)
@@ -247,7 +246,7 @@ func GetFeatureFlagsForUser(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		result[flag.Key] = isFeatureEnabledForUser(flag, claims.UserID, claims.Role)
+		result[flag.Key] = isFeatureEnabledForUser(flag, user.ID, user.Role)
 	}
 
 	// Set cache headers - private since user-specific, 5 minutes

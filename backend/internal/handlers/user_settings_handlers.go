@@ -47,6 +47,7 @@ func GetUserPreferences(w http.ResponseWriter, r *http.Request) {
 
 	prefs, err := userPrefsService.GetPreferences(userID)
 	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("Failed to retrieve user preferences")
 		WriteInternalError(w, r, "Failed to retrieve preferences")
 		return
 	}
@@ -618,11 +619,12 @@ func RequestDataExport(w http.ResponseWriter, r *http.Request) {
 
 	// Create export record
 	now := time.Now()
+	expiresAt := now.AddDate(0, 0, 7).Format(time.RFC3339) // 7 days
 	export := models.DataExport{
 		UserID:      userID,
 		Status:      models.ExportStatusPending,
 		RequestedAt: now.Format(time.RFC3339),
-		ExpiresAt:   now.AddDate(0, 0, 7).Format(time.RFC3339), // 7 days
+		ExpiresAt:   &expiresAt,
 		CreatedAt:   now.Format(time.RFC3339),
 		UpdatedAt:   now.Format(time.RFC3339),
 	}
@@ -683,8 +685,8 @@ func DownloadDataExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if export is expired
-	if export.ExpiresAt != "" {
-		expiresAt, err := time.Parse(time.RFC3339, export.ExpiresAt)
+	if export.ExpiresAt != nil {
+		expiresAt, err := time.Parse(time.RFC3339, *export.ExpiresAt)
 		if err == nil && time.Now().After(expiresAt) {
 			database.DB.Model(&export).Update("status", models.ExportStatusExpired)
 			WriteNotFound(w, r, "Export has expired. Please request a new export.")
@@ -693,14 +695,14 @@ func DownloadDataExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if file exists
-	if export.FilePath == "" {
+	if export.FilePath == nil || *export.FilePath == "" {
 		WriteNotFound(w, r, "Export file not found")
 		return
 	}
 
-	content, err := os.ReadFile(export.FilePath)
+	content, err := os.ReadFile(*export.FilePath)
 	if err != nil {
-		log.Error().Err(err).Str("path", export.FilePath).Msg("failed to read export file")
+		log.Error().Err(err).Str("path", *export.FilePath).Msg("failed to read export file")
 		WriteInternalError(w, r, "Failed to read export file")
 		return
 	}
@@ -809,7 +811,7 @@ func UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.AvatarURL = avatarURL
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 	if err := database.DB.Save(&user).Error; err != nil {
 		WriteInternalError(w, r, "Failed to save avatar")
 		return
@@ -842,7 +844,7 @@ func DeleteAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.AvatarURL = ""
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 	if err := database.DB.Save(&user).Error; err != nil {
 		WriteInternalError(w, r, "Failed to remove avatar")
 		return
@@ -873,6 +875,7 @@ func GetConnectedAccounts(w http.ResponseWriter, r *http.Request) {
 
 	var providers []models.OAuthProvider
 	if err := database.DB.Where("user_id = ?", userID).Find(&providers).Error; err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("Failed to retrieve connected accounts")
 		WriteInternalError(w, r, "Failed to retrieve connected accounts")
 		return
 	}
@@ -954,7 +957,7 @@ func DisconnectAccount(w http.ResponseWriter, r *http.Request) {
 	if user.OAuthProvider == provider {
 		user.OAuthProvider = ""
 		user.OAuthProviderID = ""
-		user.UpdatedAt = time.Now().Format(time.RFC3339)
+		user.UpdatedAt = time.Now()
 		database.DB.Save(&user)
 	}
 
@@ -990,8 +993,8 @@ func GetDataExportStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if export is expired
-	if export.ExpiresAt != "" {
-		expiresAt, err := time.Parse(time.RFC3339, export.ExpiresAt)
+	if export.ExpiresAt != nil {
+		expiresAt, err := time.Parse(time.RFC3339, *export.ExpiresAt)
 		if err == nil && time.Now().After(expiresAt) {
 			export.Status = models.ExportStatusExpired
 			database.DB.Save(&export)
@@ -1014,11 +1017,11 @@ func getUserIDFromContext(r *http.Request) uint {
 	if userCtx == nil {
 		return 0
 	}
-	claims, ok := userCtx.(*auth.Claims)
+	user, ok := userCtx.(*models.User)
 	if !ok {
 		return 0
 	}
-	return claims.UserID
+	return user.ID
 }
 
 func getUserRoleFromContext(r *http.Request) string {
@@ -1026,11 +1029,11 @@ func getUserRoleFromContext(r *http.Request) string {
 	if userCtx == nil {
 		return ""
 	}
-	claims, ok := userCtx.(*auth.Claims)
+	user, ok := userCtx.(*models.User)
 	if !ok {
 		return ""
 	}
-	return claims.Role
+	return user.Role
 }
 
 func getUserEmailFromContext(r *http.Request) string {
@@ -1038,11 +1041,11 @@ func getUserEmailFromContext(r *http.Request) string {
 	if userCtx == nil {
 		return ""
 	}
-	claims, ok := userCtx.(*auth.Claims)
+	user, ok := userCtx.(*models.User)
 	if !ok {
 		return ""
 	}
-	return claims.Email
+	return user.Email
 }
 
 func getRefreshTokenFromContext(r *http.Request) string {

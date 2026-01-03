@@ -45,8 +45,8 @@ func TestUpdateUserPreferences_InvalidJSON(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	UpdateUserPreferences(w, req)
@@ -94,8 +94,8 @@ func TestRevokeSession_InvalidID(t *testing.T) {
 	rctx.URLParams.Add("id", "abc")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	RevokeSession(w, req)
@@ -190,8 +190,8 @@ func TestChangePassword_InvalidJSON(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	ChangePassword(w, req)
@@ -213,8 +213,8 @@ func TestChangePassword_PasswordMismatch(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	ChangePassword(w, req)
@@ -236,8 +236,8 @@ func TestChangePassword_WeakPassword(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	ChangePassword(w, req)
@@ -291,8 +291,8 @@ func TestVerify2FA_InvalidJSON(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	Verify2FA(w, req)
@@ -321,8 +321,8 @@ func TestVerify2FA_InvalidCodeLength(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
-			claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-			ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+			user := &models.User{ID: 1, Role: models.RoleUser}
+			ctx := auth.SetUserContext(req.Context(), user)
 			req = req.WithContext(ctx)
 
 			Verify2FA(w, req)
@@ -352,8 +352,8 @@ func TestDisable2FA_InvalidJSON(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	Disable2FA(w, req)
@@ -381,8 +381,8 @@ func TestRegenerateBackupCodes_InvalidJSON(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	RegenerateBackupCodes(w, req)
@@ -410,8 +410,8 @@ func TestRequestAccountDeletion_InvalidJSON(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	RequestAccountDeletion(w, req)
@@ -438,8 +438,8 @@ func TestCancelAccountDeletion_Authorized(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/users/me/delete/cancel", nil)
 	w := httptest.NewRecorder()
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	CancelAccountDeletion(w, req)
@@ -532,8 +532,8 @@ func TestDisconnectAccount_InvalidProvider(t *testing.T) {
 	rctx.URLParams.Add("provider", "invalid")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
-	claims := &auth.Claims{UserID: 1, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	DisconnectAccount(w, req)
@@ -594,8 +594,8 @@ func TestGetUserIDFromContext_NoContext(t *testing.T) {
 
 func TestGetUserIDFromContext_WithContext(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	claims := &auth.Claims{UserID: 42, Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 42, Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	userID := getUserIDFromContext(req)
@@ -616,8 +616,8 @@ func TestGetUserRoleFromContext_NoContext(t *testing.T) {
 
 func TestGetUserRoleFromContext_WithContext(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	claims := &auth.Claims{UserID: 1, Role: models.RoleAdmin}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Role: models.RoleAdmin}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	role := getUserRoleFromContext(req)
@@ -638,8 +638,8 @@ func TestGetUserEmailFromContext_NoContext(t *testing.T) {
 
 func TestGetUserEmailFromContext_WithContext(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	claims := &auth.Claims{UserID: 1, Email: "test@example.com", Role: models.RoleUser}
-	ctx := context.WithValue(req.Context(), auth.UserContextKey, claims)
+	user := &models.User{ID: 1, Email: "test@example.com", Role: models.RoleUser}
+	ctx := auth.SetUserContext(req.Context(), user)
 	req = req.WithContext(ctx)
 
 	email := getUserEmailFromContext(req)
