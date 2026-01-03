@@ -16,11 +16,11 @@ type User struct {
 
 	// When the user was created
 	// example: 2023-08-27T12:00:00Z
-	CreatedAt string `json:"created_at"`
+	CreatedAt time.Time `json:"created_at"`
 
 	// When the user was last updated
 	// example: 2023-08-27T12:00:00Z
-	UpdatedAt string `json:"updated_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 
 	// When the user was soft deleted (null if not deleted)
 	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
@@ -51,7 +51,7 @@ type User struct {
 	PasswordResetToken *string `json:"-" gorm:"uniqueIndex"`
 
 	// Password reset token expiration time
-	PasswordResetExpires string `json:"-"`
+	PasswordResetExpires *time.Time `json:"-"`
 
 	// Refresh token for obtaining new access tokens
 	RefreshToken string `json:"-" gorm:"index"`
@@ -153,8 +153,8 @@ func (u *User) ToUserResponse() UserResponse {
 		Email:         u.Email,
 		EmailVerified: u.EmailVerified,
 		IsActive:      u.IsActive,
-		CreatedAt:     u.CreatedAt,
-		UpdatedAt:     u.UpdatedAt,
+		CreatedAt:     u.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:     u.UpdatedAt.Format(time.RFC3339),
 		Role:          u.Role,
 		OAuthProvider: u.OAuthProvider,
 		AvatarURL:     u.AvatarURL,
@@ -647,6 +647,11 @@ type OAuthProvider struct {
 
 	// When the link was last updated
 	UpdatedAt string `json:"updated_at"`
+}
+
+// TableName overrides GORM's default table naming (o_auth_providers -> oauth_providers)
+func (OAuthProvider) TableName() string {
+	return "oauth_providers"
 }
 
 // OAuthUserInfo represents user info from an OAuth provider

@@ -87,8 +87,8 @@ func createTestUser(t *testing.T, db *gorm.DB, email, password string) *models.U
 		EmailVerified: true,
 		IsActive:      true,
 		Role:          models.RoleUser,
-		CreatedAt:     time.Now().Format(time.RFC3339),
-		UpdatedAt:     time.Now().Format(time.RFC3339),
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	err = db.Create(user).Error

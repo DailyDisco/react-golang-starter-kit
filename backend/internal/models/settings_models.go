@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/lib/pq"
 	"gorm.io/gorm"
@@ -107,8 +108,8 @@ type UserPreferences struct {
 	DateFormat         string          `json:"date_format" gorm:"type:varchar(20);default:'MM/DD/YYYY'"`
 	TimeFormat         string          `json:"time_format" gorm:"type:varchar(10);default:'12h'"`
 	EmailNotifications json.RawMessage `json:"email_notifications" gorm:"type:jsonb"`
-	CreatedAt          string          `json:"created_at"`
-	UpdatedAt          string          `json:"updated_at"`
+	CreatedAt          time.Time       `json:"created_at"`
+	UpdatedAt          time.Time       `json:"updated_at"`
 }
 
 // EmailNotificationSettings represents email notification preferences
@@ -170,9 +171,9 @@ type UserSession struct {
 	UserAgent        string          `json:"-" gorm:"type:text"`
 	Location         json.RawMessage `json:"location" gorm:"type:jsonb"`
 	IsCurrent        bool            `json:"is_current" gorm:"default:false"`
-	LastActiveAt     string          `json:"last_active_at"`
-	ExpiresAt        string          `json:"expires_at"`
-	CreatedAt        string          `json:"created_at"`
+	LastActiveAt     time.Time       `json:"last_active_at"`
+	ExpiresAt        time.Time       `json:"expires_at"`
+	CreatedAt        time.Time       `json:"created_at"`
 }
 
 // DeviceInfo represents parsed device information
@@ -223,8 +224,8 @@ func (s *UserSession) ToResponse() UserSessionResponse {
 		IPAddress:    s.IPAddress,
 		Location:     location,
 		IsCurrent:    s.IsCurrent,
-		LastActiveAt: s.LastActiveAt,
-		CreatedAt:    s.CreatedAt,
+		LastActiveAt: s.LastActiveAt.Format(time.RFC3339),
+		CreatedAt:    s.CreatedAt.Format(time.RFC3339),
 	}
 }
 
@@ -485,7 +486,12 @@ type LoginHistory struct {
 	Location      json.RawMessage `json:"location" gorm:"type:jsonb"`
 	AuthMethod    string          `json:"auth_method" gorm:"type:varchar(20);default:'password'"`
 	SessionID     *uint           `json:"session_id,omitempty"`
-	CreatedAt     string          `json:"created_at"`
+	CreatedAt     time.Time       `json:"created_at"`
+}
+
+// TableName specifies the table name for GORM (matches migration)
+func (LoginHistory) TableName() string {
+	return "login_history"
 }
 
 // Login failure reason constants
@@ -537,7 +543,7 @@ func (l *LoginHistory) ToResponse() LoginHistoryResponse {
 		DeviceInfo:    deviceInfo,
 		Location:      location,
 		AuthMethod:    l.AuthMethod,
-		CreatedAt:     l.CreatedAt,
+		CreatedAt:     l.CreatedAt.Format(time.RFC3339),
 	}
 }
 
@@ -742,18 +748,18 @@ const (
 // DataExport represents a user data export request
 // swagger:model DataExport
 type DataExport struct {
-	ID           uint   `json:"id" gorm:"primaryKey"`
-	UserID       uint   `json:"user_id" gorm:"not null;index"`
-	Status       string `json:"status" gorm:"type:varchar(50);default:'pending'"`
-	DownloadURL  string `json:"download_url,omitempty" gorm:"type:varchar(500)"`
-	FilePath     string `json:"-" gorm:"type:varchar(500)"`
-	FileSize     int64  `json:"file_size,omitempty"`
-	RequestedAt  string `json:"requested_at" gorm:"not null"`
-	CompletedAt  string `json:"completed_at,omitempty"`
-	ExpiresAt    string `json:"expires_at,omitempty"`
-	ErrorMessage string `json:"error_message,omitempty" gorm:"type:text"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	ID           uint    `json:"id" gorm:"primaryKey"`
+	UserID       uint    `json:"user_id" gorm:"not null;index"`
+	Status       string  `json:"status" gorm:"type:varchar(50);default:'pending'"`
+	DownloadURL  *string `json:"download_url,omitempty" gorm:"type:varchar(500)"`
+	FilePath     *string `json:"-" gorm:"type:varchar(500)"`
+	FileSize     int64   `json:"file_size,omitempty"`
+	RequestedAt  string  `json:"requested_at" gorm:"not null"`
+	CompletedAt  *string `json:"completed_at,omitempty"`
+	ExpiresAt    *string `json:"expires_at,omitempty"`
+	ErrorMessage *string `json:"error_message,omitempty" gorm:"type:text"`
+	CreatedAt    string  `json:"created_at"`
+	UpdatedAt    string  `json:"updated_at"`
 }
 
 // DataExportResponse represents the response for data export status
@@ -769,14 +775,19 @@ type DataExportResponse struct {
 
 // ToResponse converts a DataExport to DataExportResponse
 func (d *DataExport) ToResponse() DataExportResponse {
-	return DataExportResponse{
+	resp := DataExportResponse{
 		ID:          d.ID,
 		Status:      d.Status,
-		DownloadURL: d.DownloadURL,
 		RequestedAt: d.RequestedAt,
-		ExpiresAt:   d.ExpiresAt,
 		FileSize:    d.FileSize,
 	}
+	if d.DownloadURL != nil {
+		resp.DownloadURL = *d.DownloadURL
+	}
+	if d.ExpiresAt != nil {
+		resp.ExpiresAt = *d.ExpiresAt
+	}
+	return resp
 }
 
 // ConnectedAccountResponse represents an OAuth connected account

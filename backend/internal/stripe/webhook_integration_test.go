@@ -36,8 +36,8 @@ func createTestUserForWebhook(t *testing.T, email, stripeCustomerID string) *mod
 		Password:         "hashedpassword",
 		Role:             models.RoleUser,
 		StripeCustomerID: &stripeCustomerID,
-		CreatedAt:        time.Now().Format(time.RFC3339),
-		UpdatedAt:        time.Now().Format(time.RFC3339),
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 	if err := database.DB.Create(user).Error; err != nil {
 		t.Fatalf("Failed to create test user: %v", err)
