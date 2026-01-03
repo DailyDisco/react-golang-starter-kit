@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { requireAuth } from "@/lib/guards";
 import { queryKeys } from "@/lib/query-keys";
 import { sessionsQueryOptions } from "@/lib/route-query-options";
 import { AuthService } from "@/services/auth/authService";
@@ -31,6 +32,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/(app)/settings/security")({
+  // Ensure user is authenticated before loading data
+  beforeLoad: async (ctx) => {
+    await requireAuth(ctx);
+  },
   // Prefetch sessions data before component renders for faster navigation
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(sessionsQueryOptions());

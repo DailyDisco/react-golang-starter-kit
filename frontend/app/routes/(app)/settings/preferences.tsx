@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { requireAuth } from "@/lib/guards";
 import { queryKeys } from "@/lib/query-keys";
 import { preferencesQueryOptions } from "@/lib/route-query-options";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/(app)/settings/preferences")({
+  // Ensure user is authenticated before loading data
+  beforeLoad: async (ctx) => {
+    await requireAuth(ctx);
+  },
   // Prefetch preferences data before component renders for faster navigation
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(preferencesQueryOptions());

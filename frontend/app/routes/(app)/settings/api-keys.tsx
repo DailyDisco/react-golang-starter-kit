@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { requireAuth } from "@/lib/guards";
 import { queryKeys } from "@/lib/query-keys";
 import { apiKeysQueryOptions } from "@/lib/route-query-options";
 import { SettingsService, type CreateAPIKeyRequest, type UserAPIKey } from "@/services/settings/settingsService";
@@ -26,6 +27,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/(app)/settings/api-keys")({
+  // Ensure user is authenticated before loading data
+  beforeLoad: async (ctx) => {
+    await requireAuth(ctx);
+  },
   // Prefetch API keys data before component renders for faster navigation
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(apiKeysQueryOptions());

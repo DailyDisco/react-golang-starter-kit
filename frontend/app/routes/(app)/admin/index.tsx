@@ -137,7 +137,7 @@ function AdminDashboard() {
             <CardContent>
               <ChartContainer
                 config={chartConfig}
-                className="h-[200px] w-full"
+                className="h-[200px] min-h-[200px] w-full min-w-0"
               >
                 <AreaChart data={chartData}>
                   <defs>

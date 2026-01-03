@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
+import { requireAuth } from "@/lib/guards";
 import { queryKeys } from "@/lib/query-keys";
 import { loginHistoryQueryOptions } from "@/lib/route-query-options";
 import { SettingsService, type LoginHistoryEntry } from "@/services/settings/settingsService";
@@ -11,6 +12,10 @@ import { AlertTriangle, Check, Chrome, Clock, Globe, MapPin, Monitor, RefreshCw,
 import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/(app)/settings/login-history")({
+  // Ensure user is authenticated before loading data
+  beforeLoad: async (ctx) => {
+    await requireAuth(ctx);
+  },
   // Prefetch login history data before component renders for faster navigation
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(loginHistoryQueryOptions());
