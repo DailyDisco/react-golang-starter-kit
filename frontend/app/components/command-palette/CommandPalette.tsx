@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   CommandDialog,
@@ -47,11 +47,26 @@ interface GroupedCommands {
 
 /**
  * Hook to register all command providers on mount
+ * Uses refs to prevent re-registration loops when theme/auth changes
  */
 function useCommandProviders() {
   const { setTheme, resolvedTheme } = useTheme();
   const { logout } = useAuth();
 
+  // Use refs to access current values without re-registering providers
+  // This prevents the infinite loop caused by cleanup → notify → setState → re-render
+  const themeRef = useRef(resolvedTheme);
+  const setThemeRef = useRef(setTheme);
+  const logoutRef = useRef(logout);
+
+  // Update refs when values change (doesn't trigger effect re-run)
+  useEffect(() => {
+    themeRef.current = resolvedTheme;
+    setThemeRef.current = setTheme;
+    logoutRef.current = logout;
+  });
+
+  // Register providers ONCE on mount only
   useEffect(() => {
     // Register static providers
     const unregisterNav = commandRegistry.registerProvider(navigationProvider);
@@ -59,33 +74,14 @@ function useCommandProviders() {
     const unregisterAdmin = commandRegistry.registerProvider(adminProvider);
     const unregisterContextual = commandRegistry.registerProvider(contextualProvider);
 
-    // Register action provider with theme/logout
+    // Register action provider with ref-based callbacks
+    // Note: actionProvider already includes toggle-theme and sign-out commands
     const actionProvider = createActionProvider({
-      resolvedTheme: resolvedTheme ?? "light",
-      setTheme,
-      logout,
+      resolvedTheme: themeRef.current ?? "light",
+      setTheme: (theme) => setThemeRef.current(theme),
+      logout: () => logoutRef.current(),
     });
     const unregisterActions = commandRegistry.registerProvider(actionProvider);
-
-    // Also register theme toggle and sign out as individual commands
-    // so they're always available
-    const unregisterTheme = commandRegistry.register({
-      id: "toggle-theme",
-      label: resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode",
-      icon: resolvedTheme === "dark" ? Sun : Moon,
-      keywords: ["theme", "dark", "light", "mode"],
-      group: "actions",
-      action: () => setTheme(resolvedTheme === "dark" ? "light" : "dark"),
-    });
-
-    const unregisterSignOut = commandRegistry.register({
-      id: "sign-out",
-      label: "Sign Out",
-      icon: LogOut,
-      keywords: ["logout", "exit"],
-      group: "actions",
-      action: () => logout(),
-    });
 
     return () => {
       unregisterNav();
@@ -93,10 +89,8 @@ function useCommandProviders() {
       unregisterAdmin();
       unregisterContextual();
       unregisterActions();
-      unregisterTheme();
-      unregisterSignOut();
     };
-  }, [resolvedTheme, setTheme, logout]);
+  }, []); // Empty deps - register ONCE on mount
 }
 
 // =============================================================================
@@ -122,6 +116,13 @@ export function CommandPalette() {
 
   const ctx = useCommandContext();
 
+  // Keep a stable ref to ctx for the subscription callback
+  // This prevents re-subscribing when ctx object reference changes
+  const ctxRef = useRef(ctx);
+  useEffect(() => {
+    ctxRef.current = ctx;
+  });
+
   // Register providers
   useCommandProviders();
 
@@ -134,17 +135,24 @@ export function CommandPalette() {
   // Get commands from registry
   const [commands, setCommands] = useState<Command[]>([]);
 
+  // Subscribe to registry changes ONCE on mount
+  // Use ref to always get current ctx in callback
   useEffect(() => {
     // Initial load
-    setCommands(commandRegistry.getCommands(ctx));
+    setCommands(commandRegistry.getCommands(ctxRef.current));
 
     // Subscribe to registry changes
     const unsubscribe = commandRegistry.subscribe(() => {
-      setCommands(commandRegistry.getCommands(ctx));
+      setCommands(commandRegistry.getCommands(ctxRef.current));
     });
 
     return unsubscribe;
-  }, [ctx]);
+  }, []); // Empty deps - subscribe once
+
+  // Update commands when pathname changes (for route-based filtering)
+  useEffect(() => {
+    setCommands(commandRegistry.getCommands(ctx));
+  }, [ctx.pathname]); // Only re-filter when route changes
 
   // Register Cmd+K shortcut
   useKeyboardShortcuts({

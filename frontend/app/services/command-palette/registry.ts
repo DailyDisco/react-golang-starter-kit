@@ -62,6 +62,7 @@ class CommandRegistry {
   private providers: Map<string, CommandProvider> = new Map();
   private searchProviders: Map<string, SearchProvider> = new Map();
   private listeners: Set<() => void> = new Set();
+  private notifyTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // ===========================================================================
   // Command Registration
@@ -231,9 +232,18 @@ class CommandRegistry {
 
   /**
    * Notify all listeners of changes
+   * Debounced to prevent cascading updates during rapid registration/unregistration
    */
   private notify(): void {
-    for (const listener of this.listeners) listener();
+    // Cancel any pending notification
+    if (this.notifyTimeout) {
+      clearTimeout(this.notifyTimeout);
+    }
+    // Schedule notification for next microtask to batch multiple changes
+    this.notifyTimeout = setTimeout(() => {
+      for (const listener of this.listeners) listener();
+      this.notifyTimeout = null;
+    }, 0);
   }
 
   // ===========================================================================

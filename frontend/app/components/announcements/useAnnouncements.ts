@@ -28,6 +28,16 @@ export function useAnnouncements() {
   const [modalQueue, setModalQueue] = useState<Announcement[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Check if user is authenticated (has stored auth user)
+  const isAuthenticated = useMemo(() => {
+    try {
+      const storedUser = localStorage.getItem("auth_user");
+      return storedUser !== null;
+    } catch {
+      return false;
+    }
+  }, []);
+
   // Fetch active banner announcements
   const {
     data: allAnnouncements = [],
@@ -40,13 +50,15 @@ export function useAnnouncements() {
     refetchOnWindowFocus: false,
   });
 
-  // Fetch unread modal announcements (for authenticated users)
+  // Fetch unread modal announcements (for authenticated users only)
   const { data: unreadModals = [], isLoading: isLoadingModals } = useQuery({
     queryKey: ["announcements", "unread-modals"],
     queryFn: AnnouncementService.getUnreadModalAnnouncements,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: false, // Don't retry if user is not authenticated
+    throwOnError: false, // Silently fail - don't throw to error boundary
+    enabled: isAuthenticated, // Only fetch when user is authenticated
   });
 
   // Filter banner announcements (not dismissed, display_type = banner)
