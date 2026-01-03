@@ -475,6 +475,11 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *
 
 	// API routes setup - shared between /api and /api/v1
 	apiRoutes := func(r chi.Router) {
+		// setupAPIRoutes must be called FIRST because it registers middleware with r.Use()
+		// Chi requires all middleware to be defined before any routes
+		setupAPIRoutes(r, rateLimitConfig, stripeConfig, appService, fileService, wsHub)
+
+		// These routes come after setupAPIRoutes to ensure middleware is registered first
 		r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/plain")
 			if _, err := w.Write([]byte("API test route working!")); err != nil {
@@ -482,7 +487,6 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *
 			}
 		})
 		r.Get("/health", appService.HealthCheck)
-		setupAPIRoutes(r, rateLimitConfig, stripeConfig, appService, fileService, wsHub)
 	}
 
 	// Mount API routes
@@ -833,27 +837,19 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 		})
 	})
 
-	// Public announcements
+	// Public changelog
+	r.Get("/changelog", handlers.GetChangelog) // GET /api/changelog
+
+	// Announcements
 	r.Route("/announcements", func(r chi.Router) {
 		r.Get("/", handlers.GetActiveAnnouncements) // GET /api/announcements - Get active announcements
 
-		// Authenticated users can dismiss announcements
+		// Authenticated announcement actions
 		r.Group(func(r chi.Router) {
 			r.Use(auth.AuthMiddleware)
-			r.Post("/{id}/dismiss", handlers.DismissAnnouncement) // POST /api/announcements/{id}/dismiss
-		})
-	})
-
-	// API v1 routes
-	r.Route("/v1", func(r chi.Router) {
-		// Public changelog (cached)
-		r.Get("/changelog", handlers.GetChangelog) // GET /api/v1/changelog
-
-		// Authenticated announcement actions
-		r.Route("/announcements", func(r chi.Router) {
-			r.Use(auth.AuthMiddleware)
-			r.Get("/unread-modals", handlers.GetUnreadModalAnnouncements) // GET /api/v1/announcements/unread-modals
-			r.Post("/{id}/read", handlers.MarkAnnouncementRead)           // POST /api/v1/announcements/{id}/read
+			r.Post("/{id}/dismiss", handlers.DismissAnnouncement)         // POST /api/announcements/{id}/dismiss
+			r.Get("/unread-modals", handlers.GetUnreadModalAnnouncements) // GET /api/announcements/unread-modals
+			r.Post("/{id}/read", handlers.MarkAnnouncementRead)           // POST /api/announcements/{id}/read
 		})
 	})
 
