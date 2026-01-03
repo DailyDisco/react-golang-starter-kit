@@ -493,8 +493,8 @@ func findOrCreateOAuthUser(userInfo *models.OAuthUserInfo, token *oauth2.Token) 
 		OAuthProvider:   userInfo.Provider,
 		OAuthProviderID: userInfo.ID,
 		AvatarURL:       userInfo.AvatarURL,
-		CreatedAt:       time.Now().Format(time.RFC3339),
-		UpdatedAt:       time.Now().Format(time.RFC3339),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	if err := database.DB.Create(newUser).Error; err != nil {

@@ -106,8 +106,8 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		VerificationExpires: time.Now().Add(24 * time.Hour).Format(time.RFC3339),
 		EmailVerified:       false, // In production, you might want to send verification email
 		IsActive:            true,
-		CreatedAt:           time.Now().Format(time.RFC3339),
-		UpdatedAt:           time.Now().Format(time.RFC3339),
+		CreatedAt:           time.Now(),
+		UpdatedAt:           time.Now(),
 	}
 
 	if err := database.DB.Create(&user).Error; err != nil {
@@ -144,7 +144,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	user.RefreshToken = refreshToken
 	refreshExpires := time.Now().Add(GetRefreshTokenExpirationTime())
 	user.RefreshTokenExpires = &refreshExpires
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 	if err := database.DB.Save(&user).Error; err != nil {
 		log.Warn().Err(err).Msg("failed to save refresh token")
 	}
@@ -290,7 +290,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	user.RefreshToken = refreshToken
 	refreshExpires := time.Now().Add(GetRefreshTokenExpirationTime())
 	user.RefreshTokenExpires = &refreshExpires
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 	if err := database.DB.Save(&user).Error; err != nil {
 		log.Warn().Err(err).Msg("failed to save refresh token")
 	}
@@ -445,7 +445,7 @@ func VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	user.EmailVerified = true
 	user.VerificationToken = nil
 	user.VerificationExpires = ""
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 
 	if err := database.DB.Save(&user).Error; err != nil {
 		writeInternalError(w, r, "Failed to verify email")
@@ -509,8 +509,9 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	// Update user with hashed reset token (separate from email verification token)
 	user.PasswordResetToken = &hashedResetToken
-	user.PasswordResetExpires = time.Now().Add(1 * time.Hour).Format(time.RFC3339)
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	resetExpires := time.Now().Add(1 * time.Hour)
+	user.PasswordResetExpires = &resetExpires
+	user.UpdatedAt = time.Now()
 
 	if err := database.DB.Save(&user).Error; err != nil {
 		writeInternalError(w, r, "Failed to update user")
@@ -578,9 +579,8 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if token is expired
-	if user.PasswordResetExpires != "" {
-		expiresTime, err := time.Parse(time.RFC3339, user.PasswordResetExpires)
-		if err != nil || time.Now().After(expiresTime) {
+	if user.PasswordResetExpires != nil {
+		if time.Now().After(*user.PasswordResetExpires) {
 			writeTokenExpired(w, r, "Reset token has expired")
 			return
 		}
@@ -596,8 +596,8 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	// Update user password and clear reset token
 	user.Password = hashedPassword
 	user.PasswordResetToken = nil
-	user.PasswordResetExpires = ""
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.PasswordResetExpires = nil
+	user.UpdatedAt = time.Now()
 
 	if err := database.DB.Save(&user).Error; err != nil {
 		writeInternalError(w, r, "Failed to reset password")
@@ -675,7 +675,7 @@ func RefreshAccessToken(w http.ResponseWriter, r *http.Request) {
 	user.RefreshToken = newRefreshToken
 	newRefreshExpires := time.Now().Add(GetRefreshTokenExpirationTime())
 	user.RefreshTokenExpires = &newRefreshExpires
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 	if err := database.DB.Save(&user).Error; err != nil {
 		writeInternalError(w, r, "Failed to save refresh token")
 		return
