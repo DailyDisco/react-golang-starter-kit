@@ -264,6 +264,48 @@ make migrate-create name=add_feature  # Create new migration
 make migrate-version  # Show current version
 ```
 
+#### Migration Best Practices
+
+**File Naming:** Migrations use sequential numbering: `000001_init.up.sql`, `000001_init.down.sql`
+
+**Creating Migrations:**
+
+```bash
+# Creates 000004_add_user_preferences.up.sql and .down.sql
+cd backend && make migrate-create name=add_user_preferences
+```
+
+**Writing Safe Migrations:**
+
+- Always write both `up.sql` and `down.sql` (reversible)
+- Use `IF NOT EXISTS` / `IF EXISTS` for idempotency
+- Add indexes for columns used in WHERE, JOIN, ORDER BY
+- Test locally before deploying: `make migrate-down && make migrate-up`
+
+**Example Migration:**
+
+```sql
+-- 000004_add_user_preferences.up.sql
+CREATE TABLE IF NOT EXISTS user_preferences (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    theme VARCHAR(20) DEFAULT 'system',
+    notifications_enabled BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
+
+-- 000004_add_user_preferences.down.sql
+DROP TABLE IF EXISTS user_preferences;
+```
+
+**CI Validation:** The GitHub Actions pipeline validates migrations by running `up → down → up` against a real PostgreSQL instance.
+
+📖 **[Migration Patterns →](docs/FEATURES.md#database-migrations)**
+
 ### Code Quality
 
 ```bash
