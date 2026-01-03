@@ -217,7 +217,7 @@ func handleUserSubscriptionCreated(user *models.User, sub *stripe.Subscription, 
 	// Update user role to premium if subscription is active
 	if sub.Status == stripe.SubscriptionStatusActive || sub.Status == stripe.SubscriptionStatusTrialing {
 		user.Role = models.RolePremium
-		user.UpdatedAt = time.Now().Format(time.RFC3339)
+		user.UpdatedAt = time.Now()
 		if err := database.DB.Save(user).Error; err != nil {
 			log.Error().Err(err).Uint("user_id", user.ID).Msg("failed to update user role")
 		}
@@ -432,7 +432,7 @@ func syncUserRole(userID uint, status stripe.SubscriptionStatus) {
 
 	if user.Role != newRole {
 		user.Role = newRole
-		user.UpdatedAt = time.Now().Format(time.RFC3339)
+		user.UpdatedAt = time.Now()
 		if err := database.DB.Save(&user).Error; err != nil {
 			log.Error().Err(err).Uint("user_id", userID).Msg("failed to sync user role")
 			return

@@ -320,8 +320,8 @@ func compileUserData(ctx context.Context, userID uint) (*UserDataExport, error) 
 		AvatarURL:     user.AvatarURL,
 		Bio:           user.Bio,
 		Location:      user.Location,
-		CreatedAt:     user.CreatedAt,
-		UpdatedAt:     user.UpdatedAt,
+		CreatedAt:     user.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:     user.UpdatedAt.Format(time.RFC3339),
 	}
 
 	// Get preferences

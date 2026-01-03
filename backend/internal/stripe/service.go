@@ -128,7 +128,7 @@ func (s *stripeService) GetOrCreateCustomer(ctx context.Context, user *models.Us
 
 	// Update user with customer ID
 	user.StripeCustomerID = &customerID
-	user.UpdatedAt = time.Now().Format(time.RFC3339)
+	user.UpdatedAt = time.Now()
 	if err := database.DB.Save(user).Error; err != nil {
 		log.Error().Err(err).Uint("user_id", user.ID).Msg("failed to save stripe customer ID")
 		return customerID, nil // Return customer ID anyway, DB update is not critical

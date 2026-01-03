@@ -124,8 +124,9 @@ func seedUsersInternal(config *SeedConfig) error {
 		return err
 	}
 
-	now := time.Now().Format(time.RFC3339)
-	farFuture := time.Now().Add(365 * 24 * time.Hour).Format(time.RFC3339)
+	now := time.Now()
+	farFutureStr := time.Now().Add(365 * 24 * time.Hour).Format(time.RFC3339)
+	farFutureTime := time.Now().Add(365 * 24 * time.Hour)
 
 	users := []models.User{
 		{
@@ -136,9 +137,9 @@ func seedUsersInternal(config *SeedConfig) error {
 			IsActive:             true,
 			EmailVerified:        true,
 			VerificationToken:    strPtr(generateUniqueToken()),
-			VerificationExpires:  farFuture,
+			VerificationExpires:  farFutureStr,
 			PasswordResetToken:   strPtr(generateUniqueToken()),
-			PasswordResetExpires: farFuture,
+			PasswordResetExpires: &farFutureTime,
 			StripeCustomerID:     strPtr("cus_seed_superadmin"),
 			CreatedAt:            now,
 			UpdatedAt:            now,
@@ -151,9 +152,9 @@ func seedUsersInternal(config *SeedConfig) error {
 			IsActive:             true,
 			EmailVerified:        true,
 			VerificationToken:    strPtr(generateUniqueToken()),
-			VerificationExpires:  farFuture,
+			VerificationExpires:  farFutureStr,
 			PasswordResetToken:   strPtr(generateUniqueToken()),
-			PasswordResetExpires: farFuture,
+			PasswordResetExpires: &farFutureTime,
 			StripeCustomerID:     strPtr("cus_seed_admin"),
 			CreatedAt:            now,
 			UpdatedAt:            now,
@@ -166,9 +167,9 @@ func seedUsersInternal(config *SeedConfig) error {
 			IsActive:             true,
 			EmailVerified:        true,
 			VerificationToken:    strPtr(generateUniqueToken()),
-			VerificationExpires:  farFuture,
+			VerificationExpires:  farFutureStr,
 			PasswordResetToken:   strPtr(generateUniqueToken()),
-			PasswordResetExpires: farFuture,
+			PasswordResetExpires: &farFutureTime,
 			StripeCustomerID:     strPtr("cus_seed_premium"),
 			CreatedAt:            now,
 			UpdatedAt:            now,
@@ -181,9 +182,9 @@ func seedUsersInternal(config *SeedConfig) error {
 			IsActive:             true,
 			EmailVerified:        true,
 			VerificationToken:    strPtr(generateUniqueToken()),
-			VerificationExpires:  farFuture,
+			VerificationExpires:  farFutureStr,
 			PasswordResetToken:   strPtr(generateUniqueToken()),
-			PasswordResetExpires: farFuture,
+			PasswordResetExpires: &farFutureTime,
 			StripeCustomerID:     strPtr("cus_seed_user"),
 			CreatedAt:            now,
 			UpdatedAt:            now,
@@ -196,9 +197,9 @@ func seedUsersInternal(config *SeedConfig) error {
 			IsActive:             true,
 			EmailVerified:        false,
 			VerificationToken:    strPtr(generateUniqueToken()),
-			VerificationExpires:  farFuture,
+			VerificationExpires:  farFutureStr,
 			PasswordResetToken:   strPtr(generateUniqueToken()),
-			PasswordResetExpires: farFuture,
+			PasswordResetExpires: &farFutureTime,
 			StripeCustomerID:     strPtr("cus_seed_unverified"),
 			CreatedAt:            now,
 			UpdatedAt:            now,
@@ -211,9 +212,9 @@ func seedUsersInternal(config *SeedConfig) error {
 			IsActive:             false,
 			EmailVerified:        true,
 			VerificationToken:    strPtr(generateUniqueToken()),
-			VerificationExpires:  farFuture,
+			VerificationExpires:  farFutureStr,
 			PasswordResetToken:   strPtr(generateUniqueToken()),
-			PasswordResetExpires: farFuture,
+			PasswordResetExpires: &farFutureTime,
 			StripeCustomerID:     strPtr("cus_seed_inactive"),
 			CreatedAt:            now,
 			UpdatedAt:            now,

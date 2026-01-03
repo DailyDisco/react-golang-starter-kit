@@ -45,7 +45,7 @@ func TestWebhookSignatureVerification(t *testing.T) {
 		// Use "ping" event type which doesn't require database operations
 		event := map[string]any{
 			"id":               "evt_test_valid",
-			"type":             "ping", // Use ping - doesn't trigger DB operations
+			"type":             "ping",       // Use ping - doesn't trigger DB operations
 			"api_version":      "2023-10-16", // Must match Stripe SDK expected version
 			"created":          time.Now().Unix(),
 			"livemode":         false,
@@ -237,11 +237,11 @@ func TestWebhookSuccessResponse(t *testing.T) {
 
 	t.Run("returns proper JSON success response", func(t *testing.T) {
 		event := map[string]any{
-			"id":              "evt_test_response",
-			"type":            "ping", // Unhandled type, but still returns success
-			"api_version":     "2023-10-16",
-			"created":         time.Now().Unix(),
-			"livemode":        false,
+			"id":               "evt_test_response",
+			"type":             "ping", // Unhandled type, but still returns success
+			"api_version":      "2023-10-16",
+			"created":          time.Now().Unix(),
+			"livemode":         false,
 			"pending_webhooks": 1,
 			"request": map[string]any{
 				"id": "req_test_456",

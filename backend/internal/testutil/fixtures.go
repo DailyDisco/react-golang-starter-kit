@@ -105,7 +105,7 @@ func (f *UserFactory) WithAvatarURL(url string) *UserFactory {
 
 // Build creates a User model from the factory configuration.
 func (f *UserFactory) Build() *models.User {
-	now := time.Now().Format(time.RFC3339)
+	now := time.Now()
 	return &models.User{
 		ID:            f.id,
 		Name:          f.name,
