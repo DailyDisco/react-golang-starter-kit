@@ -23,7 +23,6 @@ import (
 
 // TOTPService handles two-factor authentication operations
 type TOTPService struct {
-	db            *gorm.DB
 	issuer        string
 	encryptionKey []byte
 }
@@ -48,7 +47,6 @@ func NewTOTPService() *TOTPService {
 	hash := sha256.Sum256([]byte(encKeyStr))
 
 	return &TOTPService{
-		db:            database.DB,
 		issuer:        issuer,
 		encryptionKey: hash[:],
 	}
@@ -92,7 +90,7 @@ func (s *TOTPService) SetupTwoFactor(userID uint, email string) (*models.TwoFact
 
 	// Check if 2FA record exists
 	var existing models.UserTwoFactor
-	result := s.db.Where("user_id = ?", userID).First(&existing)
+	result := database.DB.Where("user_id = ?", userID).First(&existing)
 
 	if result.Error == gorm.ErrRecordNotFound {
 		// Create new record
@@ -103,7 +101,7 @@ func (s *TOTPService) SetupTwoFactor(userID uint, email string) (*models.TwoFact
 			CreatedAt:       time.Now().Format(time.RFC3339),
 			UpdatedAt:       time.Now().Format(time.RFC3339),
 		}
-		if err := s.db.Create(twoFactor).Error; err != nil {
+		if err := database.DB.Create(twoFactor).Error; err != nil {
 			return nil, fmt.Errorf("failed to create 2FA record: %w", err)
 		}
 	} else if result.Error != nil {
@@ -114,7 +112,7 @@ func (s *TOTPService) SetupTwoFactor(userID uint, email string) (*models.TwoFact
 		existing.IsEnabled = false
 		existing.VerifiedAt = nil
 		existing.UpdatedAt = time.Now().Format(time.RFC3339)
-		if err := s.db.Save(&existing).Error; err != nil {
+		if err := database.DB.Save(&existing).Error; err != nil {
 			return nil, fmt.Errorf("failed to update 2FA record: %w", err)
 		}
 	}
@@ -125,7 +123,7 @@ func (s *TOTPService) SetupTwoFactor(userID uint, email string) (*models.TwoFact
 // VerifyAndEnable verifies the TOTP code and enables 2FA
 func (s *TOTPService) VerifyAndEnable(userID uint, code string) ([]string, error) {
 	var twoFactor models.UserTwoFactor
-	if err := s.db.Where("user_id = ?", userID).First(&twoFactor).Error; err != nil {
+	if err := database.DB.Where("user_id = ?", userID).First(&twoFactor).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("2FA not set up for this user")
 		}
@@ -142,7 +140,7 @@ func (s *TOTPService) VerifyAndEnable(userID uint, code string) ([]string, error
 	valid := totp.Validate(code, secret)
 	if !valid {
 		// Increment failed attempts
-		s.db.Model(&twoFactor).UpdateColumn("failed_attempts", gorm.Expr("failed_attempts + 1"))
+		database.DB.Model(&twoFactor).UpdateColumn("failed_attempts", gorm.Expr("failed_attempts + 1"))
 		return nil, fmt.Errorf("invalid verification code")
 	}
 
@@ -165,12 +163,12 @@ func (s *TOTPService) VerifyAndEnable(userID uint, code string) ([]string, error
 		"updated_at":             time.Now().Format(time.RFC3339),
 	}
 
-	if err := s.db.Model(&twoFactor).Updates(updates).Error; err != nil {
+	if err := database.DB.Model(&twoFactor).Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("failed to enable 2FA: %w", err)
 	}
 
 	// Update user's 2FA enabled flag
-	s.db.Model(&models.User{}).Where("id = ?", userID).Update("two_factor_enabled", true)
+	database.DB.Model(&models.User{}).Where("id = ?", userID).Update("two_factor_enabled", true)
 
 	return backupCodes, nil
 }
@@ -178,7 +176,7 @@ func (s *TOTPService) VerifyAndEnable(userID uint, code string) ([]string, error
 // ValidateCode validates a TOTP code or backup code
 func (s *TOTPService) ValidateCode(userID uint, code string) (bool, error) {
 	var twoFactor models.UserTwoFactor
-	if err := s.db.Where("user_id = ? AND is_enabled = ?", userID, true).First(&twoFactor).Error; err != nil {
+	if err := database.DB.Where("user_id = ? AND is_enabled = ?", userID, true).First(&twoFactor).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return false, fmt.Errorf("2FA not enabled for this user")
 		}
@@ -192,7 +190,7 @@ func (s *TOTPService) ValidateCode(userID uint, code string) (bool, error) {
 			return false, fmt.Errorf("account temporarily locked due to too many failed attempts")
 		}
 		// Unlock the account
-		s.db.Model(&twoFactor).Updates(map[string]interface{}{
+		database.DB.Model(&twoFactor).Updates(map[string]interface{}{
 			"locked_until":    nil,
 			"failed_attempts": 0,
 		})
@@ -207,7 +205,7 @@ func (s *TOTPService) ValidateCode(userID uint, code string) (bool, error) {
 	// Try TOTP validation first
 	if totp.Validate(code, secret) {
 		// Update last used
-		s.db.Model(&twoFactor).Updates(map[string]interface{}{
+		database.DB.Model(&twoFactor).Updates(map[string]interface{}{
 			"last_used_at":    time.Now().Format(time.RFC3339),
 			"failed_attempts": 0,
 		})
@@ -220,7 +218,7 @@ func (s *TOTPService) ValidateCode(userID uint, code string) (bool, error) {
 		if valid {
 			// Update backup codes
 			remainingCodesJSON, _ := json.Marshal(remainingCodes)
-			s.db.Model(&twoFactor).Updates(map[string]interface{}{
+			database.DB.Model(&twoFactor).Updates(map[string]interface{}{
 				"backup_codes_hash":      remainingCodesJSON,
 				"backup_codes_remaining": len(remainingCodes),
 				"last_used_at":           time.Now().Format(time.RFC3339),
@@ -242,7 +240,7 @@ func (s *TOTPService) ValidateCode(userID uint, code string) (bool, error) {
 		updates["locked_until"] = lockUntil
 	}
 
-	s.db.Model(&twoFactor).Updates(updates)
+	database.DB.Model(&twoFactor).Updates(updates)
 	return false, nil
 }
 
@@ -258,12 +256,12 @@ func (s *TOTPService) DisableTwoFactor(userID uint, code string) error {
 	}
 
 	// Delete 2FA record
-	if err := s.db.Where("user_id = ?", userID).Delete(&models.UserTwoFactor{}).Error; err != nil {
+	if err := database.DB.Where("user_id = ?", userID).Delete(&models.UserTwoFactor{}).Error; err != nil {
 		return fmt.Errorf("failed to disable 2FA: %w", err)
 	}
 
 	// Update user's 2FA enabled flag
-	s.db.Model(&models.User{}).Where("id = ?", userID).Update("two_factor_enabled", false)
+	database.DB.Model(&models.User{}).Where("id = ?", userID).Update("two_factor_enabled", false)
 
 	return nil
 }
@@ -271,7 +269,7 @@ func (s *TOTPService) DisableTwoFactor(userID uint, code string) error {
 // GetTwoFactorStatus returns 2FA status for a user
 func (s *TOTPService) GetTwoFactorStatus(userID uint) (*models.TwoFactorStatusResponse, error) {
 	var twoFactor models.UserTwoFactor
-	if err := s.db.Where("user_id = ?", userID).First(&twoFactor).Error; err != nil {
+	if err := database.DB.Where("user_id = ?", userID).First(&twoFactor).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return &models.TwoFactorStatusResponse{
 				Enabled:              false,
@@ -313,7 +311,7 @@ func (s *TOTPService) RegenerateBackupCodes(userID uint, code string) ([]string,
 	hashedCodesJSON, _ := json.Marshal(hashedCodes)
 
 	// Update backup codes
-	if err := s.db.Model(&models.UserTwoFactor{}).
+	if err := database.DB.Model(&models.UserTwoFactor{}).
 		Where("user_id = ?", userID).
 		Updates(map[string]interface{}{
 			"backup_codes_hash":      hashedCodesJSON,
@@ -329,7 +327,7 @@ func (s *TOTPService) RegenerateBackupCodes(userID uint, code string) ([]string,
 // Is2FAEnabled checks if 2FA is enabled for a user
 func (s *TOTPService) Is2FAEnabled(userID uint) (bool, error) {
 	var count int64
-	if err := s.db.Model(&models.UserTwoFactor{}).
+	if err := database.DB.Model(&models.UserTwoFactor{}).
 		Where("user_id = ? AND is_enabled = ?", userID, true).
 		Count(&count).Error; err != nil {
 		return false, fmt.Errorf("failed to check 2FA status: %w", err)

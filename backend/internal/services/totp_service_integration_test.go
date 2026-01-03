@@ -24,7 +24,6 @@ func testTOTPSetup(t *testing.T) (*TOTPService, func()) {
 	database.DB = tt.DB
 
 	svc := NewTOTPService()
-	svc.db = tt.DB
 
 	return svc, func() {
 		database.DB = oldDB

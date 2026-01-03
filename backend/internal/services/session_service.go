@@ -12,19 +12,14 @@ import (
 	"time"
 
 	"github.com/mssola/useragent"
-	"gorm.io/gorm"
 )
 
 // SessionService handles user session operations
-type SessionService struct {
-	db *gorm.DB
-}
+type SessionService struct{}
 
 // NewSessionService creates a new session service instance
 func NewSessionService() *SessionService {
-	return &SessionService{
-		db: database.DB,
-	}
+	return &SessionService{}
 }
 
 // CreateSession creates a new user session
@@ -55,12 +50,12 @@ func (s *SessionService) CreateSession(userID uint, refreshToken string, r *http
 		UserAgent:        userAgent,
 		Location:         locationJSON,
 		IsCurrent:        false,
-		LastActiveAt:     time.Now().Format(time.RFC3339),
-		ExpiresAt:        expiresAt.Format(time.RFC3339),
-		CreatedAt:        time.Now().Format(time.RFC3339),
+		LastActiveAt:     time.Now(),
+		ExpiresAt:        expiresAt,
+		CreatedAt:        time.Now(),
 	}
 
-	if err := s.db.Create(session).Error; err != nil {
+	if err := database.DB.Create(session).Error; err != nil {
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
@@ -70,9 +65,9 @@ func (s *SessionService) CreateSession(userID uint, refreshToken string, r *http
 // GetUserSessions retrieves all active sessions for a user
 func (s *SessionService) GetUserSessions(userID uint, currentTokenHash string) ([]models.UserSession, error) {
 	var sessions []models.UserSession
-	now := time.Now().Format(time.RFC3339)
+	now := time.Now()
 
-	if err := s.db.Where("user_id = ? AND expires_at > ?", userID, now).
+	if err := database.DB.Where("user_id = ? AND expires_at > ?", userID, now).
 		Order("last_active_at DESC").
 		Find(&sessions).Error; err != nil {
 		return nil, fmt.Errorf("failed to retrieve sessions: %w", err)
@@ -90,7 +85,7 @@ func (s *SessionService) GetUserSessions(userID uint, currentTokenHash string) (
 
 // RevokeSession revokes a specific session
 func (s *SessionService) RevokeSession(userID, sessionID uint) error {
-	result := s.db.Where("id = ? AND user_id = ?", sessionID, userID).
+	result := database.DB.Where("id = ? AND user_id = ?", sessionID, userID).
 		Delete(&models.UserSession{})
 
 	if result.Error != nil {
@@ -104,7 +99,7 @@ func (s *SessionService) RevokeSession(userID, sessionID uint) error {
 
 // RevokeAllSessions revokes all sessions for a user except the current one
 func (s *SessionService) RevokeAllSessions(userID uint, exceptTokenHash string) error {
-	query := s.db.Where("user_id = ?", userID)
+	query := database.DB.Where("user_id = ?", userID)
 	if exceptTokenHash != "" {
 		query = query.Where("session_token_hash != ?", exceptTokenHash)
 	}
@@ -117,7 +112,7 @@ func (s *SessionService) RevokeAllSessions(userID uint, exceptTokenHash string) 
 
 // RevokeSessionByTokenHash revokes a session by its token hash
 func (s *SessionService) RevokeSessionByTokenHash(tokenHash string) error {
-	result := s.db.Where("session_token_hash = ?", tokenHash).
+	result := database.DB.Where("session_token_hash = ?", tokenHash).
 		Delete(&models.UserSession{})
 
 	if result.Error != nil {
@@ -128,9 +123,9 @@ func (s *SessionService) RevokeSessionByTokenHash(tokenHash string) error {
 
 // UpdateLastActive updates the last active timestamp for a session
 func (s *SessionService) UpdateLastActive(tokenHash string) error {
-	result := s.db.Model(&models.UserSession{}).
+	result := database.DB.Model(&models.UserSession{}).
 		Where("session_token_hash = ?", tokenHash).
-		Update("last_active_at", time.Now().Format(time.RFC3339))
+		Update("last_active_at", time.Now())
 
 	if result.Error != nil {
 		return fmt.Errorf("failed to update last active: %w", result.Error)
@@ -140,8 +135,8 @@ func (s *SessionService) UpdateLastActive(tokenHash string) error {
 
 // CleanupExpiredSessions removes expired sessions
 func (s *SessionService) CleanupExpiredSessions() (int64, error) {
-	now := time.Now().Format(time.RFC3339)
-	result := s.db.Where("expires_at < ?", now).Delete(&models.UserSession{})
+	now := time.Now()
+	result := database.DB.Where("expires_at < ?", now).Delete(&models.UserSession{})
 
 	if result.Error != nil {
 		return 0, fmt.Errorf("failed to cleanup sessions: %w", result.Error)
@@ -223,10 +218,10 @@ func (s *SessionService) RecordLoginAttempt(userID uint, success bool, failureRe
 		Location:      locationJSON,
 		AuthMethod:    authMethod,
 		SessionID:     sessionID,
-		CreatedAt:     time.Now().Format(time.RFC3339),
+		CreatedAt:     time.Now(),
 	}
 
-	if err := s.db.Create(record).Error; err != nil {
+	if err := database.DB.Create(record).Error; err != nil {
 		return fmt.Errorf("failed to record login attempt: %w", err)
 	}
 	return nil
@@ -238,12 +233,12 @@ func (s *SessionService) GetLoginHistory(userID uint, limit, offset int) ([]mode
 	var total int64
 
 	// Get total count
-	if err := s.db.Model(&models.LoginHistory{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+	if err := database.DB.Model(&models.LoginHistory{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("failed to count login history: %w", err)
 	}
 
 	// Get paginated results
-	if err := s.db.Where("user_id = ?", userID).
+	if err := database.DB.Where("user_id = ?", userID).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).

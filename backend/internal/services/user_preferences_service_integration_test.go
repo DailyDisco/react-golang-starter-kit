@@ -21,8 +21,6 @@ func testPreferencesSetup(t *testing.T) (*UserPreferencesService, func()) {
 	database.DB = tt.DB
 
 	svc := NewUserPreferencesService()
-	// Override the service's internal db reference
-	svc.db = tt.DB
 
 	return svc, func() {
 		database.DB = oldDB

@@ -11,26 +11,22 @@ import (
 )
 
 // UserPreferencesService handles user preferences operations
-type UserPreferencesService struct {
-	db *gorm.DB
-}
+type UserPreferencesService struct{}
 
 // NewUserPreferencesService creates a new user preferences service instance
 func NewUserPreferencesService() *UserPreferencesService {
-	return &UserPreferencesService{
-		db: database.DB,
-	}
+	return &UserPreferencesService{}
 }
 
 // GetPreferences retrieves user preferences, creating defaults if not exists
 func (s *UserPreferencesService) GetPreferences(userID uint) (*models.UserPreferences, error) {
 	var prefs models.UserPreferences
-	result := s.db.Where("user_id = ?", userID).First(&prefs)
+	result := database.DB.Where("user_id = ?", userID).First(&prefs)
 
 	if result.Error == gorm.ErrRecordNotFound {
 		// Create default preferences
 		prefs = s.createDefaultPreferences(userID)
-		if err := s.db.Create(&prefs).Error; err != nil {
+		if err := database.DB.Create(&prefs).Error; err != nil {
 			return nil, fmt.Errorf("failed to create default preferences: %w", err)
 		}
 		return &prefs, nil
@@ -53,7 +49,7 @@ func (s *UserPreferencesService) UpdatePreferences(userID uint, req *models.Upda
 
 	// Build updates map
 	updates := map[string]interface{}{
-		"updated_at": time.Now().Format(time.RFC3339),
+		"updated_at": time.Now(),
 	}
 
 	if req.Theme != nil {
@@ -90,7 +86,7 @@ func (s *UserPreferencesService) UpdatePreferences(userID uint, req *models.Upda
 		updates["email_notifications"] = emailNotifJSON
 	}
 
-	if err := s.db.Model(prefs).Updates(updates).Error; err != nil {
+	if err := database.DB.Model(prefs).Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("failed to update preferences: %w", err)
 	}
 
@@ -110,11 +106,11 @@ func (s *UserPreferencesService) UpdateTheme(userID uint, theme string) error {
 		return err
 	}
 
-	return s.db.Model(&models.UserPreferences{}).
+	return database.DB.Model(&models.UserPreferences{}).
 		Where("user_id = ?", userID).
 		Updates(map[string]interface{}{
 			"theme":      theme,
-			"updated_at": time.Now().Format(time.RFC3339),
+			"updated_at": time.Now(),
 		}).Error
 }
 
@@ -128,17 +124,17 @@ func (s *UserPreferencesService) UpdateEmailNotifications(userID uint, notificat
 
 	notifJSON, _ := json.Marshal(notifications)
 
-	return s.db.Model(&models.UserPreferences{}).
+	return database.DB.Model(&models.UserPreferences{}).
 		Where("user_id = ?", userID).
 		Updates(map[string]interface{}{
 			"email_notifications": notifJSON,
-			"updated_at":          time.Now().Format(time.RFC3339),
+			"updated_at":          time.Now(),
 		}).Error
 }
 
 // DeletePreferences deletes user preferences (for account deletion)
 func (s *UserPreferencesService) DeletePreferences(userID uint) error {
-	return s.db.Where("user_id = ?", userID).Delete(&models.UserPreferences{}).Error
+	return database.DB.Where("user_id = ?", userID).Delete(&models.UserPreferences{}).Error
 }
 
 // createDefaultPreferences creates default preferences for a new user
@@ -159,8 +155,8 @@ func (s *UserPreferencesService) createDefaultPreferences(userID uint) models.Us
 		DateFormat:         "MM/DD/YYYY",
 		TimeFormat:         "12h",
 		EmailNotifications: notifJSON,
-		CreatedAt:          time.Now().Format(time.RFC3339),
-		UpdatedAt:          time.Now().Format(time.RFC3339),
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
 	}
 }
 

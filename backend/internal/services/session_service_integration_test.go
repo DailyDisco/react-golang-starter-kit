@@ -23,8 +23,6 @@ func testSessionSetup(t *testing.T) (*SessionService, func()) {
 	database.DB = tt.DB
 
 	svc := NewSessionService()
-	// Override the service's internal db reference
-	svc.db = tt.DB
 
 	return svc, func() {
 		database.DB = oldDB
@@ -119,13 +117,12 @@ func TestSessionService_CreateSession_Integration(t *testing.T) {
 
 		session, _ := svc.CreateSession(user.ID, "token-expires", req)
 
-		expiresAt, _ := time.Parse(time.RFC3339, session.ExpiresAt)
-		if expiresAt.Before(time.Now()) {
+		if session.ExpiresAt.Before(time.Now()) {
 			t.Error("Expected expiration to be in the future")
 		}
 		// Should be approximately 7 days
 		expectedExpiry := time.Now().Add(7 * 24 * time.Hour)
-		if expiresAt.After(expectedExpiry.Add(time.Hour)) || expiresAt.Before(expectedExpiry.Add(-time.Hour)) {
+		if session.ExpiresAt.After(expectedExpiry.Add(time.Hour)) || session.ExpiresAt.Before(expectedExpiry.Add(-time.Hour)) {
 			t.Error("Expected expiration to be around 7 days from now")
 		}
 	})
@@ -191,9 +188,9 @@ func TestSessionService_GetUserSessions_Integration(t *testing.T) {
 			SessionTokenHash: hashToken("expired-token"),
 			IPAddress:        "127.0.0.1",
 			UserAgent:        "Expired/1.0",
-			LastActiveAt:     time.Now().Add(-8 * 24 * time.Hour).Format(time.RFC3339),
-			ExpiresAt:        time.Now().Add(-1 * time.Hour).Format(time.RFC3339), // Expired
-			CreatedAt:        time.Now().Add(-8 * 24 * time.Hour).Format(time.RFC3339),
+			LastActiveAt:     time.Now().Add(-8 * 24 * time.Hour),
+			ExpiresAt:        time.Now().Add(-1 * time.Hour), // Expired
+			CreatedAt:        time.Now().Add(-8 * 24 * time.Hour),
 		}
 		database.DB.Create(expiredSession)
 
@@ -398,9 +395,9 @@ func TestSessionService_CleanupExpiredSessions_Integration(t *testing.T) {
 			SessionTokenHash: hashToken("expired-token"),
 			IPAddress:        "127.0.0.1",
 			UserAgent:        "Expired/1.0",
-			LastActiveAt:     time.Now().Add(-8 * 24 * time.Hour).Format(time.RFC3339),
-			ExpiresAt:        time.Now().Add(-1 * time.Hour).Format(time.RFC3339),
-			CreatedAt:        time.Now().Add(-8 * 24 * time.Hour).Format(time.RFC3339),
+			LastActiveAt:     time.Now().Add(-8 * 24 * time.Hour),
+			ExpiresAt:        time.Now().Add(-1 * time.Hour),
+			CreatedAt:        time.Now().Add(-8 * 24 * time.Hour),
 		}
 		database.DB.Create(expiredSession)
 
