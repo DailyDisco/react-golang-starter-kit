@@ -11,6 +11,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   isInitialized: boolean;
+  hasValidatedSession: boolean; // True only after successful backend validation
 
   // Actions
   setUser: (user: User | null) => void;
@@ -28,6 +29,7 @@ export const useAuthStore = create<AuthState>()(
         isLoading: true,
         isAuthenticated: false,
         isInitialized: false,
+        hasValidatedSession: false,
 
         setUser: (user) =>
           set({
@@ -42,6 +44,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: null,
             isAuthenticated: false,
+            hasValidatedSession: false,
           });
           // Clear localStorage
           AuthService.clearStorage();
@@ -54,6 +57,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user,
             isAuthenticated: true,
+            hasValidatedSession: true,
           }),
         initialize: async () => {
           // Prevent double initialization
@@ -66,8 +70,10 @@ export const useAuthStore = create<AuthState>()(
             if (event.type === "logout" || event.type === "session_expired") {
               // Another tab logged out or session expired - sync this tab
               logger.info("Auth event from another tab", { type: event.type });
+              const wasValidated = get().hasValidatedSession;
               get().logout(false); // Don't broadcast back
-              if (typeof window !== "undefined") {
+              // Only show modal if this tab had a validated session
+              if (wasValidated && typeof window !== "undefined") {
                 window.dispatchEvent(new CustomEvent("session-expired"));
               }
             }
@@ -102,12 +108,17 @@ export const useAuthStore = create<AuthState>()(
             const isValid = await AuthService.initializeFromStorage();
 
             if (isValid) {
+              // Mark session as validated - only validated sessions show expiration modal
+              set({ hasValidatedSession: true });
+
               // Session is valid - start heartbeat to detect future expiration
               AuthService.startSessionHeartbeat(5 * 60 * 1000, () => {
                 // Session expired - logout and notify other tabs
                 broadcastSessionExpired();
+                const wasValidated = get().hasValidatedSession;
                 get().logout(false); // Already broadcast via broadcastSessionExpired
-                if (typeof window !== "undefined") {
+                // Only show modal if session was validated
+                if (wasValidated && typeof window !== "undefined") {
                   window.dispatchEvent(new CustomEvent("session-expired"));
                 }
               });
