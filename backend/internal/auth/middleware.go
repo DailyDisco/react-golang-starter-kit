@@ -22,6 +22,7 @@ const (
 	UserIDContextKey    ContextKey = "user_id"
 	UserEmailContextKey ContextKey = "user_email"
 	UserRoleContextKey  ContextKey = "user_role"
+	ClaimsContextKey    ContextKey = "claims"
 )
 
 // AuthMiddleware validates JWT tokens and adds user context to requests
@@ -84,11 +85,12 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Add user context to request
+		// Add user and claims context to request
 		ctx := context.WithValue(r.Context(), UserContextKey, &user)
 		ctx = context.WithValue(ctx, UserIDContextKey, user.ID)
 		ctx = context.WithValue(ctx, UserEmailContextKey, user.Email)
 		ctx = context.WithValue(ctx, UserRoleContextKey, user.Role)
+		ctx = context.WithValue(ctx, ClaimsContextKey, claims)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -134,11 +136,12 @@ func OptionalAuthMiddleware(next http.Handler) http.Handler {
 				}
 
 				if user.IsActive {
-					// Add user context to request
+					// Add user and claims context to request
 					ctx := context.WithValue(r.Context(), UserContextKey, &user)
 					ctx = context.WithValue(ctx, UserIDContextKey, user.ID)
 					ctx = context.WithValue(ctx, UserEmailContextKey, user.Email)
 					ctx = context.WithValue(ctx, UserRoleContextKey, user.Role)
+					ctx = context.WithValue(ctx, ClaimsContextKey, claims)
 					next.ServeHTTP(w, r.WithContext(ctx))
 					return
 				}
@@ -156,6 +159,12 @@ func GetUserFromContext(ctx context.Context) (*models.User, bool) {
 	return user, ok
 }
 
+// GetClaimsFromContext retrieves the JWT claims from the request context
+func GetClaimsFromContext(ctx context.Context) (*Claims, bool) {
+	claims, ok := ctx.Value(ClaimsContextKey).(*Claims)
+	return claims, ok
+}
+
 // SetUserContext adds a user to the context (primarily for testing)
 func SetUserContext(ctx context.Context, user *models.User) context.Context {
 	ctx = context.WithValue(ctx, UserContextKey, user)
@@ -163,6 +172,11 @@ func SetUserContext(ctx context.Context, user *models.User) context.Context {
 	ctx = context.WithValue(ctx, UserEmailContextKey, user.Email)
 	ctx = context.WithValue(ctx, UserRoleContextKey, user.Role)
 	return ctx
+}
+
+// SetClaimsContext adds claims to the context (primarily for testing)
+func SetClaimsContext(ctx context.Context, claims *Claims) context.Context {
+	return context.WithValue(ctx, ClaimsContextKey, claims)
 }
 
 // GetUserIDFromContext retrieves the user ID from the request context
