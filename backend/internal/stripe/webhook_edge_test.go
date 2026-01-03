@@ -312,22 +312,52 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 }
 
 func TestGetPlanFromPriceID(t *testing.T) {
-	tests := []struct {
-		name     string
-		priceID  string
-		expected models.OrganizationPlan
-	}{
-		{"empty price ID returns free", "", models.OrgPlanFree},
-		{"any non-empty price ID returns pro", "price_abc123", models.OrgPlanPro},
-		{"enterprise price ID returns pro (TODO: implement tiers)", "price_enterprise_xyz", models.OrgPlanPro},
-	}
+	// Test without env vars set (default behavior)
+	t.Run("without env vars", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			priceID  string
+			expected models.OrganizationPlan
+		}{
+			{"empty price ID returns free", "", models.OrgPlanFree},
+			{"any non-empty price ID returns pro", "price_abc123", models.OrgPlanPro},
+			{"unknown enterprise price ID returns pro", "price_enterprise_xyz", models.OrgPlanPro},
+		}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := getPlanFromPriceID(tt.priceID)
-			if result != tt.expected {
-				t.Errorf("getPlanFromPriceID(%q) = %s, expected %s", tt.priceID, result, tt.expected)
-			}
-		})
-	}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := getPlanFromPriceID(tt.priceID)
+				if result != tt.expected {
+					t.Errorf("getPlanFromPriceID(%q) = %s, expected %s", tt.priceID, result, tt.expected)
+				}
+			})
+		}
+	})
+
+	// Test with env vars set for tier mapping
+	t.Run("with env vars", func(t *testing.T) {
+		// Set up test price IDs
+		t.Setenv("STRIPE_PREMIUM_PRICE_ID", "price_pro_test")
+		t.Setenv("STRIPE_ENTERPRISE_PRICE_ID", "price_enterprise_test")
+
+		tests := []struct {
+			name     string
+			priceID  string
+			expected models.OrganizationPlan
+		}{
+			{"empty price ID returns free", "", models.OrgPlanFree},
+			{"configured pro price ID returns pro", "price_pro_test", models.OrgPlanPro},
+			{"configured enterprise price ID returns enterprise", "price_enterprise_test", models.OrgPlanEnterprise},
+			{"unknown price ID returns pro (paid fallback)", "price_unknown", models.OrgPlanPro},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := getPlanFromPriceID(tt.priceID)
+				if result != tt.expected {
+					t.Errorf("getPlanFromPriceID(%q) = %s, expected %s", tt.priceID, result, tt.expected)
+				}
+			})
+		}
+	})
 }

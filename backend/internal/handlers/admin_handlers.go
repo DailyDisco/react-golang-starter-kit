@@ -668,3 +668,55 @@ func GetDeletedUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(deletedResp)
 }
+
+// SearchUsers searches users by name or email for admin command palette
+// @Summary Search users
+// @Tags Admin
+// @Security BearerAuth
+// @Param query query string true "Search query (name or email)"
+// @Param limit query int false "Max results" default(10)
+// @Success 200 {object} models.UsersResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 403 {object} models.ErrorResponse
+// @Router /api/admin/users [get]
+func SearchUsers(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		WriteBadRequest(w, r, "Query parameter is required")
+		return
+	}
+
+	// Limit results for command palette performance
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 50 {
+		limit = 10
+	}
+
+	// Search by name or email (case-insensitive)
+	var users []models.User
+	searchPattern := "%" + query + "%"
+	if err := database.DB.
+		Where("LOWER(name) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?)", searchPattern, searchPattern).
+		Order("name ASC").
+		Limit(limit).
+		Find(&users).Error; err != nil {
+		WriteInternalError(w, r, "Failed to search users")
+		return
+	}
+
+	// Convert to response format
+	userResponses := make([]models.UserResponse, len(users))
+	for i, u := range users {
+		userResponses[i] = u.ToUserResponse()
+	}
+
+	response := models.UsersResponse{
+		Users: userResponses,
+		Count: len(userResponses),
+		Total: len(userResponses), // For search, count equals total
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

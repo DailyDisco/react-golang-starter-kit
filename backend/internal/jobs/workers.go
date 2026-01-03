@@ -378,3 +378,82 @@ func EnqueueAnnouncementEmail(ctx context.Context, args SendAnnouncementEmailArg
 
 	return Insert(ctx, args, nil)
 }
+
+// ============================================
+// Account Lockout Email Worker
+// ============================================
+
+// SendAccountLockedEmailArgs contains the job arguments for account lockout emails
+type SendAccountLockedEmailArgs struct {
+	UserID         uint   `json:"user_id"`
+	Email          string `json:"email"`
+	Name           string `json:"name"`
+	LockDuration   string `json:"lock_duration"`
+	FailedAttempts int    `json:"failed_attempts"`
+}
+
+// Kind returns the job type identifier
+func (SendAccountLockedEmailArgs) Kind() string {
+	return "send_account_locked_email"
+}
+
+// InsertOpts returns default insert options for this job type
+func (SendAccountLockedEmailArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{
+		Queue:       "email",
+		MaxAttempts: 5,
+	}
+}
+
+// SendAccountLockedEmailWorker processes account lockout email jobs
+type SendAccountLockedEmailWorker struct {
+	river.WorkerDefaults[SendAccountLockedEmailArgs]
+}
+
+// Work executes the account lockout email job
+func (w *SendAccountLockedEmailWorker) Work(ctx context.Context, job *river.Job[SendAccountLockedEmailArgs]) error {
+	args := job.Args
+
+	log.Info().
+		Uint("user_id", args.UserID).
+		Str("email", args.Email).
+		Msg("sending account locked email")
+
+	// Send email using email service
+	err := email.Send(ctx, email.SendParams{
+		To:           args.Email,
+		TemplateName: "account_locked",
+		Data: map[string]interface{}{
+			"Name":           args.Name,
+			"LockDuration":   args.LockDuration,
+			"FailedAttempts": args.FailedAttempts,
+		},
+	})
+
+	if err != nil {
+		log.Error().Err(err).Str("email", args.Email).Msg("failed to send account locked email")
+		return fmt.Errorf("failed to send account locked email: %w", err)
+	}
+
+	log.Info().
+		Uint("user_id", args.UserID).
+		Str("email", args.Email).
+		Msg("account locked email sent successfully")
+
+	return nil
+}
+
+// EnqueueAccountLockoutNotification queues an account lockout email job
+func EnqueueAccountLockoutNotification(ctx context.Context, userID uint, email, name, lockDuration string, failedAttempts int) error {
+	if !IsAvailable() {
+		return fmt.Errorf("job system not available")
+	}
+
+	return Insert(ctx, SendAccountLockedEmailArgs{
+		UserID:         userID,
+		Email:          email,
+		Name:           name,
+		LockDuration:   lockDuration,
+		FailedAttempts: failedAttempts,
+	}, nil)
+}

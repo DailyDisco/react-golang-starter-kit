@@ -83,6 +83,7 @@ func InitializeWithPool(config *Config, pool *pgxpool.Pool) error {
 	river.AddWorker(workers, &SendVerificationEmailWorker{})
 	river.AddWorker(workers, &SendPasswordResetEmailWorker{})
 	river.AddWorker(workers, &SendAnnouncementEmailWorker{})
+	river.AddWorker(workers, &SendAccountLockedEmailWorker{})
 	river.AddWorker(workers, &ProcessStripeWebhookWorker{})
 	river.AddWorker(workers, &DataExportWorker{})
 

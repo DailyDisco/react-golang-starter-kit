@@ -7,27 +7,29 @@ import (
 
 // Config holds Stripe configuration
 type Config struct {
-	SecretKey       string
-	PublishableKey  string
-	WebhookSecret   string
-	SuccessURL      string
-	CancelURL       string
-	PortalReturnURL string
-	Enabled         bool
-	PremiumPriceID  string // Stripe Price ID for premium subscription
+	SecretKey         string
+	PublishableKey    string
+	WebhookSecret     string
+	SuccessURL        string
+	CancelURL         string
+	PortalReturnURL   string
+	Enabled           bool
+	PremiumPriceID    string // Stripe Price ID for premium subscription (Pro tier)
+	EnterprisePriceID string // Stripe Price ID for enterprise subscription
 }
 
 // DefaultConfig returns the default Stripe configuration
 func DefaultConfig() *Config {
 	return &Config{
-		SecretKey:       "",
-		PublishableKey:  "",
-		WebhookSecret:   "",
-		SuccessURL:      "http://localhost:5173/billing/success",
-		CancelURL:       "http://localhost:5173/billing/cancel",
-		PortalReturnURL: "http://localhost:5173/billing",
-		Enabled:         false,
-		PremiumPriceID:  "",
+		SecretKey:         "",
+		PublishableKey:    "",
+		WebhookSecret:     "",
+		SuccessURL:        "http://localhost:5173/billing/success",
+		CancelURL:         "http://localhost:5173/billing/cancel",
+		PortalReturnURL:   "http://localhost:5173/billing",
+		Enabled:           false,
+		PremiumPriceID:    "",
+		EnterprisePriceID: "",
 	}
 }
 
@@ -55,6 +57,9 @@ func LoadConfig() *Config {
 	}
 	if val := os.Getenv("STRIPE_PREMIUM_PRICE_ID"); val != "" {
 		config.PremiumPriceID = val
+	}
+	if val := os.Getenv("STRIPE_ENTERPRISE_PRICE_ID"); val != "" {
+		config.EnterprisePriceID = val
 	}
 
 	// Enable Stripe if secret key is provided

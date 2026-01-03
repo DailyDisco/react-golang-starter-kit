@@ -8,8 +8,7 @@ import type { CommandContext, SearchProvider, SearchResult } from "./types";
 // =============================================================================
 
 /**
- * User search provider - currently returns placeholder results
- * TODO: Implement when /admin/users endpoint is available
+ * User search provider - searches users by name or email
  */
 export const userSearchProvider: SearchProvider = {
   id: "users",
@@ -20,11 +19,28 @@ export const userSearchProvider: SearchProvider = {
   minQueryLength: 2,
 
   search: async (query: string, ctx: CommandContext): Promise<SearchResult[]> => {
-    // User search API not yet implemented
-    // Return empty results for now - the UI will show "No users found"
-    // TODO: Implement when GET /admin/users endpoint is available
-    console.info("User search not yet implemented. Query:", query);
-    return [];
+    try {
+      const response = await AdminService.searchUsers(query, 5);
+
+      return response.users.map((user) => ({
+        id: `user-${user.id}`,
+        type: "user" as const,
+        title: user.name,
+        subtitle: `${user.email} • ${user.role}`,
+        icon: User,
+        action: (actionCtx: CommandContext) => {
+          actionCtx.navigate(`/admin/users?highlight=${user.id}`);
+        },
+        metadata: {
+          user,
+          email: user.email,
+          role: user.role,
+        },
+      }));
+    } catch (error) {
+      console.error("User search failed:", error);
+      return [];
+    }
   },
 };
 

@@ -125,6 +125,13 @@ export const AdminService = {
   },
 
   // User Management
+  async searchUsers(query: string, limit: number = 10): Promise<{ users: User[]; count: number }> {
+    const params = new URLSearchParams();
+    params.set("query", query);
+    params.set("limit", limit.toString());
+    return apiClient.get<{ users: User[]; count: number }>(`/admin/users?${params.toString()}`);
+  },
+
   async updateUserRole(userId: number, role: string): Promise<User> {
     return apiClient.put<User>(`/admin/users/${userId}/role`, { role });
   },

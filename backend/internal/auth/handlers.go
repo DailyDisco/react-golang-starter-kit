@@ -722,10 +722,20 @@ func handleFailedLogin(user *models.User, r *http.Request) {
 			Str("ip", getClientIP(r)).
 			Msg("account locked due to too many failed login attempts")
 
-		// TODO: Queue email notification about account lockout
-		// if jobs.IsAvailable() {
-		//     jobs.EnqueueAccountLockoutNotification(r.Context(), user.ID, user.Email, user.Name, lockUntil)
-		// }
+		// Queue email notification about account lockout
+		if jobs.IsAvailable() {
+			lockDuration := LockoutDuration.String()
+			if err := jobs.EnqueueAccountLockoutNotification(
+				r.Context(),
+				user.ID,
+				user.Email,
+				user.Name,
+				lockDuration,
+				user.FailedLoginAttempts,
+			); err != nil {
+				log.Error().Err(err).Uint("user_id", user.ID).Msg("failed to queue account lockout notification")
+			}
+		}
 	}
 
 	// Save the updated user

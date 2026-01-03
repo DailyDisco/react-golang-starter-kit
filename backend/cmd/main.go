@@ -766,6 +766,7 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 		r.Post("/stop-impersonate", handlers.StopImpersonation) // POST /api/admin/stop-impersonate
 
 		// User management
+		r.Get("/users", handlers.SearchUsers)             // GET /api/admin/users?query=... - Search users for command palette
 		r.Get("/users/deleted", handlers.GetDeletedUsers) // GET /api/admin/users/deleted - List soft-deleted users
 		r.Route("/users/{id}", func(r chi.Router) {
 			r.Put("/role", handlers.AdminUpdateUserRole)   // PUT /api/admin/users/{id}/role

@@ -268,14 +268,29 @@ func handleOrgSubscriptionCreated(org *models.Organization, sub *stripe.Subscrip
 }
 
 // getPlanFromPriceID maps Stripe price IDs to organization plans
+// Uses environment-configured price IDs to determine tier:
+// - STRIPE_ENTERPRISE_PRICE_ID -> Enterprise
+// - STRIPE_PREMIUM_PRICE_ID -> Pro
+// - Any other non-empty price ID -> Pro (fallback for paid plans)
+// - Empty price ID -> Free
 func getPlanFromPriceID(priceID string) models.OrganizationPlan {
-	// TODO: Configure these mappings via environment or config
-	// For now, default to pro for any paid plan
 	if priceID == "" {
 		return models.OrgPlanFree
 	}
-	// Check for enterprise tier (could be configured via env vars)
-	// For now, assume all paid plans are pro
+
+	config := LoadConfig()
+
+	// Check for enterprise tier first
+	if config.EnterprisePriceID != "" && priceID == config.EnterprisePriceID {
+		return models.OrgPlanEnterprise
+	}
+
+	// Check for pro tier (premium price ID)
+	if config.PremiumPriceID != "" && priceID == config.PremiumPriceID {
+		return models.OrgPlanPro
+	}
+
+	// Default: any paid subscription without specific mapping is Pro
 	return models.OrgPlanPro
 }
 

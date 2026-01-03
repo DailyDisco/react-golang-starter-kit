@@ -2401,6 +2401,41 @@ paths:
       summary: Stop impersonating
       tags:
       - Admin
+  /api/admin/users:
+    get:
+      parameters:
+      - description: Search query (name or email)
+        in: query
+        name: query
+        required: true
+        type: string
+      - default: 10
+        description: Max results
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UsersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Search users
+      tags:
+      - Admin
   /api/admin/users/{id}/deactivate:
     post:
       parameters:
