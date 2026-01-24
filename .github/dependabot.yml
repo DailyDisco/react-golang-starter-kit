@@ -12,6 +12,7 @@ updates:
       time: "09:00"
       timezone: "America/New_York"
     open-pull-requests-limit: 10
+    rebase-strategy: auto
     commit-message:
       prefix: "deps(frontend)"
     labels:
@@ -41,6 +42,7 @@ updates:
       time: "09:00"
       timezone: "America/New_York"
     open-pull-requests-limit: 10
+    rebase-strategy: auto
     commit-message:
       prefix: "deps(backend)"
     labels:
@@ -62,6 +64,7 @@ updates:
       time: "09:00"
       timezone: "America/New_York"
     open-pull-requests-limit: 5
+    rebase-strategy: auto
     commit-message:
       prefix: "ci"
     labels:

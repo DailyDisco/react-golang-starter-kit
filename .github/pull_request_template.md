@@ -15,11 +15,45 @@ What kind of change does this PR introduce?
 - [ ] Build/CI
 - [ ] Other (Please describe)
 
+## Scope
+
+Which parts of the codebase are affected?
+
+- [ ] Frontend (React)
+- [ ] Backend (Go)
+- [ ] Both
+
 ## Changes Made
 
 - Item 1
 - Item 2
 - Item 3
+
+## Database Migrations
+
+Does this PR include database changes?
+
+- [ ] No database changes
+- [ ] New migration added
+- [ ] Migration tested locally (up/down/up)
+- [ ] Migration is reversible
+
+## Breaking Changes
+
+Does this PR introduce breaking changes?
+
+- [ ] No breaking changes
+- [ ] Yes (describe below)
+
+<!-- If yes, describe the breaking changes and migration path -->
+
+## Security Considerations
+
+- [ ] No security implications
+- [ ] Includes authentication/authorization changes
+- [ ] Handles sensitive data
+- [ ] Input validation added/updated
+- [ ] Security review requested
 
 ## Testing
 
@@ -27,6 +61,7 @@ Please describe how you tested your changes:
 
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
+- [ ] E2E tests added/updated
 - [ ] Manual testing performed
 - [ ] All existing tests pass
 
@@ -42,6 +77,18 @@ Please check the boxes that apply:
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes
 - [ ] I have checked for and resolved any merge conflicts
+
+## Deployment Notes
+
+Does this PR require special deployment steps?
+
+- [ ] No special deployment required
+- [ ] Requires environment variable changes (documented below)
+- [ ] Requires database migration
+- [ ] Requires cache invalidation
+- [ ] Other (describe below)
+
+<!-- If special deployment is needed, describe the steps -->
 
 ## Screenshots (if applicable)
 
