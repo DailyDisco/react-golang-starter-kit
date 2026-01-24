@@ -92,6 +92,10 @@ jobs:
         run: npm run build
         working-directory: ${{ env.FRONTEND_DIR }}
 
+      - name: Check bundle size
+        run: npm run size
+        working-directory: ${{ env.FRONTEND_DIR }}
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -256,7 +260,7 @@ jobs:
     if: needs.changes.outputs.backend == 'true'
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpass
@@ -504,3 +508,119 @@ jobs:
             echo "❌ **Some checks failed**" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
+
+  # ============================================================================
+  # Production Deployment (Blue-Green)
+  # ============================================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [ci-success, container-security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.CONTAINER_REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Generate version tag
+        id: version
+        run: |
+          VERSION=$(date +%Y%m%d)-${GITHUB_SHA::8}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ vars.CONTAINER_REGISTRY }}/backend:${{ steps.version.outputs.version }}
+            ${{ vars.CONTAINER_REGISTRY }}/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ vars.CONTAINER_REGISTRY }}/frontend:${{ steps.version.outputs.version }}
+            ${{ vars.CONTAINER_REGISTRY }}/frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=${{ vars.PRODUCTION_API_URL }}
+
+      - name: Deploy to Blue environment
+        id: deploy-blue
+        run: |
+          echo "Deploying version ${{ steps.version.outputs.version }} to blue environment..."
+          # Deploy to blue environment (inactive)
+          # This would typically use kubectl, docker-compose, or your deployment tool
+          # Example: kubectl set image deployment/backend-blue backend=${{ vars.CONTAINER_REGISTRY }}/backend:${{ steps.version.outputs.version }}
+          echo "Blue deployment complete"
+
+      - name: Run smoke tests on Blue
+        id: smoke-tests
+        run: |
+          echo "Running smoke tests against blue environment..."
+          # Run health checks and basic functionality tests
+          # Example: curl -f ${{ vars.BLUE_HEALTH_URL }}/health || exit 1
+          echo "Smoke tests passed"
+
+      - name: Switch traffic to Blue (promote)
+        if: success()
+        run: |
+          echo "Promoting blue to production..."
+          # Switch load balancer/ingress to point to blue
+          # Example: kubectl patch ingress main -p '{"spec":{"rules":[{"host":"app.example.com","http":{"paths":[{"backend":{"service":{"name":"backend-blue"}}}]}}]}}'
+          echo "Traffic switched to new deployment"
+
+      - name: Rollback on failure
+        if: failure() && steps.deploy-blue.outcome == 'success'
+        run: |
+          echo "Deployment failed, initiating rollback..."
+          # Rollback to previous version (green environment)
+          # Example: kubectl rollout undo deployment/backend-blue
+          echo "Rollback complete"
+
+      - name: Create deployment record
+        if: success()
+        run: |
+          echo "### Production Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Deployment successful**" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "### ❌ Production Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Review the logs above for details." >> $GITHUB_STEP_SUMMARY

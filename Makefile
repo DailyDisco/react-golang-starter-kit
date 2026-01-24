@@ -2,13 +2,12 @@
 # React + Go Starter Kit - Docker Development
 # ============================================
 
-.PHONY: help dev dev-build prod prod-build prod-status build rebuild down dev-down prod-down clean logs dev-logs prod-logs \
+.PHONY: help dev dev-build prod prod-build prod-rebuild prod-status build rebuild down dev-down prod-down clean logs dev-logs prod-logs \
 	backend-logs frontend-logs db-logs test test-backend test-frontend format-backend status health setup \
 	seed dev-fresh db-reset shell-backend shell-frontend shell-db restart ps tail \
 	observability-up observability-down observability-logs grafana-logs prometheus-logs \
 	deploy-vercel deploy-vercel-prod deploy-railway configure-features init \
-	rollback switch-blue switch-green \
-	backup-info backup-now backup-incr backup-verify backup-logs backup-restore-list \
+	rollback frontend-build \
 	test-db-up test-db-down test-db-reset test-services-up test-services-down test-integration \
 	test-backend-coverage test-frontend-coverage test-e2e coverage coverage-html coverage-check test-clean
 
@@ -32,9 +31,9 @@ BACKEND_PORT  ?= 8080
 # Compose Commands (DRY)
 # ============================================
 
-COMPOSE_FILES_DEV  := -f docker-compose.yml -f docker-compose.dev.yml
-COMPOSE_FILES_PROD := -f docker-compose.yml -f docker-compose.prod.yml
-COMPOSE_FILES_OBS  := $(COMPOSE_FILES_DEV) -f docker-compose.observability.yml
+COMPOSE_FILES_DEV  := -f docker/compose.yml -f docker/compose.dev.yml
+COMPOSE_FILES_PROD := -f docker/compose.yml -f docker/compose.prod.yml
+COMPOSE_FILES_OBS  := $(COMPOSE_FILES_DEV) -f docker/compose.observability.yml
 
 DC      := docker compose --env-file $(ENV_FILE)
 DC_DEV  := $(DC) $(COMPOSE_FILES_DEV)
@@ -87,6 +86,9 @@ prod: ## Deploy with zero downtime (blue-green)
 prod-build: ## Build production images without deploying
 	@$(DC_PROD) build
 
+prod-rebuild: ## Rebuild production images without cache
+	@$(DC_PROD) build --no-cache
+
 prod-status: ## Show production deployment status
 	@./scripts/deploy-bluegreen.sh --status
 
@@ -99,13 +101,10 @@ prod-down: ## Stop production environment
 rollback: ## Rollback to previous environment
 	@./scripts/deploy-bluegreen.sh --rollback
 
-switch-blue: ## Switch traffic to blue environment
-	@ACTIVE_BACKEND=backend-blue ACTIVE_FRONTEND=frontend-blue $(DC_PROD) up -d --no-deps caddy
-	@echo "Traffic switched to blue"
-
-switch-green: ## Switch traffic to green environment
-	@ACTIVE_BACKEND=backend-green ACTIVE_FRONTEND=frontend-green $(DC_PROD) up -d --no-deps caddy
-	@echo "Traffic switched to green"
+frontend-build: ## Build frontend for production deployment
+	@cd frontend && npm run build
+	@echo "Frontend built to frontend/dist/"
+	@echo "Deploy to: Vercel, Cloudflare Pages, S3, or any static host"
 
 # ============================================
 # Build
@@ -195,7 +194,7 @@ test-frontend: ## Run frontend tests
 
 test-db-up: ## Start test database
 	@echo "Starting test database..."
-	@docker compose -f docker-compose.test.yml up -d postgres-test dragonfly-test
+	@docker compose -f docker/compose.test.yml up -d postgres-test dragonfly-test
 	@echo "Waiting for database to be ready..."
 	@until docker exec react-golang-postgres-test pg_isready -U testuser -d starter_kit_test > /dev/null 2>&1; do \
 		sleep 1; \
@@ -203,19 +202,19 @@ test-db-up: ## Start test database
 	@echo "Test database is ready!"
 
 test-db-down: ## Stop test database
-	@docker compose -f docker-compose.test.yml down -v
+	@docker compose -f docker/compose.test.yml down -v
 
 test-db-reset: test-db-down test-db-up ## Reset test database
 
 test-services-up: ## Start all test services (DB, Redis, LocalStack, Mailpit)
 	@echo "Starting all test services..."
-	@docker compose -f docker-compose.test.yml up -d
+	@docker compose -f docker/compose.test.yml up -d
 	@echo "Waiting for services to be ready..."
 	@sleep 5
 	@echo "Test services are ready!"
 
 test-services-down: ## Stop all test services
-	@docker compose -f docker-compose.test.yml down -v
+	@docker compose -f docker/compose.test.yml down -v
 
 test-integration: test-db-up ## Run Go integration tests with Docker database
 	@echo "Running integration tests..."
@@ -343,28 +342,3 @@ configure-features: ## Interactive feature configuration wizard
 init: ## Initialize a new project from this template
 	@./init-project.sh
 
-# ============================================
-# Backup Management (pgBackRest)
-# ============================================
-
-backup-info: ## Show backup repository info and available backups
-	@docker exec react-golang-backup pgbackrest --stanza=main info
-
-backup-now: ## Run immediate full backup
-	@docker exec react-golang-backup /scripts/backup-full.sh
-
-backup-incr: ## Run incremental backup
-	@docker exec react-golang-backup /scripts/backup-incr.sh
-
-backup-verify: ## Verify latest backup integrity
-	@docker exec react-golang-backup /scripts/verify.sh
-
-backup-logs: ## View backup logs
-	@docker exec react-golang-backup tail -100 /var/log/pgbackrest/backup.log 2>/dev/null || \
-		docker exec react-golang-backup tail -100 /var/log/pgbackrest/cron.log 2>/dev/null || \
-		echo "No backup logs available yet"
-
-backup-restore-list: ## List available restore points
-	@docker exec react-golang-backup pgbackrest --stanza=main info --output=json | \
-		jq -r '.[0].backup[] | "\(.label) - \(.type) - \(.timestamp.start)"' 2>/dev/null || \
-		docker exec react-golang-backup pgbackrest --stanza=main info

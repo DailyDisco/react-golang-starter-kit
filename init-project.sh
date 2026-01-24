@@ -364,7 +364,7 @@ fi
 # Update docker-compose files
 print_info "Updating Docker configuration..."
 
-for compose_file in docker-compose.yml docker-compose.prod.yml; do
+for compose_file in docker/compose.yml docker/compose.prod.yml; do
     if [ -f "$compose_file" ]; then
         sed -i.bak "s/react-golang-/${PROJECT_NAME}-/g" "$compose_file"
         rm "${compose_file}.bak"

@@ -220,74 +220,200 @@ curl http://localhost:8080/health
 curl http://localhost/
 ```
 
-### 4. Setup SSL with Let's Encrypt (Recommended)
+### 4. Frontend Deployment
 
-If you have a domain pointing to your VPS:
+The frontend is deployed **separately** from the backend. Build and deploy to any static hosting:
 
 ```bash
-# Install Certbot
-sudo apt install certbot python3-certbot-nginx -y
+# Build frontend (from project root)
+make frontend-build
 
-# Get SSL certificate
-sudo certbot certonly --standalone -d your-domain.com -d www.your-domain.com
-
-# Certificates will be in: /etc/letsencrypt/live/your-domain.com/
+# Or manually:
+cd frontend
+npm run build
+# Deploy the dist/ folder
 ```
 
-Then configure Nginx reverse proxy (see [Nginx Configuration](#nginx-reverse-proxy) below).
+**Deployment Options:**
 
-### 5. Nginx Reverse Proxy
+| Platform | Command / Method |
+|----------|-----------------|
+| Vercel | `vercel --prod` |
+| Cloudflare Pages | Dashboard or `wrangler pages deploy dist` |
+| AWS S3 + CloudFront | `aws s3 sync dist s3://your-bucket` |
+| Netlify | Dashboard or `netlify deploy --prod` |
+| Any web server | Copy `dist/*` to document root |
 
-Create `/etc/nginx/sites-available/react-golang-app`:
+**Important:** Set `VITE_API_URL` to your backend URL before building:
+```bash
+VITE_API_URL=https://api.yourdomain.com npm run build
+```
+
+### 5. Reverse Proxy & SSL (Optional)
+
+If self-hosting everything on a single server, you need a reverse proxy for:
+- TLS termination (HTTPS)
+- Routing `/api/*` to backend, `/*` to frontend
+
+**Example with nginx:**
+
+```bash
+sudo apt install nginx certbot python3-certbot-nginx
+```
+
+Create `/etc/nginx/sites-available/app`:
 
 ```nginx
-server {
-    listen 80;
-    listen [::]:80;
-    server_name your-domain.com www.your-domain.com;
-
-    # Redirect to HTTPS
-    return 301 https://$server_name$request_uri;
+upstream backend {
+    server 127.0.0.1:8080;
 }
 
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name your-domain.com www.your-domain.com;
+    listen 80;
+    server_name yourdomain.com;
 
-    # SSL Configuration
-    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
-
-    # Frontend
-    location / {
-        proxy_pass http://localhost:80;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Backend API
-    location /api {
-        proxy_pass http://localhost:8080;
-        proxy_http_version 1.1;
+    location /api/ {
+        proxy_pass http://backend;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+
+    location /health {
+        proxy_pass http://backend;
+    }
+
+    # Serve frontend static files directly or proxy to CDN
+    location / {
+        root /var/www/html;  # Copy frontend/dist/* here
+        try_files $uri $uri/ /index.html;
+    }
 }
 ```
 
-Enable and restart:
+Enable and get SSL:
+```bash
+sudo ln -s /etc/nginx/sites-available/app /etc/nginx/sites-enabled/
+sudo certbot --nginx -d yourdomain.com
+sudo systemctl reload nginx
+```
+
+**Alternative: Cloudflare** - Use Cloudflare as your proxy (handles TLS automatically).
+
+---
+
+## Blue-Green Deployment (Zero Downtime)
+
+For production deployments with zero downtime, use the blue-green deployment script.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Graceful Shutdown** | 30-second connection draining before stopping containers |
+| **Deep Health Checks** | Verifies database and cache connectivity, not just HTTP 200 |
+| **Fast Rollback** | ~30s rollback using cached images (vs ~3min rebuild) |
+| **Auto-Rollback** | Automatically reverts if post-switch validation fails |
+| **Post-Switch Validation** | 5 health checks after traffic switch to ensure stability |
+
+### Quick Start
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/react-golang-app /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
+# Deploy with zero downtime
+make prod
+
+# Check deployment status
+make prod-status
+
+# Rollback to previous version (fast if image cached)
+make rollback
 ```
+
+### How It Works
+
+1. **Tag Current Image** - Before deploying, the current image is tagged for fast rollback
+2. **Deploy to Inactive** - New version deployed to inactive environment (blue or green)
+3. **Deep Health Check** - Verifies DB + cache connectivity via `/health/ready`
+4. **Traffic Switch** - Gracefully stop old env (30s drain), new env takes over
+5. **Post-Switch Validation** - 5 health checks over 10 seconds
+6. **Auto-Rollback** - If validation fails, automatically reverts to previous version
+
+### Health Endpoints
+
+| Endpoint | Purpose | Used By |
+|----------|---------|---------|
+| `/health` | Liveness check (HTTP 200) | Kubernetes, basic monitoring |
+| `/health/ready` | Readiness check (DB + cache) | Blue-green deployments, orchestration |
+
+**`/health/ready` Response:**
+```json
+{
+  "status": "healthy",    // healthy, degraded, or unhealthy
+  "database": "healthy",  // healthy or unhealthy
+  "cache": "healthy"      // healthy, degraded, or unavailable
+}
+```
+
+### Configuration
+
+Environment variables (set in `.env.prod`):
+
+```bash
+BACKEND_PORT=8080        # Port exposed by active backend
+DB_USER=produser         # Database credentials
+DB_PASSWORD=...
+```
+
+Script configuration (in `scripts/deploy-bluegreen.sh`):
+
+```bash
+HEALTH_CHECK_RETRIES=15           # Number of health check attempts
+HEALTH_CHECK_INTERVAL=2           # Seconds between checks
+GRACEFUL_SHUTDOWN_TIMEOUT=30      # Connection drain timeout
+POST_SWITCH_CHECKS=5              # Validation checks after switch
+POST_SWITCH_THRESHOLD=3           # Minimum checks that must pass
+```
+
+### Manual Commands
+
+```bash
+# Full deployment script
+./scripts/deploy-bluegreen.sh
+
+# Switch traffic without rebuild (if inactive env is running)
+./scripts/deploy-bluegreen.sh --switch
+
+# Rollback to previous version
+./scripts/deploy-bluegreen.sh --rollback
+
+# Check current status
+./scripts/deploy-bluegreen.sh --status
+
+# Show help
+./scripts/deploy-bluegreen.sh --help
+```
+
+### Troubleshooting
+
+**Deployment fails at health check:**
+```bash
+# Check container logs
+docker logs react-golang-backend-blue
+docker logs react-golang-backend-green
+
+# Test health endpoint manually
+curl http://localhost:8080/health/ready
+```
+
+**Auto-rollback triggered:**
+- Check if database is accessible
+- Verify cache (Dragonfly/Redis) is running
+- Review application logs for startup errors
+
+**No rollback image available:**
+- First deployment won't have a cached image
+- Rollback will rebuild (slower but still works)
 
 ---
 

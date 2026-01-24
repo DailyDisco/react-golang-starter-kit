@@ -133,8 +133,7 @@ LICENSE
 *.md
 docs/
 
-# Configuration files that shouldn't be in container (for production stage)
-# nginx.conf is needed for production, so don't exclude it
+# Configuration files that shouldn't be in container
 vercel.json
 components.json
 prettier.config.*
