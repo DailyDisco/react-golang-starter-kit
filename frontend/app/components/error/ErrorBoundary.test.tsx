@@ -45,7 +45,7 @@ vi.mock("../../ui/button", () => ({
     size?: string;
   }) => {
     if (asChild && React.isValidElement(children)) {
-      return React.cloneElement(children as React.ReactElement, { onClick, ...props });
+      return React.cloneElement(children as React.ReactElement<Record<string, unknown>>, { onClick, ...props });
     }
     return React.createElement("button", { onClick, ...props }, children);
   },

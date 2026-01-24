@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -9,8 +9,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { formatShortcut, getModifierKey, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { getModifierKey, useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Keyboard } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ShortcutGroup {
   title: string;
@@ -59,15 +60,24 @@ const shortcutGroups: ShortcutGroup[] = [
 ];
 
 export function KeyboardShortcutsHelp() {
+  const { t } = useTranslation("common");
   const [isOpen, setIsOpen] = useState(false);
 
-  // Register Cmd+/ to open this dialog
+  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
+
+  // Register multiple shortcuts to open this dialog
   useKeyboardShortcuts({
     shortcuts: [
       {
         key: "/",
         meta: true,
-        handler: () => setIsOpen(true),
+        handler: toggle,
+        description: "Show keyboard shortcuts",
+      },
+      {
+        key: "?",
+        shift: true,
+        handler: toggle,
         description: "Show keyboard shortcuts",
       },
     ],
@@ -92,9 +102,11 @@ export function KeyboardShortcutsHelp() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Keyboard className="h-5 w-5" />
-            Keyboard Shortcuts
+            {t("shortcuts.title", "Keyboard Shortcuts")}
           </DialogTitle>
-          <DialogDescription>Use these shortcuts to navigate and take actions quickly.</DialogDescription>
+          <DialogDescription>
+            {t("shortcuts.description", "Use these shortcuts to navigate and take actions quickly.")}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 grid gap-6 md:grid-cols-2">
@@ -118,8 +130,9 @@ export function KeyboardShortcutsHelp() {
 
         <div className="bg-muted/50 mt-6 rounded-lg p-3 text-center">
           <p className="text-muted-foreground text-sm">
-            Press <kbd className="bg-background mx-1 rounded px-1.5 py-0.5 font-mono text-xs">{getModifierKey()}+K</kbd>{" "}
-            anytime to open the command palette
+            {t("shortcuts.tip", "Press {{key}} anytime to open the command palette", {
+              key: `${getModifierKey()}+K`,
+            })}
           </p>
         </div>
       </DialogContent>

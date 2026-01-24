@@ -1,3 +1,4 @@
+import { useReducedMotion } from '@/lib/animations';
 import { cn } from '@/lib/utils';
 import { motion, type Variants, AnimatePresence } from 'framer-motion';
 import * as React from 'react';
@@ -69,6 +70,13 @@ const itemVariants: Record<string, Variants> = {
  * </StaggeredList>
  * ```
  */
+/** No-motion variant for accessibility */
+const noMotionItemVariant: Variants = {
+  hidden: { opacity: 1 },
+  visible: { opacity: 1 },
+  exit: { opacity: 1 },
+};
+
 function StaggeredList({
   children,
   className,
@@ -78,26 +86,32 @@ function StaggeredList({
   animateOnExit = false,
   as: Component = 'div',
 }: StaggeredListProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   const containerVariants: Variants = {
-    hidden: { opacity: 0 },
+    hidden: { opacity: prefersReducedMotion ? 1 : 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: staggerDelay,
-        delayChildren: initialDelay,
-      },
+      transition: prefersReducedMotion
+        ? { duration: 0 }
+        : {
+            staggerChildren: staggerDelay,
+            delayChildren: initialDelay,
+          },
     },
     exit: {
-      opacity: 0,
-      transition: {
-        staggerChildren: staggerDelay / 2,
-        staggerDirection: -1,
-      },
+      opacity: prefersReducedMotion ? 1 : 0,
+      transition: prefersReducedMotion
+        ? { duration: 0 }
+        : {
+            staggerChildren: staggerDelay / 2,
+            staggerDirection: -1,
+          },
     },
   };
 
   const MotionComponent = motion[Component];
-  const childVariant = itemVariants[variant];
+  const childVariant = prefersReducedMotion ? noMotionItemVariant : itemVariants[variant];
 
   return (
     <MotionComponent
@@ -196,7 +210,8 @@ function AnimatedListItem({
   delay = 0,
   variant = 'fadeInUp',
 }: AnimatedListItemProps) {
-  const variantConfig = itemVariants[variant];
+  const prefersReducedMotion = useReducedMotion();
+  const variantConfig = prefersReducedMotion ? noMotionItemVariant : itemVariants[variant];
 
   return (
     <motion.div
@@ -204,7 +219,7 @@ function AnimatedListItem({
       initial="hidden"
       animate="visible"
       exit="exit"
-      transition={{ delay }}
+      transition={{ delay: prefersReducedMotion ? 0 : delay }}
       className={className}
     >
       {children}
@@ -238,6 +253,7 @@ function AnimateListPresence({
   children,
   emptyState,
 }: AnimateListPresenceProps) {
+  const prefersReducedMotion = useReducedMotion();
   const childCount = React.Children.count(children);
 
   return (
@@ -245,9 +261,10 @@ function AnimateListPresence({
       {childCount === 0 && emptyState ? (
         <motion.div
           key="empty"
-          initial={{ opacity: 0 }}
+          initial={{ opacity: prefersReducedMotion ? 1 : 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          exit={{ opacity: prefersReducedMotion ? 1 : 0 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
         >
           {emptyState}
         </motion.div>

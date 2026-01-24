@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { AdminService, type FeatureFlag } from "@/services/admin/adminService";
 import { FileText, Flag, ToggleLeft, ToggleRight, User } from "lucide-react";
 
@@ -38,7 +39,7 @@ export const userSearchProvider: SearchProvider = {
         },
       }));
     } catch (error) {
-      console.error("User search failed:", error);
+      logger.error("User search failed", error);
       return [];
     }
   },
@@ -95,7 +96,7 @@ export const featureFlagSearchProvider: SearchProvider = {
         },
       }));
     } catch (error) {
-      console.error("Feature flag search failed:", error);
+      logger.error("Feature flag search failed", error);
       return [];
     }
   },
@@ -137,7 +138,7 @@ export const auditLogSearchProvider: SearchProvider = {
         },
       }));
     } catch (error) {
-      console.error("Audit log search failed:", error);
+      logger.error("Audit log search failed", error);
       return [];
     }
   },

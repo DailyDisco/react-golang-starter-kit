@@ -1,5 +1,8 @@
 import { useState } from "react";
 
+import { OrgSwitcher } from "@/components/navigation/OrgSwitcher";
+import { PrefetchLink } from "@/components/navigation/PrefetchLink";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +21,7 @@ import { CreditCard, DollarSign, LogOut, Menu, Settings, Shield, User } from "lu
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../hooks/auth/useAuth";
+import { usePrefetchSettingsData } from "../lib/prefetch";
 import { API_BASE_URL } from "../services";
 
 export function Navbar() {
@@ -26,6 +30,7 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const prefetchSettingsData = usePrefetchSettingsData();
 
   const navigation = [
     { name: t("navigation.home"), href: "/" },
@@ -90,46 +95,33 @@ export function Navbar() {
                   </Link>
                 )
               )}
-              {/* Separator before authenticated nav links */}
-              {isAuthenticated && (
+              {/* Separator before admin link */}
+              {isAuthenticated && isAdmin && (
                 <Separator
                   orientation="vertical"
                   className="mx-2 h-5 self-center"
                 />
               )}
               {/* Authenticated nav links */}
-              {isAuthenticated && (
-                <>
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      search={{}}
-                      className={`focus:ring-primary inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
-                        isActive("/admin")
-                          ? "border-primary/20 bg-primary/10 text-primary border"
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                      }`}
-                    >
-                      {t("navigation.admin")}
-                    </Link>
-                  )}
-                  <Link
-                    to="/settings"
-                    search={{}}
-                    className={`focus:ring-primary inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
-                      isActive("/settings")
-                        ? "border-primary/20 bg-primary/10 text-primary border"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    }`}
-                  >
-                    {t("navigation.settings")}
-                  </Link>
-                </>
+              {isAuthenticated && isAdmin && (
+                <Link
+                  to="/admin"
+                  search={{}}
+                  className={`focus:ring-primary inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 focus:ring-2 focus:ring-offset-2 focus:outline-none ${
+                    isActive("/admin")
+                      ? "border-primary/20 bg-primary/10 text-primary border"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  }`}
+                >
+                  {t("navigation.admin")}
+                </Link>
               )}
             </div>
           </div>
           {/* User Controls */}
           <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
+            {isAuthenticated && <OrgSwitcher />}
+            {isAuthenticated && <NotificationCenter />}
             <LanguageToggle />
             <ThemeToggle />
 
@@ -178,14 +170,15 @@ export function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link
+                    <PrefetchLink
                       to="/settings"
                       search={{}}
+                      onPrefetch={prefetchSettingsData}
                       className="cursor-pointer"
                     >
                       <Settings className="mr-2 h-4 w-4" />
                       <span>{t("navigation.settings")}</span>
-                    </Link>
+                    </PrefetchLink>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link
@@ -343,6 +336,11 @@ export function Navbar() {
                             <p className="text-foreground truncate text-sm font-medium">{user.name}</p>
                             <p className="text-muted-foreground truncate text-xs">{user.email}</p>
                           </div>
+                        </div>
+
+                        {/* Organization Switcher */}
+                        <div className="mb-4">
+                          <OrgSwitcher className="w-full" />
                         </div>
 
                         <div className="space-y-1">

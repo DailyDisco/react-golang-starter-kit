@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
+import { logger } from "../../lib/logger";
 import { ErrorFallback } from "./ErrorFallback";
 
 export interface ErrorBoundaryProps {
@@ -26,8 +27,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console in development
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    // Log error using structured logger
+    logger.error("ErrorBoundary caught an error", error, {
+      componentStack: errorInfo.componentStack,
+    });
 
     // Call the onError callback if provided
     this.props.onError?.(error, errorInfo);

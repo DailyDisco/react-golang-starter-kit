@@ -1,6 +1,8 @@
 import React from "react";
 
 import { AnnouncementsContainer } from "@/components/announcements";
+import { UpgradePrompt } from "@/components/billing";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,9 +11,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { Link, Outlet, useLocation, useRouter } from "@tanstack/react-router";
 import { Home } from "lucide-react";
 
+import { logger } from "../lib/logger";
 import { Footer } from "./Footer";
 import { Navbar } from "./Navbar";
 
@@ -80,7 +83,20 @@ const getRouteLabel = (pathname: string): string => {
 
 export default function StandardLayout() {
   const location = useLocation();
+  const router = useRouter();
   const isOnHomePage = location.pathname === "/";
+
+  // Handle error boundary reset by invalidating router
+  const handleErrorReset = () => {
+    router.invalidate();
+  };
+
+  // Log errors to our structured logger
+  const handleError = (error: Error) => {
+    logger.error("Page error caught by ErrorBoundary", error, {
+      pathname: location.pathname,
+    });
+  };
 
   // Generate breadcrumbs from current path
   const generateBreadcrumbs = () => {
@@ -118,6 +134,7 @@ export default function StandardLayout() {
       </a>
       <Navbar />
       <AnnouncementsContainer />
+      <UpgradePrompt className="mx-auto max-w-screen-2xl px-4 pt-4 sm:px-6 lg:px-8" />
       <div className="bg-background/95 supports-backdrop-filter:bg-background/60 border-b backdrop-blur">
         <div className="mx-auto max-w-screen-2xl px-4 py-2 sm:px-6 lg:px-8">
           <Breadcrumb>
@@ -164,7 +181,13 @@ export default function StandardLayout() {
         className="flex-1"
       >
         <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-8">
-          <Outlet />
+          <ErrorBoundary
+            onError={handleError}
+            onReset={handleErrorReset}
+            showStack={import.meta.env.DEV}
+          >
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </main>
       <Footer />

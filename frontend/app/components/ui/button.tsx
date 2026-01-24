@@ -64,11 +64,13 @@ function Button({
       data-slot='button'
       className={cn(buttonVariants({ variant, size, className }))}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      aria-disabled={disabled || loading || undefined}
       {...props}
     >
       {loading ? (
         <>
-          <Loader2 className='size-4 animate-spin' />
+          <Loader2 className='size-4 animate-spin' aria-hidden="true" />
           <span className='sr-only'>Loading</span>
           {children}
         </>
