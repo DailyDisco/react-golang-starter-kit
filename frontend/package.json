@@ -132,7 +132,7 @@
     "eslint-plugin-vitest": "^0.5.4",
     "happy-dom": "^20.0.11",
     "jsdom": "^27.4.0",
-    "prettier": "3.7.4",
+    "prettier": "3.8.0",
     "prettier-plugin-packagejson": "^2.5.20",
     "prettier-plugin-sh": "^0.18.0",
     "prettier-plugin-sort-json": "^4.1.1",
