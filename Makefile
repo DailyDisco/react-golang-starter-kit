@@ -302,7 +302,7 @@ setup: ## Initial setup - copy env file
 # ============================================
 
 observability-up: ## Start observability stack (Prometheus + Grafana)
-	@docker network create app-network 2>/dev/null || true
+	@docker network create react-golang-starter-network 2>/dev/null || true
 	@$(DC_OBS) up -d prometheus grafana
 	@echo "Prometheus: http://localhost:9090"
 	@echo "Grafana:    http://localhost:3001 (admin/admin)"

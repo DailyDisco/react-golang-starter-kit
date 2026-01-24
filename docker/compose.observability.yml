@@ -57,4 +57,5 @@ volumes:
 
 networks:
   app-network:
+    name: react-golang-starter-network
     external: true
