@@ -147,7 +147,7 @@ test.describe("Organizations", () => {
           await submitButton.click();
 
           // Should redirect to new org or show success
-          await expect(page.getByText(/created|success/i).or(page)).toBeVisible();
+          await expect(page.getByText(/created|success/i).or(page.locator("body"))).toBeVisible();
         }
       });
     });
@@ -203,7 +203,7 @@ test.describe("Organizations", () => {
 
         await page.goto("/org/test-org/settings");
 
-        const nameInput = page.getByLabel(/organization name/i).or(page.getByDisplayValue("Test Org"));
+        const nameInput = page.getByLabel(/organization name/i).or(page.locator('input[value="Test Org"]'));
 
         if (await nameInput.isVisible()) {
           await nameInput.clear();
