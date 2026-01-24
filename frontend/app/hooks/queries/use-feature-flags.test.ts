@@ -64,17 +64,23 @@ describe("useFeatureFlags", () => {
     const { useQuery } = await import("@tanstack/react-query");
     const { useAuthStore } = await import("../../stores/auth-store");
 
-    const mockFlags = { newFeature: true, betaFeature: false };
+    // Mock the new response format with FeatureFlagDetail objects
+    const mockFlagDetails = {
+      newFeature: { enabled: true, gated_by_plan: false },
+      betaFeature: { enabled: false, gated_by_plan: false },
+    };
+    const expectedFlags = { newFeature: true, betaFeature: false };
 
     vi.mocked(useAuthStore).mockReturnValue({ id: 1 });
     vi.mocked(useQuery).mockReturnValue({
-      data: mockFlags,
+      data: mockFlagDetails,
       isLoading: false,
       isError: false,
-    } as unknown as UseQueryResult<typeof mockFlags, Error>);
+    } as unknown as UseQueryResult<typeof mockFlagDetails, Error>);
 
     const result = useFeatureFlags();
-    expect(result.flags).toEqual(mockFlags);
+    expect(result.flags).toEqual(expectedFlags);
+    expect(result.flagDetails).toEqual(mockFlagDetails);
     expect(result.isLoading).toBe(false);
   });
 
@@ -147,18 +153,23 @@ describe("useFeatureFlag", () => {
     const { useQuery } = await import("@tanstack/react-query");
     const { useAuthStore } = await import("../../stores/auth-store");
 
-    const mockFlags = { newFeature: true, betaFeature: false };
+    // Mock the new response format with FeatureFlagDetail objects
+    const mockFlagDetails = {
+      newFeature: { enabled: true, gated_by_plan: false },
+      betaFeature: { enabled: false, gated_by_plan: false },
+    };
 
     vi.mocked(useAuthStore).mockReturnValue({ id: 1 });
     vi.mocked(useQuery).mockReturnValue({
-      data: mockFlags,
+      data: mockFlagDetails,
       isLoading: false,
       isError: false,
-    } as unknown as UseQueryResult<typeof mockFlags, Error>);
+    } as unknown as UseQueryResult<typeof mockFlagDetails, Error>);
 
     const result = useFeatureFlag("newFeature");
     expect(result.enabled).toBe(true);
     expect(result.isLoading).toBe(false);
+    expect(result.gatedByPlan).toBe(false);
   });
 
   it("returns default value (false) for non-existent flag", async () => {
@@ -170,10 +181,34 @@ describe("useFeatureFlag", () => {
       data: {},
       isLoading: false,
       isError: false,
-    } as unknown as UseQueryResult<Record<string, boolean>, Error>);
+    } as unknown as UseQueryResult<Record<string, unknown>, Error>);
 
     const result = useFeatureFlag("nonExistent");
     expect(result.enabled).toBe(false);
+    expect(result.gatedByPlan).toBe(false);
+    expect(result.requiredPlan).toBeUndefined();
+  });
+
+  it("returns gating info when feature is gated by plan", async () => {
+    const { useQuery } = await import("@tanstack/react-query");
+    const { useAuthStore } = await import("../../stores/auth-store");
+
+    // Mock a feature that's gated by plan
+    const mockFlagDetails = {
+      premiumFeature: { enabled: false, gated_by_plan: true, required_plan: "pro" },
+    };
+
+    vi.mocked(useAuthStore).mockReturnValue({ id: 1 });
+    vi.mocked(useQuery).mockReturnValue({
+      data: mockFlagDetails,
+      isLoading: false,
+      isError: false,
+    } as unknown as UseQueryResult<typeof mockFlagDetails, Error>);
+
+    const result = useFeatureFlag("premiumFeature");
+    expect(result.enabled).toBe(false);
+    expect(result.gatedByPlan).toBe(true);
+    expect(result.requiredPlan).toBe("pro");
   });
 });
 

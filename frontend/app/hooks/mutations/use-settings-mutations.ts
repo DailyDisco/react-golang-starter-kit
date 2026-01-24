@@ -1,6 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-
+import { useCreateMutation, useCreateOptimisticMutation } from "../../lib/create-mutation";
 import { queryKeys } from "../../lib/query-keys";
 import {
   SettingsService,
@@ -14,45 +12,27 @@ import {
 // ============================================================================
 
 export function useUpdateProfile() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateMutation({
     mutationFn: (data: { name?: string; email?: string; bio?: string; location?: string; social_links?: string }) =>
       SettingsService.updateProfile(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "Profile updated",
+    invalidateKeys: [queryKeys.auth.user],
   });
 }
 
 export function useUploadAvatar() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateMutation({
     mutationFn: (file: File) => SettingsService.uploadAvatar(file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "Avatar uploaded",
+    invalidateKeys: [queryKeys.auth.user],
   });
 }
 
 export function useDeleteAvatar() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateMutation({
     mutationFn: () => SettingsService.deleteAvatar(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "Avatar removed",
+    invalidateKeys: [queryKeys.auth.user],
   });
 }
 
@@ -61,48 +41,32 @@ export function useDeleteAvatar() {
 // ============================================================================
 
 export function useChangePassword() {
-  return useMutation({
+  return useCreateMutation({
     mutationFn: (data: { current_password: string; new_password: string }) => SettingsService.changePassword(data),
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "Password changed",
   });
 }
 
 export function useSetup2FA() {
-  return useMutation({
+  return useCreateMutation({
     mutationFn: () => SettingsService.setup2FA(),
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    showSuccessToast: false,
   });
 }
 
 export function useVerify2FA() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateMutation({
     mutationFn: (code: string) => SettingsService.verify2FA(code),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "Two-factor authentication enabled",
+    invalidateKeys: [queryKeys.auth.user],
   });
 }
 
 export function useDisable2FA() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateMutation({
     mutationFn: (code: string) => SettingsService.disable2FA(code),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "Two-factor authentication disabled",
+    invalidateKeys: [queryKeys.auth.user],
   });
 }
 
@@ -111,30 +75,23 @@ export function useDisable2FA() {
 // ============================================================================
 
 export function useRevokeSession() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateOptimisticMutation({
     mutationFn: (sessionId: number) => SettingsService.revokeSession(sessionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.sessions() });
+    queryKey: queryKeys.settings.sessions(),
+    optimisticUpdate: (old, sessionId) => {
+      if (!old || !Array.isArray(old)) return old;
+      return old.filter((session: { id: number }) => session.id !== sessionId);
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "Session revoked",
+    invalidateKeys: [queryKeys.settings.sessions()],
   });
 }
 
 export function useRevokeAllSessions() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateMutation({
     mutationFn: () => SettingsService.revokeAllSessions(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.sessions() });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "All other sessions revoked",
+    invalidateKeys: [queryKeys.settings.sessions()],
   });
 }
 
@@ -143,30 +100,23 @@ export function useRevokeAllSessions() {
 // ============================================================================
 
 export function useUpdatePreferences() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateOptimisticMutation({
     mutationFn: (data: UpdatePreferencesRequest) => SettingsService.updatePreferences(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.preferences() });
+    queryKey: queryKeys.settings.preferences(),
+    optimisticUpdate: (old, newData) => {
+      if (!old || typeof old !== "object") return old;
+      return { ...old, ...newData };
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "Preferences saved",
+    invalidateKeys: [queryKeys.settings.preferences()],
   });
 }
 
 export function useUpdateNotifications() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateMutation({
     mutationFn: (data: EmailNotificationSettings) => SettingsService.updatePreferences({ email_notifications: data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.preferences() });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "Notification settings saved",
+    invalidateKeys: [queryKeys.settings.preferences()],
   });
 }
 
@@ -175,52 +125,55 @@ export function useUpdateNotifications() {
 // ============================================================================
 
 export function useCreateAPIKey() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateMutation({
     mutationFn: (req: CreateAPIKeyRequest) => SettingsService.createAPIKey(req),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.apiKeys() });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "API key created",
+    invalidateKeys: [queryKeys.settings.apiKeys()],
   });
 }
 
 export function useDeleteAPIKey() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateOptimisticMutation({
     mutationFn: (id: number) => SettingsService.deleteAPIKey(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.apiKeys() });
+    queryKey: queryKeys.settings.apiKeys(),
+    optimisticUpdate: (old, keyId) => {
+      if (!old || !Array.isArray(old)) return old;
+      return old.filter((key: { id: number }) => key.id !== keyId);
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "API key deleted",
+    invalidateKeys: [queryKeys.settings.apiKeys()],
   });
 }
 
 export function useUpdateAPIKey() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useCreateOptimisticMutation({
     mutationFn: ({ id, data }: { id: number; data: { is_active?: boolean } }) => SettingsService.updateAPIKey(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.apiKeys() });
+    queryKey: queryKeys.settings.apiKeys(),
+    optimisticUpdate: (old, { id, data }) => {
+      if (!old || !Array.isArray(old)) return old;
+      return old.map((key: { id: number; is_active?: boolean }) => (key.id === id ? { ...key, ...data } : key));
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "API key updated",
+    invalidateKeys: [queryKeys.settings.apiKeys()],
   });
 }
 
 export function useTestAPIKey() {
-  return useMutation({
+  return useCreateMutation({
     mutationFn: (id: number) => SettingsService.testAPIKey(id),
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    successMessage: "API key is valid",
+  });
+}
+
+// ============================================================================
+// Data Export Mutations
+// ============================================================================
+
+export function useRequestDataExport() {
+  return useCreateMutation({
+    mutationFn: () => SettingsService.requestDataExport(),
+    successMessage: "Data export requested",
+    successDescription: "You'll receive an email when your export is ready.",
+    invalidateKeys: [queryKeys.settings.dataExportStatus()],
   });
 }

@@ -1,12 +1,29 @@
 // Feature flag types for the frontend
 
+/** Detailed flag information from backend including plan gating */
+export interface FeatureFlagDetail {
+  enabled: boolean;
+  gated_by_plan: boolean;
+  required_plan?: "pro" | "enterprise";
+}
+
+/** User-facing API response type - map of flag key to detail */
+export type UserFeatureFlagsResponse = Record<string, FeatureFlagDetail>;
+
 export interface UseFeatureFlagResult {
   enabled: boolean;
   isLoading: boolean;
+  /** True if feature is disabled due to plan restrictions */
+  gatedByPlan: boolean;
+  /** Plan required to unlock (if gated) */
+  requiredPlan?: string;
 }
 
 export interface UseFeatureFlagsResult {
+  /** Simple boolean flags (backward compatible) */
   flags: Record<string, boolean>;
+  /** Detailed flag information with gating metadata */
+  flagDetails: Record<string, FeatureFlagDetail>;
   isLoading: boolean;
   isError: boolean;
   refetch: () => void;

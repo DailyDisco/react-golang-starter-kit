@@ -352,7 +352,6 @@ export default [
       '*.config.json',
       '.prettierrc',
       '.prettierignore',
-      'nginx.conf',
       '.dockerignore',
       '.gitignore',
       '.commitlintrc.json',

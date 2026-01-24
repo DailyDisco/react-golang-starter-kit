@@ -22,3 +22,6 @@ export type {
   StorageStatus,
   User,
 } from "./types";
+
+// Re-export UserFilters from userService
+export type { UserFilters } from "./users/userService";

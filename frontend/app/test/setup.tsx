@@ -124,7 +124,9 @@ vi.mock("../components/ui/alert", () => ({
 vi.mock("lucide-react", () => ({
   AlertCircle: () => <div data-testid="alert-circle-icon">⚠️</div>,
   Check: () => <div data-testid="check-icon">✓</div>,
+  Copy: () => <div data-testid="copy-icon">📋</div>,
   Eye: () => <div data-testid="eye-icon">👁️</div>,
   EyeOff: () => <div data-testid="eye-off-icon">👁️‍🗨️</div>,
   Loader2: () => <div data-testid="loader-icon">Loading...</div>,
+  RefreshCw: () => <div data-testid="refresh-icon">🔄</div>,
 }));
