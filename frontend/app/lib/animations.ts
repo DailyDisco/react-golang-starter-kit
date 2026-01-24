@@ -3,7 +3,60 @@
  * Use these for consistent animations across the application
  */
 
+import { useEffect, useState } from "react";
+
 import type { Transition, Variants } from "framer-motion";
+
+// ==========================================================================
+// REDUCED MOTION SUPPORT
+// ==========================================================================
+
+/**
+ * Hook to detect user's reduced motion preference
+ * Returns true if user prefers reduced motion
+ *
+ * @example
+ * const prefersReducedMotion = useReducedMotion();
+ * const variants = prefersReducedMotion ? noMotion : fadeInUp;
+ */
+export function useReducedMotion(): boolean {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    // SSR-safe: default to false, will be corrected on mount
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  return prefersReducedMotion;
+}
+
+/** No-motion variant - shows final state instantly */
+export const noMotion: Variants = {
+  initial: { opacity: 1 },
+  animate: { opacity: 1 },
+  exit: { opacity: 1 },
+};
+
+/**
+ * Get appropriate variants based on reduced motion preference
+ *
+ * @example
+ * const variants = getMotionVariants(prefersReducedMotion, fadeInUp);
+ */
+export function getMotionVariants(prefersReducedMotion: boolean, variants: Variants): Variants {
+  return prefersReducedMotion ? noMotion : variants;
+}
 
 // ==========================================================================
 // DURATION CONSTANTS

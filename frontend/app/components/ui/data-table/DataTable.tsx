@@ -11,6 +11,7 @@ import {
   type ColumnFiltersState,
   type PaginationState,
   type Row,
+  type RowData,
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table";
@@ -18,6 +19,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Se
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -28,6 +30,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+
+// Extend ColumnMeta to include label property for column visibility dropdown
+declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData extends RowData, TValue> {
+    label?: string;
+  }
+}
 
 interface DataTableProps<TData, TValue> {
   /** Column definitions */
@@ -52,6 +62,8 @@ interface DataTableProps<TData, TValue> {
   initialPageSize?: number;
   /** Loading state */
   isLoading?: boolean;
+  /** Number of skeleton rows to show while loading (default: 5) */
+  skeletonRowCount?: number;
   /** Empty state component */
   emptyState?: React.ReactNode;
   /** Additional toolbar content */
@@ -72,6 +84,7 @@ export function DataTable<TData, TValue>({
   pageSizes = [10, 20, 50, 100],
   initialPageSize = 10,
   isLoading = false,
+  skeletonRowCount = 5,
   emptyState,
   toolbarContent,
   className,
@@ -188,16 +201,24 @@ export function DataTable<TData, TValue>({
                 {table
                   .getAllColumns()
                   .filter((column) => column.getCanHide())
-                  .map((column) => (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                      className="capitalize"
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  ))}
+                  .map((column) => {
+                    // Extract human-readable label from column definition
+                    const header = column.columnDef.header;
+                    const label =
+                      typeof header === "string"
+                        ? header
+                        : column.columnDef.meta?.label ?? column.id;
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                        className="capitalize"
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -220,17 +241,16 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={tableColumns.length}
-                  className="h-24 text-center"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
-                    Loading...
-                  </div>
-                </TableCell>
-              </TableRow>
+              // Skeleton rows for loading state
+              Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
+                <TableRow key={`skeleton-${rowIndex}`}>
+                  {tableColumns.map((_, colIndex) => (
+                    <TableCell key={`skeleton-${rowIndex}-${colIndex}`}>
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
