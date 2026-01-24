@@ -14,8 +14,8 @@ concurrency:
 env:
   NODE_VERSION: "20"
   GO_VERSION: "1.25"
-  FRONTEND_DIR: ./frontend
-  BACKEND_DIR: ./backend
+  FRONTEND_DIR: frontend
+  BACKEND_DIR: backend
 
 jobs:
   # ============================================
