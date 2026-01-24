@@ -6,7 +6,7 @@ Use this prompt when reviewing architecture decisions, refactoring plans, or eva
 
 **Frontend:** React 19 + TanStack Router + TanStack Query + Zustand + Tailwind + ShadCN
 **Backend:** Go 1.25 + Chi + GORM + PostgreSQL + JWT + WebSocket
-**Infrastructure:** Docker + GitHub Actions + Caddy
+**Infrastructure:** Docker + GitHub Actions
 
 ---
 
