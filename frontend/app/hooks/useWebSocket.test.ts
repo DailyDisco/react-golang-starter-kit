@@ -7,7 +7,7 @@ import { handleCacheInvalidation } from "../lib/cache-invalidation";
 import { AuthService } from "../services/auth/authService";
 import { useAuthStore } from "../stores/auth-store";
 import { useNotificationStore } from "../stores/notification-store";
-import { useWebSocket } from "./useWebSocket";
+import { useWebSocket } from "./websocket";
 
 // Mock dependencies before importing the hook
 vi.mock("@tanstack/react-query", () => ({
@@ -261,7 +261,7 @@ describe("useWebSocket", () => {
       });
 
       expect(mockInvalidateQueries).toHaveBeenCalledWith({
-        queryKey: ["preferences"],
+        queryKey: ["settings", "preferences"],
       });
     });
 
@@ -294,6 +294,7 @@ describe("useWebSocket", () => {
       expect(mockInvalidateQueries).toHaveBeenCalledWith({
         queryKey: ["usage"],
       });
+      // Note: queryKeys.usage.all returns ["usage"]
     });
 
     it("handles usage_alert exceeded - shows error notification", async () => {

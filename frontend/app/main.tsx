@@ -8,17 +8,21 @@ import { StrictMode } from "react";
 import { RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 
-// Import Sentry and initialize as early as possible
+// Import observability stack - initialize as early as possible
 import { initSentry } from "./lib/sentry";
+import { initVercelAnalytics } from "./lib/vercel-analytics";
+import { initWebVitals } from "./lib/web-vitals";
 // Import the router with SSR Query integration
 import { createAppRouter } from "./router";
 // Import stores for initialization
 import { useAuthStore } from "./stores/auth-store";
 import { useLanguageStore } from "./stores/language-store";
 
-// Initialize Sentry before rendering
-// This runs asynchronously but we don't wait for it
+// Initialize observability stack before rendering
+// These run asynchronously but we don't wait for them
 initSentry();
+initVercelAnalytics();
+initWebVitals();
 
 // Initialize stores synchronously before router creation
 // This loads cached data from localStorage for immediate availability
