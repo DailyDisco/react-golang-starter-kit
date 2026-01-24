@@ -1,24 +1,69 @@
+import { useEffect, useRef } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UsageSummaryCard } from "@/components/usage/UsageSummaryCard";
 import { useCreateCheckout, useCreatePortalSession } from "@/hooks/mutations/use-billing-mutations";
 import { useBillingPlans, useSubscription } from "@/hooks/queries/use-billing";
+import { queryKeys } from "@/lib/query-keys";
 import { BillingService } from "@/services/billing/billingService";
 import type { BillingPlan, Subscription } from "@/services/types";
-import { createFileRoute } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CreditCard, ExternalLink, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { z } from "zod";
+
+const billingSearchSchema = z.object({
+  session_id: z.string().optional(),
+  success: z.coerce.boolean().optional(),
+  canceled: z.coerce.boolean().optional(),
+});
 
 export const Route = createFileRoute("/(app)/billing")({
+  validateSearch: billingSearchSchema,
   component: BillingPage,
 });
 
 function BillingPage() {
   const { t } = useTranslation("billing");
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const hasHandledCheckoutReturn = useRef(false);
+
   const { data: subscription, isLoading: isLoadingSubscription } = useSubscription();
   const { data: plans, isLoading: isLoadingPlans } = useBillingPlans();
   const portalMutation = useCreatePortalSession();
   const checkoutMutation = useCreateCheckout();
+
+  // Handle return from Stripe checkout
+  useEffect(() => {
+    // Only process once per page load to avoid duplicate toasts
+    if (hasHandledCheckoutReturn.current) return;
+
+    const handleCheckoutReturn = async () => {
+      if (search.session_id || search.success) {
+        hasHandledCheckoutReturn.current = true;
+
+        // Refresh subscription data
+        await queryClient.invalidateQueries({ queryKey: queryKeys.billing.subscription() });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
+
+        toast.success(t("checkout.success", "Subscription updated successfully!"));
+
+        // Clean up URL params
+        navigate({ to: "/billing", search: {}, replace: true });
+      } else if (search.canceled) {
+        hasHandledCheckoutReturn.current = true;
+        toast.info(t("checkout.canceled", "Checkout was canceled"));
+        navigate({ to: "/billing", search: {}, replace: true });
+      }
+    };
+
+    handleCheckoutReturn();
+  }, [search, queryClient, navigate, t]);
 
   const handleManageSubscription = () => {
     portalMutation.mutate();

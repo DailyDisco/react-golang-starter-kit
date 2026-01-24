@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { queryKeys } from "@/lib/query-keys";
 import { OrganizationService } from "@/services/organizations/organizationService";
 import { useCurrentOrg, useIsOrgOwner, useOrgStore } from "@/stores/org-store";
@@ -77,6 +78,12 @@ function OrgSettingsPage() {
     onError: (error: Error) => {
       toast.error(error.message);
     },
+  });
+
+  // Warn user before navigating away with unsaved changes
+  useUnsavedChangesWarning({
+    isDirty: name !== (currentOrg?.name ?? ""),
+    message: "You have unsaved organization changes. Are you sure you want to leave?",
   });
 
   if (!currentOrg) {

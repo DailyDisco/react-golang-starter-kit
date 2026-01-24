@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { requireAdmin } from "@/lib/guards";
 import { AdminSettingsService, type HealthComponent, type SystemHealth } from "@/services/admin";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -11,7 +10,6 @@ import { Activity, Database, HardDrive, RefreshCw, Server, Wifi } from "lucide-r
 import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/(app)/admin/health")({
-  beforeLoad: async (ctx) => requireAdmin(ctx),
   component: SystemHealthPage,
 });
 

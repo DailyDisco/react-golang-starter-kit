@@ -255,9 +255,17 @@ function TwoFactorCard() {
     },
   });
 
-  const copyBackupCodes = () => {
-    navigator.clipboard.writeText(backupCodes.join("\n"));
-    toast.success(t("security.twoFactor.toast.codesCopied"));
+  const [codesCopied, setCodesCopied] = useState(false);
+
+  const copyBackupCodes = async () => {
+    try {
+      await navigator.clipboard.writeText(backupCodes.join("\n"));
+      setCodesCopied(true);
+      toast.success(t("security.twoFactor.toast.codesCopied"));
+      setTimeout(() => setCodesCopied(false), 2000);
+    } catch {
+      toast.error(t("common.errors.clipboardFailed", "Failed to copy to clipboard"));
+    }
   };
 
   return (
@@ -430,8 +438,8 @@ function TwoFactorCard() {
                 variant="outline"
                 className="flex-1"
               >
-                <Copy className="mr-2 h-4 w-4" />
-                {t("security.twoFactor.backupCodes.copy")}
+                {codesCopied ? <Check className="mr-2 h-4 w-4 text-green-500" /> : <Copy className="mr-2 h-4 w-4" />}
+                {codesCopied ? t("common.copied", "Copied!") : t("security.twoFactor.backupCodes.copy")}
               </Button>
               <Button
                 onClick={() => setShowBackupCodes(false)}
@@ -476,9 +484,19 @@ function SessionsCard({ sessions, isLoading }: { sessions: UserSession[]; isLoad
   const getDeviceIcon = (deviceInfo: string) => {
     const lower = deviceInfo.toLowerCase();
     if (lower.includes("mobile") || lower.includes("iphone") || lower.includes("android")) {
-      return <Smartphone className="h-5 w-5" />;
+      return (
+        <Smartphone
+          className="h-5 w-5"
+          aria-label={t("security.sessions.deviceMobile", "Mobile device")}
+        />
+      );
     }
-    return <Monitor className="h-5 w-5" />;
+    return (
+      <Monitor
+        className="h-5 w-5"
+        aria-label={t("security.sessions.deviceDesktop", "Desktop device")}
+      />
+    );
   };
 
   return (

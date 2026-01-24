@@ -1,8 +1,8 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect } from "react";
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import type { RouterContext } from "@/router";
-import { createRootRouteWithContext, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 
 import { SessionExpiredModal } from "../components/auth/SessionExpiredModal";
@@ -10,6 +10,8 @@ import { CommandPalette } from "../components/command-palette";
 import { ErrorFallback } from "../components/error";
 import { OfflineBanner } from "../components/ui/offline-banner";
 import { useLanguageSync } from "../hooks/useLanguageSync";
+import { RouteAnalyticsInitializer } from "../hooks/useRouteAnalytics";
+import { useWebSocket } from "../hooks/websocket";
 import { StandardLayout } from "../layouts";
 import { initCSRFToken } from "../services/api/client";
 
@@ -54,71 +56,24 @@ function LanguageSyncInitializer() {
   return null;
 }
 
-// HydrateFallback component for better SSR UX
-function HydrateFallback() {
-  return (
-    <div className="bg-background flex min-h-screen items-center justify-center">
-      <div className="space-y-4 text-center">
-        <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2"></div>
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
-// Auth guard component for protected routes
-function AuthGuard({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
-  const [isChecking, setIsChecking] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    // Check for valid user data in localStorage
-    const storedUser = localStorage.getItem("auth_user");
-    let authenticated = false;
-
-    if (storedUser) {
-      try {
-        JSON.parse(storedUser);
-        authenticated = true;
-      } catch {
-        localStorage.removeItem("auth_user");
-      }
-    }
-
-    if (!authenticated) {
-      navigate({ to: "/login" });
-    } else {
-      setIsAuthenticated(true);
-    }
-    setIsChecking(false);
-  }, [navigate]);
-
-  if (isChecking) {
-    return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <div className="space-y-4 text-center">
-          <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  return <>{children}</>;
+/**
+ * Initialize WebSocket connection for real-time updates.
+ * Automatically handles:
+ * - User profile/preference updates
+ * - Organization and member changes
+ * - Subscription and usage alerts
+ * - Cache invalidation for TanStack Query
+ */
+function WebSocketInitializer() {
+  useWebSocket({ autoConnect: true });
+  return null;
 }
 
 // RootLayout component that applies layouts based on route groups
+// Note: Authentication is handled by route guards (requireAuth, requireRole) in beforeLoad hooks.
+// WebSocket connection is handled by useWebSocketConnection which checks auth state from the store.
 function RootLayout() {
   const location = useLocation();
-
-  // Routes that use the AppLayout (sidebar layout for authenticated users)
-  const appRoutes = ["/dashboard", "/settings", "/admin", "/billing"];
-  const isAppRoute = appRoutes.some((route) => location.pathname.startsWith(route));
 
   // Check if we're in the layout-demo route
   const isLayoutDemo = location.pathname.startsWith("/layout-demo");
@@ -128,16 +83,7 @@ function RootLayout() {
     return <Outlet />;
   }
 
-  // App routes use StandardLayout with auth guard
-  if (isAppRoute) {
-    return (
-      <AuthGuard>
-        <StandardLayout />
-      </AuthGuard>
-    );
-  }
-
-  // Public routes use StandardLayout (navbar + footer)
+  // All routes use StandardLayout - auth is enforced by route guards in beforeLoad hooks
   return <StandardLayout />;
 }
 
@@ -148,6 +94,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         {/* QueryClientProvider is handled by the SSR Query integration */}
         <CSRFInitializer />
         <LanguageSyncInitializer />
+        <WebSocketInitializer />
+        <RouteAnalyticsInitializer />
         <OfflineBanner />
         <Toaster />
         <SessionExpiredModal />

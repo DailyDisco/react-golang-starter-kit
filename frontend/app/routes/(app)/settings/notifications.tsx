@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { queryKeys } from "@/lib/query-keys";
 import { SettingsService, type EmailNotificationSettings } from "@/services/settings/settingsService";
@@ -62,12 +63,22 @@ function NotificationsSettingsPage() {
     updateMutation.mutate(notifications);
   };
 
-  const hasChanges =
+  const hasChanges = Boolean(
     preferences?.email_notifications &&
     (notifications.marketing !== preferences.email_notifications.marketing ||
       notifications.security !== preferences.email_notifications.security ||
       notifications.updates !== preferences.email_notifications.updates ||
-      notifications.weekly_digest !== preferences.email_notifications.weekly_digest);
+      notifications.weekly_digest !== preferences.email_notifications.weekly_digest)
+  );
+
+  // Warn user before navigating away with unsaved changes
+  useUnsavedChangesWarning({
+    isDirty: hasChanges,
+    message: t(
+      "notifications.unsavedChangesWarning",
+      "You have unsaved notification settings. Are you sure you want to leave?"
+    ),
+  });
 
   if (isLoading) {
     return (

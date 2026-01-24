@@ -51,8 +51,8 @@ function OAuthCallback() {
             setTimeout(() => {
               const isNewUser = search.new_user === "true";
               if (isNewUser) {
-                // Could redirect to onboarding or settings for new users
-                navigate({ to: "/settings" });
+                // Redirect new users to guided onboarding flow
+                navigate({ to: "/onboarding" });
               } else {
                 navigate({ to: "/" });
               }

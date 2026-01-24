@@ -1,19 +1,45 @@
 import { useState } from "react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useRequestDataExport } from "@/hooks/mutations";
+import { useDataExportStatus } from "@/hooks/queries";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { queryKeys } from "@/lib/query-keys";
 import { SettingsService, type DataExportStatus } from "@/services/settings/settingsService";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Download, Eye, EyeOff, FileArchive, Loader2, ShieldAlert, Trash2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Download,
+  Eye,
+  EyeOff,
+  FileArchive,
+  Loader2,
+  RefreshCw,
+  ShieldAlert,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+
+/**
+ * Format bytes to human-readable string
+ */
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const value = parseFloat((bytes / Math.pow(k, i)).toFixed(1));
+  return value + " " + sizes[i];
+}
 
 export const Route = createFileRoute("/(app)/settings/privacy")({
   component: PrivacySettingsPage,
@@ -43,30 +69,10 @@ function PrivacySettingsPage() {
 
 function DataExportCard() {
   const { t } = useTranslation("settings");
-  const queryClient = useQueryClient();
 
-  const { data: exportStatus, isLoading } = useQuery({
-    queryKey: queryKeys.settings.dataExportStatus(),
-    queryFn: () => SettingsService.getDataExportStatus(),
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (data && (data.status === "pending" || data.status === "processing")) {
-        return 5000;
-      }
-      return false;
-    },
-  });
-
-  const requestExportMutation = useMutation({
-    mutationFn: () => SettingsService.requestDataExport(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.dataExportStatus() });
-      toast.success(t("privacy.export.toast.requested"));
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+  // Use the new dedicated hooks
+  const { data: exportStatus, isLoading } = useDataExportStatus();
+  const requestExportMutation = useRequestDataExport();
 
   const getStatusBadge = (status: DataExportStatus["status"]) => {
     switch (status) {
@@ -78,10 +84,19 @@ function DataExportCard() {
         return <Badge variant="success">{t("privacy.export.status.ready")}</Badge>;
       case "failed":
         return <Badge variant="destructive">{t("privacy.export.status.failed")}</Badge>;
+      case "expired":
+        return <Badge variant="outline">{t("privacy.export.status.expired", { defaultValue: "Expired" })}</Badge>;
       default:
         return null;
     }
   };
+
+  // Check if user can request a new export (no active export or previous is done)
+  const canRequestNew =
+    !exportStatus ||
+    exportStatus.status === "completed" ||
+    exportStatus.status === "failed" ||
+    exportStatus.status === "expired";
 
   return (
     <Card>
@@ -110,37 +125,82 @@ function DataExportCard() {
             <span>{t("privacy.export.checking")}</span>
           </div>
         ) : exportStatus ? (
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="flex items-center gap-4">
-              <Download className="text-muted-foreground h-8 w-8" />
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">{t("privacy.export.dataExport")}</p>
-                  {getStatusBadge(exportStatus.status)}
-                </div>
-                <p className="text-muted-foreground text-sm">
-                  {t("privacy.export.requestedOn")} {new Date(exportStatus.created_at).toLocaleDateString()}
-                </p>
-                {exportStatus.expires_at && exportStatus.status === "completed" && (
-                  <p className="text-warning text-xs">
-                    {t("privacy.export.expiresOn")} {new Date(exportStatus.expires_at).toLocaleDateString()}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="flex items-center gap-4">
+                <Download className="text-muted-foreground h-8 w-8" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{t("privacy.export.dataExport")}</p>
+                    {getStatusBadge(exportStatus.status)}
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    {t("privacy.export.requestedOn")} {new Date(exportStatus.created_at).toLocaleDateString()}
                   </p>
+                  {/* File size display */}
+                  {exportStatus.file_size && exportStatus.status === "completed" && (
+                    <p className="text-muted-foreground text-xs">
+                      {t("privacy.export.fileSize", { defaultValue: "Size" })}: {formatBytes(exportStatus.file_size)}
+                    </p>
+                  )}
+                  {/* Expiration date */}
+                  {exportStatus.expires_at && exportStatus.status === "completed" && (
+                    <p className="text-warning text-xs">
+                      {t("privacy.export.expiresOn")} {new Date(exportStatus.expires_at).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Download button */}
+                {exportStatus.status === "completed" && exportStatus.download_url && (
+                  <Button asChild>
+                    <a
+                      href={exportStatus.download_url}
+                      download
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      {t("privacy.export.download")}
+                    </a>
+                  </Button>
+                )}
+                {/* Loading spinner while processing */}
+                {(exportStatus.status === "pending" || exportStatus.status === "processing") && (
+                  <Loader2 className="text-primary h-5 w-5 animate-spin" />
                 )}
               </div>
             </div>
-            {exportStatus.status === "completed" && exportStatus.download_url && (
-              <Button asChild>
-                <a
-                  href={exportStatus.download_url}
-                  download
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  {t("privacy.export.download")}
-                </a>
-              </Button>
+
+            {/* Error message display for failed exports */}
+            {exportStatus.status === "failed" && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  {exportStatus.error_message ||
+                    t("privacy.export.defaultError", { defaultValue: "Export failed. Please try again." })}
+                </AlertDescription>
+              </Alert>
             )}
-            {(exportStatus.status === "pending" || exportStatus.status === "processing") && (
-              <Loader2 className="text-primary h-5 w-5 animate-spin" />
+
+            {/* Request new export button (shown when previous export is done/failed/expired) */}
+            {canRequestNew && (
+              <Button
+                variant="outline"
+                onClick={() => requestExportMutation.mutate()}
+                disabled={requestExportMutation.isPending}
+              >
+                {requestExportMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("privacy.export.requesting")}
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    {t("privacy.export.requestNew", { defaultValue: "Request New Export" })}
+                  </>
+                )}
+              </Button>
             )}
           </div>
         ) : (

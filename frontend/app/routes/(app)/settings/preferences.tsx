@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { requireAuth } from "@/lib/guards";
 import { queryKeys } from "@/lib/query-keys";
@@ -86,13 +87,23 @@ function PreferencesSettingsPage() {
     });
   };
 
-  const hasChanges =
+  const hasChanges = Boolean(
     preferences &&
     (formData.theme !== preferences.theme ||
       formData.timezone !== preferences.timezone ||
       formData.language !== preferences.language ||
       formData.date_format !== preferences.date_format ||
-      formData.time_format !== preferences.time_format);
+      formData.time_format !== preferences.time_format)
+  );
+
+  // Warn user before navigating away with unsaved changes
+  useUnsavedChangesWarning({
+    isDirty: hasChanges,
+    message: t(
+      "preferences.unsavedChangesWarning",
+      "You have unsaved preference changes. Are you sure you want to leave?"
+    ),
+  });
 
   if (isLoading) {
     return (

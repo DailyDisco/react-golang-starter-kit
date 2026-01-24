@@ -1,16 +1,15 @@
 import { useMemo, useState } from "react";
 
-import { ConfirmDialog } from "@/components/admin";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { requireAdmin } from "@/lib/guards";
 import { queryKeys } from "@/lib/query-keys";
 import { AdminService } from "@/services/admin";
 import { apiClient } from "@/services/api/client";
@@ -28,7 +27,6 @@ import {
   RefreshCw,
   Search,
   Shield,
-  UserCog,
   Users as UsersIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -44,7 +42,6 @@ interface UsersResponse {
 }
 
 export const Route = createFileRoute("/(app)/admin/users")({
-  beforeLoad: async (ctx) => requireAdmin(ctx),
   component: AdminUsersPage,
 });
 
@@ -546,18 +543,6 @@ function AdminUsersPage() {
                                   <TooltipContent>{t("users.tooltips.reactivate")}</TooltipContent>
                                 </Tooltip>
                               ))}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => toast.info(t("users.toast.detailsComingSoon"))}
-                                >
-                                  <UserCog className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>{t("users.tooltips.viewDetails")}</TooltipContent>
-                            </Tooltip>
                           </div>
                         </TableCell>
                       </TableRow>

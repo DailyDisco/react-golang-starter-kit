@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { requireAdmin } from "@/lib/guards";
 import { AdminService, type AuditLogFilter, type AuditLogsResponse } from "@/services/admin";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -17,7 +16,6 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/(app)/admin/audit-logs")({
-  beforeLoad: async (ctx) => requireAdmin(ctx),
   component: AuditLogsPage,
 });
 
