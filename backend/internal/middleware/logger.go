@@ -3,9 +3,11 @@ package middleware
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"react-golang-starter/internal/auth"
+	"regexp"
 	"strings"
 	"time"
 
@@ -14,6 +16,36 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
+
+// sensitiveFields contains field names that should be redacted from logs
+var sensitiveFields = []string{
+	"password",
+	"currentPassword",
+	"current_password",
+	"newPassword",
+	"new_password",
+	"confirmPassword",
+	"confirm_password",
+	"token",
+	"accessToken",
+	"access_token",
+	"refreshToken",
+	"refresh_token",
+	"secret",
+	"apiKey",
+	"api_key",
+	"apiSecret",
+	"api_secret",
+	"privateKey",
+	"private_key",
+	"credential",
+	"authorization",
+	"totp",
+	"totpCode",
+	"totp_code",
+	"backupCode",
+	"backup_code",
+}
 
 // StructuredLogger returns a middleware that logs HTTP requests with structured logging
 func StructuredLogger() func(http.Handler) http.Handler {
@@ -187,7 +219,7 @@ func getRealIP(r *http.Request) string {
 		return strings.TrimSpace(xff)
 	}
 
-	// Check X-Real-IP header (nginx)
+	// Check X-Real-IP header (set by reverse proxy)
 	if xri := r.Header.Get("X-Real-IP"); xri != "" {
 		return strings.TrimSpace(xri)
 	}
@@ -228,6 +260,68 @@ func extractUserContext(ctx context.Context) map[string]interface{} {
 	return userContext
 }
 
+// sanitizeRequestBody redacts sensitive fields from JSON request bodies
+func sanitizeRequestBody(body string) string {
+	// Try to parse as JSON
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(body), &data); err != nil {
+		// Not JSON or invalid - use regex fallback for common patterns
+		return sanitizeWithRegex(body)
+	}
+
+	// Recursively sanitize the JSON object
+	sanitizeMap(data)
+
+	// Re-encode to JSON
+	sanitized, err := json.Marshal(data)
+	if err != nil {
+		return "[sanitization error]"
+	}
+	return string(sanitized)
+}
+
+// sanitizeMap recursively redacts sensitive fields from a map
+func sanitizeMap(data map[string]interface{}) {
+	for key, value := range data {
+		// Check if this key is sensitive
+		if isSensitiveField(key) {
+			data[key] = "[REDACTED]"
+			continue
+		}
+
+		// Recursively handle nested objects
+		switch v := value.(type) {
+		case map[string]interface{}:
+			sanitizeMap(v)
+		case []interface{}:
+			for _, item := range v {
+				if m, ok := item.(map[string]interface{}); ok {
+					sanitizeMap(m)
+				}
+			}
+		}
+	}
+}
+
+// isSensitiveField checks if a field name is sensitive
+func isSensitiveField(fieldName string) bool {
+	lower := strings.ToLower(fieldName)
+	for _, sensitive := range sensitiveFields {
+		if strings.ToLower(sensitive) == lower {
+			return true
+		}
+	}
+	return false
+}
+
+// sensitiveFieldRegex matches common sensitive field patterns in non-JSON bodies
+var sensitiveFieldRegex = regexp.MustCompile(`(?i)(password|token|secret|api_?key|credential|authorization)=([^&\s]+)`)
+
+// sanitizeWithRegex redacts sensitive values in non-JSON request bodies
+func sanitizeWithRegex(body string) string {
+	return sensitiveFieldRegex.ReplaceAllString(body, "${1}=[REDACTED]")
+}
+
 // captureRequestBody captures the request body for logging
 func captureRequestBody(r *http.Request, maxSize int) string {
 	if r.Body == nil {
@@ -250,7 +344,8 @@ func captureRequestBody(r *http.Request, maxSize int) string {
 		bodyStr = bodyStr[:maxSize] + "... [truncated]"
 	}
 
-	return bodyStr
+	// Sanitize sensitive fields before returning
+	return sanitizeRequestBody(bodyStr)
 }
 
 // responseCaptureWriter captures response body for logging

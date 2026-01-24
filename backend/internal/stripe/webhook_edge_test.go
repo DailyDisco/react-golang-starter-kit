@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -34,7 +35,7 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 		}
 
 		// Should not panic
-		handleSubscriptionCreated(sub)
+		handleSubscriptionCreated(context.Background(), sub)
 
 		// Verify subscription was created with empty price ID
 		var dbSub models.Subscription
@@ -91,7 +92,7 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 		}
 
 		// Should not panic, just log error
-		handleSubscriptionCreated(sub)
+		handleSubscriptionCreated(context.Background(), sub)
 
 		// Verify no subscription was created
 		var count int64
@@ -135,7 +136,7 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 		}
 
 		// Should not panic
-		handleSubscriptionUpdated(sub)
+		handleSubscriptionUpdated(context.Background(), sub)
 
 		// Subscription status should still be updated (record exists)
 		var dbSub models.Subscription
@@ -169,7 +170,7 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 		}
 
 		// Should not panic
-		handleSubscriptionUpdated(sub)
+		handleSubscriptionUpdated(context.Background(), sub)
 
 		// Subscription should still be updated
 		var dbSub models.Subscription
@@ -203,12 +204,12 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 		}
 
 		// First delivery
-		handleSubscriptionCreated(sub)
+		handleSubscriptionCreated(context.Background(), sub)
 
 		// Second delivery (duplicate)
 		// Current implementation will try to create another record which will fail
 		// or the handler should be idempotent
-		handleSubscriptionCreated(sub)
+		handleSubscriptionCreated(context.Background(), sub)
 
 		// Verify only one subscription exists
 		var count int64
@@ -242,7 +243,7 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 		}
 
 		// Should not panic
-		handleSubscriptionUpdated(sub)
+		handleSubscriptionUpdated(context.Background(), sub)
 
 		// Verify no subscription was created (update should fail silently)
 		var count int64
@@ -261,7 +262,7 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 		}
 
 		// Should not panic
-		handleSubscriptionDeleted(sub)
+		handleSubscriptionDeleted(context.Background(), sub)
 	})
 
 	t.Run("payment failed for non-existent subscription", func(t *testing.T) {
@@ -276,7 +277,7 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 		}
 
 		// Should not panic
-		handlePaymentFailed(invoice)
+		handlePaymentFailed(context.Background(), invoice)
 	})
 
 	t.Run("cancel at period end flag is preserved", func(t *testing.T) {
@@ -297,7 +298,7 @@ func TestWebhookEdgeCases_Integration(t *testing.T) {
 			CanceledAt:         canceledAt,
 		}
 
-		handleSubscriptionUpdated(sub)
+		handleSubscriptionUpdated(context.Background(), sub)
 
 		// Verify CancelAtPeriodEnd was set
 		var dbSub models.Subscription

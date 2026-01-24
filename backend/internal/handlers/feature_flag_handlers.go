@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"hash/fnv"
 	"net/http"
@@ -17,6 +18,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/lib/pq"
 )
+
+// planHierarchy defines the order of subscription plans for comparison
+var planHierarchy = map[string]int{
+	"":           0, // No plan / default
+	"free":       1,
+	"pro":        2,
+	"enterprise": 3,
+}
 
 // GetFeatureFlags returns all feature flags
 // @Summary Get all feature flags
@@ -77,6 +86,12 @@ func CreateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate min_plan if provided
+	if req.MinPlan != "" && req.MinPlan != "free" && req.MinPlan != "pro" && req.MinPlan != "enterprise" {
+		WriteBadRequest(w, r, "Invalid min_plan. Valid values: free, pro, enterprise")
+		return
+	}
+
 	now := time.Now().Format(time.RFC3339)
 	flag := models.FeatureFlag{
 		Key:               req.Key,
@@ -85,6 +100,7 @@ func CreateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 		Enabled:           req.Enabled,
 		RolloutPercentage: req.RolloutPercentage,
 		AllowedRoles:      pq.StringArray(req.AllowedRoles),
+		MinPlan:           req.MinPlan,
 		CreatedAt:         now,
 		UpdatedAt:         now,
 	}
@@ -153,6 +169,13 @@ func UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 	if req.AllowedRoles != nil {
 		flag.AllowedRoles = pq.StringArray(*req.AllowedRoles)
 	}
+	if req.MinPlan != nil {
+		if *req.MinPlan != "" && *req.MinPlan != "free" && *req.MinPlan != "pro" && *req.MinPlan != "enterprise" {
+			WriteBadRequest(w, r, "Invalid min_plan. Valid values: free, pro, enterprise")
+			return
+		}
+		flag.MinPlan = *req.MinPlan
+	}
 	flag.UpdatedAt = time.Now().Format(time.RFC3339)
 
 	if err := database.DB.Save(&flag).Error; err != nil {
@@ -206,30 +229,36 @@ func DeleteFeatureFlag(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetFeatureFlagsForUser returns feature flags with their enabled status for the current user
+// Includes plan gating information to support upgrade prompts in the UI
 // @Summary Get feature flags for current user
 // @Tags Feature Flags
 // @Security BearerAuth
-// @Success 200 {object} map[string]bool
+// @Success 200 {object} map[string]models.UserFeatureFlagDetail
 // @Failure 401 {object} models.ErrorResponse
 // @Router /api/feature-flags [get]
 func GetFeatureFlagsForUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	// Get current user from context
-	user, ok := auth.GetUserFromContext(r.Context())
+	user, ok := auth.GetUserFromContext(ctx)
 	if !ok {
 		WriteUnauthorized(w, r, "Unauthorized")
 		return
 	}
 
+	// Get user's effective plan (highest of personal subscription and org memberships)
+	effectivePlan := resolveEffectivePlan(ctx, user.ID)
+
 	// Get all feature flags
 	var flags []models.FeatureFlag
-	if err := database.DB.Find(&flags).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Find(&flags).Error; err != nil {
 		WriteInternalError(w, r, "Failed to fetch feature flags")
 		return
 	}
 
 	// Get user overrides
 	var overrides []models.UserFeatureFlag
-	database.DB.Where("user_id = ?", user.ID).Find(&overrides)
+	database.DB.WithContext(ctx).Where("user_id = ?", user.ID).Find(&overrides)
 
 	// Build override map
 	overrideMap := make(map[uint]bool)
@@ -237,16 +266,11 @@ func GetFeatureFlagsForUser(w http.ResponseWriter, r *http.Request) {
 		overrideMap[override.FeatureFlagID] = override.Enabled
 	}
 
-	// Evaluate flags for user
-	result := make(map[string]bool)
+	// Evaluate flags for user with plan gating
+	result := make(map[string]models.UserFeatureFlagDetail)
 	for _, flag := range flags {
-		// Check for user override first
-		if override, hasOverride := overrideMap[flag.ID]; hasOverride {
-			result[flag.Key] = override
-			continue
-		}
-
-		result[flag.Key] = isFeatureEnabledForUser(flag, user.ID, user.Role)
+		detail := evaluateFlagForUser(flag, user, effectivePlan, overrideMap)
+		result[flag.Key] = detail
 	}
 
 	// Set cache headers - private since user-specific, 5 minutes
@@ -382,6 +406,7 @@ func toFeatureFlagResponse(flag models.FeatureFlag) models.FeatureFlagResponse {
 		Enabled:           flag.Enabled,
 		RolloutPercentage: flag.RolloutPercentage,
 		AllowedRoles:      []string(flag.AllowedRoles),
+		MinPlan:           flag.MinPlan,
 		CreatedAt:         flag.CreatedAt,
 		UpdatedAt:         flag.UpdatedAt,
 	}
@@ -429,4 +454,76 @@ func isFeatureEnabledForUser(flag models.FeatureFlag, userID uint, userRole stri
 	hash := h.Sum32()
 
 	return (hash % 100) < uint32(flag.RolloutPercentage)
+}
+
+// resolveEffectivePlan determines the user's highest plan tier from personal subscription and org memberships
+func resolveEffectivePlan(ctx context.Context, userID uint) string {
+	effectivePlan := "free"
+	maxLevel := planHierarchy["free"]
+
+	// Check user's personal subscription (active or trialing)
+	var subscription models.Subscription
+	if err := database.DB.WithContext(ctx).
+		Where("user_id = ? AND organization_id IS NULL", userID).
+		Where("status IN ?", []string{models.SubscriptionStatusActive, models.SubscriptionStatusTrialing}).
+		First(&subscription).Error; err == nil {
+		// User has an active personal subscription - treat as "pro" by default
+		// In a full implementation, you'd map stripe_price_id to a plan tier
+		userPlan := "pro"
+		if planHierarchy[userPlan] > maxLevel {
+			maxLevel = planHierarchy[userPlan]
+			effectivePlan = userPlan
+		}
+	}
+
+	// Check organization memberships for higher plan tiers
+	var memberships []models.OrganizationMember
+	database.DB.WithContext(ctx).
+		Preload("Organization").
+		Where("user_id = ? AND status = ?", userID, models.MemberStatusActive).
+		Find(&memberships)
+
+	for _, m := range memberships {
+		if m.Organization != nil {
+			orgPlan := string(m.Organization.Plan)
+			if planHierarchy[orgPlan] > maxLevel {
+				maxLevel = planHierarchy[orgPlan]
+				effectivePlan = orgPlan
+			}
+		}
+	}
+
+	return effectivePlan
+}
+
+// evaluateFlagForUser evaluates a flag for a specific user with plan gating
+func evaluateFlagForUser(
+	flag models.FeatureFlag,
+	user *models.User,
+	effectivePlan string,
+	overrideMap map[uint]bool,
+) models.UserFeatureFlagDetail {
+	detail := models.UserFeatureFlagDetail{
+		Enabled:      false,
+		GatedByPlan:  false,
+		RequiredPlan: "",
+	}
+
+	// Check for user override first - overrides bypass all other checks
+	if override, hasOverride := overrideMap[flag.ID]; hasOverride {
+		detail.Enabled = override
+		return detail
+	}
+
+	// Check plan requirement
+	if flag.MinPlan != "" && planHierarchy[effectivePlan] < planHierarchy[flag.MinPlan] {
+		detail.GatedByPlan = true
+		detail.RequiredPlan = flag.MinPlan
+		detail.Enabled = false
+		return detail
+	}
+
+	// Apply standard evaluation (enabled, roles, rollout)
+	detail.Enabled = isFeatureEnabledForUser(flag, user.ID, user.Role)
+	return detail
 }

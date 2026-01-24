@@ -1085,6 +1085,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/notifications": {
+            "post": {
+                "description": "Creates a notification for a specific user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Create notification (admin)",
+                "parameters": [
+                    {
+                        "description": "Notification data",
+                        "name": "notification",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateNotificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.NotificationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/settings": {
             "get": {
                 "security": [
@@ -1213,6 +1265,17 @@ const docTemplate = `{
                     "Admin Settings"
                 ],
                 "summary": "Send test email",
+                "parameters": [
+                    {
+                        "description": "Test email request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.TestEmailRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1234,6 +1297,12 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -2297,12 +2366,214 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "type": "boolean"
+                                "$ref": "#/definitions/models.UserFeatureFlagDetail"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/activity": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the current user's audit log entries (login, logout, profile changes, etc.)",
+                "tags": [
+                    "User Settings"
+                ],
+                "summary": "Get my activity",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Max items to return (1-50, default 10)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.MyActivityResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notifications": {
+            "get": {
+                "description": "Returns paginated list of notifications for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Get user notifications",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 20, max 100)",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter to only unread notifications",
+                        "name": "unread",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.NotificationsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notifications/read-all": {
+            "post": {
+                "description": "Marks all unread notifications as read for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark all notifications as read",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notifications/{id}": {
+            "delete": {
+                "description": "Deletes a specific notification",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Delete notification",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Notification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notifications/{id}/read": {
+            "post": {
+                "description": "Marks a specific notification as read",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark notification as read",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Notification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -2452,6 +2723,59 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/models.UsageSummaryResponse"
                             }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/usage/record": {
+            "post": {
+                "description": "Records a usage event for metering purposes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usage"
+                ],
+                "summary": "Record usage event",
+                "parameters": [
+                    {
+                        "description": "Usage event details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UsageEventRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "401": {
@@ -4355,6 +4679,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/health/ready": {
+            "get": {
+                "description": "Fast readiness check for deployment orchestration. Verifies database connectivity.\nCache is checked but treated as non-critical (degraded, not unhealthy).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Check if server is ready to receive traffic",
+                "responses": {
+                    "200": {
+                        "description": "Server is ready",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Server is not ready (database unavailable)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/invitations/accept": {
             "post": {
                 "description": "Accept an invitation to join an organization",
@@ -5354,7 +5713,12 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new user with the provided information. This endpoint is intended for administrative use and may require admin privileges in production.",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new user with the provided information. Requires super_admin role (users:create permission).",
                 "consumes": [
                     "application/json"
                 ],
@@ -5364,7 +5728,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Create a new user (Admin endpoint)",
+                "summary": "Create a new user (Super Admin only)",
                 "parameters": [
                     {
                         "description": "User registration data",
@@ -5408,7 +5772,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Forbidden - admin privileges required",
+                        "description": "Forbidden - super_admin role required",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -5803,6 +6167,31 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handlers.CreateNotificationRequest": {
+            "type": "object",
+            "required": [
+                "title",
+                "type",
+                "user_id"
+            ],
+            "properties": {
+                "link": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "handlers.CreateOrganizationRequest": {
             "type": "object",
             "required": [
@@ -6038,6 +6427,27 @@ const docTemplate = `{
                 },
                 "requests_per_minute": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.ActivityLogItem": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "changes": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "target_type": {
+                    "type": "string"
                 }
             }
         },
@@ -6511,6 +6921,9 @@ const docTemplate = `{
                 "key": {
                     "type": "string"
                 },
+                "min_plan": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -6779,6 +7192,9 @@ const docTemplate = `{
                 "key": {
                     "type": "string"
                 },
+                "min_plan": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -7011,6 +7427,75 @@ const docTemplate = `{
                 "MemberStatusInactive",
                 "MemberStatusPending"
             ]
+        },
+        "models.MyActivityResponse": {
+            "type": "object",
+            "properties": {
+                "activities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ActivityLogItem"
+                    }
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.NotificationResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "link": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "read": {
+                    "type": "boolean"
+                },
+                "read_at": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.NotificationsResponse": {
+            "type": "object",
+            "properties": {
+                "notifications": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.NotificationResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "unread": {
+                    "type": "integer"
+                }
+            }
         },
         "models.OrganizationPlan": {
             "type": "string",
@@ -7386,6 +7871,15 @@ const docTemplate = `{
                 }
             }
         },
+        "models.TestEmailRequest": {
+            "type": "object",
+            "properties": {
+                "recipient_email": {
+                    "description": "RecipientEmail is the email address to send the test to (optional, defaults to admin's email)",
+                    "type": "string"
+                }
+            }
+        },
         "models.TwoFactorBackupCodesResponse": {
             "type": "object",
             "properties": {
@@ -7524,6 +8018,9 @@ const docTemplate = `{
                 "enabled": {
                     "type": "boolean"
                 },
+                "min_plan": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -7577,6 +8074,33 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "timezone": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UsageEventRequest": {
+            "type": "object",
+            "required": [
+                "event_type",
+                "resource"
+            ],
+            "properties": {
+                "event_type": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "resource": {
+                    "type": "string"
+                },
+                "unit": {
                     "type": "string"
                 }
             }
@@ -7698,6 +8222,23 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.UserAPIKeyResponse"
                     }
+                }
+            }
+        },
+        "models.UserFeatureFlagDetail": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "description": "Whether the flag is enabled for this user",
+                    "type": "boolean"
+                },
+                "gated_by_plan": {
+                    "description": "Whether the flag is disabled due to plan restrictions",
+                    "type": "boolean"
+                },
+                "required_plan": {
+                    "description": "The plan required to unlock this feature (if gated)",
+                    "type": "string"
                 }
             }
         },

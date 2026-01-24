@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -99,7 +100,7 @@ func TestHandleOrgSubscriptionCreated_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionCreated(sub)
+		handleSubscriptionCreated(context.Background(), sub)
 
 		// Verify subscription was created with org ID
 		var dbSub models.Subscription
@@ -144,7 +145,7 @@ func TestHandleOrgSubscriptionCreated_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionCreated(sub)
+		handleSubscriptionCreated(context.Background(), sub)
 
 		// Verify org plan was updated
 		var updatedOrg models.Organization
@@ -186,7 +187,7 @@ func TestHandleOrgSubscriptionCreated_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionCreated(sub)
+		handleSubscriptionCreated(context.Background(), sub)
 
 		// Verify subscription UserID is the org owner
 		var dbSub models.Subscription
@@ -230,7 +231,7 @@ func TestHandleOrgSubscriptionUpdated_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionUpdated(sub)
+		handleSubscriptionUpdated(context.Background(), sub)
 
 		// Verify org plan was updated
 		var updatedOrg models.Organization
@@ -259,7 +260,7 @@ func TestHandleOrgSubscriptionUpdated_Integration(t *testing.T) {
 			CurrentPeriodEnd:   now + 2592000,
 		}
 
-		handleSubscriptionUpdated(sub)
+		handleSubscriptionUpdated(context.Background(), sub)
 
 		// Verify subscription status
 		var dbSub models.Subscription
@@ -298,7 +299,7 @@ func TestHandleOrgSubscriptionUpdated_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionUpdated(stripeSub)
+		handleSubscriptionUpdated(context.Background(), stripeSub)
 
 		// Verify price ID was updated
 		var dbSub models.Subscription
@@ -334,7 +335,7 @@ func TestHandleOrgSubscriptionDeleted_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionDeleted(sub)
+		handleSubscriptionDeleted(context.Background(), sub)
 
 		// Verify org was downgraded to free
 		var updatedOrg models.Organization
@@ -362,7 +363,7 @@ func TestHandleOrgSubscriptionDeleted_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionDeleted(sub)
+		handleSubscriptionDeleted(context.Background(), sub)
 
 		// Verify stripe_subscription_id was cleared
 		var updatedOrg models.Organization
@@ -389,7 +390,7 @@ func TestHandleOrgSubscriptionDeleted_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionDeleted(sub)
+		handleSubscriptionDeleted(context.Background(), sub)
 
 		// Verify org still exists with original data
 		var updatedOrg models.Organization
@@ -428,7 +429,7 @@ func TestHandleOrgPaymentFailed_Integration(t *testing.T) {
 			},
 		}
 
-		handlePaymentFailed(invoice)
+		handlePaymentFailed(context.Background(), invoice)
 
 		// Verify subscription status
 		var dbSub models.Subscription
@@ -457,7 +458,7 @@ func TestHandleOrgPaymentFailed_Integration(t *testing.T) {
 			},
 		}
 
-		handlePaymentFailed(invoice)
+		handlePaymentFailed(context.Background(), invoice)
 
 		// Verify org plan is still pro (grace period)
 		var updatedOrg models.Organization
@@ -488,7 +489,7 @@ func TestFindCustomerOwner_OrgPrecedence(t *testing.T) {
 			t.Fatalf("Failed to create org: %v", err)
 		}
 
-		owner, err := findCustomerOwner("cus_shared_123")
+		owner, err := findCustomerOwner(context.Background(), "cus_shared_123")
 		if err != nil {
 			t.Fatalf("Expected to find owner: %v", err)
 		}
@@ -508,7 +509,7 @@ func TestFindCustomerOwner_OrgPrecedence(t *testing.T) {
 	t.Run("returns correct owner type for user-only customer", func(t *testing.T) {
 		user := createTestUserForWebhook(t, "useronly@example.com", "cus_user_only_123")
 
-		owner, err := findCustomerOwner("cus_user_only_123")
+		owner, err := findCustomerOwner(context.Background(), "cus_user_only_123")
 		if err != nil {
 			t.Fatalf("Expected to find owner: %v", err)
 		}
@@ -525,7 +526,7 @@ func TestFindCustomerOwner_OrgPrecedence(t *testing.T) {
 	})
 
 	t.Run("returns error for unknown customer", func(t *testing.T) {
-		_, err := findCustomerOwner("cus_unknown_xyz")
+		_, err := findCustomerOwner(context.Background(), "cus_unknown_xyz")
 		if err == nil {
 			t.Error("Expected error for unknown customer")
 		}

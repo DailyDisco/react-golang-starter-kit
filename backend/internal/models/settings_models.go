@@ -630,6 +630,13 @@ type PreviewEmailTemplateRequest struct {
 	Variables map[string]string `json:"variables"`
 }
 
+// TestEmailRequest represents a request to send a test email
+// swagger:model TestEmailRequest
+type TestEmailRequest struct {
+	// RecipientEmail is the email address to send the test to (optional, defaults to admin's email)
+	RecipientEmail string `json:"recipient_email,omitempty"`
+}
+
 // PreviewEmailTemplateResponse represents a rendered email preview
 // swagger:model PreviewEmailTemplateResponse
 type PreviewEmailTemplateResponse struct {
@@ -753,6 +760,7 @@ type DataExport struct {
 	Status       string  `json:"status" gorm:"type:varchar(50);default:'pending'"`
 	DownloadURL  *string `json:"download_url,omitempty" gorm:"type:varchar(500)"`
 	FilePath     *string `json:"-" gorm:"type:varchar(500)"`
+	StorageType  string  `json:"-" gorm:"type:varchar(20);default:'local'"` // "local" or "s3"
 	FileSize     int64   `json:"file_size,omitempty"`
 	RequestedAt  string  `json:"requested_at" gorm:"not null"`
 	CompletedAt  *string `json:"completed_at,omitempty"`
@@ -803,4 +811,24 @@ type ConnectedAccountResponse struct {
 // swagger:model AvatarUploadResponse
 type AvatarUploadResponse struct {
 	AvatarURL string `json:"avatar_url"`
+}
+
+// ============ User Activity Models ============
+
+// ActivityLogItem represents a single activity entry for the user's activity feed
+// swagger:model ActivityLogItem
+type ActivityLogItem struct {
+	ID         uint                   `json:"id"`
+	TargetType string                 `json:"target_type"`
+	Action     string                 `json:"action"`
+	Changes    map[string]interface{} `json:"changes,omitempty"`
+	CreatedAt  string                 `json:"created_at"`
+}
+
+// MyActivityResponse represents the response for user's activity feed
+// swagger:model MyActivityResponse
+type MyActivityResponse struct {
+	Activities []ActivityLogItem `json:"activities"`
+	Count      int               `json:"count"`
+	Total      int               `json:"total"`
 }

@@ -857,6 +857,11 @@ type FeatureFlag struct {
 	// Additional configuration metadata (JSON)
 	Metadata string `json:"metadata,omitempty" gorm:"type:jsonb;default:'{}'"`
 
+	// Minimum plan required to access this feature
+	// Empty string means available to all plans (including free)
+	// Valid values: "", "free", "pro", "enterprise"
+	MinPlan string `json:"min_plan,omitempty" gorm:"type:varchar(20);default:''"`
+
 	// When the flag was created
 	CreatedAt string `json:"created_at"`
 
@@ -874,6 +879,7 @@ type FeatureFlagResponse struct {
 	Enabled           bool     `json:"enabled"`
 	RolloutPercentage int      `json:"rollout_percentage"`
 	AllowedRoles      []string `json:"allowed_roles,omitempty"`
+	MinPlan           string   `json:"min_plan,omitempty"`
 	CreatedAt         string   `json:"created_at"`
 	UpdatedAt         string   `json:"updated_at"`
 }
@@ -909,6 +915,7 @@ type CreateFeatureFlagRequest struct {
 	Enabled           bool     `json:"enabled"`
 	RolloutPercentage int      `json:"rollout_percentage"`
 	AllowedRoles      []string `json:"allowed_roles,omitempty"`
+	MinPlan           string   `json:"min_plan,omitempty"`
 }
 
 // UpdateFeatureFlagRequest represents a request to update a feature flag
@@ -919,6 +926,7 @@ type UpdateFeatureFlagRequest struct {
 	Enabled           *bool     `json:"enabled,omitempty"`
 	RolloutPercentage *int      `json:"rollout_percentage,omitempty"`
 	AllowedRoles      *[]string `json:"allowed_roles,omitempty"`
+	MinPlan           *string   `json:"min_plan,omitempty"`
 }
 
 // FeatureFlagsResponse represents a list of feature flags
@@ -926,6 +934,17 @@ type UpdateFeatureFlagRequest struct {
 type FeatureFlagsResponse struct {
 	Flags []FeatureFlagResponse `json:"flags"`
 	Count int                   `json:"count"`
+}
+
+// UserFeatureFlagDetail represents detailed flag info for a user including plan gating
+// swagger:model UserFeatureFlagDetail
+type UserFeatureFlagDetail struct {
+	// Whether the flag is enabled for this user
+	Enabled bool `json:"enabled"`
+	// Whether the flag is disabled due to plan restrictions
+	GatedByPlan bool `json:"gated_by_plan"`
+	// The plan required to unlock this feature (if gated)
+	RequiredPlan string `json:"required_plan,omitempty"`
 }
 
 // ============ Admin Models ============
@@ -1221,4 +1240,61 @@ type UsageEventRequest struct {
 	Quantity  int64             `json:"quantity"`
 	Unit      string            `json:"unit"`
 	Metadata  map[string]string `json:"metadata,omitempty"`
+}
+
+// Notification represents an in-app notification for a user
+// swagger:model Notification
+type Notification struct {
+	// Unique notification ID
+	ID uint `json:"id" gorm:"primaryKey"`
+
+	// When the notification was created
+	CreatedAt time.Time `json:"created_at"`
+
+	// User who receives this notification
+	UserID uint `json:"user_id" gorm:"index;not null"`
+
+	// Notification type (info, success, warning, error, announcement)
+	Type string `json:"type" gorm:"type:varchar(50);not null;default:'info'"`
+
+	// Notification title
+	Title string `json:"title" gorm:"type:varchar(255);not null"`
+
+	// Notification message/body
+	Message string `json:"message" gorm:"type:text"`
+
+	// Optional link to navigate to when clicked
+	Link string `json:"link,omitempty" gorm:"type:varchar(500)"`
+
+	// Whether the notification has been read
+	Read bool `json:"read" gorm:"default:false;index"`
+
+	// When the notification was read (null if unread)
+	ReadAt *time.Time `json:"read_at,omitempty"`
+
+	// Optional metadata as JSON
+	Metadata string `json:"metadata,omitempty" gorm:"type:jsonb;default:'{}'"`
+}
+
+// NotificationResponse represents a notification in API responses
+// swagger:model NotificationResponse
+type NotificationResponse struct {
+	ID        uint       `json:"id"`
+	CreatedAt time.Time  `json:"created_at"`
+	Type      string     `json:"type"`
+	Title     string     `json:"title"`
+	Message   string     `json:"message"`
+	Link      string     `json:"link,omitempty"`
+	Read      bool       `json:"read"`
+	ReadAt    *time.Time `json:"read_at,omitempty"`
+}
+
+// NotificationsResponse represents paginated notifications
+// swagger:model NotificationsResponse
+type NotificationsResponse struct {
+	Notifications []NotificationResponse `json:"notifications"`
+	Total         int64                  `json:"total"`
+	Unread        int64                  `json:"unread"`
+	Page          int                    `json:"page"`
+	PerPage       int                    `json:"per_page"`
 }

@@ -16,7 +16,76 @@ import (
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/services"
+	ws "react-golang-starter/internal/websocket"
 )
+
+// wsHub holds the WebSocket hub for broadcasting subscription events
+var wsHub *ws.Hub
+
+// SetHub sets the WebSocket hub for broadcasting subscription events
+func SetHub(hub *ws.Hub) {
+	wsHub = hub
+}
+
+// broadcastSubscriptionEvent sends a subscription update to the user via WebSocket
+func broadcastSubscriptionEvent(userID uint, event, status, plan, priceID string, cancelAtPeriodEnd bool, periodEnd, message string) {
+	if wsHub == nil {
+		return
+	}
+
+	payload := ws.SubscriptionUpdatePayload{
+		Event:             event,
+		Status:            status,
+		Plan:              plan,
+		PriceID:           priceID,
+		CancelAtPeriodEnd: cancelAtPeriodEnd,
+		CurrentPeriodEnd:  periodEnd,
+		Message:           message,
+		Timestamp:         time.Now().Unix(),
+	}
+
+	wsHub.SendToUser(userID, ws.MessageTypeSubscriptionUpdate, payload)
+	log.Debug().
+		Uint("user_id", userID).
+		Str("event", event).
+		Str("status", status).
+		Msg("subscription update broadcast sent")
+}
+
+// broadcastOrgSubscriptionEvent sends a subscription update to all org members via WebSocket
+func broadcastOrgSubscriptionEvent(ctx context.Context, orgID uint, event, status, plan, priceID string, cancelAtPeriodEnd bool, periodEnd, message string) {
+	if wsHub == nil {
+		return
+	}
+
+	// Get all org members to notify
+	var members []models.OrganizationMember
+	if err := database.DB.WithContext(ctx).Where("organization_id = ?", orgID).Find(&members).Error; err != nil {
+		log.Error().Err(err).Uint("org_id", orgID).Msg("failed to get org members for broadcast")
+		return
+	}
+
+	payload := ws.SubscriptionUpdatePayload{
+		Event:             event,
+		Status:            status,
+		Plan:              plan,
+		PriceID:           priceID,
+		CancelAtPeriodEnd: cancelAtPeriodEnd,
+		CurrentPeriodEnd:  periodEnd,
+		Message:           message,
+		Timestamp:         time.Now().Unix(),
+	}
+
+	for _, member := range members {
+		wsHub.SendToUser(member.UserID, ws.MessageTypeSubscriptionUpdate, payload)
+	}
+
+	log.Debug().
+		Uint("org_id", orgID).
+		Int("member_count", len(members)).
+		Str("event", event).
+		Msg("org subscription update broadcast sent")
+}
 
 // customerOwner represents either a user or organization that owns a Stripe customer
 type customerOwner struct {
@@ -25,16 +94,16 @@ type customerOwner struct {
 }
 
 // findCustomerOwner finds the user or organization that owns a Stripe customer ID
-func findCustomerOwner(customerID string) (*customerOwner, error) {
+func findCustomerOwner(ctx context.Context, customerID string) (*customerOwner, error) {
 	// Check for organization first (org billing takes precedence)
 	var org models.Organization
-	if err := database.DB.Where("stripe_customer_id = ?", customerID).First(&org).Error; err == nil {
+	if err := database.DB.WithContext(ctx).Where("stripe_customer_id = ?", customerID).First(&org).Error; err == nil {
 		return &customerOwner{Org: &org}, nil
 	}
 
 	// Check for user
 	var user models.User
-	if err := database.DB.Where("stripe_customer_id = ?", customerID).First(&user).Error; err == nil {
+	if err := database.DB.WithContext(ctx).Where("stripe_customer_id = ?", customerID).First(&user).Error; err == nil {
 		return &customerOwner{User: &user}, nil
 	}
 
@@ -97,7 +166,7 @@ func HandleWebhook(config *Config) http.HandlerFunc {
 				log.Error().Err(err).Msg("failed to unmarshal checkout session")
 				break
 			}
-			handleCheckoutSessionCompleted(&session)
+			handleCheckoutSessionCompleted(r.Context(), &session)
 
 		case "customer.subscription.created":
 			var sub stripe.Subscription
@@ -105,7 +174,7 @@ func HandleWebhook(config *Config) http.HandlerFunc {
 				log.Error().Err(err).Msg("failed to unmarshal subscription")
 				break
 			}
-			handleSubscriptionCreated(&sub)
+			handleSubscriptionCreated(r.Context(), &sub)
 
 		case "customer.subscription.updated":
 			var sub stripe.Subscription
@@ -113,7 +182,7 @@ func HandleWebhook(config *Config) http.HandlerFunc {
 				log.Error().Err(err).Msg("failed to unmarshal subscription")
 				break
 			}
-			handleSubscriptionUpdated(&sub)
+			handleSubscriptionUpdated(r.Context(), &sub)
 
 		case "customer.subscription.deleted":
 			var sub stripe.Subscription
@@ -121,7 +190,7 @@ func HandleWebhook(config *Config) http.HandlerFunc {
 				log.Error().Err(err).Msg("failed to unmarshal subscription")
 				break
 			}
-			handleSubscriptionDeleted(&sub)
+			handleSubscriptionDeleted(r.Context(), &sub)
 
 		case "invoice.payment_failed":
 			var invoice stripe.Invoice
@@ -129,7 +198,7 @@ func HandleWebhook(config *Config) http.HandlerFunc {
 				log.Error().Err(err).Msg("failed to unmarshal invoice")
 				break
 			}
-			handlePaymentFailed(&invoice)
+			handlePaymentFailed(r.Context(), &invoice)
 
 		default:
 			log.Debug().Str("event_type", string(event.Type)).Msg("unhandled webhook event type")
@@ -146,7 +215,7 @@ func HandleWebhook(config *Config) http.HandlerFunc {
 }
 
 // handleCheckoutSessionCompleted processes successful checkout sessions
-func handleCheckoutSessionCompleted(session *stripe.CheckoutSession) {
+func handleCheckoutSessionCompleted(ctx context.Context, session *stripe.CheckoutSession) {
 	log.Info().
 		Str("session_id", session.ID).
 		Str("customer_id", session.Customer.ID).
@@ -155,7 +224,7 @@ func handleCheckoutSessionCompleted(session *stripe.CheckoutSession) {
 
 	// Find user by Stripe customer ID
 	var user models.User
-	if err := database.DB.Where("stripe_customer_id = ?", session.Customer.ID).First(&user).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Where("stripe_customer_id = ?", session.Customer.ID).First(&user).Error; err != nil {
 		log.Error().Err(err).Str("customer_id", session.Customer.ID).Msg("user not found for customer")
 		return
 	}
@@ -166,7 +235,7 @@ func handleCheckoutSessionCompleted(session *stripe.CheckoutSession) {
 }
 
 // handleSubscriptionCreated processes new subscription creation
-func handleSubscriptionCreated(sub *stripe.Subscription) {
+func handleSubscriptionCreated(ctx context.Context, sub *stripe.Subscription) {
 	log.Info().
 		Str("subscription_id", sub.ID).
 		Str("customer_id", sub.Customer.ID).
@@ -174,7 +243,7 @@ func handleSubscriptionCreated(sub *stripe.Subscription) {
 		Msg("subscription created")
 
 	// Find owner (user or org) by Stripe customer ID
-	owner, err := findCustomerOwner(sub.Customer.ID)
+	owner, err := findCustomerOwner(ctx, sub.Customer.ID)
 	if err != nil {
 		log.Error().Err(err).Str("customer_id", sub.Customer.ID).Msg("customer owner not found")
 		return
@@ -188,15 +257,15 @@ func handleSubscriptionCreated(sub *stripe.Subscription) {
 
 	if owner.Org != nil {
 		// Organization subscription
-		handleOrgSubscriptionCreated(owner.Org, sub, priceID)
+		handleOrgSubscriptionCreated(ctx, owner.Org, sub, priceID)
 	} else {
 		// User subscription
-		handleUserSubscriptionCreated(owner.User, sub, priceID)
+		handleUserSubscriptionCreated(ctx, owner.User, sub, priceID)
 	}
 }
 
 // handleUserSubscriptionCreated processes user-level subscription creation
-func handleUserSubscriptionCreated(user *models.User, sub *stripe.Subscription, priceID string) {
+func handleUserSubscriptionCreated(ctx context.Context, user *models.User, sub *stripe.Subscription, priceID string) {
 	subscription := models.Subscription{
 		UserID:               user.ID,
 		StripeSubscriptionID: sub.ID,
@@ -209,7 +278,7 @@ func handleUserSubscriptionCreated(user *models.User, sub *stripe.Subscription, 
 		UpdatedAt:            time.Now().Format(time.RFC3339),
 	}
 
-	if err := database.DB.Create(&subscription).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Create(&subscription).Error; err != nil {
 		log.Error().Err(err).Uint("user_id", user.ID).Msg("failed to create subscription record")
 		return
 	}
@@ -218,20 +287,32 @@ func handleUserSubscriptionCreated(user *models.User, sub *stripe.Subscription, 
 	if sub.Status == stripe.SubscriptionStatusActive || sub.Status == stripe.SubscriptionStatusTrialing {
 		user.Role = models.RolePremium
 		user.UpdatedAt = time.Now()
-		if err := database.DB.Save(user).Error; err != nil {
+		if err := database.DB.WithContext(ctx).Save(user).Error; err != nil {
 			log.Error().Err(err).Uint("user_id", user.ID).Msg("failed to update user role")
 		}
 	}
 
-	syncUsageLimits(user.ID, priceID)
+	syncUsageLimits(ctx, user.ID, priceID)
 	log.Info().Uint("user_id", user.ID).Msg("subscription created for user")
+
+	// Broadcast subscription created event
+	broadcastSubscriptionEvent(
+		user.ID,
+		"created",
+		string(sub.Status),
+		"premium",
+		priceID,
+		sub.CancelAtPeriodEnd,
+		time.Unix(sub.CurrentPeriodEnd, 0).Format(time.RFC3339),
+		"Your subscription is now active!",
+	)
 }
 
 // handleOrgSubscriptionCreated processes organization-level subscription creation
-func handleOrgSubscriptionCreated(org *models.Organization, sub *stripe.Subscription, priceID string) {
+func handleOrgSubscriptionCreated(ctx context.Context, org *models.Organization, sub *stripe.Subscription, priceID string) {
 	// Get the org owner to set as billing contact
 	var owner models.OrganizationMember
-	if err := database.DB.Where("organization_id = ? AND role = ?", org.ID, models.OrgRoleOwner).First(&owner).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Where("organization_id = ? AND role = ?", org.ID, models.OrgRoleOwner).First(&owner).Error; err != nil {
 		log.Error().Err(err).Uint("org_id", org.ID).Msg("org owner not found")
 		return
 	}
@@ -250,14 +331,14 @@ func handleOrgSubscriptionCreated(org *models.Organization, sub *stripe.Subscrip
 		UpdatedAt:            time.Now().Format(time.RFC3339),
 	}
 
-	if err := database.DB.Create(&subscription).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Create(&subscription).Error; err != nil {
 		log.Error().Err(err).Uint("org_id", org.ID).Msg("failed to create org subscription record")
 		return
 	}
 
 	// Update org plan based on price ID
 	newPlan := getPlanFromPriceID(priceID)
-	if err := database.DB.Model(org).Updates(map[string]interface{}{
+	if err := database.DB.WithContext(ctx).Model(org).Updates(map[string]interface{}{
 		"plan":                   newPlan,
 		"stripe_subscription_id": sub.ID,
 	}).Error; err != nil {
@@ -265,6 +346,19 @@ func handleOrgSubscriptionCreated(org *models.Organization, sub *stripe.Subscrip
 	}
 
 	log.Info().Uint("org_id", org.ID).Str("plan", string(newPlan)).Msg("subscription created for organization")
+
+	// Broadcast subscription created event to all org members
+	broadcastOrgSubscriptionEvent(
+		ctx,
+		org.ID,
+		"created",
+		string(sub.Status),
+		string(newPlan),
+		priceID,
+		sub.CancelAtPeriodEnd,
+		time.Unix(sub.CurrentPeriodEnd, 0).Format(time.RFC3339),
+		"Organization subscription is now active!",
+	)
 }
 
 // getPlanFromPriceID maps Stripe price IDs to organization plans
@@ -295,7 +389,7 @@ func getPlanFromPriceID(priceID string) models.OrganizationPlan {
 }
 
 // handleSubscriptionUpdated processes subscription updates
-func handleSubscriptionUpdated(sub *stripe.Subscription) {
+func handleSubscriptionUpdated(ctx context.Context, sub *stripe.Subscription) {
 	log.Info().
 		Str("subscription_id", sub.ID).
 		Str("status", string(sub.Status)).
@@ -303,7 +397,7 @@ func handleSubscriptionUpdated(sub *stripe.Subscription) {
 
 	// Find subscription by Stripe subscription ID
 	var subscription models.Subscription
-	if err := database.DB.Where("stripe_subscription_id = ?", sub.ID).First(&subscription).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Where("stripe_subscription_id = ?", sub.ID).First(&subscription).Error; err != nil {
 		log.Error().Err(err).Str("subscription_id", sub.ID).Msg("subscription not found")
 		return
 	}
@@ -326,37 +420,72 @@ func handleSubscriptionUpdated(sub *stripe.Subscription) {
 		subscription.CanceledAt = time.Unix(sub.CanceledAt, 0).Format(time.RFC3339)
 	}
 
-	if err := database.DB.Save(&subscription).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Save(&subscription).Error; err != nil {
 		log.Error().Err(err).Str("subscription_id", sub.ID).Msg("failed to update subscription")
 		return
+	}
+
+	// Build status message
+	var message string
+	if sub.CancelAtPeriodEnd {
+		message = "Subscription will be canceled at the end of the billing period"
+	} else if sub.Status == stripe.SubscriptionStatusPastDue {
+		message = "Payment failed - please update your payment method"
+	} else {
+		message = "Subscription has been updated"
 	}
 
 	// Handle org vs user subscription updates
 	if subscription.OrganizationID != nil && *subscription.OrganizationID > 0 {
 		// Organization subscription - update org plan
 		newPlan := getPlanFromPriceID(priceID)
-		if err := database.DB.Model(&models.Organization{}).Where("id = ?", *subscription.OrganizationID).
+		if err := database.DB.WithContext(ctx).Model(&models.Organization{}).Where("id = ?", *subscription.OrganizationID).
 			Update("plan", newPlan).Error; err != nil {
 			log.Error().Err(err).Uint("org_id", *subscription.OrganizationID).Msg("failed to update org plan")
 		}
 		log.Info().Uint("org_id", *subscription.OrganizationID).Str("plan", string(newPlan)).Msg("subscription updated for organization")
+
+		// Broadcast to org members
+		broadcastOrgSubscriptionEvent(
+			ctx,
+			*subscription.OrganizationID,
+			"updated",
+			string(sub.Status),
+			string(newPlan),
+			priceID,
+			sub.CancelAtPeriodEnd,
+			time.Unix(sub.CurrentPeriodEnd, 0).Format(time.RFC3339),
+			message,
+		)
 	} else {
 		// User subscription
-		syncUserRole(subscription.UserID, sub.Status)
-		syncUsageLimits(subscription.UserID, priceID)
+		syncUserRole(ctx, subscription.UserID, sub.Status)
+		syncUsageLimits(ctx, subscription.UserID, priceID)
 		log.Info().Uint("user_id", subscription.UserID).Msg("subscription updated for user")
+
+		// Broadcast to user
+		broadcastSubscriptionEvent(
+			subscription.UserID,
+			"updated",
+			string(sub.Status),
+			"premium",
+			priceID,
+			sub.CancelAtPeriodEnd,
+			time.Unix(sub.CurrentPeriodEnd, 0).Format(time.RFC3339),
+			message,
+		)
 	}
 }
 
 // handleSubscriptionDeleted processes subscription cancellation/deletion
-func handleSubscriptionDeleted(sub *stripe.Subscription) {
+func handleSubscriptionDeleted(ctx context.Context, sub *stripe.Subscription) {
 	log.Info().
 		Str("subscription_id", sub.ID).
 		Msg("subscription deleted")
 
 	// Find subscription by Stripe subscription ID
 	var subscription models.Subscription
-	if err := database.DB.Where("stripe_subscription_id = ?", sub.ID).First(&subscription).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Where("stripe_subscription_id = ?", sub.ID).First(&subscription).Error; err != nil {
 		log.Error().Err(err).Str("subscription_id", sub.ID).Msg("subscription not found")
 		return
 	}
@@ -366,7 +495,7 @@ func handleSubscriptionDeleted(sub *stripe.Subscription) {
 	subscription.CanceledAt = time.Now().Format(time.RFC3339)
 	subscription.UpdatedAt = time.Now().Format(time.RFC3339)
 
-	if err := database.DB.Save(&subscription).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Save(&subscription).Error; err != nil {
 		log.Error().Err(err).Str("subscription_id", sub.ID).Msg("failed to update subscription")
 		return
 	}
@@ -374,7 +503,7 @@ func handleSubscriptionDeleted(sub *stripe.Subscription) {
 	// Handle org vs user subscription deletion
 	if subscription.OrganizationID != nil && *subscription.OrganizationID > 0 {
 		// Organization subscription - downgrade to free plan
-		if err := database.DB.Model(&models.Organization{}).Where("id = ?", *subscription.OrganizationID).
+		if err := database.DB.WithContext(ctx).Model(&models.Organization{}).Where("id = ?", *subscription.OrganizationID).
 			Updates(map[string]any{
 				"plan":                   models.OrgPlanFree,
 				"stripe_subscription_id": nil,
@@ -382,16 +511,41 @@ func handleSubscriptionDeleted(sub *stripe.Subscription) {
 			log.Error().Err(err).Uint("org_id", *subscription.OrganizationID).Msg("failed to downgrade org plan")
 		}
 		log.Info().Uint("org_id", *subscription.OrganizationID).Msg("subscription deleted for organization")
+
+		// Broadcast to org members
+		broadcastOrgSubscriptionEvent(
+			ctx,
+			*subscription.OrganizationID,
+			"deleted",
+			models.SubscriptionStatusCanceled,
+			string(models.OrgPlanFree),
+			"",
+			false,
+			"",
+			"Subscription has been canceled. You are now on the free plan.",
+		)
 	} else {
 		// User subscription
-		syncUserRole(subscription.UserID, stripe.SubscriptionStatusCanceled)
-		syncUsageLimits(subscription.UserID, "")
+		syncUserRole(ctx, subscription.UserID, stripe.SubscriptionStatusCanceled)
+		syncUsageLimits(ctx, subscription.UserID, "")
 		log.Info().Uint("user_id", subscription.UserID).Msg("subscription deleted for user")
+
+		// Broadcast to user
+		broadcastSubscriptionEvent(
+			subscription.UserID,
+			"deleted",
+			models.SubscriptionStatusCanceled,
+			"free",
+			"",
+			false,
+			"",
+			"Your subscription has been canceled.",
+		)
 	}
 }
 
 // handlePaymentFailed processes failed payment events
-func handlePaymentFailed(invoice *stripe.Invoice) {
+func handlePaymentFailed(ctx context.Context, invoice *stripe.Invoice) {
 	log.Warn().
 		Str("invoice_id", invoice.ID).
 		Str("customer_id", invoice.Customer.ID).
@@ -403,7 +557,7 @@ func handlePaymentFailed(invoice *stripe.Invoice) {
 
 	// Find subscription by Stripe subscription ID
 	var subscription models.Subscription
-	if err := database.DB.Where("stripe_subscription_id = ?", invoice.Subscription.ID).First(&subscription).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Where("stripe_subscription_id = ?", invoice.Subscription.ID).First(&subscription).Error; err != nil {
 		log.Error().Err(err).Str("subscription_id", invoice.Subscription.ID).Msg("subscription not found")
 		return
 	}
@@ -412,18 +566,44 @@ func handlePaymentFailed(invoice *stripe.Invoice) {
 	subscription.Status = models.SubscriptionStatusPastDue
 	subscription.UpdatedAt = time.Now().Format(time.RFC3339)
 
-	if err := database.DB.Save(&subscription).Error; err != nil {
+	if err := database.DB.WithContext(ctx).Save(&subscription).Error; err != nil {
 		log.Error().Err(err).Str("subscription_id", invoice.Subscription.ID).Msg("failed to update subscription")
 		return
 	}
 
 	log.Warn().Uint("user_id", subscription.UserID).Msg("subscription marked as past_due")
+
+	// Broadcast payment failed event
+	if subscription.OrganizationID != nil && *subscription.OrganizationID > 0 {
+		broadcastOrgSubscriptionEvent(
+			ctx,
+			*subscription.OrganizationID,
+			"payment_failed",
+			models.SubscriptionStatusPastDue,
+			"",
+			subscription.StripePriceID,
+			false,
+			"",
+			"Payment failed. Please update your payment method to avoid service interruption.",
+		)
+	} else {
+		broadcastSubscriptionEvent(
+			subscription.UserID,
+			"payment_failed",
+			models.SubscriptionStatusPastDue,
+			"premium",
+			subscription.StripePriceID,
+			false,
+			"",
+			"Payment failed. Please update your payment method to avoid service interruption.",
+		)
+	}
 }
 
 // syncUserRole updates the user's role based on their subscription status
-func syncUserRole(userID uint, status stripe.SubscriptionStatus) {
+func syncUserRole(ctx context.Context, userID uint, status stripe.SubscriptionStatus) {
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := database.DB.WithContext(ctx).First(&user, userID).Error; err != nil {
 		log.Error().Err(err).Uint("user_id", userID).Msg("user not found for role sync")
 		return
 	}
@@ -448,7 +628,7 @@ func syncUserRole(userID uint, status stripe.SubscriptionStatus) {
 	if user.Role != newRole {
 		user.Role = newRole
 		user.UpdatedAt = time.Now()
-		if err := database.DB.Save(&user).Error; err != nil {
+		if err := database.DB.WithContext(ctx).Save(&user).Error; err != nil {
 			log.Error().Err(err).Uint("user_id", userID).Msg("failed to sync user role")
 			return
 		}
@@ -457,8 +637,7 @@ func syncUserRole(userID uint, status stripe.SubscriptionStatus) {
 }
 
 // syncUsageLimits updates the user's usage limits based on their subscription tier
-func syncUsageLimits(userID uint, priceID string) {
-	ctx := context.Background()
+func syncUsageLimits(ctx context.Context, userID uint, priceID string) {
 	usageService := services.NewUsageService(database.DB)
 	if err := usageService.UpdateUserLimits(ctx, userID, priceID); err != nil {
 		log.Error().Err(err).Uint("user_id", userID).Str("price_id", priceID).Msg("failed to sync usage limits")

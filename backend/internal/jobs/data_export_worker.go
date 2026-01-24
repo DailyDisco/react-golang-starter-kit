@@ -13,6 +13,7 @@ import (
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/email"
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/storage"
 
 	"github.com/riverqueue/river"
 	"github.com/rs/zerolog/log"
@@ -109,19 +110,41 @@ For questions about this export, please contact support.
 
 	zipWriter.Close()
 
-	// Store file
-	exportsDir := getExportsDir()
-	if err := os.MkdirAll(exportsDir, 0755); err != nil {
-		updateExportError(args.ExportID, "File storage failed")
-		return fmt.Errorf("failed to create export directory: %w", err)
+	// Store file - try S3 first, fall back to local filesystem
+	var filePath string
+	var storageType string
+
+	s3Storage, err := storage.NewS3Storage()
+	if err == nil && s3Storage.IsAvailable() {
+		// Upload to S3
+		s3Key := fmt.Sprintf("exports/%d/user_data_%d_%d.zip", args.UserID, args.ExportID, time.Now().Unix())
+		if err := s3Storage.UploadBytes(ctx, s3Key, zipBuf.Bytes(), "application/zip"); err != nil {
+			log.Warn().Err(err).Msg("S3 upload failed, falling back to local storage")
+			// Fall through to local storage
+		} else {
+			filePath = s3Key
+			storageType = "s3"
+			log.Info().Str("s3_key", s3Key).Msg("export uploaded to S3")
+		}
 	}
 
-	filename := fmt.Sprintf("user_data_%d_%d.zip", args.UserID, time.Now().Unix())
-	filePath := filepath.Join(exportsDir, filename)
+	// Fall back to local filesystem if S3 upload didn't succeed
+	if storageType == "" {
+		exportsDir := getExportsDir()
+		if err := os.MkdirAll(exportsDir, 0755); err != nil {
+			updateExportError(args.ExportID, "File storage failed")
+			return fmt.Errorf("failed to create export directory: %w", err)
+		}
 
-	if err := os.WriteFile(filePath, zipBuf.Bytes(), 0600); err != nil {
-		updateExportError(args.ExportID, "File write failed")
-		return fmt.Errorf("failed to write export file: %w", err)
+		filename := fmt.Sprintf("user_data_%d_%d.zip", args.UserID, time.Now().Unix())
+		filePath = filepath.Join(exportsDir, filename)
+
+		if err := os.WriteFile(filePath, zipBuf.Bytes(), 0600); err != nil {
+			updateExportError(args.ExportID, "File write failed")
+			return fmt.Errorf("failed to write export file: %w", err)
+		}
+		storageType = "local"
+		log.Info().Str("file_path", filePath).Msg("export saved to local filesystem")
 	}
 
 	// Update export record
@@ -132,6 +155,7 @@ For questions about this export, please contact support.
 			"status":       models.ExportStatusCompleted,
 			"download_url": fmt.Sprintf("/api/users/me/export/download"),
 			"file_path":    filePath,
+			"storage_type": storageType,
 			"file_size":    int64(zipBuf.Len()),
 			"completed_at": time.Now().Format(time.RFC3339),
 			"expires_at":   expiresAt.Format(time.RFC3339),

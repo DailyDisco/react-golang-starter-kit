@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -8,8 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/websocket"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -36,7 +40,8 @@ var slugRegex = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
 // OrgService handles organization business logic
 type OrgService struct {
-	db *gorm.DB
+	db  *gorm.DB
+	hub *websocket.Hub
 }
 
 // NewOrgService creates a new organization service
@@ -44,17 +49,47 @@ func NewOrgService(db *gorm.DB) *OrgService {
 	return &OrgService{db: db}
 }
 
+// SetHub sets the WebSocket hub for broadcasting org/member updates
+func (s *OrgService) SetHub(hub *websocket.Hub) {
+	s.hub = hub
+}
+
+// broadcastToOrgMembers sends a WebSocket message to all members of an organization
+func (s *OrgService) broadcastToOrgMembers(ctx context.Context, orgID uint, msgType websocket.MessageType, payload interface{}) {
+	if s.hub == nil {
+		return
+	}
+
+	var members []models.OrganizationMember
+	if err := s.db.WithContext(ctx).Where("organization_id = ?", orgID).Find(&members).Error; err != nil {
+		log.Warn().Err(err).Uint("org_id", orgID).Msg("failed to get org members for WebSocket broadcast")
+		return
+	}
+
+	userIDs := make([]uint, len(members))
+	for i, m := range members {
+		userIDs[i] = m.UserID
+	}
+
+	s.hub.SendToUsers(userIDs, msgType, payload)
+	log.Debug().Uint("org_id", orgID).Int("member_count", len(userIDs)).Str("msg_type", string(msgType)).Msg("broadcasted to org members")
+}
+
 // CreateOrganization creates a new organization with the user as owner
-func (s *OrgService) CreateOrganization(userID uint, name, slug string) (*models.Organization, error) {
+func (s *OrgService) CreateOrganization(ctx context.Context, userID uint, name, slug string) (*models.Organization, error) {
 	// Validate slug
 	slug = strings.ToLower(strings.TrimSpace(slug))
 	if !slugRegex.MatchString(slug) {
 		return nil, ErrInvalidSlug
 	}
+	// Validate slug length (2-63 chars, matching DNS label limits)
+	if len(slug) < 2 || len(slug) > 63 {
+		return nil, ErrInvalidSlug
+	}
 
 	// Check if slug is taken
 	var count int64
-	if err := s.db.Model(&models.Organization{}).Where("slug = ?", slug).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&models.Organization{}).Where("slug = ?", slug).Count(&count).Error; err != nil {
 		return nil, err
 	}
 	if count > 0 {
@@ -63,7 +98,7 @@ func (s *OrgService) CreateOrganization(userID uint, name, slug string) (*models
 
 	// Create organization and owner membership in transaction
 	var org models.Organization
-	err := s.db.Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		org = models.Organization{
 			Name:            strings.TrimSpace(name),
 			Slug:            slug,
@@ -96,9 +131,9 @@ func (s *OrgService) CreateOrganization(userID uint, name, slug string) (*models
 }
 
 // GetOrganization retrieves an organization by slug
-func (s *OrgService) GetOrganization(slug string) (*models.Organization, error) {
+func (s *OrgService) GetOrganization(ctx context.Context, slug string) (*models.Organization, error) {
 	var org models.Organization
-	if err := s.db.Where("slug = ?", slug).First(&org).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("slug = ?", slug).First(&org).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrOrgNotFound
 		}
@@ -108,9 +143,9 @@ func (s *OrgService) GetOrganization(slug string) (*models.Organization, error) 
 }
 
 // GetOrganizationByID retrieves an organization by ID
-func (s *OrgService) GetOrganizationByID(id uint) (*models.Organization, error) {
+func (s *OrgService) GetOrganizationByID(ctx context.Context, id uint) (*models.Organization, error) {
 	var org models.Organization
-	if err := s.db.First(&org, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&org, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrOrgNotFound
 		}
@@ -120,9 +155,9 @@ func (s *OrgService) GetOrganizationByID(id uint) (*models.Organization, error) 
 }
 
 // GetOrganizationWithMembers retrieves an organization with its members
-func (s *OrgService) GetOrganizationWithMembers(slug string) (*models.Organization, error) {
+func (s *OrgService) GetOrganizationWithMembers(ctx context.Context, slug string) (*models.Organization, error) {
 	var org models.Organization
-	if err := s.db.Preload("Members.User").Where("slug = ?", slug).First(&org).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Members.User").Where("slug = ?", slug).First(&org).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrOrgNotFound
 		}
@@ -138,9 +173,9 @@ type OrgWithRole struct {
 }
 
 // GetUserOrganizations returns all organizations a user is a member of
-func (s *OrgService) GetUserOrganizations(userID uint) ([]models.Organization, error) {
+func (s *OrgService) GetUserOrganizations(ctx context.Context, userID uint) ([]models.Organization, error) {
 	var orgs []models.Organization
-	if err := s.db.
+	if err := s.db.WithContext(ctx).
 		Joins("JOIN organization_members ON organization_members.organization_id = organizations.id").
 		Where("organization_members.user_id = ? AND organization_members.status = ?", userID, models.MemberStatusActive).
 		Find(&orgs).Error; err != nil {
@@ -150,14 +185,14 @@ func (s *OrgService) GetUserOrganizations(userID uint) ([]models.Organization, e
 }
 
 // GetUserOrganizationsWithRoles returns all organizations with the user's role in each (single query, no N+1)
-func (s *OrgService) GetUserOrganizationsWithRoles(userID uint) ([]OrgWithRole, error) {
+func (s *OrgService) GetUserOrganizationsWithRoles(ctx context.Context, userID uint) ([]OrgWithRole, error) {
 	type result struct {
 		models.Organization
 		Role models.OrganizationRole `gorm:"column:member_role"`
 	}
 
 	var results []result
-	if err := s.db.
+	if err := s.db.WithContext(ctx).
 		Table("organizations").
 		Select("organizations.*, organization_members.role as member_role").
 		Joins("JOIN organization_members ON organization_members.organization_id = organizations.id").
@@ -177,9 +212,9 @@ func (s *OrgService) GetUserOrganizationsWithRoles(userID uint) ([]OrgWithRole, 
 }
 
 // GetUserMembership returns a user's membership in an organization
-func (s *OrgService) GetUserMembership(orgID, userID uint) (*models.OrganizationMember, error) {
+func (s *OrgService) GetUserMembership(ctx context.Context, orgID, userID uint) (*models.OrganizationMember, error) {
 	var member models.OrganizationMember
-	if err := s.db.Where("organization_id = ? AND user_id = ?", orgID, userID).First(&member).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("organization_id = ? AND user_id = ?", orgID, userID).First(&member).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotMember
 		}
@@ -189,47 +224,73 @@ func (s *OrgService) GetUserMembership(orgID, userID uint) (*models.Organization
 }
 
 // UpdateOrganization updates organization details
-func (s *OrgService) UpdateOrganization(org *models.Organization, name string) error {
+func (s *OrgService) UpdateOrganization(ctx context.Context, org *models.Organization, name string) error {
 	org.Name = strings.TrimSpace(name)
-	return s.db.Save(org).Error
+	if err := s.db.WithContext(ctx).Save(org).Error; err != nil {
+		return err
+	}
+	// Invalidate org cache after successful update
+	_ = cache.InvalidateOrganization(ctx, org.Slug, org.ID)
+
+	// Broadcast org update to all members
+	s.broadcastToOrgMembers(ctx, org.ID, websocket.MessageTypeOrgUpdate, websocket.OrgUpdatePayload{
+		OrgSlug: org.Slug,
+		Event:   "settings_changed",
+		Field:   "name",
+	})
+
+	return nil
 }
 
 // DeleteOrganization deletes an organization and all related data
-func (s *OrgService) DeleteOrganization(orgID uint) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
+func (s *OrgService) DeleteOrganization(ctx context.Context, org *models.Organization) error {
+	// Broadcast deletion to all members before deleting (so they get notified)
+	s.broadcastToOrgMembers(ctx, org.ID, websocket.MessageTypeOrgUpdate, websocket.OrgUpdatePayload{
+		OrgSlug: org.Slug,
+		Event:   "deleted",
+	})
+
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Delete invitations
-		if err := tx.Where("organization_id = ?", orgID).Delete(&models.OrganizationInvitation{}).Error; err != nil {
+		if err := tx.Where("organization_id = ?", org.ID).Delete(&models.OrganizationInvitation{}).Error; err != nil {
 			return err
 		}
 
 		// Delete members
-		if err := tx.Where("organization_id = ?", orgID).Delete(&models.OrganizationMember{}).Error; err != nil {
+		if err := tx.Where("organization_id = ?", org.ID).Delete(&models.OrganizationMember{}).Error; err != nil {
 			return err
 		}
 
 		// Delete organization
-		return tx.Delete(&models.Organization{}, orgID).Error
+		return tx.Delete(&models.Organization{}, org.ID).Error
 	})
+	if err != nil {
+		return err
+	}
+	// Invalidate caches after successful deletion
+	_ = cache.InvalidateOrganization(ctx, org.Slug, org.ID)
+	_ = cache.InvalidateOrgMemberships(ctx, org.ID)
+	return nil
 }
 
 // GetMembers returns all members of an organization
-func (s *OrgService) GetMembers(orgID uint) ([]models.OrganizationMember, error) {
+func (s *OrgService) GetMembers(ctx context.Context, orgID uint) ([]models.OrganizationMember, error) {
 	var members []models.OrganizationMember
-	if err := s.db.Preload("User").Where("organization_id = ?", orgID).Find(&members).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("User").Where("organization_id = ?", orgID).Find(&members).Error; err != nil {
 		return nil, err
 	}
 	return members, nil
 }
 
 // UpdateMemberRole updates a member's role
-func (s *OrgService) UpdateMemberRole(orgID, userID, actorUserID uint, newRole models.OrganizationRole) error {
+func (s *OrgService) UpdateMemberRole(ctx context.Context, orgID, userID, actorUserID uint, newRole models.OrganizationRole) error {
 	if userID == actorUserID {
 		return ErrCannotChangeOwnRole
 	}
 
 	// Get target member
 	var member models.OrganizationMember
-	if err := s.db.Where("organization_id = ? AND user_id = ?", orgID, userID).First(&member).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("organization_id = ? AND user_id = ?", orgID, userID).First(&member).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrNotMember
 		}
@@ -239,7 +300,7 @@ func (s *OrgService) UpdateMemberRole(orgID, userID, actorUserID uint, newRole m
 	// If demoting from owner, ensure there's another owner
 	if member.Role == models.OrgRoleOwner && newRole != models.OrgRoleOwner {
 		var ownerCount int64
-		if err := s.db.Model(&models.OrganizationMember{}).
+		if err := s.db.WithContext(ctx).Model(&models.OrganizationMember{}).
 			Where("organization_id = ? AND role = ?", orgID, models.OrgRoleOwner).
 			Count(&ownerCount).Error; err != nil {
 			return err
@@ -250,14 +311,32 @@ func (s *OrgService) UpdateMemberRole(orgID, userID, actorUserID uint, newRole m
 	}
 
 	member.Role = newRole
-	return s.db.Save(&member).Error
+	if err := s.db.WithContext(ctx).Save(&member).Error; err != nil {
+		return err
+	}
+
+	// Invalidate membership cache after role update
+	_ = cache.InvalidateMembership(ctx, orgID, userID)
+
+	// Broadcast member update to all org members
+	var org models.Organization
+	if err := s.db.WithContext(ctx).First(&org, orgID).Error; err == nil {
+		s.broadcastToOrgMembers(ctx, orgID, websocket.MessageTypeMemberUpdate, websocket.MemberUpdatePayload{
+			OrgSlug: org.Slug,
+			Event:   "role_changed",
+			UserID:  userID,
+			Role:    string(newRole),
+		})
+	}
+
+	return nil
 }
 
 // RemoveMember removes a member from an organization
-func (s *OrgService) RemoveMember(orgID, userID uint) error {
+func (s *OrgService) RemoveMember(ctx context.Context, orgID, userID uint) error {
 	// Get member
 	var member models.OrganizationMember
-	if err := s.db.Where("organization_id = ? AND user_id = ?", orgID, userID).First(&member).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("organization_id = ? AND user_id = ?", orgID, userID).First(&member).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrNotMember
 		}
@@ -267,7 +346,7 @@ func (s *OrgService) RemoveMember(orgID, userID uint) error {
 	// Cannot remove owner if they're the only one
 	if member.Role == models.OrgRoleOwner {
 		var ownerCount int64
-		if err := s.db.Model(&models.OrganizationMember{}).
+		if err := s.db.WithContext(ctx).Model(&models.OrganizationMember{}).
 			Where("organization_id = ? AND role = ?", orgID, models.OrgRoleOwner).
 			Count(&ownerCount).Error; err != nil {
 			return err
@@ -277,15 +356,41 @@ func (s *OrgService) RemoveMember(orgID, userID uint) error {
 		}
 	}
 
-	return s.db.Delete(&member).Error
+	if err := s.db.WithContext(ctx).Delete(&member).Error; err != nil {
+		return err
+	}
+
+	// Invalidate membership cache after removal
+	_ = cache.InvalidateMembership(ctx, orgID, userID)
+
+	// Broadcast member removal to all org members (including the removed user)
+	var org models.Organization
+	if err := s.db.WithContext(ctx).First(&org, orgID).Error; err == nil {
+		// First notify the org (remaining members will see updated list)
+		s.broadcastToOrgMembers(ctx, orgID, websocket.MessageTypeMemberUpdate, websocket.MemberUpdatePayload{
+			OrgSlug: org.Slug,
+			Event:   "removed",
+			UserID:  userID,
+		})
+		// Also notify the removed user directly so their UI updates
+		if s.hub != nil {
+			s.hub.SendToUser(userID, websocket.MessageTypeMemberUpdate, websocket.MemberUpdatePayload{
+				OrgSlug: org.Slug,
+				Event:   "removed",
+				UserID:  userID,
+			})
+		}
+	}
+
+	return nil
 }
 
 // CreateInvitation creates a new invitation to join an organization
-func (s *OrgService) CreateInvitation(orgID, inviterID uint, email string, role models.OrganizationRole) (*models.OrganizationInvitation, error) {
+func (s *OrgService) CreateInvitation(ctx context.Context, orgID, inviterID uint, email string, role models.OrganizationRole) (*models.OrganizationInvitation, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 
 	// Check seat limit before inviting
-	canAdd, err := s.CanAddMember(orgID)
+	canAdd, err := s.CanAddMember(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -295,9 +400,9 @@ func (s *OrgService) CreateInvitation(orgID, inviterID uint, email string, role 
 
 	// Check if user is already a member
 	var user models.User
-	if err := s.db.Where("email = ?", email).First(&user).Error; err == nil {
+	if err := s.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err == nil {
 		var count int64
-		if err := s.db.Model(&models.OrganizationMember{}).
+		if err := s.db.WithContext(ctx).Model(&models.OrganizationMember{}).
 			Where("organization_id = ? AND user_id = ?", orgID, user.ID).
 			Count(&count).Error; err != nil {
 			return nil, err
@@ -309,7 +414,7 @@ func (s *OrgService) CreateInvitation(orgID, inviterID uint, email string, role 
 
 	// Check for existing pending invitation
 	var count int64
-	if err := s.db.Model(&models.OrganizationInvitation{}).
+	if err := s.db.WithContext(ctx).Model(&models.OrganizationInvitation{}).
 		Where("organization_id = ? AND email = ? AND accepted_at IS NULL AND expires_at > ?", orgID, email, time.Now()).
 		Count(&count).Error; err != nil {
 		return nil, err
@@ -333,17 +438,26 @@ func (s *OrgService) CreateInvitation(orgID, inviterID uint, email string, role 
 		ExpiresAt:       time.Now().Add(7 * 24 * time.Hour), // 7 days
 	}
 
-	if err := s.db.Create(&invitation).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&invitation).Error; err != nil {
 		return nil, err
+	}
+
+	// Broadcast invitation sent to all org members
+	var org models.Organization
+	if err := s.db.WithContext(ctx).First(&org, orgID).Error; err == nil {
+		s.broadcastToOrgMembers(ctx, orgID, websocket.MessageTypeMemberUpdate, websocket.MemberUpdatePayload{
+			OrgSlug: org.Slug,
+			Event:   "invitation_sent",
+		})
 	}
 
 	return &invitation, nil
 }
 
 // GetInvitationByToken retrieves an invitation by its token
-func (s *OrgService) GetInvitationByToken(token string) (*models.OrganizationInvitation, error) {
+func (s *OrgService) GetInvitationByToken(ctx context.Context, token string) (*models.OrganizationInvitation, error) {
 	var invitation models.OrganizationInvitation
-	if err := s.db.Preload("Organization").Where("token = ?", token).First(&invitation).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Organization").Where("token = ?", token).First(&invitation).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrInvitationNotFound
 		}
@@ -353,8 +467,8 @@ func (s *OrgService) GetInvitationByToken(token string) (*models.OrganizationInv
 }
 
 // AcceptInvitation accepts an invitation and adds the user to the organization
-func (s *OrgService) AcceptInvitation(token string, userID uint) (*models.OrganizationMember, error) {
-	invitation, err := s.GetInvitationByToken(token)
+func (s *OrgService) AcceptInvitation(ctx context.Context, token string, userID uint) (*models.OrganizationMember, error) {
+	invitation, err := s.GetInvitationByToken(ctx, token)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +483,7 @@ func (s *OrgService) AcceptInvitation(token string, userID uint) (*models.Organi
 
 	// Verify user email matches invitation
 	var user models.User
-	if err := s.db.First(&user, userID).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&user, userID).Error; err != nil {
 		return nil, err
 	}
 	if strings.ToLower(user.Email) != invitation.Email {
@@ -378,7 +492,7 @@ func (s *OrgService) AcceptInvitation(token string, userID uint) (*models.Organi
 
 	// Check if already a member
 	var count int64
-	if err := s.db.Model(&models.OrganizationMember{}).
+	if err := s.db.WithContext(ctx).Model(&models.OrganizationMember{}).
 		Where("organization_id = ? AND user_id = ?", invitation.OrganizationID, userID).
 		Count(&count).Error; err != nil {
 		return nil, err
@@ -388,7 +502,7 @@ func (s *OrgService) AcceptInvitation(token string, userID uint) (*models.Organi
 	}
 
 	var member models.OrganizationMember
-	err = s.db.Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Mark invitation as accepted
 		now := time.Now()
 		invitation.AcceptedAt = &now
@@ -413,13 +527,23 @@ func (s *OrgService) AcceptInvitation(token string, userID uint) (*models.Organi
 		return nil, err
 	}
 
+	// Broadcast new member added to all org members
+	if invitation.Organization.Slug != "" {
+		s.broadcastToOrgMembers(ctx, invitation.OrganizationID, websocket.MessageTypeMemberUpdate, websocket.MemberUpdatePayload{
+			OrgSlug: invitation.Organization.Slug,
+			Event:   "added",
+			UserID:  userID,
+			Role:    string(invitation.Role),
+		})
+	}
+
 	return &member, nil
 }
 
 // GetPendingInvitations returns all pending invitations for an organization
-func (s *OrgService) GetPendingInvitations(orgID uint) ([]models.OrganizationInvitation, error) {
+func (s *OrgService) GetPendingInvitations(ctx context.Context, orgID uint) ([]models.OrganizationInvitation, error) {
 	var invitations []models.OrganizationInvitation
-	if err := s.db.Preload("InvitedByUser").
+	if err := s.db.WithContext(ctx).Preload("InvitedByUser").
 		Where("organization_id = ? AND accepted_at IS NULL AND expires_at > ?", orgID, time.Now()).
 		Find(&invitations).Error; err != nil {
 		return nil, err
@@ -428,8 +552,8 @@ func (s *OrgService) GetPendingInvitations(orgID uint) ([]models.OrganizationInv
 }
 
 // CancelInvitation cancels a pending invitation
-func (s *OrgService) CancelInvitation(invitationID, orgID uint) error {
-	result := s.db.Where("id = ? AND organization_id = ? AND accepted_at IS NULL", invitationID, orgID).
+func (s *OrgService) CancelInvitation(ctx context.Context, invitationID, orgID uint) error {
+	result := s.db.WithContext(ctx).Where("id = ? AND organization_id = ? AND accepted_at IS NULL", invitationID, orgID).
 		Delete(&models.OrganizationInvitation{})
 	if result.Error != nil {
 		return result.Error
@@ -437,12 +561,22 @@ func (s *OrgService) CancelInvitation(invitationID, orgID uint) error {
 	if result.RowsAffected == 0 {
 		return ErrInvitationNotFound
 	}
+
+	// Broadcast invitation revoked to all org members
+	var org models.Organization
+	if err := s.db.WithContext(ctx).First(&org, orgID).Error; err == nil {
+		s.broadcastToOrgMembers(ctx, orgID, websocket.MessageTypeMemberUpdate, websocket.MemberUpdatePayload{
+			OrgSlug: org.Slug,
+			Event:   "invitation_revoked",
+		})
+	}
+
 	return nil
 }
 
 // CleanupExpiredInvitations removes expired invitations
-func (s *OrgService) CleanupExpiredInvitations() error {
-	return s.db.Where("expires_at < ? AND accepted_at IS NULL", time.Now()).
+func (s *OrgService) CleanupExpiredInvitations(ctx context.Context) error {
+	return s.db.WithContext(ctx).Where("expires_at < ? AND accepted_at IS NULL", time.Now()).
 		Delete(&models.OrganizationInvitation{}).Error
 }
 
@@ -460,9 +594,9 @@ func generateInvitationToken() (string, error) {
 // =====================
 
 // GetOrganizationByStripeCustomerID retrieves an organization by its Stripe customer ID
-func (s *OrgService) GetOrganizationByStripeCustomerID(customerID string) (*models.Organization, error) {
+func (s *OrgService) GetOrganizationByStripeCustomerID(ctx context.Context, customerID string) (*models.Organization, error) {
 	var org models.Organization
-	if err := s.db.Where("stripe_customer_id = ?", customerID).First(&org).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("stripe_customer_id = ?", customerID).First(&org).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrOrgNotFound
 		}
@@ -472,26 +606,26 @@ func (s *OrgService) GetOrganizationByStripeCustomerID(customerID string) (*mode
 }
 
 // UpdateOrganizationPlan updates the organization's plan and Stripe subscription info
-func (s *OrgService) UpdateOrganizationPlan(orgID uint, plan models.OrganizationPlan, stripeSubID *string) error {
+func (s *OrgService) UpdateOrganizationPlan(ctx context.Context, orgID uint, plan models.OrganizationPlan, stripeSubID *string) error {
 	updates := map[string]interface{}{
 		"plan": plan,
 	}
 	if stripeSubID != nil {
 		updates["stripe_subscription_id"] = *stripeSubID
 	}
-	return s.db.Model(&models.Organization{}).Where("id = ?", orgID).Updates(updates).Error
+	return s.db.WithContext(ctx).Model(&models.Organization{}).Where("id = ?", orgID).Updates(updates).Error
 }
 
 // SetOrganizationStripeCustomer sets the Stripe customer ID for an organization
-func (s *OrgService) SetOrganizationStripeCustomer(orgID uint, customerID string) error {
-	return s.db.Model(&models.Organization{}).Where("id = ?", orgID).
+func (s *OrgService) SetOrganizationStripeCustomer(ctx context.Context, orgID uint, customerID string) error {
+	return s.db.WithContext(ctx).Model(&models.Organization{}).Where("id = ?", orgID).
 		Update("stripe_customer_id", customerID).Error
 }
 
 // GetMemberCount returns the number of active members in an organization
-func (s *OrgService) GetMemberCount(orgID uint) (int64, error) {
+func (s *OrgService) GetMemberCount(ctx context.Context, orgID uint) (int64, error) {
 	var count int64
-	if err := s.db.Model(&models.OrganizationMember{}).
+	if err := s.db.WithContext(ctx).Model(&models.OrganizationMember{}).
 		Where("organization_id = ? AND status = ?", orgID, models.MemberStatusActive).
 		Count(&count).Error; err != nil {
 		return 0, err
@@ -501,8 +635,8 @@ func (s *OrgService) GetMemberCount(orgID uint) (int64, error) {
 
 // CanAddMember checks if the organization can add another member based on seat limits
 // Returns true if the organization has available seats or has unlimited seats
-func (s *OrgService) CanAddMember(orgID uint) (bool, error) {
-	org, err := s.GetOrganizationByID(orgID)
+func (s *OrgService) CanAddMember(ctx context.Context, orgID uint) (bool, error) {
+	org, err := s.GetOrganizationByID(ctx, orgID)
 	if err != nil {
 		return false, err
 	}
@@ -513,14 +647,14 @@ func (s *OrgService) CanAddMember(orgID uint) (bool, error) {
 		return true, nil
 	}
 
-	memberCount, err := s.GetMemberCount(orgID)
+	memberCount, err := s.GetMemberCount(ctx, orgID)
 	if err != nil {
 		return false, err
 	}
 
 	// Count pending invitations as well
 	var inviteCount int64
-	if err := s.db.Model(&models.OrganizationInvitation{}).
+	if err := s.db.WithContext(ctx).Model(&models.OrganizationInvitation{}).
 		Where("organization_id = ? AND accepted_at IS NULL AND expires_at > ?", orgID, time.Now()).
 		Count(&inviteCount).Error; err != nil {
 		return false, err
@@ -530,9 +664,9 @@ func (s *OrgService) CanAddMember(orgID uint) (bool, error) {
 }
 
 // GetOrganizationSubscription retrieves the subscription for an organization
-func (s *OrgService) GetOrganizationSubscription(orgID uint) (*models.Subscription, error) {
+func (s *OrgService) GetOrganizationSubscription(ctx context.Context, orgID uint) (*models.Subscription, error) {
 	var sub models.Subscription
-	if err := s.db.Where("organization_id = ?", orgID).First(&sub).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("organization_id = ?", orgID).First(&sub).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // No subscription
 		}
@@ -542,19 +676,19 @@ func (s *OrgService) GetOrganizationSubscription(orgID uint) (*models.Subscripti
 }
 
 // CreateOrganizationSubscription creates a subscription for an organization
-func (s *OrgService) CreateOrganizationSubscription(sub *models.Subscription) error {
-	return s.db.Create(sub).Error
+func (s *OrgService) CreateOrganizationSubscription(ctx context.Context, sub *models.Subscription) error {
+	return s.db.WithContext(ctx).Create(sub).Error
 }
 
 // UpdateOrganizationSubscription updates an organization's subscription
-func (s *OrgService) UpdateOrganizationSubscription(sub *models.Subscription) error {
-	return s.db.Save(sub).Error
+func (s *OrgService) UpdateOrganizationSubscription(ctx context.Context, sub *models.Subscription) error {
+	return s.db.WithContext(ctx).Save(sub).Error
 }
 
 // GetOrganizationByStripeSubscriptionID retrieves an organization by its Stripe subscription ID
-func (s *OrgService) GetOrganizationByStripeSubscriptionID(stripeSubID string) (*models.Organization, error) {
+func (s *OrgService) GetOrganizationByStripeSubscriptionID(ctx context.Context, stripeSubID string) (*models.Organization, error) {
 	var org models.Organization
-	if err := s.db.Where("stripe_subscription_id = ?", stripeSubID).First(&org).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("stripe_subscription_id = ?", stripeSubID).First(&org).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrOrgNotFound
 		}

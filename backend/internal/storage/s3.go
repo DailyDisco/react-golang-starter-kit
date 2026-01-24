@@ -161,3 +161,45 @@ func (s *S3Storage) DeleteFileWithKey(ctx context.Context, s3Key string) error {
 
 	return nil
 }
+
+// UploadBytes uploads raw bytes to S3 with a specific key
+// Used for data exports and other programmatic uploads
+func (s *S3Storage) UploadBytes(ctx context.Context, s3Key string, data []byte, contentType string) error {
+	if !s.IsAvailable() {
+		return fmt.Errorf("S3 storage not available")
+	}
+
+	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:        aws.String(s.bucketName),
+		Key:           aws.String(s3Key),
+		Body:          bytes.NewReader(data),
+		ContentType:   aws.String(contentType),
+		ContentLength: aws.Int64(int64(len(data))),
+		ACL:           "private",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload bytes to S3: %w", err)
+	}
+
+	return nil
+}
+
+// GeneratePresignedURL creates a time-limited download URL for an S3 object
+// expiration specifies how long the URL should be valid
+func (s *S3Storage) GeneratePresignedURL(ctx context.Context, s3Key string, expiration time.Duration) (string, error) {
+	if !s.IsAvailable() {
+		return "", fmt.Errorf("S3 storage not available")
+	}
+
+	presignClient := s3.NewPresignClient(s.client)
+
+	presignedReq, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucketName),
+		Key:    aws.String(s3Key),
+	}, s3.WithPresignExpires(expiration))
+	if err != nil {
+		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
+	}
+
+	return presignedReq.URL, nil
+}

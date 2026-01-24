@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 // SendParams contains parameters for sending an email
@@ -43,7 +44,8 @@ var instance EmailProvider
 var config *Config
 
 // Initialize sets up the email provider based on configuration
-func Initialize(cfg *Config) error {
+// The db parameter is optional - if provided, enables database template resolution
+func Initialize(cfg *Config, db *gorm.DB) error {
 	config = cfg
 
 	if !cfg.Enabled {
@@ -52,8 +54,8 @@ func Initialize(cfg *Config) error {
 		return nil
 	}
 
-	// Initialize SMTP provider
-	smtpProvider, err := NewSMTPProvider(cfg)
+	// Initialize SMTP provider with optional database for template resolution
+	smtpProvider, err := NewSMTPProvider(cfg, db)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to initialize SMTP provider, using no-op")
 		instance = NewNoOpProvider()
@@ -65,6 +67,7 @@ func Initialize(cfg *Config) error {
 		Int("port", cfg.SMTPPort).
 		Str("from", cfg.SMTPFrom).
 		Bool("dev_mode", cfg.DevMode).
+		Bool("db_templates", db != nil).
 		Msg("SMTP email provider initialized")
 
 	instance = smtpProvider

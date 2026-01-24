@@ -447,13 +447,13 @@ func TestUpdateMemberRoleRequest_JSONMarshal(t *testing.T) {
 
 // ============ Helper Functions Tests ============
 
-func TestRespondWithError(t *testing.T) {
+func TestWriteBadRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
-	respondWithError(w, r, http.StatusBadRequest, "Test error")
+	WriteBadRequest(w, r, "Test error")
 
 	if w.Code != http.StatusBadRequest {
-		t.Errorf("respondWithError() status = %v, want %v", w.Code, http.StatusBadRequest)
+		t.Errorf("WriteBadRequest() status = %v, want %v", w.Code, http.StatusBadRequest)
 	}
 
 	var response models.ErrorResponse
@@ -462,16 +462,16 @@ func TestRespondWithError(t *testing.T) {
 	}
 
 	if response.Message != "Test error" {
-		t.Errorf("respondWithError() message = %v, want %v", response.Message, "Test error")
+		t.Errorf("WriteBadRequest() message = %v, want %v", response.Message, "Test error")
 	}
 }
 
-func TestRespondWithSuccess(t *testing.T) {
+func TestWriteSuccess(t *testing.T) {
 	w := httptest.NewRecorder()
-	respondWithSuccess(w, http.StatusOK, map[string]string{"key": "value"})
+	WriteSuccess(w, "Test message", map[string]string{"key": "value"})
 
 	if w.Code != http.StatusOK {
-		t.Errorf("respondWithSuccess() status = %v, want %v", w.Code, http.StatusOK)
+		t.Errorf("WriteSuccess() status = %v, want %v", w.Code, http.StatusOK)
 	}
 
 	var response models.SuccessResponse
@@ -480,7 +480,7 @@ func TestRespondWithSuccess(t *testing.T) {
 	}
 
 	if !response.Success {
-		t.Error("respondWithSuccess() Success = false, want true")
+		t.Error("WriteSuccess() Success = false, want true")
 	}
 }
 

@@ -66,7 +66,7 @@ func TestInitialize_Disabled(t *testing.T) {
 		Enabled: false,
 	}
 
-	err := Initialize(cfg)
+	err := Initialize(cfg, nil)
 	if err != nil {
 		t.Errorf("Initialize() error = %v, want nil", err)
 	}

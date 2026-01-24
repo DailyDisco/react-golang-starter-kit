@@ -478,8 +478,10 @@ func TestCaptureRequestBody_Small(t *testing.T) {
 
 	body := captureRequestBody(req, 1024)
 
-	if body != bodyContent {
-		t.Errorf("captureRequestBody() = %q, want %q", body, bodyContent)
+	// Note: sanitizeRequestBody re-marshals JSON, producing compact format without spaces
+	expectedBody := `{"name":"test"}`
+	if body != expectedBody {
+		t.Errorf("captureRequestBody() = %q, want %q", body, expectedBody)
 	}
 
 	// Body should still be readable

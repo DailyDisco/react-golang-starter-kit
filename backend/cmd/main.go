@@ -254,14 +254,15 @@ func main() {
 	}
 	defer cache.Close()
 
-	// Initialize email service
+	// Initialize email service with database for template resolution
 	emailConfig := email.LoadConfig()
-	if err := email.Initialize(emailConfig); err != nil {
+	if err := email.Initialize(emailConfig, database.DB); err != nil {
 		zerologlog.Warn().Err(err).Msg("email initialization failed, continuing without email")
 	} else if emailConfig.Enabled {
 		zerologlog.Info().
 			Str("host", emailConfig.SMTPHost).
 			Bool("dev_mode", emailConfig.DevMode).
+			Bool("db_templates", database.DB != nil).
 			Msg("email service initialized")
 	}
 	defer email.Close()
@@ -310,8 +311,16 @@ func main() {
 	wsHub := websocket.NewHub()
 	zerologlog.Info().Msg("WebSocket hub initialized")
 
+	// Initialize usage service with WebSocket alerts (created here for graceful shutdown)
+	usageService := services.NewUsageService(database.DB)
+	usageService.SetHub(wsHub)
+	zerologlog.Info().Msg("usage service initialized")
+
 	// Initialize cache broadcaster for real-time cache invalidation via WebSocket
 	cache.InitBroadcaster(&HubBroadcaster{hub: wsHub})
+
+	// Set WebSocket hub for Stripe billing events
+	stripe.SetHub(wsHub)
 
 	// Create Chi router
 	r := chi.NewRouter()
@@ -388,8 +397,12 @@ func main() {
 	// Initialize the service with dependencies
 	appService := handlers.NewService()
 
+	// Initialize settings handlers with database connection
+	handlers.InitSettingsHandlers(database.DB)
+
 	// Health check at root level for Docker health checks
 	r.Get("/health", appService.HealthCheck)
+	r.Get("/health/ready", appService.ReadinessCheck) // Deep health check for deployments
 
 	// Prometheus metrics endpoint (internal, no auth required)
 	r.Handle("/metrics", promhttp.Handler())
@@ -398,7 +411,7 @@ func main() {
 	r.Get("/ws", websocket.Handler(wsHub))
 
 	// Routes
-	setupRoutes(r, rateLimitConfig, stripeConfig, appService, fileService, wsHub)
+	setupRoutes(r, rateLimitConfig, stripeConfig, appService, fileService, wsHub, usageService)
 
 	// Create server with timeouts to prevent slowloris and other DoS attacks
 	server := &http.Server{
@@ -425,6 +438,9 @@ func main() {
 	// Start periodic metrics retention cleanup
 	jobs.StartPeriodicRetention(ctx, retentionConfig)
 
+	// Start periodic export cleanup (hourly)
+	jobs.StartExportCleanup(ctx, database.DB, 1*time.Hour)
+
 	// Graceful shutdown handling
 	go func() {
 		sigChan := make(chan os.Signal, 1)
@@ -440,6 +456,10 @@ func main() {
 		// Stop WebSocket hub first
 		wsHub.Stop()
 		zerologlog.Info().Msg("WebSocket hub stopped")
+
+		// Stop usage service workers
+		usageService.Shutdown()
+		zerologlog.Info().Msg("usage service stopped")
 
 		// Stop job processing
 		if jobs.IsAvailable() {
@@ -464,7 +484,7 @@ func main() {
 	zerologlog.Info().Msg("server stopped gracefully")
 }
 
-func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *stripe.Config, appService *handlers.Service, fileService *services.FileService, wsHub *websocket.Hub) {
+func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *stripe.Config, appService *handlers.Service, fileService *services.FileService, wsHub *websocket.Hub, usageService *services.UsageService) {
 	// Simple test route at root level
 	r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -477,7 +497,7 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *
 	apiRoutes := func(r chi.Router) {
 		// setupAPIRoutes must be called FIRST because it registers middleware with r.Use()
 		// Chi requires all middleware to be defined before any routes
-		setupAPIRoutes(r, rateLimitConfig, stripeConfig, appService, fileService, wsHub)
+		setupAPIRoutes(r, rateLimitConfig, stripeConfig, appService, fileService, wsHub, usageService)
 
 		// These routes come after setupAPIRoutes to ensure middleware is registered first
 		r.Get("/test", func(w http.ResponseWriter, r *http.Request) {
@@ -487,6 +507,7 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *
 			}
 		})
 		r.Get("/health", appService.HealthCheck)
+		r.Get("/health/ready", appService.ReadinessCheck)
 	}
 
 	// Mount API routes
@@ -508,15 +529,14 @@ func setupRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *
 }
 
 // setupAPIRoutes configures all API endpoints
-func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *stripe.Config, appService *handlers.Service, fileService *services.FileService, wsHub *websocket.Hub) {
+func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfig *stripe.Config, appService *handlers.Service, fileService *services.FileService, wsHub *websocket.Hub, usageService *services.UsageService) {
 	// Initialize organization service and handlers
 	orgService := services.NewOrgService(database.DB)
+	orgService.SetHub(wsHub) // Enable WebSocket broadcasts for org/member updates
 	orgHandler := handlers.NewOrgHandler(orgService)
 	tenantMiddleware := auth.NewTenantMiddleware(database.DB)
 
-	// Initialize usage service and handlers
-	usageService := services.NewUsageService(database.DB)
-	usageService.SetHub(wsHub) // Enable WebSocket alerts
+	// Initialize usage handler (service passed from main for graceful shutdown)
 	usageHandler := handlers.NewUsageHandler(usageService)
 
 	// Usage metering middleware (records API calls for authenticated users)
@@ -575,13 +595,11 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 	r.Route("/users", func(r chi.Router) {
 		r.Use(ratelimit.NewAPIRateLimitMiddleware(rateLimitConfig))
 
-		// Public routes
-		r.Get("/", handlers.GetUsers()) // GET /api/users - List all users
-
 		// Admin-only routes - require admin privileges
 		r.Group(func(r chi.Router) {
-			r.Use(auth.AdminMiddleware)        // Requires admin or super_admin role
-			r.Post("/", handlers.CreateUser()) // POST /api/users - Create new user (admin only)
+			r.Use(auth.AdminMiddleware)                                                              // Requires admin or super_admin role
+			r.Get("/", handlers.GetUsers())                                                          // GET /api/users - List all users (admin only)
+			r.With(auth.PermissionMiddleware(auth.PermCreateUsers)).Post("/", handlers.CreateUser()) // POST /api/users - Create new user (super_admin only)
 		})
 
 		// Protected routes - require authentication (must be before /{id} to avoid "me" being matched as ID)
@@ -632,6 +650,9 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 			r.Get("/connected-accounts", handlers.GetConnectedAccounts)            // GET /api/users/me/connected-accounts
 			r.Delete("/connected-accounts/{provider}", handlers.DisconnectAccount) // DELETE /api/users/me/connected-accounts/{provider}
 
+			// User activity feed
+			r.Get("/activity", handlers.GetMyActivity) // GET /api/users/me/activity
+
 			// API keys management
 			r.Get("/api-keys", handlers.GetUserAPIKeys)            // GET /api/users/me/api-keys
 			r.Post("/api-keys", handlers.CreateUserAPIKey)         // POST /api/users/me/api-keys
@@ -673,18 +694,14 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 			r.Post("/", handlers.NewFileHandler(fileService).UploadFile) // POST /api/files/upload
 		})
 
-		// File operations - public access for downloads, authenticated for management
+		// File operations - all require authentication for security
 		r.Route("/{id}", func(r chi.Router) {
+			r.Use(auth.AuthMiddleware)
+			r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
 			r.Get("/download", handlers.NewFileHandler(fileService).DownloadFile) // GET /api/files/{id}/download
 			r.Get("/url", handlers.NewFileHandler(fileService).GetFileURL)        // GET /api/files/{id}/url
 			r.Get("/", handlers.NewFileHandler(fileService).GetFileInfo)          // GET /api/files/{id}
-
-			// Protected operations - require authentication
-			r.Route("/", func(r chi.Router) {
-				r.Use(auth.AuthMiddleware)
-				r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
-				r.Delete("/", handlers.NewFileHandler(fileService).DeleteFile) // DELETE /api/files/{id}
-			})
+			r.Delete("/", handlers.NewFileHandler(fileService).DeleteFile)        // DELETE /api/files/{id}
 		})
 
 		// List files - requires authentication
@@ -726,11 +743,23 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 		r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
 
 		r.Get("/", usageHandler.GetCurrentUsage)        // GET /api/usage - Current period usage
+		r.Post("/record", usageHandler.RecordUsage)     // POST /api/usage/record - Record usage event
 		r.Get("/history", usageHandler.GetUsageHistory) // GET /api/usage/history - Usage history
 
 		// Alerts
 		r.Get("/alerts", usageHandler.GetAlerts)                          // GET /api/usage/alerts
 		r.Post("/alerts/{id}/acknowledge", usageHandler.AcknowledgeAlert) // POST /api/usage/alerts/{id}/acknowledge
+	})
+
+	// Notification center routes
+	r.Route("/notifications", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
+		r.Use(ratelimit.NewUserRateLimitMiddleware(rateLimitConfig))
+
+		r.Get("/", handlers.GetNotifications)                  // GET /api/notifications - List user notifications
+		r.Post("/read-all", handlers.MarkAllNotificationsRead) // POST /api/notifications/read-all - Mark all as read
+		r.Post("/{id}/read", handlers.MarkNotificationRead)    // POST /api/notifications/{id}/read - Mark single as read
+		r.Delete("/{id}", handlers.DeleteNotification)         // DELETE /api/notifications/{id} - Delete notification
 	})
 
 	// AI routes (Gemini) - require authentication with separate rate limit tier
@@ -836,6 +865,9 @@ func setupAPIRoutes(r chi.Router, rateLimitConfig *ratelimit.Config, stripeConfi
 			r.Get("/database", handlers.GetDatabaseHealth) // GET /api/admin/health/database
 			r.Get("/cache", handlers.GetCacheHealth)       // GET /api/admin/health/cache
 		})
+
+		// Admin notification management
+		r.Post("/notifications", handlers.CreateNotification) // POST /api/admin/notifications - Create notification for user
 	})
 
 	// Public changelog

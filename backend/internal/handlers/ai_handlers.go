@@ -1,11 +1,23 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"react-golang-starter/internal/ai"
+)
+
+// AI operation timeouts
+const (
+	aiChatTimeout       = 60 * time.Second // Chat completions
+	aiStreamTimeout     = 5 * time.Minute  // Streaming (longer for token-by-token)
+	aiImageTimeout      = 60 * time.Second // Image analysis
+	aiEmbeddingsTimeout = 30 * time.Second // Embeddings generation
 )
 
 // ChatRequest represents a chat completion request
@@ -62,7 +74,8 @@ func AIChat(w http.ResponseWriter, r *http.Request) {
 		case ai.ErrInvalidRole:
 			WriteBadRequest(w, r, "Invalid message role")
 		default:
-			WriteBadRequest(w, r, err.Error())
+			log.Error().Err(err).Msg("unexpected error validating chat messages")
+			WriteBadRequest(w, r, "Invalid message format")
 		}
 		return
 	}
@@ -78,14 +91,22 @@ func AIChat(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	// Generate response
-	resp, err := ai.GetService().Chat(r.Context(), req.Messages, opts)
+	// Generate response with timeout
+	ctx, cancel := context.WithTimeout(r.Context(), aiChatTimeout)
+	defer cancel()
+
+	resp, err := ai.GetService().Chat(ctx, req.Messages, opts)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			WriteError(w, r, http.StatusGatewayTimeout, "TIMEOUT", "AI request timed out")
+			return
+		}
 		if err == ai.ErrContentBlocked {
 			WriteError(w, r, http.StatusUnprocessableEntity, "CONTENT_BLOCKED", "Content was blocked by safety filters")
 			return
 		}
-		WriteInternalError(w, r, fmt.Sprintf("Failed to generate response: %v", err))
+		log.Error().Err(err).Msg("failed to generate chat response")
+		WriteInternalError(w, r, "Failed to generate response")
 		return
 	}
 
@@ -124,7 +145,8 @@ func AIChatStream(w http.ResponseWriter, r *http.Request) {
 		case ai.ErrInvalidRole:
 			WriteBadRequest(w, r, "Invalid message role")
 		default:
-			WriteBadRequest(w, r, err.Error())
+			log.Error().Err(err).Msg("unexpected error validating chat messages")
+			WriteBadRequest(w, r, "Invalid message format")
 		}
 		return
 	}
@@ -144,7 +166,7 @@ func AIChatStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("X-Accel-Buffering", "no") // Disable nginx buffering
+	w.Header().Set("X-Accel-Buffering", "no") // Disable proxy buffering
 
 	// Get flusher for streaming
 	flusher, ok := w.(http.Flusher)
@@ -153,11 +175,19 @@ func AIChatStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Start streaming
-	chunks, err := ai.GetService().StreamChat(r.Context(), req.Messages, opts)
+	// Start streaming with timeout
+	ctx, cancel := context.WithTimeout(r.Context(), aiStreamTimeout)
+	defer cancel()
+
+	chunks, err := ai.GetService().StreamChat(ctx, req.Messages, opts)
 	if err != nil {
 		// Write error as SSE event
-		fmt.Fprintf(w, "event: error\ndata: %s\n\n", err.Error())
+		if ctx.Err() == context.DeadlineExceeded {
+			fmt.Fprintf(w, "event: error\ndata: AI request timed out\n\n")
+		} else {
+			log.Error().Err(err).Msg("failed to start streaming chat")
+			fmt.Fprintf(w, "event: error\ndata: Failed to generate response\n\n")
+		}
 		flusher.Flush()
 		return
 	}
@@ -165,7 +195,8 @@ func AIChatStream(w http.ResponseWriter, r *http.Request) {
 	// Stream chunks to client
 	for chunk := range chunks {
 		if chunk.Error != nil {
-			fmt.Fprintf(w, "event: error\ndata: %s\n\n", chunk.Error.Error())
+			log.Error().Err(chunk.Error).Msg("error during streaming chat")
+			fmt.Fprintf(w, "event: error\ndata: Stream interrupted\n\n")
 			flusher.Flush()
 			return
 		}
@@ -214,9 +245,16 @@ func AIAnalyzeImage(w http.ResponseWriter, r *http.Request) {
 		req.Image.MimeType = req.MimeType
 	}
 
-	// Analyze image
-	resp, err := ai.GetService().AnalyzeImage(r.Context(), req.Image, req.Prompt)
+	// Analyze image with timeout
+	ctx, cancel := context.WithTimeout(r.Context(), aiImageTimeout)
+	defer cancel()
+
+	resp, err := ai.GetService().AnalyzeImage(ctx, req.Image, req.Prompt)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			WriteError(w, r, http.StatusGatewayTimeout, "TIMEOUT", "Image analysis timed out")
+			return
+		}
 		if err == ai.ErrImageTooLarge {
 			WriteBadRequest(w, r, "Image exceeds maximum allowed size")
 			return
@@ -225,7 +263,8 @@ func AIAnalyzeImage(w http.ResponseWriter, r *http.Request) {
 			WriteBadRequest(w, r, "Invalid image data")
 			return
 		}
-		WriteInternalError(w, r, fmt.Sprintf("Failed to analyze image: %v", err))
+		log.Error().Err(err).Msg("failed to analyze image")
+		WriteInternalError(w, r, "Failed to analyze image")
 		return
 	}
 
@@ -262,15 +301,24 @@ func AIEmbeddings(w http.ResponseWriter, r *http.Request) {
 		case ai.ErrPromptTooLong:
 			WriteBadRequest(w, r, "Text exceeds maximum length")
 		default:
-			WriteBadRequest(w, r, err.Error())
+			log.Error().Err(err).Msg("unexpected error validating embeddings texts")
+			WriteBadRequest(w, r, "Invalid text format")
 		}
 		return
 	}
 
-	// Generate embeddings
-	embeddings, err := ai.GetService().GenerateEmbeddings(r.Context(), req.Texts)
+	// Generate embeddings with timeout
+	ctx, cancel := context.WithTimeout(r.Context(), aiEmbeddingsTimeout)
+	defer cancel()
+
+	embeddings, err := ai.GetService().GenerateEmbeddings(ctx, req.Texts)
 	if err != nil {
-		WriteInternalError(w, r, fmt.Sprintf("Failed to generate embeddings: %v", err))
+		if ctx.Err() == context.DeadlineExceeded {
+			WriteError(w, r, http.StatusGatewayTimeout, "TIMEOUT", "Embeddings generation timed out")
+			return
+		}
+		log.Error().Err(err).Msg("failed to generate embeddings")
+		WriteInternalError(w, r, "Failed to generate embeddings")
 		return
 	}
 
@@ -332,7 +380,8 @@ func AIChatAdvanced(w http.ResponseWriter, r *http.Request) {
 		case ai.ErrInvalidRole:
 			WriteBadRequest(w, r, "Invalid message role")
 		default:
-			WriteBadRequest(w, r, err.Error())
+			log.Error().Err(err).Msg("unexpected error validating advanced chat messages")
+			WriteBadRequest(w, r, "Invalid message format")
 		}
 		return
 	}
@@ -354,9 +403,16 @@ func AIChatAdvanced(w http.ResponseWriter, r *http.Request) {
 		JSONSchema: req.JSONSchema,
 	}
 
-	// Generate response
-	resp, err := ai.GetService().ChatAdvanced(r.Context(), req.Messages, opts)
+	// Generate response with timeout
+	ctx, cancel := context.WithTimeout(r.Context(), aiChatTimeout)
+	defer cancel()
+
+	resp, err := ai.GetService().ChatAdvanced(ctx, req.Messages, opts)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			WriteError(w, r, http.StatusGatewayTimeout, "TIMEOUT", "AI request timed out")
+			return
+		}
 		switch err {
 		case ai.ErrFunctionNotAllowed:
 			WriteError(w, r, http.StatusForbidden, "FUNCTION_CALLING_DISABLED", "Function calling is not enabled")
@@ -365,7 +421,8 @@ func AIChatAdvanced(w http.ResponseWriter, r *http.Request) {
 		case ai.ErrContentBlocked:
 			WriteError(w, r, http.StatusUnprocessableEntity, "CONTENT_BLOCKED", "Content was blocked by safety filters")
 		default:
-			WriteInternalError(w, r, fmt.Sprintf("Failed to generate response: %v", err))
+			log.Error().Err(err).Msg("failed to generate advanced chat response")
+			WriteInternalError(w, r, "Failed to generate response")
 		}
 		return
 	}
