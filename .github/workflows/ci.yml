@@ -302,7 +302,7 @@ jobs:
 
       - name: Upload Go lint SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ${{ env.BACKEND_DIR }}/golangci-results.sarif
           category: golangci-lint
@@ -530,7 +530,7 @@ jobs:
           exit-code: "0"  # Don't fail build, just report
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: "trivy-backend-results.sarif"
