@@ -1,0 +1,24 @@
+# CODEOWNERS - Define code ownership for automatic review requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+* @DailyDisco
+
+# Frontend
+/frontend/ @DailyDisco
+/frontend/app/lib/query-keys.ts @DailyDisco
+/frontend/e2e/ @DailyDisco
+
+# Backend
+/backend/ @DailyDisco
+/backend/internal/auth/ @DailyDisco
+/backend/migrations/ @DailyDisco
+
+# Infrastructure & CI/CD
+/.github/ @DailyDisco
+/docker/ @DailyDisco
+Makefile @DailyDisco
+docker-compose*.yml @DailyDisco
+
+# Configuration files
+.env.example @DailyDisco
