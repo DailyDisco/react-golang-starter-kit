@@ -1,4 +1,6 @@
 import { apiClient } from "../api/client";
+// Feature Flags (User-facing)
+import type { UserFeatureFlagsResponse } from "../feature-flags/types";
 import type { User } from "../types";
 
 // Admin Stats
@@ -179,10 +181,9 @@ export const AdminService = {
   },
 };
 
-// Feature Flags (User-facing)
 export const FeatureFlagService = {
-  async getFlags(): Promise<Record<string, boolean>> {
-    return apiClient.get<Record<string, boolean>>("/feature-flags");
+  async getFlags(): Promise<UserFeatureFlagsResponse> {
+    return apiClient.get<UserFeatureFlagsResponse>("/feature-flags");
   },
 };
 

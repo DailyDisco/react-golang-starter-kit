@@ -22,6 +22,7 @@ export {
   useDeleteAPIKey,
   useDeleteAvatar,
   useDisable2FA,
+  useRequestDataExport,
   useRevokeAllSessions,
   useRevokeSession,
   useSetup2FA,

@@ -6,20 +6,68 @@ import { logger } from "../../lib/logger";
 export class ApiError extends Error {
   code: string;
   statusCode: number;
+  requestId?: string;
+  /** Retry-After value in seconds (from 429 responses) */
+  retryAfter?: number;
 
-  constructor(message: string, code: string, statusCode: number) {
+  constructor(message: string, code: string, statusCode: number, requestId?: string, retryAfter?: number) {
     super(message);
     this.name = "ApiError";
     this.code = code;
     this.statusCode = statusCode;
+    this.requestId = requestId;
+    this.retryAfter = retryAfter;
   }
 }
 
+/**
+ * Custom error for request timeouts
+ */
+export class TimeoutError extends Error {
+  constructor(message: string = "Request timed out") {
+    super(message);
+    this.name = "TimeoutError";
+  }
+}
+
+// Request timeout configuration (in milliseconds)
+const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
+const UPLOAD_TIMEOUT_MS = 120000; // 2 minutes for file uploads
+
+/**
+ * Fetch with timeout support using AbortController
+ * Automatically aborts requests that exceed the timeout duration
+ */
+const fetchWithTimeout = async (url: string, options: RequestInit & { timeout?: number } = {}): Promise<Response> => {
+  const { timeout = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+    return response;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new TimeoutError(
+        `Request to ${new URL(url, window?.location?.origin || "http://localhost").pathname} timed out after ${timeout}ms`
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
 // Create API_BASE_URL safely for SSR and remote development
 const getApiBaseUrl = () => {
-  // In SSR, use absolute URL for server-side API calls
+  // In SSR, use environment variable for server-side API calls
+  // SSR_API_URL allows internal Docker network routing (e.g., http://backend:8080)
   if (typeof window === "undefined") {
-    return "http://localhost:8080";
+    return process.env.SSR_API_URL || process.env.VITE_API_URL || "http://localhost:8080";
   }
   // In browser, use empty string for relative URLs (goes through Vite proxy)
   // This enables remote development where localhost:8080 isn't accessible
@@ -100,29 +148,74 @@ let refreshPromise: Promise<boolean> | null = null;
 type QueuedRequest = { resolve: (response: Response) => void; retry: () => Promise<Response> };
 const failedRequestsQueue: QueuedRequest[] = [];
 
-// Circuit breaker to prevent infinite 401 retry cascades
-let consecutive401Failures = 0;
+// Circuit breaker configuration
 const MAX_CONSECUTIVE_401_FAILURES = 3;
 const CIRCUIT_BREAKER_RESET_MS = 10000; // 10 seconds
-let circuitBreakerResetTimeout: ReturnType<typeof setTimeout> | null = null;
+const CIRCUIT_BREAKER_KEY = "auth_circuit_breaker";
+
+/**
+ * Circuit breaker state stored in sessionStorage for tab isolation
+ * Each browser tab maintains its own circuit breaker state
+ */
+interface CircuitBreakerState {
+  failures: number;
+  resetAt: number | null;
+}
+
+const getCircuitBreakerState = (): CircuitBreakerState => {
+  if (typeof window === "undefined") {
+    return { failures: 0, resetAt: null };
+  }
+  try {
+    const stored = sessionStorage.getItem(CIRCUIT_BREAKER_KEY);
+    if (stored) {
+      const state = JSON.parse(stored) as CircuitBreakerState;
+      // Check if reset time has passed
+      if (state.resetAt && Date.now() >= state.resetAt) {
+        // Auto-reset expired circuit breaker
+        sessionStorage.removeItem(CIRCUIT_BREAKER_KEY);
+        return { failures: 0, resetAt: null };
+      }
+      return state;
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return { failures: 0, resetAt: null };
+};
+
+const setCircuitBreakerState = (state: CircuitBreakerState): void => {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(CIRCUIT_BREAKER_KEY, JSON.stringify(state));
+};
 
 /**
  * Reset the 401 circuit breaker counter
  * Called when authentication succeeds
  */
 export const resetAuthCircuitBreaker = (): void => {
-  consecutive401Failures = 0;
-  if (circuitBreakerResetTimeout) {
-    clearTimeout(circuitBreakerResetTimeout);
-    circuitBreakerResetTimeout = null;
-  }
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(CIRCUIT_BREAKER_KEY);
+};
+
+/**
+ * Increment circuit breaker failure count
+ */
+const incrementCircuitBreaker = (): void => {
+  const state = getCircuitBreakerState();
+  const newState: CircuitBreakerState = {
+    failures: state.failures + 1,
+    resetAt: Date.now() + CIRCUIT_BREAKER_RESET_MS,
+  };
+  setCircuitBreakerState(newState);
 };
 
 /**
  * Check if the circuit breaker is tripped
  */
 const isCircuitBreakerOpen = (): boolean => {
-  return consecutive401Failures >= MAX_CONSECUTIVE_401_FAILURES;
+  const state = getCircuitBreakerState();
+  return state.failures >= MAX_CONSECUTIVE_401_FAILURES;
 };
 
 // Grace period after login/registration to allow cookies to propagate
@@ -179,17 +272,22 @@ const getAuthService = async () => {
 };
 
 // Enhanced fetch with auth (uses httpOnly cookies via credentials: "include")
-// Includes automatic retry on CSRF token errors and 401 token refresh
-export const authenticatedFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+// Includes automatic retry on CSRF token errors, 401 token refresh, and request timeouts
+export const authenticatedFetch = async (
+  url: string,
+  options: RequestInit & { timeout?: number } = {}
+): Promise<Response> => {
   const needsCSRF = isStateChangingMethod(options.method);
   let headers = createHeaders(needsCSRF);
+  const { timeout, ...fetchOptions } = options;
 
-  const response = await fetch(url, {
-    ...options,
+  const response = await fetchWithTimeout(url, {
+    ...fetchOptions,
+    timeout,
     credentials: "include", // Include httpOnly cookies for authentication
     headers: {
       ...headers,
-      ...options.headers,
+      ...fetchOptions.headers,
     },
   });
 
@@ -202,12 +300,13 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
         // Refresh CSRF token and retry
         await initCSRFToken();
         headers = createHeaders(true);
-        return fetch(url, {
-          ...options,
+        return fetchWithTimeout(url, {
+          ...fetchOptions,
+          timeout,
           credentials: "include",
           headers: {
             ...headers,
-            ...options.headers,
+            ...fetchOptions.headers,
           },
         });
       }
@@ -235,12 +334,13 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
     // Create a retry function for this request
     const retryRequest = async (): Promise<Response> => {
       const retryHeaders = createHeaders(needsCSRF);
-      return fetch(url, {
-        ...options,
+      return fetchWithTimeout(url, {
+        ...fetchOptions,
+        timeout,
         credentials: "include",
         headers: {
           ...retryHeaders,
-          ...options.headers,
+          ...fetchOptions.headers,
         },
       });
     };
@@ -292,14 +392,7 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
               }
             } else {
               // Increment circuit breaker counter on refresh failure
-              consecutive401Failures++;
-              // Schedule automatic reset after cooldown period
-              if (!circuitBreakerResetTimeout) {
-                circuitBreakerResetTimeout = setTimeout(() => {
-                  consecutive401Failures = 0;
-                  circuitBreakerResetTimeout = null;
-                }, CIRCUIT_BREAKER_RESET_MS);
-              }
+              incrementCircuitBreaker();
               // Refresh failed - dispatch session-expired and reject all queued requests
               if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
                 window.dispatchEvent(new CustomEvent("session-expired"));
@@ -312,13 +405,7 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
           } catch (refreshError) {
             logger.warn("Token refresh failed during 401 recovery", { error: refreshError });
             // Increment circuit breaker counter on refresh exception
-            consecutive401Failures++;
-            if (!circuitBreakerResetTimeout) {
-              circuitBreakerResetTimeout = setTimeout(() => {
-                consecutive401Failures = 0;
-                circuitBreakerResetTimeout = null;
-              }, CIRCUIT_BREAKER_RESET_MS);
-            }
+            incrementCircuitBreaker();
             // Dispatch session-expired event
             if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
               window.dispatchEvent(new CustomEvent("session-expired"));
@@ -349,17 +436,19 @@ export const authenticatedFetch = async (url: string, options: RequestInit = {})
 };
 
 // Simple fetch for auth endpoints (login/register) - includes credentials for cookie handling
-// Includes automatic retry on CSRF token errors
-export const apiFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+// Includes automatic retry on CSRF token errors and request timeouts
+export const apiFetch = async (url: string, options: RequestInit & { timeout?: number } = {}): Promise<Response> => {
   const needsCSRF = isStateChangingMethod(options.method);
   let headers = createHeaders(needsCSRF);
+  const { timeout, ...fetchOptions } = options;
 
-  const response = await fetch(url, {
-    ...options,
+  const response = await fetchWithTimeout(url, {
+    ...fetchOptions,
+    timeout,
     credentials: "include", // Include httpOnly cookies
     headers: {
       ...headers,
-      ...options.headers,
+      ...fetchOptions.headers,
     },
   });
 
@@ -372,12 +461,13 @@ export const apiFetch = async (url: string, options: RequestInit = {}): Promise<
         // Refresh CSRF token and retry
         await initCSRFToken();
         headers = createHeaders(true);
-        return fetch(url, {
-          ...options,
+        return fetchWithTimeout(url, {
+          ...fetchOptions,
+          timeout,
           credentials: "include",
           headers: {
             ...headers,
-            ...options.headers,
+            ...fetchOptions.headers,
           },
         });
       }
@@ -409,6 +499,19 @@ export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
  * Safely parse error response from server and return ApiError
  */
 export const parseErrorResponse = async (response: Response, defaultMessage: string): Promise<ApiError> => {
+  // Extract Retry-After header for rate limit errors
+  let retryAfter: number | undefined;
+  if (response.status === 429) {
+    const retryAfterHeader = response.headers.get("Retry-After");
+    if (retryAfterHeader) {
+      // Retry-After can be seconds or HTTP-date; we only handle seconds
+      const parsed = parseInt(retryAfterHeader, 10);
+      if (!isNaN(parsed)) {
+        retryAfter = parsed;
+      }
+    }
+  }
+
   try {
     // Get response as text first, then try to parse as JSON
     const responseText = await response.text();
@@ -418,16 +521,22 @@ export const parseErrorResponse = async (response: Response, defaultMessage: str
       const errorData = JSON.parse(responseText) as ApiErrorResponse;
       const message = errorData.message || errorData.error || defaultMessage;
       const code = errorData.error || "UNKNOWN_ERROR";
-      return new ApiError(message, code, response.status);
+      return new ApiError(message, code, response.status, errorData.request_id, retryAfter);
     } else {
       // Not JSON, use the text directly
       const message = responseText || `${defaultMessage} with status ${response.status}`;
-      return new ApiError(message, "UNKNOWN_ERROR", response.status);
+      return new ApiError(message, "UNKNOWN_ERROR", response.status, undefined, retryAfter);
     }
   } catch (parseError) {
     // If anything fails, use a generic error message
     logger.error("Failed to parse error response", parseError);
-    return new ApiError(`${defaultMessage} with status ${response.status}`, "UNKNOWN_ERROR", response.status);
+    return new ApiError(
+      `${defaultMessage} with status ${response.status}`,
+      "UNKNOWN_ERROR",
+      response.status,
+      undefined,
+      retryAfter
+    );
   }
 };
 

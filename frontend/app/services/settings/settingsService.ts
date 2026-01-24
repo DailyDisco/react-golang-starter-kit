@@ -88,10 +88,12 @@ export interface AccountDeletionRequest {
 // Data Export Types
 export interface DataExportStatus {
   id: number;
-  status: "pending" | "processing" | "completed" | "failed";
+  status: "pending" | "processing" | "completed" | "failed" | "expired";
   download_url?: string;
   expires_at?: string;
   created_at: string;
+  file_size?: number;
+  error_message?: string;
 }
 
 // Connected Account Types

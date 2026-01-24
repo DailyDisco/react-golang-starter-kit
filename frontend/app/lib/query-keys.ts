@@ -1,3 +1,5 @@
+import type { AuditLogFilter } from "../services/admin/adminService";
+
 // Query Keys Factory for Type-Safe Query Management
 export const queryKeys = {
   // User management
@@ -64,6 +66,8 @@ export const queryKeys = {
   // Organizations
   organizations: {
     all: ["organizations"] as const,
+    list: () => [...queryKeys.organizations.all, "list"] as const,
+    detail: (orgSlug: string) => [...queryKeys.organizations.all, orgSlug, "detail"] as const,
     members: (orgSlug: string) => [...queryKeys.organizations.all, orgSlug, "members"] as const,
     invitations: (orgSlug: string) => [...queryKeys.organizations.all, orgSlug, "invitations"] as const,
     billing: (orgSlug: string) => [...queryKeys.organizations.all, orgSlug, "billing"] as const,
@@ -75,6 +79,20 @@ export const queryKeys = {
     current: () => [...queryKeys.usage.all, "current"] as const,
     history: (months?: number) => [...queryKeys.usage.all, "history", { months }] as const,
     alerts: () => [...queryKeys.usage.all, "alerts"] as const,
+  },
+
+  // Audit logs & activity
+  auditLogs: {
+    all: ["auditLogs"] as const,
+    admin: (filter: AuditLogFilter) => [...queryKeys.auditLogs.all, "admin", filter] as const,
+    myActivity: (limit?: number) => [...queryKeys.auditLogs.all, "my-activity", { limit }] as const,
+  },
+
+  // Notifications
+  notifications: {
+    all: ["notifications"] as const,
+    list: (params?: { page?: number; unread?: boolean }) => [...queryKeys.notifications.all, "list", params] as const,
+    unreadCount: () => [...queryKeys.notifications.all, "unread-count"] as const,
   },
 } as const;
 

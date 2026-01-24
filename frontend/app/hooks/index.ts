@@ -52,4 +52,4 @@ export { useAuth } from "./auth/useAuth";
 export { useIsMobile } from "./use-mobile";
 export { useLanguageSync } from "./useLanguageSync";
 export { useOnlineStatus } from "./useOnlineStatus";
-export { useWebSocket } from "./useWebSocket";
+export { useWebSocket } from "./websocket";

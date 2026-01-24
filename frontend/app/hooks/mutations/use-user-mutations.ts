@@ -2,101 +2,195 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { logger } from "../../lib/logger";
+import { showMutationError, showMutationSuccess } from "../../lib/mutation-toast";
 import { queryKeys } from "../../lib/query-keys";
 import { UserService, type User } from "../../services";
 import { useUserStore } from "../../stores/user-store";
+
+// Temporary ID prefix for optimistic items
+const TEMP_ID_PREFIX = "temp_";
+
+interface OptimisticUser extends User {
+  _optimistic?: boolean;
+}
 
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
   const resetForm = useUserStore((state) => state.resetForm);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: ({ name, email, password }: { name: string; email: string; password?: string }) =>
       UserService.createUser(name, email, password),
-    onSuccess: (newUser) => {
-      queryClient.setQueryData(queryKeys.users.lists(), (old: User[] | undefined) =>
-        old ? [...old, newUser] : [newUser]
+
+    // Optimistic add with temporary ID
+    onMutate: async (variables) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.users.lists() });
+
+      // Snapshot previous value
+      const previousUsers = queryClient.getQueryData<OptimisticUser[]>(queryKeys.users.lists());
+
+      // Create optimistic user
+      const optimisticUser: OptimisticUser = {
+        id: Date.now(), // Temporary ID
+        name: variables.name,
+        email: variables.email,
+        email_verified: false,
+        is_active: true,
+        role: "user",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        _optimistic: true,
+      };
+
+      // Add optimistic user to cache
+      queryClient.setQueryData<OptimisticUser[]>(queryKeys.users.lists(), (old) =>
+        old ? [...old, optimisticUser] : [optimisticUser]
       );
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
-      resetForm();
-      toast.success("User created successfully");
+
+      return { previousUsers, optimisticUser };
     },
-    onError: (error: Error) => {
+
+    onSuccess: (newUser, _, context) => {
+      // Replace optimistic user with real user
+      queryClient.setQueryData<OptimisticUser[]>(
+        queryKeys.users.lists(),
+        (old) => old?.map((user) => (user._optimistic ? newUser : user)) ?? [newUser]
+      );
+      resetForm();
+      showMutationSuccess({ message: "User created successfully" });
+    },
+
+    onError: (error: Error, variables, context) => {
       logger.error("User creation error", error);
 
-      // Provide more specific error messages based on common backend responses
-      if (error.message.includes("password must contain at least one uppercase")) {
-        toast.error("Password validation failed", {
-          description: "Password must contain at least one uppercase letter (A-Z)",
-        });
-      } else if (error.message.includes("password must be at least 8")) {
-        toast.error("Password too short", {
-          description: "Password must be at least 8 characters long",
-        });
-      } else if (error.message.includes("Bad Request")) {
-        toast.error("Invalid request", {
-          description: "Please check your input and try again",
-        });
-      } else if (error.message.includes("Conflict") || error.message.includes("already exists")) {
-        toast.error("User already exists", {
-          description: "A user with this email already exists",
-        });
-      } else {
-        toast.error("Failed to create user", {
-          description: error.message || "An unexpected error occurred",
-        });
+      // Rollback optimistic update
+      if (context?.previousUsers) {
+        queryClient.setQueryData(queryKeys.users.lists(), context.previousUsers);
       }
+
+      showMutationError({
+        error,
+        onRetry: () => mutation.mutate(variables),
+      });
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
     },
   });
+
+  return mutation;
 };
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (user: User) => UserService.updateUser(user),
+
     onMutate: async (updatedUser) => {
+      // Cancel outgoing refetches
       await queryClient.cancelQueries({
         queryKey: queryKeys.users.detail(updatedUser.id),
       });
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.users.lists(),
+      });
 
-      const previousUser = queryClient.getQueryData(queryKeys.users.detail(updatedUser.id));
+      // Snapshot previous values
+      const previousUser = queryClient.getQueryData<User>(queryKeys.users.detail(updatedUser.id));
+      const previousUsers = queryClient.getQueryData<User[]>(queryKeys.users.lists());
 
+      // Optimistically update both caches
       queryClient.setQueryData(queryKeys.users.detail(updatedUser.id), updatedUser);
+      queryClient.setQueryData<User[]>(queryKeys.users.lists(), (old) =>
+        old?.map((user) => (user.id === updatedUser.id ? updatedUser : user))
+      );
 
-      return { previousUser, updatedUser };
+      return { previousUser, previousUsers, updatedUser };
     },
-    onError: (err, updatedUser, context) => {
+
+    onError: (error: Error, updatedUser, context) => {
+      logger.error("User update error", error);
+
+      // Rollback optimistic updates
       if (context?.previousUser) {
         queryClient.setQueryData(queryKeys.users.detail(updatedUser.id), context.previousUser);
       }
-      toast.error("Failed to update user");
+      if (context?.previousUsers) {
+        queryClient.setQueryData(queryKeys.users.lists(), context.previousUsers);
+      }
+
+      showMutationError({
+        error,
+        onRetry: () => mutation.mutate(updatedUser),
+      });
     },
+
     onSuccess: (updatedUser) => {
-      queryClient.setQueryData(queryKeys.users.lists(), (old: User[] | undefined) =>
+      // Update caches with server response
+      queryClient.setQueryData(queryKeys.users.detail(updatedUser.id), updatedUser);
+      queryClient.setQueryData<User[]>(queryKeys.users.lists(), (old) =>
         old?.map((user) => (user.id === updatedUser.id ? updatedUser : user))
       );
-      toast.success("User updated successfully");
+      showMutationSuccess({ message: "User updated successfully" });
+    },
+
+    onSettled: (_, __, updatedUser) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(updatedUser.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
     },
   });
+
+  return mutation;
 };
 
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (id: number) => UserService.deleteUser(id),
+
+    // Optimistic delete
+    onMutate: async (deletedId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.users.lists() });
+
+      // Snapshot previous value
+      const previousUsers = queryClient.getQueryData<User[]>(queryKeys.users.lists());
+
+      // Optimistically remove from cache
+      queryClient.setQueryData<User[]>(queryKeys.users.lists(), (old) => old?.filter((user) => user.id !== deletedId));
+
+      return { previousUsers, deletedId };
+    },
+
     onSuccess: (_, deletedId) => {
-      queryClient.setQueryData(queryKeys.users.lists(), (old: User[] | undefined) =>
-        old?.filter((user) => user.id !== deletedId)
-      );
       queryClient.removeQueries({
         queryKey: queryKeys.users.detail(deletedId),
       });
-      toast.success("User deleted successfully");
+      showMutationSuccess({ message: "User deleted successfully" });
     },
-    onError: () => {
-      toast.error("Failed to delete user");
+
+    onError: (error: Error, deletedId, context) => {
+      logger.error("User deletion error", error);
+
+      // Rollback optimistic update
+      if (context?.previousUsers) {
+        queryClient.setQueryData(queryKeys.users.lists(), context.previousUsers);
+      }
+
+      showMutationError({
+        error,
+        onRetry: () => mutation.mutate(deletedId),
+      });
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
     },
   });
+
+  return mutation;
 };

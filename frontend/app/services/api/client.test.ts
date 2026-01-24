@@ -280,15 +280,15 @@ describe("API Client", () => {
       const mockResponse = {
         ok: false,
         status: 400,
-        json: async () => ({
-          error: "Bad Request",
-          message: "Invalid data",
-        }),
+        text: async () =>
+          JSON.stringify({
+            error: "Bad Request",
+            message: "Invalid data",
+          }),
       } as Response;
 
-      // Note: The current implementation catches the thrown error in the outer try-catch
-      // and re-throws with "Invalid response format from server"
-      await expect(parseApiResponse(mockResponse)).rejects.toThrow("Invalid response format from server");
+      // parseErrorResponse extracts the message from the JSON error response
+      await expect(parseApiResponse(mockResponse)).rejects.toThrow("Invalid data");
     });
 
     it("should handle response without success wrapper", async () => {
@@ -363,7 +363,8 @@ describe("API Client", () => {
     it("should throw on network timeout", async () => {
       mockFetch.mockRejectedValueOnce(new DOMException("The operation was aborted", "AbortError"));
 
-      await expect(authenticatedFetch("/api/test")).rejects.toThrow("The operation was aborted");
+      // AbortError is now converted to a TimeoutError with descriptive message
+      await expect(authenticatedFetch("/api/test")).rejects.toThrow("timed out");
     });
   });
 
@@ -447,25 +448,31 @@ describe("API Client", () => {
       const mockResponse = {
         ok: false,
         status: 403,
-        json: async () => ({
-          error: "FORBIDDEN",
-          message: "You do not have permission to access this resource",
-        }),
+        text: async () =>
+          JSON.stringify({
+            error: "FORBIDDEN",
+            message: "You do not have permission to access this resource",
+          }),
       } as Response;
 
-      await expect(parseApiResponse(mockResponse)).rejects.toThrow("Invalid response format from server");
+      // parseErrorResponse extracts the message from the JSON error response
+      await expect(parseApiResponse(mockResponse)).rejects.toThrow(
+        "You do not have permission to access this resource"
+      );
     });
 
     it("should handle response with error field only", async () => {
       const mockResponse = {
         ok: false,
         status: 400,
-        json: async () => ({
-          error: "VALIDATION_ERROR",
-        }),
+        text: async () =>
+          JSON.stringify({
+            error: "VALIDATION_ERROR",
+          }),
       } as Response;
 
-      await expect(parseApiResponse(mockResponse)).rejects.toThrow("Invalid response format from server");
+      // When only error field is present (no message), parseErrorResponse uses error as the message
+      await expect(parseApiResponse(mockResponse)).rejects.toThrow("VALIDATION_ERROR");
     });
   });
 

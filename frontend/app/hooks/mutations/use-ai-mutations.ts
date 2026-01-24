@@ -9,7 +9,60 @@ import {
   type ChatMessage,
   type ChatOptions,
 } from "../../services/ai/aiService";
+import { ApiError } from "../../services/api/client";
 import { useAuthStore } from "../../stores/auth-store";
+
+// Helper to get error code from ApiError or fallback to checking message
+function getErrorCode(error: Error): string {
+  if (error instanceof ApiError) {
+    return error.code;
+  }
+  return "UNKNOWN_ERROR";
+}
+
+// Common error messages used across AI mutations
+const COMMON_AI_ERRORS: Record<string, { title: string; description: string }> = {
+  SERVICE_UNAVAILABLE: {
+    title: "AI service unavailable",
+    description: "Please configure your Gemini API key in settings",
+  },
+  RATE_LIMITED: {
+    title: "Rate limit exceeded",
+    description: "Please wait a moment before trying again",
+  },
+  TIMEOUT: {
+    title: "Request timed out",
+    description: "The AI service took too long to respond",
+  },
+};
+
+interface AIErrorConfig {
+  logContext: string;
+  defaultTitle: string;
+  customErrors?: Record<string, { title: string; description: string }>;
+}
+
+/**
+ * Creates an error handler for AI mutations with common error handling logic.
+ */
+function createAIErrorHandler(config: AIErrorConfig) {
+  const { logContext, defaultTitle, customErrors = {} } = config;
+  const errorMap = { ...COMMON_AI_ERRORS, ...customErrors };
+
+  return (error: Error) => {
+    logger.error(logContext, error);
+    const code = getErrorCode(error);
+    const errorInfo = errorMap[code];
+
+    if (errorInfo) {
+      toast.error(errorInfo.title, { description: errorInfo.description });
+    } else {
+      toast.error(defaultTitle, {
+        description: error.message || "An unexpected error occurred",
+      });
+    }
+  };
+}
 
 export function useAIChat() {
   const { isAuthenticated } = useAuthStore();
@@ -21,27 +74,16 @@ export function useAIChat() {
       }
       return AIService.chat(messages, options);
     },
-    onError: (error: Error) => {
-      logger.error("AI chat error", error);
-
-      if (error.message.includes("not available")) {
-        toast.error("AI service unavailable", {
-          description: "Please configure your Gemini API key in settings",
-        });
-      } else if (error.message.includes("rate limit") || error.message.includes("429")) {
-        toast.error("Rate limit exceeded", {
-          description: "Please wait a moment before trying again",
-        });
-      } else if (error.message.includes("blocked")) {
-        toast.error("Content blocked", {
+    onError: createAIErrorHandler({
+      logContext: "AI chat error",
+      defaultTitle: "AI request failed",
+      customErrors: {
+        CONTENT_BLOCKED: {
+          title: "Content blocked",
           description: "Your message was blocked by safety filters",
-        });
-      } else {
-        toast.error("AI request failed", {
-          description: error.message || "An unexpected error occurred",
-        });
-      }
-    },
+        },
+      },
+    }),
   });
 }
 
@@ -55,23 +97,20 @@ export function useAIChatAdvanced() {
       }
       return AIService.chatAdvanced(messages, options);
     },
-    onError: (error: Error) => {
-      logger.error("AI advanced chat error", error);
-
-      if (error.message.includes("FUNCTION_CALLING_DISABLED")) {
-        toast.error("Function calling disabled", {
+    onError: createAIErrorHandler({
+      logContext: "AI advanced chat error",
+      defaultTitle: "AI request failed",
+      customErrors: {
+        FUNCTION_CALLING_DISABLED: {
+          title: "Function calling disabled",
           description: "This feature is not enabled on the server",
-        });
-      } else if (error.message.includes("JSON_MODE_DISABLED")) {
-        toast.error("JSON mode disabled", {
+        },
+        JSON_MODE_DISABLED: {
+          title: "JSON mode disabled",
           description: "This feature is not enabled on the server",
-        });
-      } else {
-        toast.error("AI request failed", {
-          description: error.message || "An unexpected error occurred",
-        });
-      }
-    },
+        },
+      },
+    }),
   });
 }
 
@@ -85,23 +124,20 @@ export function useAIAnalyzeImage() {
       }
       return AIService.analyzeImage(request);
     },
-    onError: (error: Error) => {
-      logger.error("AI image analysis error", error);
-
-      if (error.message.includes("too large")) {
-        toast.error("Image too large", {
+    onError: createAIErrorHandler({
+      logContext: "AI image analysis error",
+      defaultTitle: "Image analysis failed",
+      customErrors: {
+        IMAGE_TOO_LARGE: {
+          title: "Image too large",
           description: "Please select a smaller image (max 10MB)",
-        });
-      } else if (error.message.includes("invalid image")) {
-        toast.error("Invalid image", {
+        },
+        INVALID_IMAGE: {
+          title: "Invalid image",
           description: "Please select a valid image file",
-        });
-      } else {
-        toast.error("Image analysis failed", {
-          description: error.message || "An unexpected error occurred",
-        });
-      }
-    },
+        },
+      },
+    }),
   });
 }
 
@@ -115,18 +151,15 @@ export function useAIEmbeddings() {
       }
       return AIService.generateEmbeddings(texts);
     },
-    onError: (error: Error) => {
-      logger.error("AI embeddings error", error);
-
-      if (error.message.includes("too many texts")) {
-        toast.error("Too many texts", {
+    onError: createAIErrorHandler({
+      logContext: "AI embeddings error",
+      defaultTitle: "Embedding generation failed",
+      customErrors: {
+        TOO_MANY_TEXTS: {
+          title: "Too many texts",
           description: "Please reduce the number of texts (max 100)",
-        });
-      } else {
-        toast.error("Embedding generation failed", {
-          description: error.message || "An unexpected error occurred",
-        });
-      }
-    },
+        },
+      },
+    }),
   });
 }

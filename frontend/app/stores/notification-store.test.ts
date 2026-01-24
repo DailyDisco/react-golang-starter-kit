@@ -45,7 +45,8 @@ describe("useNotificationStore", () => {
       expect(state.notifications[0].type).toBe("info");
       expect(state.notifications[0].read).toBe(false);
       expect(state.notifications[0].id).toBeDefined();
-      expect(state.notifications[0].timestamp).toBeInstanceOf(Date);
+      expect(typeof state.notifications[0].timestamp).toBe("string");
+      expect(new Date(state.notifications[0].timestamp).toISOString()).toBe(state.notifications[0].timestamp);
     });
 
     it("increments unreadCount when adding notification", () => {
@@ -92,9 +93,9 @@ describe("useNotificationStore", () => {
       expect(notifications[1].title).toBe("First");
     });
 
-    it("limits notifications to 100 maximum", () => {
-      // Add 105 notifications
-      for (let i = 0; i < 105; i++) {
+    it("limits notifications to 50 maximum", () => {
+      // Add 55 notifications
+      for (let i = 0; i < 55; i++) {
         act(() => {
           useNotificationStore.getState().addNotification({
             title: `Notification ${i}`,
@@ -104,7 +105,7 @@ describe("useNotificationStore", () => {
         });
       }
 
-      expect(useNotificationStore.getState().notifications).toHaveLength(100);
+      expect(useNotificationStore.getState().notifications).toHaveLength(50);
     });
 
     it("supports different notification types", () => {

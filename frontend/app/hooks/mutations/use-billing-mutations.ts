@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 import { logger } from "../../lib/logger";
+import { showMutationError, showMutationSuccess } from "../../lib/mutation-toast";
+import { queryKeys } from "../../lib/query-keys";
 import { BillingService } from "../../services/billing/billingService";
 import { useAuthStore } from "../../stores/auth-store";
 
@@ -20,9 +21,7 @@ export function useCreateCheckout() {
     },
     onError: (error: Error) => {
       logger.error("Checkout creation error", error);
-      toast.error("Failed to start checkout", {
-        description: error.message || "Please try again later",
-      });
+      showMutationError({ error, context: "Failed to start checkout" });
     },
   });
 }
@@ -42,9 +41,7 @@ export function useCreatePortalSession() {
     },
     onError: (error: Error) => {
       logger.error("Portal session creation error", error);
-      toast.error("Failed to open billing portal", {
-        description: error.message || "Please try again later",
-      });
+      showMutationError({ error, context: "Failed to open billing portal" });
     },
   });
 }
@@ -57,11 +54,11 @@ export function useRefreshSubscription() {
 
   return useMutation({
     mutationFn: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["billing", "subscription"] });
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.billing.subscription() });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
     },
     onSuccess: () => {
-      toast.success("Subscription updated!");
+      showMutationSuccess({ message: "Subscription updated" });
     },
   });
 }
