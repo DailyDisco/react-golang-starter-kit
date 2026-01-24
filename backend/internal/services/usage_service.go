@@ -15,13 +15,50 @@ import (
 
 // UsageService handles usage metering operations
 type UsageService struct {
-	db  *gorm.DB
-	hub *websocket.Hub
+	db         *gorm.DB
+	hub        *websocket.Hub
+	workQueue  chan *models.UsageEvent
+	workerDone chan struct{}
 }
 
-// NewUsageService creates a new usage service
+const (
+	// maxQueueSize limits buffered usage events to prevent unbounded memory growth
+	maxQueueSize = 1000
+	// numWorkers is the number of concurrent workers processing usage events
+	numWorkers = 3
+)
+
+// NewUsageService creates a new usage service with bounded worker pool
 func NewUsageService(db *gorm.DB) *UsageService {
-	return &UsageService{db: db}
+	s := &UsageService{
+		db:         db,
+		workQueue:  make(chan *models.UsageEvent, maxQueueSize),
+		workerDone: make(chan struct{}),
+	}
+
+	// Start worker pool for async usage processing
+	for i := 0; i < numWorkers; i++ {
+		go s.worker(i)
+	}
+
+	return s
+}
+
+// worker processes usage events from the work queue
+func (s *UsageService) worker(id int) {
+	log.Debug().Int("worker_id", id).Msg("usage worker started")
+	for event := range s.workQueue {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		s.updatePeriodTotals(ctx, event)
+		cancel()
+	}
+	log.Debug().Int("worker_id", id).Msg("usage worker stopped")
+}
+
+// Shutdown gracefully stops the worker pool
+func (s *UsageService) Shutdown() {
+	log.Info().Msg("shutting down usage service workers")
+	close(s.workQueue)
 }
 
 // SetHub sets the WebSocket hub for broadcasting alerts
@@ -30,15 +67,23 @@ func (s *UsageService) SetHub(hub *websocket.Hub) {
 }
 
 // broadcastUsageAlert sends a usage alert to the user via WebSocket
-func (s *UsageService) broadcastUsageAlert(userID uint, alertType, usageType string, current, limit int64, percentage int) {
+func (s *UsageService) broadcastUsageAlert(userID uint, alertType, usageType string, current, limit int64, percentage int, limits models.UsageLimits) {
 	if s.hub == nil {
 		return
 	}
 
+	// Determine current plan and upgrade eligibility based on limits
+	currentPlan := determinePlanFromLimits(limits)
+	canUpgrade, suggestedPlan := getUpgradeSuggestion(currentPlan)
+
 	var message string
 	switch alertType {
 	case "exceeded":
-		message = fmt.Sprintf("You have exceeded your %s limit", usageType)
+		if canUpgrade {
+			message = fmt.Sprintf("You have exceeded your %s limit. Upgrade to %s for higher limits.", usageType, suggestedPlan)
+		} else {
+			message = fmt.Sprintf("You have exceeded your %s limit. Contact support for enterprise options.", usageType)
+		}
 	case "warning_90":
 		message = fmt.Sprintf("You have used 90%% of your %s limit", usageType)
 	case "warning_80":
@@ -54,10 +99,38 @@ func (s *UsageService) broadcastUsageAlert(userID uint, alertType, usageType str
 		Limit:          limit,
 		PercentageUsed: percentage,
 		Message:        message,
+		CanUpgrade:     canUpgrade,
+		CurrentPlan:    currentPlan,
+		SuggestedPlan:  suggestedPlan,
+		UpgradeURL:     "/settings/billing",
 	}
 
 	s.hub.SendToUser(userID, websocket.MessageTypeUsageAlert, payload)
 	log.Debug().Uint("user_id", userID).Str("alert_type", alertType).Str("usage_type", usageType).Msg("usage alert broadcasted")
+}
+
+// determinePlanFromLimits infers the subscription tier from usage limits
+func determinePlanFromLimits(limits models.UsageLimits) string {
+	switch {
+	case limits.APICalls >= 1000000:
+		return "enterprise"
+	case limits.APICalls >= 100000:
+		return "pro"
+	default:
+		return "free"
+	}
+}
+
+// getUpgradeSuggestion returns whether the user can upgrade and the suggested plan
+func getUpgradeSuggestion(currentPlan string) (bool, string) {
+	switch currentPlan {
+	case "free":
+		return true, "Pro"
+	case "pro":
+		return true, "Enterprise"
+	default:
+		return false, ""
+	}
 }
 
 // Common usage event types
@@ -182,8 +255,16 @@ func (s *UsageService) RecordEvent(ctx context.Context, event *models.UsageEvent
 		return fmt.Errorf("failed to record usage event: %w", err)
 	}
 
-	// Async update aggregated totals
-	go s.updatePeriodTotals(context.Background(), event)
+	// Queue async update of aggregated totals (bounded worker pool)
+	select {
+	case s.workQueue <- event:
+		// Event queued successfully
+	default:
+		// Queue full - log warning but don't block the request
+		log.Warn().
+			Str("event_type", event.EventType).
+			Msg("usage event queue full, event will be aggregated on next period calculation")
+	}
 
 	return nil
 }
@@ -352,7 +433,7 @@ func (s *UsageService) CheckLimits(ctx context.Context, userID *uint, orgID *uin
 
 				// If a new alert was created, broadcast via WebSocket
 				if result.RowsAffected > 0 && s.hub != nil && userID != nil {
-					s.broadcastUsageAlert(*userID, alertType, usageType, current, limit, percentage)
+					s.broadcastUsageAlert(*userID, alertType, usageType, current, limit, percentage, summary.Limits)
 				}
 			}
 		}
@@ -515,10 +596,23 @@ func (s *UsageService) GetUsageHistory(ctx context.Context, userID *uint, orgID 
 		var limits models.UsageLimits
 
 		if period.UsageTotals != "" {
-			json.Unmarshal([]byte(period.UsageTotals), &totals)
+			if err := json.Unmarshal([]byte(period.UsageTotals), &totals); err != nil {
+				log.Warn().
+					Err(err).
+					Str("period_start", period.PeriodStart).
+					Str("raw_totals", period.UsageTotals).
+					Msg("failed to parse usage totals in history, using zero values")
+			}
 		}
 		if period.UsageLimits != "" {
-			json.Unmarshal([]byte(period.UsageLimits), &limits)
+			if err := json.Unmarshal([]byte(period.UsageLimits), &limits); err != nil {
+				log.Warn().
+					Err(err).
+					Str("period_start", period.PeriodStart).
+					Str("raw_limits", period.UsageLimits).
+					Msg("failed to parse usage limits in history, using defaults")
+				limits = DefaultUsageLimits
+			}
 		} else {
 			limits = DefaultUsageLimits
 		}

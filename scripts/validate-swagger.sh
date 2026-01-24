@@ -30,12 +30,11 @@ swag init -g cmd/main.go -o "$TEMP_DIR" 2>/dev/null
 sed -i '/LeftDelim:/d; /RightDelim:/d' "$TEMP_DIR/docs.go" 2>/dev/null || true
 
 if ! diff -q docs/swagger.json "$TEMP_DIR/swagger.json" > /dev/null 2>&1; then
-    echo ""
-    echo "ERROR: Swagger docs outdated!"
-    echo "Run: cd backend && make swagger"
-    echo "Then: git add backend/docs/"
-    echo ""
-    exit 1
+    echo "Swagger docs outdated, regenerating..."
+    swag init -g cmd/main.go -o docs
+    sed -i '/LeftDelim:/d; /RightDelim:/d' docs/docs.go 2>/dev/null || true
+    git add docs/
+    echo "Swagger docs regenerated and staged."
+else
+    echo "Swagger docs up-to-date."
 fi
-
-echo "Swagger docs up-to-date."

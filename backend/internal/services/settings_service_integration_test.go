@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -17,11 +18,12 @@ func testSettingsSetup(t *testing.T) (*SettingsService, func()) {
 	db := testutil.SetupTestDB(t)
 	tt := testutil.NewTestTransaction(t, db)
 
-	// Set global database.DB for the settings service
+	// Set global database.DB for test data creation in tests
 	oldDB := database.DB
 	database.DB = tt.DB
 
-	svc := NewSettingsService()
+	// Now using dependency injection - pass db directly to service
+	svc := NewSettingsService(tt.DB)
 
 	return svc, func() {
 		database.DB = oldDB
@@ -44,7 +46,7 @@ func TestSettingsService_GetAllSettings_Integration(t *testing.T) {
 			database.DB.Create(&s)
 		}
 
-		result, err := svc.GetAllSettings()
+		result, err := svc.GetAllSettings(context.Background())
 		if err != nil {
 			t.Fatalf("GetAllSettings failed: %v", err)
 		}
@@ -88,7 +90,7 @@ func TestSettingsService_GetSettingsByCategory_Integration(t *testing.T) {
 			Value:    json.RawMessage(`"other_value"`),
 		})
 
-		result, err := svc.GetSettingsByCategory("test_category")
+		result, err := svc.GetSettingsByCategory(context.Background(), "test_category")
 		if err != nil {
 			t.Fatalf("GetSettingsByCategory failed: %v", err)
 		}
@@ -105,7 +107,7 @@ func TestSettingsService_GetSettingsByCategory_Integration(t *testing.T) {
 	})
 
 	t.Run("returns empty slice for non-existent category", func(t *testing.T) {
-		result, err := svc.GetSettingsByCategory("non_existent_category")
+		result, err := svc.GetSettingsByCategory(context.Background(), "non_existent_category")
 		if err != nil {
 			t.Fatalf("GetSettingsByCategory failed: %v", err)
 		}
@@ -127,7 +129,7 @@ func TestSettingsService_GetSetting_Integration(t *testing.T) {
 			Value:    json.RawMessage(`"test_value"`),
 		})
 
-		result, err := svc.GetSetting("test_setting_key")
+		result, err := svc.GetSetting(context.Background(), "test_setting_key")
 		if err != nil {
 			t.Fatalf("GetSetting failed: %v", err)
 		}
@@ -138,7 +140,7 @@ func TestSettingsService_GetSetting_Integration(t *testing.T) {
 	})
 
 	t.Run("returns error for non-existent key", func(t *testing.T) {
-		_, err := svc.GetSetting("non_existent_key")
+		_, err := svc.GetSetting(context.Background(), "non_existent_key")
 		if err == nil {
 			t.Error("Expected error for non-existent key")
 		}
@@ -157,7 +159,7 @@ func TestSettingsService_GetSettingValue_Integration(t *testing.T) {
 		})
 
 		var result string
-		err := svc.GetSettingValue("string_setting", &result)
+		err := svc.GetSettingValue(context.Background(), "string_setting", &result)
 		if err != nil {
 			t.Fatalf("GetSettingValue failed: %v", err)
 		}
@@ -175,7 +177,7 @@ func TestSettingsService_GetSettingValue_Integration(t *testing.T) {
 		})
 
 		var result int
-		err := svc.GetSettingValue("int_setting", &result)
+		err := svc.GetSettingValue(context.Background(), "int_setting", &result)
 		if err != nil {
 			t.Fatalf("GetSettingValue failed: %v", err)
 		}
@@ -193,7 +195,7 @@ func TestSettingsService_GetSettingValue_Integration(t *testing.T) {
 		})
 
 		var result bool
-		err := svc.GetSettingValue("bool_setting", &result)
+		err := svc.GetSettingValue(context.Background(), "bool_setting", &result)
 		if err != nil {
 			t.Fatalf("GetSettingValue failed: %v", err)
 		}
@@ -214,7 +216,7 @@ func TestSettingsService_GetSettingValue_Integration(t *testing.T) {
 			Name  string `json:"name"`
 			Count int    `json:"count"`
 		}
-		err := svc.GetSettingValue("obj_setting", &result)
+		err := svc.GetSettingValue(context.Background(), "obj_setting", &result)
 		if err != nil {
 			t.Fatalf("GetSettingValue failed: %v", err)
 		}
@@ -234,7 +236,7 @@ func TestSettingsService_GetSettingsByKeys_Integration(t *testing.T) {
 		database.DB.Create(&models.SystemSetting{Key: "multi_key_2", Category: "test", Value: json.RawMessage(`"value2"`)})
 		database.DB.Create(&models.SystemSetting{Key: "multi_key_3", Category: "test", Value: json.RawMessage(`"value3"`)})
 
-		result, err := svc.GetSettingsByKeys([]string{"multi_key_1", "multi_key_3"})
+		result, err := svc.GetSettingsByKeys(context.Background(), []string{"multi_key_1", "multi_key_3"})
 		if err != nil {
 			t.Fatalf("GetSettingsByKeys failed: %v", err)
 		}
@@ -252,7 +254,7 @@ func TestSettingsService_GetSettingsByKeys_Integration(t *testing.T) {
 	})
 
 	t.Run("returns empty map for non-existent keys", func(t *testing.T) {
-		result, err := svc.GetSettingsByKeys([]string{"nonexistent_1", "nonexistent_2"})
+		result, err := svc.GetSettingsByKeys(context.Background(), []string{"nonexistent_1", "nonexistent_2"})
 		if err != nil {
 			t.Fatalf("GetSettingsByKeys failed: %v", err)
 		}
@@ -274,7 +276,7 @@ func TestSettingsService_UpdateSetting_Integration(t *testing.T) {
 			Value:    json.RawMessage(`"old_value"`),
 		})
 
-		err := svc.UpdateSetting("update_test_key", "new_value")
+		err := svc.UpdateSetting(context.Background(), "update_test_key", "new_value")
 		if err != nil {
 			t.Fatalf("UpdateSetting failed: %v", err)
 		}
@@ -291,7 +293,7 @@ func TestSettingsService_UpdateSetting_Integration(t *testing.T) {
 	})
 
 	t.Run("returns error for non-existent setting", func(t *testing.T) {
-		err := svc.UpdateSetting("nonexistent_setting_key", "value")
+		err := svc.UpdateSetting(context.Background(), "nonexistent_setting_key", "value")
 		if err == nil {
 			t.Error("Expected error for non-existent setting")
 		}
@@ -305,7 +307,7 @@ func TestSettingsService_UpdateSetting_Integration(t *testing.T) {
 		})
 
 		// Update to integer
-		err := svc.UpdateSetting("type_test_key", 123)
+		err := svc.UpdateSetting(context.Background(), "type_test_key", 123)
 		if err != nil {
 			t.Fatalf("UpdateSetting failed: %v", err)
 		}
@@ -333,7 +335,7 @@ func TestSettingsService_IPBlocklist_Integration(t *testing.T) {
 			Reason:    "Test block",
 		}
 
-		block, err := svc.BlockIP(req, user.ID)
+		block, err := svc.BlockIP(context.Background(), req, user.ID)
 		if err != nil {
 			t.Fatalf("BlockIP failed: %v", err)
 		}
@@ -349,7 +351,7 @@ func TestSettingsService_IPBlocklist_Integration(t *testing.T) {
 		}
 
 		// Verify it's in blocklist
-		blocks, err := svc.GetIPBlocklist()
+		blocks, err := svc.GetIPBlocklist(context.Background())
 		if err != nil {
 			t.Fatalf("GetIPBlocklist failed: %v", err)
 		}
@@ -367,12 +369,12 @@ func TestSettingsService_IPBlocklist_Integration(t *testing.T) {
 	})
 
 	t.Run("checks if IP is blocked", func(t *testing.T) {
-		svc.BlockIP(&models.CreateIPBlockRequest{
+		svc.BlockIP(context.Background(), &models.CreateIPBlockRequest{
 			IPAddress: "10.0.0.1",
 			Reason:    "Test",
 		}, user.ID)
 
-		blocked, err := svc.IsIPBlocked("10.0.0.1")
+		blocked, err := svc.IsIPBlocked(context.Background(), "10.0.0.1")
 		if err != nil {
 			t.Fatalf("IsIPBlocked failed: %v", err)
 		}
@@ -380,7 +382,7 @@ func TestSettingsService_IPBlocklist_Integration(t *testing.T) {
 			t.Error("Expected IP to be blocked")
 		}
 
-		blocked, err = svc.IsIPBlocked("10.0.0.2")
+		blocked, err = svc.IsIPBlocked(context.Background(), "10.0.0.2")
 		if err != nil {
 			t.Fatalf("IsIPBlocked failed: %v", err)
 		}
@@ -390,18 +392,18 @@ func TestSettingsService_IPBlocklist_Integration(t *testing.T) {
 	})
 
 	t.Run("unblocks IP", func(t *testing.T) {
-		block, _ := svc.BlockIP(&models.CreateIPBlockRequest{
+		block, _ := svc.BlockIP(context.Background(), &models.CreateIPBlockRequest{
 			IPAddress: "172.16.0.1",
 			Reason:    "Test",
 		}, user.ID)
 
-		err := svc.UnblockIP(block.ID)
+		err := svc.UnblockIP(context.Background(), block.ID)
 		if err != nil {
 			t.Fatalf("UnblockIP failed: %v", err)
 		}
 
 		// Should no longer be blocked
-		blocked, _ := svc.IsIPBlocked("172.16.0.1")
+		blocked, _ := svc.IsIPBlocked(context.Background(), "172.16.0.1")
 		if blocked {
 			t.Error("Expected IP to be unblocked")
 		}
@@ -421,7 +423,7 @@ func TestSettingsService_IPBlocklist_Integration(t *testing.T) {
 		}
 		database.DB.Create(block)
 
-		blocked, err := svc.IsIPBlocked("192.168.2.1")
+		blocked, err := svc.IsIPBlocked(context.Background(), "192.168.2.1")
 		if err != nil {
 			t.Fatalf("IsIPBlocked failed: %v", err)
 		}
@@ -445,7 +447,7 @@ func TestSettingsService_Announcements_Integration(t *testing.T) {
 			IsActive: true,
 		}
 
-		announcement, err := svc.CreateAnnouncement(req, user.ID)
+		announcement, err := svc.CreateAnnouncement(context.Background(), req, user.ID)
 		if err != nil {
 			t.Fatalf("CreateAnnouncement failed: %v", err)
 		}
@@ -458,7 +460,7 @@ func TestSettingsService_Announcements_Integration(t *testing.T) {
 		}
 
 		// Retrieve all announcements
-		announcements, err := svc.GetAnnouncements()
+		announcements, err := svc.GetAnnouncements(context.Background())
 		if err != nil {
 			t.Fatalf("GetAnnouncements failed: %v", err)
 		}
@@ -477,19 +479,19 @@ func TestSettingsService_Announcements_Integration(t *testing.T) {
 
 	t.Run("gets active announcements for user", func(t *testing.T) {
 		// Create active and inactive announcements
-		svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:    "Active Announcement",
 			Message:  "Active",
 			IsActive: true,
 		}, user.ID)
 
-		svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:    "Inactive Announcement",
 			Message:  "Inactive",
 			IsActive: false,
 		}, user.ID)
 
-		announcements, err := svc.GetActiveAnnouncements(&user.ID, models.RoleUser)
+		announcements, err := svc.GetActiveAnnouncements(context.Background(), &user.ID, models.RoleUser)
 		if err != nil {
 			t.Fatalf("GetActiveAnnouncements failed: %v", err)
 		}
@@ -502,7 +504,7 @@ func TestSettingsService_Announcements_Integration(t *testing.T) {
 	})
 
 	t.Run("filters by target roles", func(t *testing.T) {
-		_, err := svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		_, err := svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:       "Admin Only",
 			Message:     "For admins",
 			IsActive:    true,
@@ -513,7 +515,7 @@ func TestSettingsService_Announcements_Integration(t *testing.T) {
 		}
 
 		// User with 'user' role should not see admin-only announcements
-		announcements, err := svc.GetActiveAnnouncements(&user.ID, models.RoleUser)
+		announcements, err := svc.GetActiveAnnouncements(context.Background(), &user.ID, models.RoleUser)
 		if err != nil {
 			t.Fatalf("GetActiveAnnouncements failed: %v", err)
 		}
@@ -525,7 +527,7 @@ func TestSettingsService_Announcements_Integration(t *testing.T) {
 		}
 
 		// Admin should see the announcement
-		announcements, err = svc.GetActiveAnnouncements(&user.ID, models.RoleAdmin)
+		announcements, err = svc.GetActiveAnnouncements(context.Background(), &user.ID, models.RoleAdmin)
 		if err != nil {
 			t.Fatalf("GetActiveAnnouncements failed: %v", err)
 		}
@@ -543,14 +545,14 @@ func TestSettingsService_Announcements_Integration(t *testing.T) {
 	})
 
 	t.Run("updates announcement", func(t *testing.T) {
-		announcement, _ := svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		announcement, _ := svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:    "Original Title",
 			Message:  "Original message",
 			IsActive: true,
 		}, user.ID)
 
 		newTitle := "Updated Title"
-		updated, err := svc.UpdateAnnouncement(announcement.ID, &models.UpdateAnnouncementRequest{
+		updated, err := svc.UpdateAnnouncement(context.Background(), announcement.ID, &models.UpdateAnnouncementRequest{
 			Title: &newTitle,
 		})
 		if err != nil {
@@ -563,13 +565,13 @@ func TestSettingsService_Announcements_Integration(t *testing.T) {
 	})
 
 	t.Run("deletes announcement", func(t *testing.T) {
-		announcement, _ := svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		announcement, _ := svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:    "To Delete",
 			Message:  "Will be deleted",
 			IsActive: true,
 		}, user.ID)
 
-		err := svc.DeleteAnnouncement(announcement.ID)
+		err := svc.DeleteAnnouncement(context.Background(), announcement.ID)
 		if err != nil {
 			t.Fatalf("DeleteAnnouncement failed: %v", err)
 		}
@@ -583,20 +585,20 @@ func TestSettingsService_Announcements_Integration(t *testing.T) {
 	})
 
 	t.Run("dismisses announcement for user", func(t *testing.T) {
-		announcement, _ := svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		announcement, _ := svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:         "Dismissible",
 			Message:       "Can be dismissed",
 			IsActive:      true,
 			IsDismissible: true,
 		}, user.ID)
 
-		err := svc.DismissAnnouncement(user.ID, announcement.ID)
+		err := svc.DismissAnnouncement(context.Background(), user.ID, announcement.ID)
 		if err != nil {
 			t.Fatalf("DismissAnnouncement failed: %v", err)
 		}
 
 		// Should not appear in active announcements for this user
-		announcements, _ := svc.GetActiveAnnouncements(&user.ID, models.RoleUser)
+		announcements, _ := svc.GetActiveAnnouncements(context.Background(), &user.ID, models.RoleUser)
 		for _, a := range announcements {
 			if a.ID == announcement.ID {
 				t.Error("Dismissed announcement should not appear for user")
@@ -614,7 +616,7 @@ func TestSettingsService_Changelog_Integration(t *testing.T) {
 	t.Run("returns paginated changelog", func(t *testing.T) {
 		// Create multiple changelog entries
 		for i := 0; i < 15; i++ {
-			svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+			svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 				Title:    "Changelog Entry",
 				Message:  "Entry content",
 				Category: "feature",
@@ -623,7 +625,7 @@ func TestSettingsService_Changelog_Integration(t *testing.T) {
 		}
 
 		// Get first page
-		result, err := svc.GetChangelog(1, 10, "")
+		result, err := svc.GetChangelog(context.Background(), 1, 10, "")
 		if err != nil {
 			t.Fatalf("GetChangelog failed: %v", err)
 		}
@@ -637,21 +639,21 @@ func TestSettingsService_Changelog_Integration(t *testing.T) {
 	})
 
 	t.Run("filters by category", func(t *testing.T) {
-		svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:    "Feature",
 			Message:  "Feature content",
 			Category: "feature",
 			IsActive: true,
 		}, user.ID)
 
-		svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:    "Bugfix",
 			Message:  "Bugfix content",
 			Category: "bugfix",
 			IsActive: true,
 		}, user.ID)
 
-		result, err := svc.GetChangelog(1, 50, "bugfix")
+		result, err := svc.GetChangelog(context.Background(), 1, 50, "bugfix")
 		if err != nil {
 			t.Fatalf("GetChangelog failed: %v", err)
 		}
@@ -671,21 +673,21 @@ func TestSettingsService_ModalAnnouncements_Integration(t *testing.T) {
 	user := createTestUserForSettings(t, "modal")
 
 	t.Run("gets unread modal announcements", func(t *testing.T) {
-		svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:       "Modal Announcement",
 			Message:     "Important update",
 			DisplayType: "modal",
 			IsActive:    true,
 		}, user.ID)
 
-		svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:       "Banner Announcement",
 			Message:     "Less important",
 			DisplayType: "banner",
 			IsActive:    true,
 		}, user.ID)
 
-		modals, err := svc.GetUnreadModalAnnouncements(user.ID, models.RoleUser)
+		modals, err := svc.GetUnreadModalAnnouncements(context.Background(), user.ID, models.RoleUser)
 		if err != nil {
 			t.Fatalf("GetUnreadModalAnnouncements failed: %v", err)
 		}
@@ -698,20 +700,20 @@ func TestSettingsService_ModalAnnouncements_Integration(t *testing.T) {
 	})
 
 	t.Run("marks announcement as read", func(t *testing.T) {
-		announcement, _ := svc.CreateAnnouncement(&models.CreateAnnouncementRequest{
+		announcement, _ := svc.CreateAnnouncement(context.Background(), &models.CreateAnnouncementRequest{
 			Title:       "Unread Modal",
 			Message:     "Will be marked read",
 			DisplayType: "modal",
 			IsActive:    true,
 		}, user.ID)
 
-		err := svc.MarkAnnouncementRead(user.ID, announcement.ID)
+		err := svc.MarkAnnouncementRead(context.Background(), user.ID, announcement.ID)
 		if err != nil {
 			t.Fatalf("MarkAnnouncementRead failed: %v", err)
 		}
 
 		// Should not appear in unread modals
-		modals, _ := svc.GetUnreadModalAnnouncements(user.ID, models.RoleUser)
+		modals, _ := svc.GetUnreadModalAnnouncements(context.Background(), user.ID, models.RoleUser)
 		for _, m := range modals {
 			if m.ID == announcement.ID {
 				t.Error("Read announcement should not appear in unread list")
@@ -738,7 +740,7 @@ func TestSettingsService_EmailTemplates_Integration(t *testing.T) {
 		}
 		database.DB.Create(template)
 
-		templates, err := svc.GetEmailTemplates()
+		templates, err := svc.GetEmailTemplates(context.Background())
 		if err != nil {
 			t.Fatalf("GetEmailTemplates failed: %v", err)
 		}
@@ -759,7 +761,7 @@ func TestSettingsService_EmailTemplates_Integration(t *testing.T) {
 		}
 		database.DB.Create(template)
 
-		result, err := svc.GetEmailTemplate(template.ID)
+		result, err := svc.GetEmailTemplate(context.Background(), template.ID)
 		if err != nil {
 			t.Fatalf("GetEmailTemplate failed: %v", err)
 		}
@@ -780,7 +782,7 @@ func TestSettingsService_EmailTemplates_Integration(t *testing.T) {
 		}
 		database.DB.Create(template)
 
-		result, err := svc.GetEmailTemplateByKey("template_by_key")
+		result, err := svc.GetEmailTemplateByKey(context.Background(), "template_by_key")
 		if err != nil {
 			t.Fatalf("GetEmailTemplateByKey failed: %v", err)
 		}
@@ -802,7 +804,7 @@ func TestSettingsService_EmailTemplates_Integration(t *testing.T) {
 		database.DB.Create(template)
 
 		newSubject := "Updated Subject"
-		updated, err := svc.UpdateEmailTemplate(template.ID, &models.UpdateEmailTemplateRequest{
+		updated, err := svc.UpdateEmailTemplate(context.Background(), template.ID, &models.UpdateEmailTemplateRequest{
 			Subject: &newSubject,
 		}, user.ID)
 		if err != nil {
@@ -815,12 +817,12 @@ func TestSettingsService_EmailTemplates_Integration(t *testing.T) {
 	})
 
 	t.Run("returns error for non-existent template", func(t *testing.T) {
-		_, err := svc.GetEmailTemplate(99999)
+		_, err := svc.GetEmailTemplate(context.Background(), 99999)
 		if err == nil {
 			t.Error("Expected error for non-existent template")
 		}
 
-		_, err = svc.GetEmailTemplateByKey("nonexistent_key")
+		_, err = svc.GetEmailTemplateByKey(context.Background(), "nonexistent_key")
 		if err == nil {
 			t.Error("Expected error for non-existent key")
 		}

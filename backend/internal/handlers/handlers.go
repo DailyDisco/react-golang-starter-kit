@@ -78,9 +78,11 @@ import (
 	"react-golang-starter/internal/models"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog/log"
 )
 
 // Cache key prefixes
@@ -113,8 +115,10 @@ func cacheUser(ctx context.Context, userID uint, userResponse *models.UserRespon
 	if !cache.IsAvailable() {
 		return
 	}
-	// Ignore cache errors - caching is best-effort
-	_ = cache.SetJSON(ctx, getUserCacheKey(userID), userResponse, userCacheTTL)
+	// Log cache errors for debugging - caching is best-effort
+	if err := cache.SetJSON(ctx, getUserCacheKey(userID), userResponse, userCacheTTL); err != nil {
+		log.Warn().Err(err).Uint("userID", userID).Msg("cache set failed")
+	}
 }
 
 // invalidateUserCache removes a user from the cache
@@ -122,7 +126,9 @@ func invalidateUserCache(ctx context.Context, userID uint) {
 	if !cache.IsAvailable() {
 		return
 	}
-	_ = cache.Delete(ctx, getUserCacheKey(userID))
+	if err := cache.Delete(ctx, getUserCacheKey(userID)); err != nil {
+		log.Warn().Err(err).Uint("userID", userID).Msg("cache delete failed")
+	}
 }
 
 // Build-time variables (set via ldflags)
@@ -267,6 +273,63 @@ func (s *Service) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, statusCode, healthResponse)
 }
 
+// ReadinessCheck godoc
+// @Summary Check if server is ready to receive traffic
+// @Description Fast readiness check for deployment orchestration. Verifies database connectivity.
+// @Description Cache is checked but treated as non-critical (degraded, not unhealthy).
+// @Tags health
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string "Server is ready"
+// @Failure 503 {object} map[string]string "Server is not ready (database unavailable)"
+// @Router /health/ready [get]
+func (s *Service) ReadinessCheck(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	response := map[string]string{
+		"status":   "healthy",
+		"database": "healthy",
+		"cache":    "healthy",
+	}
+	statusCode := http.StatusOK
+
+	// Check database connectivity (critical)
+	if database.DB == nil {
+		response["status"] = "unhealthy"
+		response["database"] = "unhealthy"
+		statusCode = http.StatusServiceUnavailable
+	} else {
+		sqlDB, err := database.DB.DB()
+		if err != nil {
+			response["status"] = "unhealthy"
+			response["database"] = "unhealthy"
+			statusCode = http.StatusServiceUnavailable
+		} else if err := sqlDB.PingContext(ctx); err != nil {
+			response["status"] = "unhealthy"
+			response["database"] = "unhealthy"
+			statusCode = http.StatusServiceUnavailable
+		}
+	}
+
+	// Check cache connectivity (non-critical - degraded only)
+	if cache.IsAvailable() {
+		cacheInstance := cache.Instance()
+		if cacheInstance != nil {
+			if err := cacheInstance.Ping(ctx); err != nil {
+				response["cache"] = "degraded"
+				if response["status"] == "healthy" {
+					response["status"] = "degraded"
+				}
+			}
+		}
+	} else {
+		response["cache"] = "unavailable"
+	}
+
+	WriteJSON(w, statusCode, response)
+}
+
 // GetUsers godoc
 // @Summary Get all users
 // @Description Retrieve a paginated list of all users. This endpoint is public and does not require authentication.
@@ -339,7 +402,7 @@ func GetUsers() http.HandlerFunc {
 
 		// Get total count
 		var total int64
-		if err := database.DB.Model(&models.User{}).Count(&total).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).Model(&models.User{}).Count(&total).Error; err != nil {
 			WriteInternalError(w, r, "Failed to count users")
 			return
 		}
@@ -350,7 +413,7 @@ func GetUsers() http.HandlerFunc {
 
 		// Get paginated users
 		var users []models.User
-		if err := database.DB.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).Offset(offset).Limit(limit).Find(&users).Error; err != nil {
 			WriteInternalError(w, r, "Failed to fetch users")
 			return
 		}
@@ -441,7 +504,7 @@ func GetUser() http.HandlerFunc {
 		}
 
 		var user models.User
-		if err := database.DB.First(&user, userID).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).First(&user, userID).Error; err != nil {
 			WriteNotFound(w, r, "User not found")
 			return
 		}
@@ -457,16 +520,17 @@ func GetUser() http.HandlerFunc {
 }
 
 // CreateUser godoc
-// @Summary Create a new user (Admin endpoint)
-// @Description Create a new user with the provided information. This endpoint is intended for administrative use and may require admin privileges in production.
+// @Summary Create a new user (Super Admin only)
+// @Description Create a new user with the provided information. Requires super_admin role (users:create permission).
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param user body models.RegisterRequest true "User registration data"
 // @Success 201 {object} models.SuccessResponse{data=models.UserResponse} "User created successfully"
 // @Failure 400 {object} models.ErrorResponse "Invalid JSON or validation error"
 // @Failure 401 {object} models.ErrorResponse "Unauthorized"
-// @Failure 403 {object} models.ErrorResponse "Forbidden - admin privileges required"
+// @Failure 403 {object} models.ErrorResponse "Forbidden - super_admin role required"
 // @Failure 409 {object} models.ErrorResponse "User already exists"
 // @Failure 500 {object} models.ErrorResponse "Failed to create user"
 // @Router /users [post]
@@ -498,9 +562,7 @@ func GetUser() http.HandlerFunc {
 //	}
 func CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Check if user is authenticated (optional for now, but could be made admin-only)
-		_, _ = auth.GetUserFromContext(r.Context()) // authenticated status available for future admin-only logic
-
+		// Route is protected by PermissionMiddleware(PermCreateUsers) - only super_admin can access
 		var req models.RegisterRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			WriteBadRequest(w, r, "Invalid JSON")
@@ -521,7 +583,7 @@ func CreateUser() http.HandlerFunc {
 
 		// Check if user already exists
 		var existingUser models.User
-		if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+		if err := database.DB.WithContext(r.Context()).Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 			WriteConflict(w, r, "User with this email already exists")
 			return
 		}
@@ -553,7 +615,7 @@ func CreateUser() http.HandlerFunc {
 			UpdatedAt:           time.Now(),
 		}
 
-		if err := database.DB.Create(&user).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).Create(&user).Error; err != nil {
 			WriteInternalError(w, r, "Failed to create user")
 			return
 		}
@@ -627,7 +689,7 @@ func UpdateUser() http.HandlerFunc {
 		}
 
 		var user models.User
-		if err := database.DB.First(&user, userID).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).First(&user, userID).Error; err != nil {
 			WriteNotFound(w, r, "User not found")
 			return
 		}
@@ -658,7 +720,7 @@ func UpdateUser() http.HandlerFunc {
 
 			// Check if email is already taken by another user
 			var existingUser models.User
-			if err := database.DB.Where("email = ? AND id != ?", updateData.Email, userID).First(&existingUser).Error; err == nil {
+			if err := database.DB.WithContext(r.Context()).Where("email = ? AND id != ?", updateData.Email, userID).First(&existingUser).Error; err == nil {
 				WriteConflict(w, r, "Email is already taken")
 				return
 			}
@@ -667,12 +729,22 @@ func UpdateUser() http.HandlerFunc {
 		}
 
 		if updateData.Name != "" {
-			user.Name = updateData.Name
+			// Validate name length
+			trimmedName := strings.TrimSpace(updateData.Name)
+			if len(trimmedName) == 0 {
+				WriteBadRequest(w, r, "Name cannot be empty or whitespace only")
+				return
+			}
+			if len(updateData.Name) > 255 {
+				WriteBadRequest(w, r, "Name exceeds maximum length of 255 characters")
+				return
+			}
+			user.Name = trimmedName
 		}
 
 		user.UpdatedAt = time.Now()
 
-		if err := database.DB.Save(&user).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).Save(&user).Error; err != nil {
 			WriteInternalError(w, r, "Failed to update user")
 			return
 		}
@@ -726,7 +798,7 @@ func DeleteUser() http.HandlerFunc {
 
 		// Check if user exists
 		var user models.User
-		if err := database.DB.First(&user, userID).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).First(&user, userID).Error; err != nil {
 			WriteNotFound(w, r, "User not found")
 			return
 		}
@@ -738,7 +810,7 @@ func DeleteUser() http.HandlerFunc {
 			return
 		}
 
-		if err := database.DB.Delete(&models.User{}, userID).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).Delete(&models.User{}, userID).Error; err != nil {
 			WriteInternalError(w, r, "Failed to delete user")
 			return
 		}
@@ -795,7 +867,7 @@ func UpdateUserRole() http.HandlerFunc {
 
 		// Check if user exists
 		var user models.User
-		if err := database.DB.First(&user, userID).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).First(&user, userID).Error; err != nil {
 			WriteNotFound(w, r, "User not found")
 			return
 		}
@@ -810,7 +882,7 @@ func UpdateUserRole() http.HandlerFunc {
 		user.Role = req.Role
 		user.UpdatedAt = time.Now()
 
-		if err := database.DB.Save(&user).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).Save(&user).Error; err != nil {
 			WriteInternalError(w, r, "Failed to update user role")
 			return
 		}
@@ -910,7 +982,7 @@ func UpdateCurrentUser() http.HandlerFunc {
 
 			// Check if email is already taken by another user
 			var existingUser models.User
-			if err := database.DB.Where("email = ? AND id != ?", req.Email, currentUser.ID).First(&existingUser).Error; err == nil {
+			if err := database.DB.WithContext(r.Context()).Where("email = ? AND id != ?", req.Email, currentUser.ID).First(&existingUser).Error; err == nil {
 				WriteConflict(w, r, "Email already taken")
 				return
 			}
@@ -925,7 +997,7 @@ func UpdateCurrentUser() http.HandlerFunc {
 		}
 		currentUser.UpdatedAt = time.Now()
 
-		if err := database.DB.Save(&currentUser).Error; err != nil {
+		if err := database.DB.WithContext(r.Context()).Save(&currentUser).Error; err != nil {
 			WriteInternalError(w, r, "Failed to update user")
 			return
 		}

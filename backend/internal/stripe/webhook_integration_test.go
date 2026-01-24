@@ -1,6 +1,7 @@
 package stripe
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -91,7 +92,7 @@ func TestHandleSubscriptionCreated_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionCreated(sub)
+		handleSubscriptionCreated(context.Background(), sub)
 
 		// Verify subscription was created
 		var dbSub models.Subscription
@@ -131,7 +132,7 @@ func TestHandleSubscriptionCreated_Integration(t *testing.T) {
 		}
 
 		// Should not panic
-		handleSubscriptionCreated(sub)
+		handleSubscriptionCreated(context.Background(), sub)
 
 		// Verify no subscription was created
 		var count int64
@@ -162,7 +163,7 @@ func TestHandleSubscriptionUpdated_Integration(t *testing.T) {
 			CurrentPeriodEnd:   now + 2592000,
 		}
 
-		handleSubscriptionUpdated(sub)
+		handleSubscriptionUpdated(context.Background(), sub)
 
 		// Verify subscription was updated
 		var dbSub models.Subscription
@@ -190,7 +191,7 @@ func TestHandleSubscriptionUpdated_Integration(t *testing.T) {
 			CurrentPeriodEnd:   time.Now().Add(30 * 24 * time.Hour).Unix(),
 		}
 
-		handleSubscriptionUpdated(sub)
+		handleSubscriptionUpdated(context.Background(), sub)
 
 		// Verify user role was downgraded
 		var updatedUser models.User
@@ -219,7 +220,7 @@ func TestHandleSubscriptionDeleted_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionDeleted(sub)
+		handleSubscriptionDeleted(context.Background(), sub)
 
 		// Verify subscription status
 		var dbSub models.Subscription
@@ -253,7 +254,7 @@ func TestHandleSubscriptionDeleted_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionDeleted(sub)
+		handleSubscriptionDeleted(context.Background(), sub)
 
 		// Verify admin role is preserved
 		var updatedUser models.User
@@ -277,7 +278,7 @@ func TestHandleSubscriptionDeleted_Integration(t *testing.T) {
 			},
 		}
 
-		handleSubscriptionDeleted(sub)
+		handleSubscriptionDeleted(context.Background(), sub)
 
 		// Verify superadmin role is preserved
 		var updatedUser models.User
@@ -306,7 +307,7 @@ func TestHandlePaymentFailed_Integration(t *testing.T) {
 			},
 		}
 
-		handlePaymentFailed(invoice)
+		handlePaymentFailed(context.Background(), invoice)
 
 		// Verify subscription status
 		var dbSub models.Subscription
@@ -326,7 +327,7 @@ func TestHandlePaymentFailed_Integration(t *testing.T) {
 		}
 
 		// Should not panic
-		handlePaymentFailed(invoice)
+		handlePaymentFailed(context.Background(), invoice)
 	})
 }
 
@@ -348,7 +349,7 @@ func TestCheckoutSessionCompleted_Integration(t *testing.T) {
 		}
 
 		// Should complete without error
-		handleCheckoutSessionCompleted(session)
+		handleCheckoutSessionCompleted(context.Background(), session)
 
 		// User should still exist (function just logs)
 		var updatedUser models.User
@@ -366,7 +367,7 @@ func TestSyncUserRole_Integration(t *testing.T) {
 	t.Run("upgrades to premium for active subscription", func(t *testing.T) {
 		user := createTestUserForWebhook(t, "active@example.com", "cus_active")
 
-		syncUserRole(user.ID, stripe.SubscriptionStatusActive)
+		syncUserRole(context.Background(), user.ID, stripe.SubscriptionStatusActive)
 
 		var updatedUser models.User
 		database.DB.First(&updatedUser, user.ID)
@@ -378,7 +379,7 @@ func TestSyncUserRole_Integration(t *testing.T) {
 	t.Run("upgrades to premium for trialing subscription", func(t *testing.T) {
 		user := createTestUserForWebhook(t, "trialing@example.com", "cus_trialing")
 
-		syncUserRole(user.ID, stripe.SubscriptionStatusTrialing)
+		syncUserRole(context.Background(), user.ID, stripe.SubscriptionStatusTrialing)
 
 		var updatedUser models.User
 		database.DB.First(&updatedUser, user.ID)
@@ -392,7 +393,7 @@ func TestSyncUserRole_Integration(t *testing.T) {
 		user.Role = models.RolePremium
 		database.DB.Save(user)
 
-		syncUserRole(user.ID, stripe.SubscriptionStatusPastDue)
+		syncUserRole(context.Background(), user.ID, stripe.SubscriptionStatusPastDue)
 
 		var updatedUser models.User
 		database.DB.First(&updatedUser, user.ID)
@@ -406,7 +407,7 @@ func TestSyncUserRole_Integration(t *testing.T) {
 		user.Role = models.RolePremium
 		database.DB.Save(user)
 
-		syncUserRole(user.ID, stripe.SubscriptionStatusCanceled)
+		syncUserRole(context.Background(), user.ID, stripe.SubscriptionStatusCanceled)
 
 		var updatedUser models.User
 		database.DB.First(&updatedUser, user.ID)
@@ -420,7 +421,7 @@ func TestSyncUserRole_Integration(t *testing.T) {
 		user.Role = models.RoleAdmin
 		database.DB.Save(user)
 
-		syncUserRole(user.ID, stripe.SubscriptionStatusCanceled)
+		syncUserRole(context.Background(), user.ID, stripe.SubscriptionStatusCanceled)
 
 		var updatedUser models.User
 		database.DB.First(&updatedUser, user.ID)

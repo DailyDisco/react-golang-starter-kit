@@ -1,12 +1,18 @@
 package handlers
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/response"
 	"react-golang-starter/internal/services"
+
+	"github.com/rs/zerolog/log"
 )
 
 // UsageHandler handles usage metering endpoints
@@ -155,5 +161,86 @@ func (h *UsageHandler) AcknowledgeAlert(w http.ResponseWriter, r *http.Request) 
 
 	response.JSON(w, http.StatusOK, map[string]interface{}{
 		"message": "alert acknowledged",
+	})
+}
+
+// RecordUsage records a usage event
+// @Summary Record usage event
+// @Description Records a usage event for metering purposes
+// @Tags Usage
+// @Accept json
+// @Produce json
+// @Param body body models.UsageEventRequest true "Usage event details"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /api/usage/record [post]
+func (h *UsageHandler) RecordUsage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID, ok := auth.GetUserIDFromContext(ctx)
+
+	if !ok || userID == 0 {
+		response.Unauthorized(w, r, "unauthorized")
+		return
+	}
+
+	var req models.UsageEventRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.BadRequest(w, r, "invalid request body")
+		return
+	}
+
+	// Validate required fields
+	if req.EventType == "" {
+		response.BadRequest(w, r, "event_type is required")
+		return
+	}
+	if req.Resource == "" {
+		response.BadRequest(w, r, "resource is required")
+		return
+	}
+
+	// Set default quantity
+	quantity := req.Quantity
+	if quantity == 0 {
+		quantity = 1
+	}
+
+	// Create usage event
+	event := &models.UsageEvent{
+		UserID:    &userID,
+		EventType: req.EventType,
+		Resource:  req.Resource,
+		Quantity:  quantity,
+		Unit:      req.Unit,
+	}
+
+	// Set metadata if provided
+	if len(req.Metadata) > 0 {
+		metadataJSON, err := json.Marshal(req.Metadata)
+		if err == nil {
+			event.Metadata = string(metadataJSON)
+		}
+	}
+
+	if err := h.usageService.RecordEvent(ctx, event); err != nil {
+		response.HandleErrorWithMessage(w, r, err, "failed to record usage event")
+		return
+	}
+
+	// Check limits after recording asynchronously
+	// Use background context since request context will be canceled when response is sent
+	go func(uid uint) {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if _, err := h.usageService.CheckLimits(bgCtx, &uid, nil); err != nil {
+			log.Error().Err(err).Uint("userID", uid).Msg("async limit check failed")
+		}
+	}(userID)
+
+	response.JSON(w, http.StatusCreated, map[string]interface{}{
+		"message":  "usage recorded",
+		"event_id": event.ID,
 	})
 }

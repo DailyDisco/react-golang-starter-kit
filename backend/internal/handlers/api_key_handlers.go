@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -376,15 +377,18 @@ func GetDecryptedAPIKey(userID uint, provider string) (string, error) {
 
 // ============ Encryption Helper Functions ============
 
+// ErrMissingJWTSecret is returned when JWT_SECRET environment variable is not set
+var ErrMissingJWTSecret = errors.New("JWT_SECRET environment variable is required for API key encryption")
+
 // getEncryptionKey returns the 32-byte encryption key derived from JWT_SECRET
-func getEncryptionKey() []byte {
+func getEncryptionKey() ([]byte, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "default-insecure-key-change-me"
+		return nil, ErrMissingJWTSecret
 	}
 	// Use SHA-256 to ensure we have exactly 32 bytes for AES-256
 	hash := sha256.Sum256([]byte(secret))
-	return hash[:]
+	return hash[:], nil
 }
 
 // hashAPIKey creates a SHA-256 hash of the API key
@@ -395,7 +399,10 @@ func hashAPIKey(apiKey string) string {
 
 // encryptAPIKey encrypts an API key using AES-256-GCM
 func encryptAPIKey(apiKey string) (string, error) {
-	key := getEncryptionKey()
+	key, err := getEncryptionKey()
+	if err != nil {
+		return "", err
+	}
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -418,7 +425,10 @@ func encryptAPIKey(apiKey string) (string, error) {
 
 // decryptAPIKey decrypts an API key using AES-256-GCM
 func decryptAPIKey(encrypted string) (string, error) {
-	key := getEncryptionKey()
+	key, err := getEncryptionKey()
+	if err != nil {
+		return "", err
+	}
 
 	ciphertext, err := base64.StdEncoding.DecodeString(encrypted)
 	if err != nil {

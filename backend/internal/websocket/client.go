@@ -32,6 +32,9 @@ type Client struct {
 	// User ID associated with this connection
 	UserID uint
 
+	// OrgIDs are the organization IDs the user belongs to (for org-scoped broadcasts)
+	OrgIDs []uint
+
 	// The WebSocket connection
 	conn *websocket.Conn
 

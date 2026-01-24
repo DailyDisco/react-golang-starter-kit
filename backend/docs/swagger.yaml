@@ -1,5 +1,22 @@
 basePath: /api/v1
 definitions:
+  handlers.CreateNotificationRequest:
+    properties:
+      link:
+        type: string
+      message:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - title
+    - type
+    - user_id
+    type: object
   handlers.CreateOrganizationRequest:
     properties:
       name:
@@ -153,6 +170,20 @@ definitions:
         type: string
       requests_per_minute:
         type: integer
+    type: object
+  models.ActivityLogItem:
+    properties:
+      action:
+        type: string
+      changes:
+        additionalProperties: true
+        type: object
+      created_at:
+        type: string
+      id:
+        type: integer
+      target_type:
+        type: string
     type: object
   models.AdminStatsResponse:
     properties:
@@ -472,6 +503,8 @@ definitions:
         type: boolean
       key:
         type: string
+      min_plan:
+        type: string
       name:
         type: string
       rollout_percentage:
@@ -664,6 +697,8 @@ definitions:
         type: integer
       key:
         type: string
+      min_plan:
+        type: string
       name:
         type: string
       rollout_percentage:
@@ -825,6 +860,51 @@ definitions:
     - MemberStatusActive
     - MemberStatusInactive
     - MemberStatusPending
+  models.MyActivityResponse:
+    properties:
+      activities:
+        items:
+          $ref: '#/definitions/models.ActivityLogItem'
+        type: array
+      count:
+        type: integer
+      total:
+        type: integer
+    type: object
+  models.NotificationResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      link:
+        type: string
+      message:
+        type: string
+      read:
+        type: boolean
+      read_at:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  models.NotificationsResponse:
+    properties:
+      notifications:
+        items:
+          $ref: '#/definitions/models.NotificationResponse'
+        type: array
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+      unread:
+        type: integer
+    type: object
   models.OrganizationPlan:
     enum:
     - free
@@ -1106,6 +1186,13 @@ definitions:
       name:
         type: string
     type: object
+  models.TestEmailRequest:
+    properties:
+      recipient_email:
+        description: RecipientEmail is the email address to send the test to (optional,
+          defaults to admin's email)
+        type: string
+    type: object
   models.TwoFactorBackupCodesResponse:
     properties:
       backup_codes:
@@ -1196,6 +1283,8 @@ definitions:
         type: string
       enabled:
         type: boolean
+      min_plan:
+        type: string
       name:
         type: string
       rollout_percentage:
@@ -1233,6 +1322,24 @@ definitions:
         type: string
       timezone:
         type: string
+    type: object
+  models.UsageEventRequest:
+    properties:
+      event_type:
+        type: string
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      quantity:
+        type: integer
+      resource:
+        type: string
+      unit:
+        type: string
+    required:
+    - event_type
+    - resource
     type: object
   models.UsageLimits:
     properties:
@@ -1311,6 +1418,18 @@ definitions:
         items:
           $ref: '#/definitions/models.UserAPIKeyResponse'
         type: array
+    type: object
+  models.UserFeatureFlagDetail:
+    properties:
+      enabled:
+        description: Whether the flag is enabled for this user
+        type: boolean
+      gated_by_plan:
+        description: Whether the flag is disabled due to plan restrictions
+        type: boolean
+      required_plan:
+        description: The plan required to unlock this feature (if gated)
+        type: string
     type: object
   models.UserPreferencesResponse:
     properties:
@@ -2101,6 +2220,40 @@ paths:
       summary: Unblock an IP
       tags:
       - Admin Settings
+  /api/admin/notifications:
+    post:
+      consumes:
+      - application/json
+      description: Creates a notification for a specific user
+      parameters:
+      - description: Notification data
+        in: body
+        name: notification
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateNotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.NotificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create notification (admin)
+      tags:
+      - Notifications
   /api/admin/settings:
     get:
       responses:
@@ -2239,6 +2392,13 @@ paths:
       - Admin Settings
   /api/admin/settings/email/test:
     post:
+      parameters:
+      - description: Test email request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.TestEmailRequest'
       responses:
         "200":
           description: OK
@@ -2254,6 +2414,10 @@ paths:
             $ref: '#/definitions/models.ErrorResponse'
         "403":
           description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       security:
@@ -2857,7 +3021,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              type: boolean
+              $ref: '#/definitions/models.UserFeatureFlagDetail'
             type: object
         "401":
           description: Unauthorized
@@ -2868,6 +3032,138 @@ paths:
       summary: Get feature flags for current user
       tags:
       - Feature Flags
+  /api/me/activity:
+    get:
+      description: Returns the current user's audit log entries (login, logout, profile
+        changes, etc.)
+      parameters:
+      - description: Max items to return (1-50, default 10)
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MyActivityResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my activity
+      tags:
+      - User Settings
+  /api/notifications:
+    get:
+      description: Returns paginated list of notifications for the authenticated user
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20, max 100)
+        in: query
+        name: per_page
+        type: integer
+      - description: Filter to only unread notifications
+        in: query
+        name: unread
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.NotificationsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get user notifications
+      tags:
+      - Notifications
+  /api/notifications/{id}:
+    delete:
+      description: Deletes a specific notification
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete notification
+      tags:
+      - Notifications
+  /api/notifications/{id}/read:
+    post:
+      description: Marks a specific notification as read
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Mark notification as read
+      tags:
+      - Notifications
+  /api/notifications/read-all:
+    post:
+      description: Marks all unread notifications as read for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Mark all notifications as read
+      tags:
+      - Notifications
   /api/usage:
     get:
       description: Returns usage metrics for the current billing period
@@ -2971,6 +3267,41 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       summary: Get usage history
+      tags:
+      - Usage
+  /api/usage/record:
+    post:
+      consumes:
+      - application/json
+      description: Records a usage event for metering purposes
+      parameters:
+      - description: Usage event details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UsageEventRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Record usage event
       tags:
       - Usage
   /api/users/me/2fa/backup-codes:
@@ -4158,6 +4489,31 @@ paths:
       summary: Check server health status
       tags:
       - health
+  /health/ready:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Fast readiness check for deployment orchestration. Verifies database connectivity.
+        Cache is checked but treated as non-critical (degraded, not unhealthy).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Server is ready
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Server is not ready (database unavailable)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Check if server is ready to receive traffic
+      tags:
+      - health
   /invitations/accept:
     post:
       consumes:
@@ -4788,8 +5144,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new user with the provided information. This endpoint
-        is intended for administrative use and may require admin privileges in production.
+      description: Create a new user with the provided information. Requires super_admin
+        role (users:create permission).
       parameters:
       - description: User registration data
         in: body
@@ -4818,7 +5174,7 @@ paths:
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "403":
-          description: Forbidden - admin privileges required
+          description: Forbidden - super_admin role required
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "409":
@@ -4829,7 +5185,9 @@ paths:
           description: Failed to create user
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      summary: Create a new user (Admin endpoint)
+      security:
+      - BearerAuth: []
+      summary: Create a new user (Super Admin only)
       tags:
       - users
   /users/{id}:

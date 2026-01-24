@@ -12,6 +12,7 @@ import (
 	"react-golang-starter/internal/models"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog/log"
 )
 
 // GetAdminStats returns admin dashboard statistics
@@ -40,7 +41,7 @@ func GetAdminStats(w http.ResponseWriter, r *http.Request) {
 		NewUsersThisMonth int64
 	}
 	var us userStats
-	database.DB.Raw(`
+	if err := database.DB.WithContext(r.Context()).Raw(`
 		SELECT
 			COUNT(*) as total_users,
 			COUNT(*) FILTER (WHERE is_active = true) as active_users,
@@ -50,7 +51,10 @@ func GetAdminStats(w http.ResponseWriter, r *http.Request) {
 			COUNT(*) FILTER (WHERE DATE(created_at) >= ?) as new_users_this_month
 		FROM users
 		WHERE deleted_at IS NULL
-	`, today, weekAgo, monthAgo).Scan(&us)
+	`, today, weekAgo, monthAgo).Scan(&us).Error; err != nil {
+		WriteInternalError(w, r, "Failed to fetch user statistics")
+		return
+	}
 
 	stats.TotalUsers = us.TotalUsers
 	stats.ActiveUsers = us.ActiveUsers
@@ -66,14 +70,17 @@ func GetAdminStats(w http.ResponseWriter, r *http.Request) {
 		CanceledSubscriptions int64
 	}
 	var ss subStats
-	database.DB.Raw(`
+	if err := database.DB.WithContext(r.Context()).Raw(`
 		SELECT
 			COUNT(*) as total_subscriptions,
 			COUNT(*) FILTER (WHERE status IN ('active', 'trialing')) as active_subscriptions,
 			COUNT(*) FILTER (WHERE status = 'canceled') as canceled_subscriptions
 		FROM subscriptions
 		WHERE deleted_at IS NULL
-	`).Scan(&ss)
+	`).Scan(&ss).Error; err != nil {
+		WriteInternalError(w, r, "Failed to fetch subscription statistics")
+		return
+	}
 
 	stats.TotalSubscriptions = ss.TotalSubscriptions
 	stats.ActiveSubscriptions = ss.ActiveSubscriptions
@@ -85,28 +92,35 @@ func GetAdminStats(w http.ResponseWriter, r *http.Request) {
 		TotalFileSize int64
 	}
 	var fs fileStats
-	database.DB.Raw(`
+	if err := database.DB.WithContext(r.Context()).Raw(`
 		SELECT
 			COUNT(*) as total_files,
 			COALESCE(SUM(file_size), 0) as total_file_size
 		FROM files
 		WHERE deleted_at IS NULL
-	`).Scan(&fs)
+	`).Scan(&fs).Error; err != nil {
+		WriteInternalError(w, r, "Failed to fetch file statistics")
+		return
+	}
 
 	stats.TotalFiles = fs.TotalFiles
 	stats.TotalFileSize = fs.TotalFileSize
 
 	// Users by role (already efficient - single query with GROUP BY)
 	stats.UsersByRole = make(map[string]int64)
-	rows, err := database.DB.Model(&models.User{}).Select("role, COUNT(*) as count").Group("role").Rows()
-	if err == nil {
+	rows, err := database.DB.WithContext(r.Context()).Model(&models.User{}).Select("role, COUNT(*) as count").Group("role").Rows()
+	if err != nil {
+		log.Error().Err(err).Msg("failed to query users by role")
+	} else {
 		defer rows.Close()
 		for rows.Next() {
 			var role string
 			var count int64
-			if rows.Scan(&role, &count) == nil {
-				stats.UsersByRole[role] = count
+			if err := rows.Scan(&role, &count); err != nil {
+				log.Error().Err(err).Msg("failed to scan user role count")
+				continue
 			}
+			stats.UsersByRole[role] = count
 		}
 	}
 
@@ -150,17 +164,9 @@ func GetAuditLogs(w http.ResponseWriter, r *http.Request) {
 	filter.StartDate = r.URL.Query().Get("start_date")
 	filter.EndDate = r.URL.Query().Get("end_date")
 
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-	filter.Page = page
-
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
-	filter.Limit = limit
+	p := ParsePagination(r)
+	filter.Page = p.Page
+	filter.Limit = p.Limit
 
 	logs, total, err := audit.GetAuditLogs(filter)
 	if err != nil {
@@ -174,14 +180,14 @@ func GetAuditLogs(w http.ResponseWriter, r *http.Request) {
 		logResponses[i] = log.ToAuditLogResponse()
 	}
 
-	totalPages := (int(total) + limit - 1) / limit
+	totalPages := (int(total) + p.Limit - 1) / p.Limit
 
 	response := models.AuditLogsResponse{
 		Logs:       logResponses,
 		Count:      len(logResponses),
 		Total:      int(total),
-		Page:       page,
-		Limit:      limit,
+		Page:       p.Page,
+		Limit:      p.Limit,
 		TotalPages: totalPages,
 	}
 
@@ -234,7 +240,7 @@ func ImpersonateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Find target user
 	var targetUser models.User
-	if err := database.DB.First(&targetUser, req.UserID).Error; err != nil {
+	if err := database.DB.WithContext(r.Context()).First(&targetUser, req.UserID).Error; err != nil {
 		WriteNotFound(w, r, "User not found")
 		return
 	}
@@ -289,7 +295,7 @@ func StopImpersonation(w http.ResponseWriter, r *http.Request) {
 
 	// Find original admin user
 	var adminUser models.User
-	if err := database.DB.First(&adminUser, claims.OriginalUserID).Error; err != nil {
+	if err := database.DB.WithContext(r.Context()).First(&adminUser, claims.OriginalUserID).Error; err != nil {
 		WriteInternalError(w, r, "Original user not found")
 		return
 	}
@@ -370,7 +376,7 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 
 	// Find user
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := database.DB.WithContext(r.Context()).First(&user, userID).Error; err != nil {
 		WriteNotFound(w, r, "User not found")
 		return
 	}
@@ -390,7 +396,7 @@ func AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	// Update role
 	user.Role = req.Role
 	user.UpdatedAt = time.Now()
-	if err := database.DB.Save(&user).Error; err != nil {
+	if err := database.DB.WithContext(r.Context()).Save(&user).Error; err != nil {
 		WriteInternalError(w, r, "Failed to update user role")
 		return
 	}
@@ -443,7 +449,7 @@ func DeactivateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Find user
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := database.DB.WithContext(r.Context()).First(&user, userID).Error; err != nil {
 		WriteNotFound(w, r, "User not found")
 		return
 	}
@@ -457,7 +463,7 @@ func DeactivateUser(w http.ResponseWriter, r *http.Request) {
 	// Deactivate
 	user.IsActive = false
 	user.UpdatedAt = time.Now()
-	if err := database.DB.Save(&user).Error; err != nil {
+	if err := database.DB.WithContext(r.Context()).Save(&user).Error; err != nil {
 		WriteInternalError(w, r, "Failed to deactivate user")
 		return
 	}
@@ -512,7 +518,7 @@ func ReactivateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Find user
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := database.DB.WithContext(r.Context()).First(&user, userID).Error; err != nil {
 		WriteNotFound(w, r, "User not found")
 		return
 	}
@@ -520,7 +526,7 @@ func ReactivateUser(w http.ResponseWriter, r *http.Request) {
 	// Reactivate
 	user.IsActive = true
 	user.UpdatedAt = time.Now()
-	if err := database.DB.Save(&user).Error; err != nil {
+	if err := database.DB.WithContext(r.Context()).Save(&user).Error; err != nil {
 		WriteInternalError(w, r, "Failed to reactivate user")
 		return
 	}
@@ -630,23 +636,21 @@ func GetDeletedUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse pagination
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
-	offset := (page - 1) * limit
+	p := ParsePagination(r)
 
 	// Count total deleted users
 	var total int64
-	database.DB.Unscoped().Model(&models.User{}).Where("deleted_at IS NOT NULL").Count(&total)
+	if err := database.DB.Unscoped().Model(&models.User{}).Where("deleted_at IS NOT NULL").Count(&total).Error; err != nil {
+		WriteInternalError(w, r, "Failed to count deleted users")
+		return
+	}
 
 	// Get deleted users
 	var users []models.User
-	database.DB.Unscoped().Where("deleted_at IS NOT NULL").Order("deleted_at DESC").Offset(offset).Limit(limit).Find(&users)
+	if err := database.DB.Unscoped().Where("deleted_at IS NOT NULL").Order("deleted_at DESC").Offset(p.Offset).Limit(p.Limit).Find(&users).Error; err != nil {
+		WriteInternalError(w, r, "Failed to fetch deleted users")
+		return
+	}
 
 	// Convert to response format
 	userResponses := make([]models.UserResponse, len(users))
@@ -654,14 +658,14 @@ func GetDeletedUsers(w http.ResponseWriter, r *http.Request) {
 		userResponses[i] = u.ToUserResponse()
 	}
 
-	totalPages := (int(total) + limit - 1) / limit
+	totalPages := (int(total) + p.Limit - 1) / p.Limit
 
 	deletedResp := models.UsersResponse{
 		Users:      userResponses,
 		Count:      len(userResponses),
 		Total:      int(total),
-		Page:       page,
-		Limit:      limit,
+		Page:       p.Page,
+		Limit:      p.Limit,
 		TotalPages: totalPages,
 	}
 
@@ -688,18 +692,15 @@ func SearchUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Limit results for command palette performance
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 || limit > 50 {
-		limit = 10
-	}
+	p := ParsePaginationWithDefaults(r, 10, 50)
 
 	// Search by name or email (case-insensitive)
 	var users []models.User
 	searchPattern := "%" + query + "%"
-	if err := database.DB.
+	if err := database.DB.WithContext(r.Context()).
 		Where("LOWER(name) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?)", searchPattern, searchPattern).
 		Order("name ASC").
-		Limit(limit).
+		Limit(p.Limit).
 		Find(&users).Error; err != nil {
 		WriteInternalError(w, r, "Failed to search users")
 		return

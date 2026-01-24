@@ -346,6 +346,9 @@ func TestHashAPIKey(t *testing.T) {
 }
 
 func TestEncryptDecryptAPIKey(t *testing.T) {
+	// Set JWT_SECRET for encryption
+	t.Setenv("JWT_SECRET", "test-secret-key-for-testing-32-bytes!")
+
 	originalKey := "sk-proj-1234567890abcdef"
 
 	// Encrypt the key
@@ -372,6 +375,9 @@ func TestEncryptDecryptAPIKey(t *testing.T) {
 }
 
 func TestEncryptAPIKey_DifferentResultsEachTime(t *testing.T) {
+	// Set JWT_SECRET for encryption
+	t.Setenv("JWT_SECRET", "test-secret-key-for-testing-32-bytes!")
+
 	key := "test-api-key"
 
 	encrypted1, _ := encryptAPIKey(key)

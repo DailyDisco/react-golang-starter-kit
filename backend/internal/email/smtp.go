@@ -7,25 +7,34 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/wneessen/go-mail"
+	"gorm.io/gorm"
 )
 
 // SMTPProvider implements EmailProvider using SMTP
 type SMTPProvider struct {
-	config    *Config
-	templates *TemplateManager
+	config           *Config
+	templates        *TemplateManager
+	templateResolver *TemplateResolver
 }
 
 // NewSMTPProvider creates a new SMTP email provider
-func NewSMTPProvider(cfg *Config) (*SMTPProvider, error) {
+func NewSMTPProvider(cfg *Config, db *gorm.DB) (*SMTPProvider, error) {
 	templates, err := NewTemplateManager()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load templates: %w", err)
 	}
 
-	return &SMTPProvider{
+	provider := &SMTPProvider{
 		config:    cfg,
 		templates: templates,
-	}, nil
+	}
+
+	// Initialize template resolver if database is available
+	if db != nil {
+		provider.templateResolver = NewTemplateResolver(db, templates)
+	}
+
+	return provider, nil
 }
 
 // Send sends an email via SMTP
@@ -61,12 +70,27 @@ func (p *SMTPProvider) Send(ctx context.Context, params SendParams) error {
 
 	var subject, htmlBody, textBody string
 	var err error
+	var templateSource string
 
 	// Render template if specified
 	if params.TemplateName != "" {
-		subject, htmlBody, textBody, err = p.templates.Render(params.TemplateName, params.Data)
-		if err != nil {
-			return fmt.Errorf("failed to render template: %w", err)
+		// Use template resolver if available (checks DB first, falls back to file)
+		if p.templateResolver != nil {
+			result, renderErr := p.templateResolver.Render(ctx, params.TemplateName, params.Data)
+			if renderErr != nil {
+				return fmt.Errorf("failed to render template: %w", renderErr)
+			}
+			subject = result.Subject
+			htmlBody = result.BodyHTML
+			textBody = result.BodyText
+			templateSource = result.Source
+		} else {
+			// Fall back to direct file-based templates
+			subject, htmlBody, textBody, err = p.templates.Render(params.TemplateName, params.Data)
+			if err != nil {
+				return fmt.Errorf("failed to render template: %w", err)
+			}
+			templateSource = "file"
 		}
 	}
 
@@ -126,7 +150,18 @@ func (p *SMTPProvider) Send(ctx context.Context, params SendParams) error {
 	log.Info().
 		Str("to", params.To).
 		Str("subject", subject).
+		Str("template", params.TemplateName).
+		Str("source", templateSource).
 		Msg("email sent successfully")
+
+	// Track send count for database templates
+	if templateSource == "database" && p.templateResolver != nil {
+		go func() {
+			if err := p.templateResolver.IncrementSendCount(context.Background(), params.TemplateName); err != nil {
+				log.Warn().Err(err).Str("template", params.TemplateName).Msg("failed to increment template send count")
+			}
+		}()
+	}
 
 	return nil
 }

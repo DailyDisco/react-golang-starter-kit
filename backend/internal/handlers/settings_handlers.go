@@ -3,10 +3,14 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
-	"react-golang-starter/internal/cache"
+	"react-golang-starter/internal/auth"
+	"react-golang-starter/internal/email"
 	"react-golang-starter/internal/jobs"
 	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/response"
@@ -14,10 +18,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
-var settingsService = services.NewSettingsService()
+var settingsService *services.SettingsService
 var healthService = services.NewHealthService()
+
+// InitSettingsHandlers initializes the settings handlers with their dependencies.
+// This must be called after database.DB is initialized.
+func InitSettingsHandlers(db *gorm.DB) {
+	settingsService = services.NewSettingsService(db)
+}
 
 // ============ System Settings Handlers ============
 
@@ -30,7 +41,7 @@ var healthService = services.NewHealthService()
 // @Failure 403 {object} models.ErrorResponse
 // @Router /api/admin/settings [get]
 func GetAllSettings(w http.ResponseWriter, r *http.Request) {
-	settings, err := settingsService.GetAllSettings()
+	settings, err := settingsService.GetAllSettings(r.Context())
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve settings")
 		return
@@ -62,7 +73,7 @@ func GetSettingsByCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	settings, err := settingsService.GetSettingsByCategory(category)
+	settings, err := settingsService.GetSettingsByCategory(r.Context(), category)
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve settings")
 		return
@@ -101,13 +112,10 @@ func UpdateSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := settingsService.UpdateSetting(key, req.Value); err != nil {
+	if err := settingsService.UpdateSettingWithCache(r.Context(), key, req.Value); err != nil {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
-
-	// Invalidate settings cache
-	cache.InvalidateSettings(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
@@ -127,7 +135,7 @@ func UpdateSetting(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} models.ErrorResponse
 // @Router /api/admin/settings/email [get]
 func GetEmailSettings(w http.ResponseWriter, r *http.Request) {
-	settings, err := settingsService.GetEmailSettings()
+	settings, err := settingsService.GetEmailSettings(r.Context())
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve email settings")
 		return
@@ -154,13 +162,10 @@ func UpdateEmailSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := settingsService.UpdateEmailSettings(&settings); err != nil {
+	if err := settingsService.UpdateEmailSettings(r.Context(), &settings); err != nil {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
-
-	// Invalidate settings cache
-	cache.InvalidateSettings(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
@@ -173,19 +178,64 @@ func UpdateEmailSettings(w http.ResponseWriter, r *http.Request) {
 // @Summary Send test email
 // @Tags Admin Settings
 // @Security BearerAuth
+// @Param body body models.TestEmailRequest true "Test email request"
 // @Success 200 {object} models.SuccessResponse
 // @Failure 400 {object} models.ErrorResponse
 // @Failure 401 {object} models.ErrorResponse
 // @Failure 403 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
 // @Router /api/admin/settings/email/test [post]
 func TestEmailSettings(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement email sending test
-	// This would use the email service to send a test email to the admin
+	// Check if email service is available
+	if !email.IsAvailable() {
+		WriteBadRequest(w, r, "Email service is not configured or disabled")
+		return
+	}
+
+	// Parse request body for recipient email
+	var req models.TestEmailRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteBadRequest(w, r, "Invalid request body")
+		return
+	}
+
+	// Default to requesting user's email if not specified
+	recipientEmail := req.RecipientEmail
+	if recipientEmail == "" {
+		// Get user from context
+		claims, ok := auth.GetClaimsFromContext(r.Context())
+		if ok && claims != nil && claims.Email != "" {
+			recipientEmail = claims.Email
+		} else {
+			WriteBadRequest(w, r, "Recipient email is required")
+			return
+		}
+	}
+
+	// Send test email
+	err := email.Send(r.Context(), email.SendParams{
+		To:           recipientEmail,
+		Subject:      "Test Email - Email Configuration Verified",
+		TemplateName: "",
+		PlainText:    "This is a test email to verify your email configuration is working correctly.\n\nIf you received this email, your SMTP settings are configured properly.",
+		Data: map[string]interface{}{
+			"recipient": recipientEmail,
+			"timestamp": time.Now().Format(time.RFC1123),
+		},
+	})
+
+	if err != nil {
+		log.Error().Err(err).Str("recipient", recipientEmail).Msg("failed to send test email")
+		WriteInternalError(w, r, "Failed to send test email. Please check your SMTP configuration.")
+		return
+	}
+
+	log.Info().Str("recipient", recipientEmail).Msg("test email sent successfully")
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
 		Success: true,
-		Message: "Test email sent successfully (not implemented)",
+		Message: "Test email sent successfully to " + recipientEmail,
 	})
 }
 
@@ -200,7 +250,7 @@ func TestEmailSettings(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} models.ErrorResponse
 // @Router /api/admin/settings/security [get]
 func GetSecuritySettings(w http.ResponseWriter, r *http.Request) {
-	settings, err := settingsService.GetSecuritySettings()
+	settings, err := settingsService.GetSecuritySettings(r.Context())
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve security settings")
 		return
@@ -227,13 +277,10 @@ func UpdateSecuritySettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := settingsService.UpdateSecuritySettings(&settings); err != nil {
+	if err := settingsService.UpdateSecuritySettings(r.Context(), &settings); err != nil {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
-
-	// Invalidate settings cache
-	cache.InvalidateSettings(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
@@ -253,7 +300,7 @@ func UpdateSecuritySettings(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} models.ErrorResponse
 // @Router /api/admin/settings/site [get]
 func GetSiteSettings(w http.ResponseWriter, r *http.Request) {
-	settings, err := settingsService.GetSiteSettings()
+	settings, err := settingsService.GetSiteSettings(r.Context())
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve site settings")
 		return
@@ -280,13 +327,10 @@ func UpdateSiteSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := settingsService.UpdateSiteSettings(&settings); err != nil {
+	if err := settingsService.UpdateSiteSettings(r.Context(), &settings); err != nil {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
-
-	// Invalidate settings cache
-	cache.InvalidateSettings(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
@@ -306,7 +350,7 @@ func UpdateSiteSettings(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} models.ErrorResponse
 // @Router /api/admin/ip-blocklist [get]
 func GetIPBlocklist(w http.ResponseWriter, r *http.Request) {
-	blocks, err := settingsService.GetIPBlocklist()
+	blocks, err := settingsService.GetIPBlocklist(r.Context())
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve IP blocklist")
 		return
@@ -358,7 +402,7 @@ func BlockIP(w http.ResponseWriter, r *http.Request) {
 	// Get admin user ID from context
 	userID := getUserIDFromContext(r)
 
-	block, err := settingsService.BlockIP(&req, userID)
+	block, err := settingsService.BlockIP(r.Context(), &req, userID)
 	if err != nil {
 		WriteInternalError(w, r, err.Error())
 		return
@@ -399,12 +443,12 @@ func UnblockIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := settingsService.UnblockIP(uint(id)); err != nil {
-		if err.Error() == "IP block not found" {
+	if err := settingsService.UnblockIP(r.Context(), uint(id)); err != nil {
+		if errors.Is(err, services.ErrIPBlockNotFound) {
 			WriteNotFound(w, r, "IP block not found")
 			return
 		}
-		WriteInternalError(w, r, err.Error())
+		WriteInternalError(w, r, "Failed to unblock IP")
 		return
 	}
 
@@ -426,7 +470,7 @@ func UnblockIP(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} models.ErrorResponse
 // @Router /api/admin/announcements [get]
 func GetAnnouncements(w http.ResponseWriter, r *http.Request) {
-	announcements, err := settingsService.GetAnnouncements()
+	announcements, err := settingsService.GetAnnouncements(r.Context())
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve announcements")
 		return
@@ -456,7 +500,7 @@ func GetActiveAnnouncements(w http.ResponseWriter, r *http.Request) {
 		userRole = getUserRoleFromContext(r)
 	}
 
-	announcements, err := settingsService.GetActiveAnnouncements(userID, userRole)
+	announcements, err := settingsService.GetActiveAnnouncements(r.Context(), userID, userRole)
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve announcements")
 		return
@@ -497,14 +541,11 @@ func CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := getUserIDFromContext(r)
-	announcement, err := settingsService.CreateAnnouncement(&req, userID)
+	announcement, err := settingsService.CreateAnnouncement(r.Context(), &req, userID)
 	if err != nil {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
-
-	// Invalidate announcements cache
-	cache.InvalidateAnnouncements(r.Context())
 
 	// Queue emails if send_email is true and the announcement is active
 	if req.SendEmail && announcement.IsActive {
@@ -519,7 +560,7 @@ func CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
 // enqueueAnnouncementEmails queues announcement emails to eligible users
 func enqueueAnnouncementEmails(ctx context.Context, announcement *models.AnnouncementBanner) {
 	// Get eligible users (respects email preferences and email_verified)
-	users, err := settingsService.GetUsersForAnnouncementEmail(announcement.ID, announcement.TargetRoles)
+	users, err := settingsService.GetUsersForAnnouncementEmail(ctx, announcement.ID, announcement.TargetRoles)
 	if err != nil {
 		log.Error().Err(err).
 			Uint("announcement_id", announcement.ID).
@@ -565,7 +606,7 @@ func enqueueAnnouncementEmails(ctx context.Context, announcement *models.Announc
 
 	// Mark announcement as email sent
 	if enqueued > 0 {
-		if err := settingsService.MarkAnnouncementEmailSent(announcement.ID); err != nil {
+		if err := settingsService.MarkAnnouncementEmailSent(ctx, announcement.ID); err != nil {
 			log.Error().Err(err).
 				Uint("announcement_id", announcement.ID).
 				Msg("failed to mark announcement email as sent")
@@ -605,18 +646,15 @@ func UpdateAnnouncement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	announcement, err := settingsService.UpdateAnnouncement(uint(id), &req)
+	announcement, err := settingsService.UpdateAnnouncement(r.Context(), uint(id), &req)
 	if err != nil {
-		if err.Error() == "announcement not found" {
+		if errors.Is(err, services.ErrAnnouncementNotFound) {
 			WriteNotFound(w, r, "Announcement not found")
 			return
 		}
-		WriteInternalError(w, r, err.Error())
+		WriteInternalError(w, r, "Failed to update announcement")
 		return
 	}
-
-	// Invalidate announcements cache
-	cache.InvalidateAnnouncements(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(announcement.ToResponse())
@@ -641,17 +679,14 @@ func DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := settingsService.DeleteAnnouncement(uint(id)); err != nil {
-		if err.Error() == "announcement not found" {
+	if err := settingsService.DeleteAnnouncement(r.Context(), uint(id)); err != nil {
+		if errors.Is(err, services.ErrAnnouncementNotFound) {
 			WriteNotFound(w, r, "Announcement not found")
 			return
 		}
-		WriteInternalError(w, r, err.Error())
+		WriteInternalError(w, r, "Failed to delete announcement")
 		return
 	}
-
-	// Invalidate announcements cache
-	cache.InvalidateAnnouncements(r.Context())
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(models.SuccessResponse{
@@ -683,7 +718,7 @@ func DismissAnnouncement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := settingsService.DismissAnnouncement(userID, uint(announcementID)); err != nil {
+	if err := settingsService.DismissAnnouncement(r.Context(), userID, uint(announcementID)); err != nil {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
@@ -720,7 +755,7 @@ func GetChangelog(w http.ResponseWriter, r *http.Request) {
 
 	category := r.URL.Query().Get("category")
 
-	changelog, err := settingsService.GetChangelog(page, limit, category)
+	changelog, err := settingsService.GetChangelog(r.Context(), page, limit, category)
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve changelog")
 		return
@@ -748,7 +783,7 @@ func GetUnreadModalAnnouncements(w http.ResponseWriter, r *http.Request) {
 
 	userRole := getUserRoleFromContext(r)
 
-	announcements, err := settingsService.GetUnreadModalAnnouncements(userID, userRole)
+	announcements, err := settingsService.GetUnreadModalAnnouncements(r.Context(), userID, userRole)
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve unread announcements")
 		return
@@ -789,7 +824,7 @@ func MarkAnnouncementRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := settingsService.MarkAnnouncementRead(userID, uint(announcementID)); err != nil {
+	if err := settingsService.MarkAnnouncementRead(r.Context(), userID, uint(announcementID)); err != nil {
 		WriteInternalError(w, r, err.Error())
 		return
 	}
@@ -812,7 +847,7 @@ func MarkAnnouncementRead(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} models.ErrorResponse
 // @Router /api/admin/email-templates [get]
 func GetEmailTemplates(w http.ResponseWriter, r *http.Request) {
-	templates, err := settingsService.GetEmailTemplates()
+	templates, err := settingsService.GetEmailTemplates(r.Context())
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve email templates")
 		return
@@ -845,13 +880,13 @@ func GetEmailTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	template, err := settingsService.GetEmailTemplate(uint(id))
+	template, err := settingsService.GetEmailTemplate(r.Context(), uint(id))
 	if err != nil {
-		if err.Error() == "email template not found" {
+		if errors.Is(err, services.ErrEmailTemplateNotFound) {
 			WriteNotFound(w, r, "Email template not found")
 			return
 		}
-		WriteInternalError(w, r, err.Error())
+		WriteInternalError(w, r, "Failed to retrieve email template")
 		return
 	}
 
@@ -886,13 +921,13 @@ func UpdateEmailTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := getUserIDFromContext(r)
-	template, err := settingsService.UpdateEmailTemplate(uint(id), &req, userID)
+	template, err := settingsService.UpdateEmailTemplate(r.Context(), uint(id), &req, userID)
 	if err != nil {
-		if err.Error() == "email template not found" {
+		if errors.Is(err, services.ErrEmailTemplateNotFound) {
 			WriteNotFound(w, r, "Email template not found")
 			return
 		}
-		WriteInternalError(w, r, err.Error())
+		WriteInternalError(w, r, "Failed to update email template")
 		return
 	}
 
@@ -926,13 +961,13 @@ func PreviewEmailTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	template, err := settingsService.GetEmailTemplate(uint(id))
+	template, err := settingsService.GetEmailTemplate(r.Context(), uint(id))
 	if err != nil {
-		if err.Error() == "email template not found" {
+		if errors.Is(err, services.ErrEmailTemplateNotFound) {
 			WriteNotFound(w, r, "Email template not found")
 			return
 		}
-		WriteInternalError(w, r, err.Error())
+		WriteInternalError(w, r, "Failed to retrieve email template")
 		return
 	}
 
@@ -943,9 +978,9 @@ func PreviewEmailTemplate(w http.ResponseWriter, r *http.Request) {
 
 	for key, value := range req.Variables {
 		placeholder := "{{" + key + "}}"
-		subject = replaceAll(subject, placeholder, value)
-		bodyHTML = replaceAll(bodyHTML, placeholder, value)
-		bodyText = replaceAll(bodyText, placeholder, value)
+		subject = strings.ReplaceAll(subject, placeholder, value)
+		bodyHTML = strings.ReplaceAll(bodyHTML, placeholder, value)
+		bodyText = strings.ReplaceAll(bodyText, placeholder, value)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -1013,27 +1048,4 @@ func GetCacheHealth(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(health)
-}
-
-// Helper functions
-
-func replaceAll(s, old, new string) string {
-	result := s
-	for {
-		idx := indexOf(result, old)
-		if idx == -1 {
-			break
-		}
-		result = result[:idx] + new + result[idx+len(old):]
-	}
-	return result
-}
-
-func indexOf(s, sub string) int {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
 }

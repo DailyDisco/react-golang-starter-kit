@@ -11,11 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"react-golang-starter/internal/audit"
 	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/jobs"
 	"react-golang-starter/internal/models"
 	"react-golang-starter/internal/services"
+	"react-golang-starter/internal/storage"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
@@ -80,7 +82,8 @@ func UpdateUserPreferences(w http.ResponseWriter, r *http.Request) {
 
 	prefs, err := userPrefsService.UpdatePreferences(userID, &req)
 	if err != nil {
-		WriteBadRequest(w, r, err.Error())
+		log.Error().Err(err).Uint("user_id", userID).Msg("failed to update user preferences")
+		WriteBadRequest(w, r, "Failed to update preferences")
 		return
 	}
 
@@ -215,19 +218,9 @@ func GetLoginHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
+	p := ParsePagination(r)
 
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
-
-	offset := (page - 1) * limit
-
-	history, total, err := sessionService.GetLoginHistory(userID, limit, offset)
+	history, total, err := sessionService.GetLoginHistory(userID, p.Limit, p.Offset)
 	if err != nil {
 		WriteInternalError(w, r, "Failed to retrieve login history")
 		return
@@ -238,15 +231,15 @@ func GetLoginHistory(w http.ResponseWriter, r *http.Request) {
 		responses[i] = h.ToResponse()
 	}
 
-	totalPages := (int(total) + limit - 1) / limit
+	totalPages := (int(total) + p.Limit - 1) / p.Limit
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"history":     responses,
 		"count":       len(responses),
 		"total":       total,
-		"page":        page,
-		"limit":       limit,
+		"page":        p.Page,
+		"limit":       p.Limit,
 		"total_pages": totalPages,
 	})
 }
@@ -417,7 +410,16 @@ func Verify2FA(w http.ResponseWriter, r *http.Request) {
 
 	backupCodes, err := totpService.VerifyAndEnable(userID, req.Code)
 	if err != nil {
-		WriteBadRequest(w, r, err.Error())
+		// Handle known validation errors with user-friendly messages
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "invalid verification code") {
+			WriteBadRequest(w, r, "Invalid verification code")
+		} else if strings.Contains(errMsg, "2FA not set up") {
+			WriteBadRequest(w, r, "Two-factor authentication is not set up")
+		} else {
+			log.Error().Err(err).Uint("user_id", userID).Msg("failed to enable 2FA")
+			WriteBadRequest(w, r, "Failed to enable two-factor authentication")
+		}
 		return
 	}
 
@@ -460,7 +462,13 @@ func Disable2FA(w http.ResponseWriter, r *http.Request) {
 	code := services.UnformatBackupCode(req.Code)
 
 	if err := totpService.DisableTwoFactor(userID, code); err != nil {
-		WriteBadRequest(w, r, err.Error())
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "invalid verification code") {
+			WriteBadRequest(w, r, "Invalid verification code")
+		} else {
+			log.Error().Err(err).Uint("user_id", userID).Msg("failed to disable 2FA")
+			WriteBadRequest(w, r, "Failed to disable two-factor authentication")
+		}
 		return
 	}
 
@@ -495,7 +503,13 @@ func RegenerateBackupCodes(w http.ResponseWriter, r *http.Request) {
 
 	backupCodes, err := totpService.RegenerateBackupCodes(userID, req.Code)
 	if err != nil {
-		WriteBadRequest(w, r, err.Error())
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "invalid verification code") {
+			WriteBadRequest(w, r, "Invalid verification code")
+		} else {
+			log.Error().Err(err).Uint("user_id", userID).Msg("failed to regenerate backup codes")
+			WriteBadRequest(w, r, "Failed to regenerate backup codes")
+		}
 		return
 	}
 
@@ -610,6 +624,19 @@ func RequestDataExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Rate limit: only allow one export request per 24 hours
+	twentyFourHoursAgo := time.Now().Add(-24 * time.Hour).Format(time.RFC3339)
+	var recentExport models.DataExport
+	err = database.DB.Where(
+		"user_id = ? AND requested_at > ?",
+		userID,
+		twentyFourHoursAgo,
+	).First(&recentExport).Error
+	if err == nil {
+		WriteBadRequest(w, r, "You can only request one data export per 24 hours. Please try again later.")
+		return
+	}
+
 	// Get user for email
 	var user models.User
 	if err := database.DB.First(&user, userID).Error; err != nil {
@@ -700,6 +727,33 @@ func DownloadDataExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Handle S3 storage - return presigned URL
+	if export.StorageType == "s3" {
+		s3Storage, err := storage.NewS3Storage()
+		if err != nil {
+			log.Error().Err(err).Msg("failed to initialize S3 storage")
+			WriteInternalError(w, r, "Storage unavailable")
+			return
+		}
+
+		// Generate presigned URL valid for 15 minutes
+		presignedURL, err := s3Storage.GeneratePresignedURL(r.Context(), *export.FilePath, 15*time.Minute)
+		if err != nil {
+			log.Error().Err(err).Str("s3_key", *export.FilePath).Msg("failed to generate presigned URL")
+			WriteInternalError(w, r, "Failed to generate download URL")
+			return
+		}
+
+		// Return the presigned URL as JSON
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"download_url": presignedURL,
+			"expires_in":   "15 minutes",
+		})
+		return
+	}
+
+	// Handle local storage - stream file directly
 	content, err := os.ReadFile(*export.FilePath)
 	if err != nil {
 		log.Error().Err(err).Str("path", *export.FilePath).Msg("failed to read export file")
@@ -1003,6 +1057,77 @@ func GetDataExportStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(export.ToResponse())
+}
+
+// ============ User Activity Handlers ============
+
+// GetMyActivity returns the current user's recent activity
+// @Summary Get my activity
+// @Description Returns the current user's audit log entries (login, logout, profile changes, etc.)
+// @Tags User Settings
+// @Security BearerAuth
+// @Param limit query int false "Max items to return (1-50, default 10)"
+// @Success 200 {object} models.MyActivityResponse
+// @Failure 401 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /api/me/activity [get]
+func GetMyActivity(w http.ResponseWriter, r *http.Request) {
+	userID := getUserIDFromContext(r)
+	if userID == 0 {
+		WriteUnauthorized(w, r, "Authentication required")
+		return
+	}
+
+	// Parse limit parameter (default 10, max 50)
+	limit := 10
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil {
+			limit = parsed
+		}
+	}
+	if limit < 1 {
+		limit = 1
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	// Fetch user's audit logs
+	logs, total, err := audit.GetUserAuditLogs(userID, 1, limit)
+	if err != nil {
+		log.Error().Err(err).Uint("user_id", userID).Msg("Failed to fetch user activity")
+		WriteInternalError(w, r, "Failed to fetch activity")
+		return
+	}
+
+	// Convert to response format (strip sensitive fields for privacy)
+	activities := make([]models.ActivityLogItem, len(logs))
+	for i, logEntry := range logs {
+		activities[i] = models.ActivityLogItem{
+			ID:         logEntry.ID,
+			TargetType: logEntry.TargetType,
+			Action:     logEntry.Action,
+			CreatedAt:  logEntry.CreatedAt,
+		}
+		// Include changes only for certain action types (not login/logout)
+		if logEntry.Action != models.AuditActionLogin && logEntry.Action != models.AuditActionLogout {
+			if logEntry.Changes != "" {
+				var changes map[string]interface{}
+				if err := json.Unmarshal([]byte(logEntry.Changes), &changes); err == nil {
+					activities[i].Changes = changes
+				}
+			}
+		}
+	}
+
+	response := models.MyActivityResponse{
+		Activities: activities,
+		Count:      len(activities),
+		Total:      int(total),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // ============ Helper Functions ============
