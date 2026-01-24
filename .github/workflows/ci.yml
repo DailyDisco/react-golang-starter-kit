@@ -24,11 +24,12 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -46,10 +47,11 @@ jobs:
   frontend-checks:
     name: Frontend Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -113,11 +115,87 @@ jobs:
   frontend-e2e:
     name: Frontend E2E
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [changes, frontend-checks]
     if: needs.changes.outputs.frontend == 'true'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: e2e_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
+      # Setup Go for backend
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: ${{ env.BACKEND_DIR }}/go.sum
+
+      # Run database migrations
+      - name: Install golang-migrate
+        run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+      - name: Run migrations
+        run: |
+          DB_URL="postgres://testuser:testpass@localhost:5432/e2e_test?sslmode=disable"
+          migrate -path ./migrations -database "$DB_URL" up
+        working-directory: ${{ env.BACKEND_DIR }}
+
+      # Build and start backend server
+      - name: Build backend
+        run: go build -o server ./cmd/main.go
+        working-directory: ${{ env.BACKEND_DIR }}
+
+      - name: Start backend server
+        run: |
+          ./server &
+          echo $! > /tmp/backend.pid
+          # Wait for backend to be ready
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/api/health > /dev/null 2>&1; then
+              echo "Backend is ready"
+              break
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 2
+          done
+          # Verify backend is running
+          curl -f http://localhost:8080/api/health || exit 1
+        working-directory: ${{ env.BACKEND_DIR }}
+        env:
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_USER: testuser
+          DB_PASSWORD: testpass
+          DB_NAME: e2e_test
+          DB_SSLMODE: disable
+          REDIS_URL: "redis://localhost:6379"
+          JWT_SECRET: "e2e-test-jwt-secret-must-be-at-least-32-characters-long"
+          API_PORT: "8080"
+          GO_ENV: test
+
+      # Setup frontend
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -139,6 +217,23 @@ jobs:
           name: frontend-build
           path: ${{ env.FRONTEND_DIR }}/dist/
 
+      # Start frontend preview server
+      - name: Start frontend preview server
+        run: |
+          npx serve -s dist -l 3000 &
+          echo $! > /tmp/frontend.pid
+          # Wait for frontend to be ready
+          for i in {1..15}; do
+            if curl -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend is ready"
+              break
+            fi
+            echo "Waiting for frontend... ($i/15)"
+            sleep 1
+          done
+          curl -f http://localhost:3000 || exit 1
+        working-directory: ${{ env.FRONTEND_DIR }}
+
       - name: Run Playwright tests
         run: npm run test:e2e
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -158,13 +253,14 @@ jobs:
   frontend-compat:
     name: Frontend Compat (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: changes
     if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.changes.outputs.frontend == 'true'
     strategy:
       matrix:
         node-version: ["22"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -183,10 +279,11 @@ jobs:
   backend-checks:
     name: Backend Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -200,8 +297,15 @@ jobs:
         with:
           version: latest
           working-directory: ${{ env.BACKEND_DIR }}
-          args: --timeout=5m
+          args: --timeout=5m --out-format=colored-line-number,sarif:golangci-results.sarif
           install-mode: go-install
+
+      - name: Upload Go lint SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ env.BACKEND_DIR }}/golangci-results.sarif
+          category: golangci-lint
 
       - name: Run govulncheck
         run: |
@@ -256,6 +360,7 @@ jobs:
   backend-migrations:
     name: Backend Migrations
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     services:
@@ -273,7 +378,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -298,6 +403,7 @@ jobs:
   backend-integration:
     name: Backend Integration Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [changes, backend-checks]
     if: needs.changes.outputs.backend == 'true'
     services:
@@ -324,7 +430,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -366,13 +472,14 @@ jobs:
   backend-compat:
     name: Backend Compat (Go ${{ matrix.go-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: changes
     if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.changes.outputs.backend == 'true'
     strategy:
       matrix:
         go-version: ["1.24"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -394,10 +501,11 @@ jobs:
   container-security:
     name: Container Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [changes, backend-checks]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -413,7 +521,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner (backend)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: "backend:scan"
           format: "sarif"
@@ -429,7 +537,7 @@ jobs:
           category: "container-backend"
 
       - name: Run Trivy (table output for logs)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: "backend:scan"
           format: "table"
@@ -438,7 +546,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Scan Dockerfile for misconfigurations
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: "config"
           scan-ref: "${{ env.BACKEND_DIR }}"
@@ -452,6 +560,7 @@ jobs:
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [changes, frontend-checks, frontend-e2e, backend-checks, backend-migrations, backend-integration, container-security]
     if: always()
     steps:
@@ -515,6 +624,7 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [ci-success, container-security]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     environment:
@@ -546,7 +656,7 @@ jobs:
           echo "Generated version: $VERSION"
 
       - name: Build and push backend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           push: true
@@ -557,7 +667,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push frontend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./frontend
           push: true
