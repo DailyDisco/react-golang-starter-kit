@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { CACHE_TIMES } from "@/lib/cache-config";
 import { queryKeys } from "@/lib/query-keys";
@@ -78,6 +80,7 @@ function ProfileSettingsPage() {
     linkedin: "",
     website: "",
   });
+  const [showDeleteAvatarConfirm, setShowDeleteAvatarConfirm] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -129,6 +132,27 @@ function ProfileSettingsPage() {
     },
   });
 
+  // Calculate hasChanges with useMemo (must be before early returns for hook consistency)
+  const currentSocialLinks = useMemo(() => parseSocialLinks(user?.social_links), [user?.social_links]);
+  const hasChanges = useMemo(
+    () =>
+      formData.name !== (user?.name ?? "") ||
+      formData.email !== (user?.email ?? "") ||
+      formData.bio !== (user?.bio ?? "") ||
+      formData.location !== (user?.location ?? "") ||
+      formData.twitter !== (currentSocialLinks.twitter ?? "") ||
+      formData.github !== (currentSocialLinks.github ?? "") ||
+      formData.linkedin !== (currentSocialLinks.linkedin ?? "") ||
+      formData.website !== (currentSocialLinks.website ?? ""),
+    [formData, user, currentSocialLinks]
+  );
+
+  // Warn user before navigating away with unsaved changes
+  useUnsavedChangesWarning({
+    isDirty: hasChanges,
+    message: t("profile.unsavedChangesWarning", "You have unsaved profile changes. Are you sure you want to leave?"),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const socialLinks: SocialLinks = {};
@@ -150,10 +174,9 @@ function ProfileSettingsPage() {
     if (formData.bio !== (user?.bio || "")) updates.bio = formData.bio;
     if (formData.location !== (user?.location || "")) updates.location = formData.location;
 
-    const currentSocialLinks = parseSocialLinks(user?.social_links);
     const newSocialLinksStr = JSON.stringify(socialLinks);
-    const currentSocialLinksStr = JSON.stringify(currentSocialLinks);
-    if (newSocialLinksStr !== currentSocialLinksStr) {
+    const savedSocialLinksStr = JSON.stringify(currentSocialLinks);
+    if (newSocialLinksStr !== savedSocialLinksStr) {
       updates.social_links = newSocialLinksStr;
     }
 
@@ -188,17 +211,6 @@ function ProfileSettingsPage() {
     );
   }
 
-  const currentSocialLinks = parseSocialLinks(user?.social_links);
-  const hasChanges =
-    formData.name !== user?.name ||
-    formData.email !== user?.email ||
-    formData.bio !== (user?.bio || "") ||
-    formData.location !== (user?.location || "") ||
-    formData.twitter !== (currentSocialLinks.twitter || "") ||
-    formData.github !== (currentSocialLinks.github || "") ||
-    formData.linkedin !== (currentSocialLinks.linkedin || "") ||
-    formData.website !== (currentSocialLinks.website || "");
-
   return (
     <SettingsLayout>
       <div className="space-y-8">
@@ -222,14 +234,6 @@ function ProfileSettingsPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-white" />
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute right-0 bottom-0 rounded-full bg-white p-2 shadow-lg transition-transform hover:scale-110"
-                disabled={uploadAvatarMutation.isPending}
-              >
-                <Camera className="text-foreground h-4 w-4" />
-              </button>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -277,12 +281,25 @@ function ProfileSettingsPage() {
                   type="button"
                   variant="destructive"
                   size="sm"
-                  onClick={() => deleteAvatarMutation.mutate()}
+                  onClick={() => setShowDeleteAvatarConfirm(true)}
                   disabled={deleteAvatarMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
+              <ConfirmDialog
+                open={showDeleteAvatarConfirm}
+                onOpenChange={setShowDeleteAvatarConfirm}
+                title={t("profile.deleteAvatar.title", "Remove profile photo?")}
+                description={t("profile.deleteAvatar.description", "Your profile photo will be permanently deleted.")}
+                variant="destructive"
+                confirmLabel={t("profile.deleteAvatar.confirm", "Remove")}
+                loading={deleteAvatarMutation.isPending}
+                onConfirm={() => {
+                  deleteAvatarMutation.mutate();
+                  setShowDeleteAvatarConfirm(false);
+                }}
+              />
             </div>
           </div>
         </div>

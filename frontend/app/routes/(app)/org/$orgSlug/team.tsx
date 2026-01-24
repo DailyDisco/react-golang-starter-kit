@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -69,6 +70,7 @@ function TeamPage() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"admin" | "member">("member");
+  const [memberToRemove, setMemberToRemove] = useState<OrganizationMember | null>(null);
 
   // Members are guaranteed by the loader - use suspense query
   const { data: members } = useSuspenseQuery(orgMembersQueryOptions(orgSlug));
@@ -135,11 +137,26 @@ function TeamPage() {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "owner":
-        return <Crown className="h-4 w-4 text-yellow-500" />;
+        return (
+          <Crown
+            className="h-4 w-4 text-yellow-500"
+            aria-label="Owner"
+          />
+        );
       case "admin":
-        return <Shield className="h-4 w-4 text-blue-500" />;
+        return (
+          <Shield
+            className="h-4 w-4 text-blue-500"
+            aria-label="Admin"
+          />
+        );
       default:
-        return <User className="h-4 w-4 text-gray-500" />;
+        return (
+          <User
+            className="h-4 w-4 text-gray-500"
+            aria-label="Member"
+          />
+        );
     }
   };
 
@@ -295,7 +312,7 @@ function TeamPage() {
                             {member.role !== "owner" && (
                               <DropdownMenuItem
                                 className="text-destructive"
-                                onClick={() => removeMemberMutation.mutate(member.user_id)}
+                                onClick={() => setMemberToRemove(member)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Remove
@@ -357,6 +374,24 @@ function TeamPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Remove member confirmation dialog */}
+      <ConfirmDialog
+        open={memberToRemove !== null}
+        onOpenChange={(open) => !open && setMemberToRemove(null)}
+        title="Remove team member?"
+        description={`Are you sure you want to remove ${memberToRemove?.name || memberToRemove?.email} from this organization? They will lose access to all organization resources.`}
+        variant="destructive"
+        confirmLabel="Remove"
+        loading={removeMemberMutation.isPending}
+        onConfirm={() => {
+          if (memberToRemove) {
+            removeMemberMutation.mutate(memberToRemove.user_id, {
+              onSuccess: () => setMemberToRemove(null),
+            });
+          }
+        }}
+      />
     </div>
   );
 }

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { AdminLayout } from "@/layouts/AdminLayout";
-import { requireAdmin } from "@/lib/guards";
 import { adminStatsQueryOptions } from "@/lib/route-query-options";
 import { type AdminStats } from "@/services/admin";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -25,7 +24,6 @@ import { useTranslation } from "react-i18next";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/(app)/admin/")({
-  beforeLoad: async (ctx) => requireAdmin(ctx),
   loader: ({ context }) => context.queryClient.ensureQueryData(adminStatsQueryOptions()),
   pendingMs: 200,
   pendingComponent: AdminDashboardPending,

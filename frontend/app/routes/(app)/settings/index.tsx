@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { SettingsLayout } from "@/layouts/SettingsLayout";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bell, ChevronRight, History, Key, KeyRound, Link2, Palette, Shield, User } from "lucide-react";
+import { BarChart3, Bell, ChevronRight, History, Key, KeyRound, Link2, Palette, Shield, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/(app)/settings/")({
@@ -48,6 +48,14 @@ const settingsNavItems = [
     gradient: "from-orange-500/20 to-orange-600/10",
     iconColor: "text-orange-600 dark:text-orange-400",
     borderColor: "group-hover:border-orange-500/50",
+  },
+  {
+    key: "usage",
+    href: "/settings/usage",
+    icon: BarChart3,
+    gradient: "from-indigo-500/20 to-indigo-600/10",
+    iconColor: "text-indigo-600 dark:text-indigo-400",
+    borderColor: "group-hover:border-indigo-500/50",
   },
   {
     key: "privacy",

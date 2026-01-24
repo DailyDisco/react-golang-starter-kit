@@ -1,9 +1,10 @@
-import { ActivityFeed, useMockActivities } from "@/components/dashboard";
+import { ActivityFeed, UsageSummaryCard } from "@/components/dashboard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useMyActivity } from "@/hooks/queries";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -37,7 +38,7 @@ function getUserInitials(name: string): string {
 function Dashboard() {
   const { t } = useTranslation("dashboard");
   const { user } = useAuth();
-  const mockActivities = useMockActivities();
+  const { data: activities = [], isLoading: isLoadingActivity } = useMyActivity(10);
 
   const quickActions = [
     {
@@ -238,15 +239,24 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Activity Feed */}
-        <div
-          className="animate-fade-in-up lg:col-span-1"
-          style={{ animationDelay: "400ms" }}
-        >
-          <ActivityFeed
-            activities={mockActivities}
-            title={t("activityFeed.title", "Recent Activity")}
-          />
+        {/* Right Column: Activity Feed + Usage Summary */}
+        <div className="space-y-6 lg:col-span-1">
+          <div
+            className="animate-fade-in-up"
+            style={{ animationDelay: "400ms" }}
+          >
+            <ActivityFeed
+              activities={activities}
+              isLoading={isLoadingActivity}
+              title={t("activityFeed.title", "Recent Activity")}
+            />
+          </div>
+          <div
+            className="animate-fade-in-up"
+            style={{ animationDelay: "450ms" }}
+          >
+            <UsageSummaryCard />
+          </div>
         </div>
       </div>
 
