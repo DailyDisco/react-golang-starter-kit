@@ -313,9 +313,9 @@ test.describe("WebSocket - Performance", () => {
     await page.goto("/dashboard");
 
     // Get initial memory usage
-    const initialMemory = await page.evaluate(() => {
+    const initialMemory = await page.evaluate((): number => {
       if ("memory" in performance) {
-        return (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize;
+        return (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize ?? 0;
       }
       return 0;
     });
@@ -329,9 +329,9 @@ test.describe("WebSocket - Performance", () => {
     }
 
     // Get final memory usage
-    const finalMemory = await page.evaluate(() => {
+    const finalMemory = await page.evaluate((): number => {
       if ("memory" in performance) {
-        return (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize;
+        return (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize ?? 0;
       }
       return 0;
     });

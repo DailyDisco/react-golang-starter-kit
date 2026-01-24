@@ -139,12 +139,17 @@ react-golang-starter-kit/
 │   │   └── stores/     # Zustand state management
 │   └── public/         # Static assets
 │
-├── grafana/            # Grafana dashboard configs
-├── prometheus/         # Prometheus configuration
+├── docker/             # Docker compose files
+│   ├── compose.yml     # Base services
+│   ├── compose.dev.yml # Development overrides
+│   ├── compose.prod.yml # Production environment
+│   └── compose.observability.yml # Monitoring stack
 │
-├── docker-compose.yml  # Development environment
-├── docker-compose.prod.yml # Production environment
-├── docker-compose.observability.yml # Monitoring stack
+├── infra/              # Infrastructure configs
+│   ├── grafana/        # Grafana dashboards
+│   └── prometheus/     # Prometheus configuration
+│
+├── scripts/            # Deployment and utility scripts
 └── Makefile            # Development commands
 ```
 
@@ -188,7 +193,7 @@ Deploy to production in minutes with your preferred platform:
 ### Docker + VPS (Most Control)
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker/compose.yml -f docker/compose.prod.yml up -d
 ```
 
 **Time:** 30-60 minutes | **Cost:** $5-20/month
