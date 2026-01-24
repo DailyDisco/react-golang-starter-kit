@@ -64,6 +64,10 @@ jobs:
         run: npm ci
         working-directory: ${{ env.FRONTEND_DIR }}
 
+      - name: Generate TanStack Router routes
+        run: npx tsr generate
+        working-directory: ${{ env.FRONTEND_DIR }}
+
       # Run all checks in parallel using background processes
       - name: Run quality checks (parallel)
         run: |
@@ -270,7 +274,7 @@ jobs:
           cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
 
       - name: Install and test
-        run: npm ci && npm run test:coverage
+        run: npm ci && npx tsr generate && npm run test:coverage
         working-directory: ${{ env.FRONTEND_DIR }}
 
   # ============================================
