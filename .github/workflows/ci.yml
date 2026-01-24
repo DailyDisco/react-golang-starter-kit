@@ -97,14 +97,14 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: frontend-build
           path: ${{ env.FRONTEND_DIR }}/dist/
           retention-days: 7
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: frontend-coverage
           path: ${{ env.FRONTEND_DIR }}/coverage/
@@ -147,7 +147,7 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-report
@@ -239,14 +239,14 @@ jobs:
         working-directory: ${{ env.BACKEND_DIR }}
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: backend-build
           path: ${{ env.BACKEND_DIR }}/backend-linux-amd64
           retention-days: 7
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: hashFiles('backend/coverage.out') != ''
         with:
           name: backend-coverage
@@ -356,7 +356,7 @@ jobs:
           REDIS_URL: "redis://localhost:6382"
 
       - name: Upload integration coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: backend-integration-coverage
           path: ${{ env.BACKEND_DIR }}/coverage-integration.out
