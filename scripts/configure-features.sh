@@ -190,8 +190,8 @@ fi
 # Update docker-compose based on features
 # ============================================
 
-if [ -f "docker-compose.yml" ]; then
-    print_info "Feature-specific Docker services can be enabled/disabled in docker-compose.yml"
+if [ -f "docker/compose.yml" ]; then
+    print_info "Feature-specific Docker services can be enabled/disabled in docker/compose.yml"
 fi
 
 # ============================================

@@ -46,7 +46,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --no-audit --no-fund
 
 # Build stage
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -68,35 +68,8 @@ ENV NODE_ENV=production
 # Build the application with optimizations
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine AS production
-
-# Install curl for healthchecks
-RUN apk add --no-cache curl
-
-# Copy built application from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Create nginx user and set permissions
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chown -R nginx:nginx /var/cache/nginx && \
-    chown -R nginx:nginx /var/log/nginx && \
-    chown -R nginx:nginx /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && \
-    chown nginx:nginx /var/run/nginx.pid
-
-# Switch to non-root user
-USER nginx
-
-# Expose port
-EXPOSE 80
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/health || exit 1
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Production stage - minimal image holding built static files
+# Use: docker build --target production -o ./dist ./frontend
+# Or simply run: npm run build
+FROM scratch AS production
+COPY --from=build /app/dist /
