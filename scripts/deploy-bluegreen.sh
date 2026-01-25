@@ -45,8 +45,12 @@ POST_SWITCH_CHECKS=5
 POST_SWITCH_INTERVAL=2
 POST_SWITCH_THRESHOLD=3
 
+# Container prefix (from PROJECT_NAME in .env.prod, loaded later via source)
+# Will be set after sourcing env file
+CONTAINER_PREFIX=""
+
 # Image names for rollback caching
-IMAGE_NAME="react-golang-backend"
+IMAGE_NAME="docker-backend"
 ROLLBACK_TAG="rollback"
 
 # ============================================
@@ -78,7 +82,7 @@ compose_cmd() {
 
 graceful_stop() {
     local env="$1"
-    local container="react-golang-backend-${env}"
+    local container="${CONTAINER_PREFIX}-backend-${env}"
 
     if docker ps --filter "name=${container}" --filter "status=running" -q | grep -q .; then
         print_info "Gracefully stopping ${container} (${GRACEFUL_SHUTDOWN_TIMEOUT}s drain)..."
@@ -162,7 +166,7 @@ get_inactive_env() {
 
 wait_for_healthy() {
     local service="$1"
-    local container_name="react-golang-${service}"
+    local container_name="${CONTAINER_PREFIX}-${service}"
     local retries=$HEALTH_CHECK_RETRIES
 
     print_info "Waiting for ${service} to be healthy..."
@@ -192,7 +196,7 @@ wait_for_healthy() {
 # Deep health check using /health/ready endpoint (verifies DB + cache)
 deep_health_check() {
     local env="$1"
-    local container="react-golang-backend-${env}"
+    local container="${CONTAINER_PREFIX}-backend-${env}"
     local retries=$HEALTH_CHECK_RETRIES
 
     # Get the port the container is listening on
@@ -286,7 +290,7 @@ start_infrastructure() {
     # Wait for postgres
     local retries=30
     while [ $retries -gt 0 ]; do
-        if docker exec react-golang-postgres-prod pg_isready -U "${DB_USER:-devuser}" >/dev/null 2>&1; then
+        if docker exec ${CONTAINER_PREFIX}-postgres-prod pg_isready -U "${DB_USER:-devuser}" >/dev/null 2>&1; then
             print_success "PostgreSQL is ready"
             break
         fi
@@ -432,7 +436,7 @@ cmd_switch() {
     echo ""
 
     # Check if target is running
-    if ! docker ps --filter "name=react-golang-backend-${target_env}" --filter "status=running" | grep -q backend; then
+    if ! docker ps --filter "name=${CONTAINER_PREFIX}-backend-${target_env}" --filter "status=running" | grep -q backend; then
         print_error "backend-${target_env} is not running"
         print_info "Use 'make prod' to deploy first"
         exit 1
@@ -498,7 +502,7 @@ cmd_status() {
     echo "Backend Status:"
     echo "---------------"
     for env in blue green; do
-        local container="react-golang-backend-${env}"
+        local container="${CONTAINER_PREFIX}-backend-${env}"
         local status
         status=$(docker inspect --format='{{.State.Status}}' "$container" 2>/dev/null || echo "not_found")
         local health
@@ -578,6 +582,9 @@ fi
 set -a
 source "$ENV_FILE"
 set +a
+
+# Set container prefix from PROJECT_NAME (must be after sourcing env)
+CONTAINER_PREFIX="${PROJECT_NAME:-starter-kit}"
 
 case "${1:-}" in
     --switch)

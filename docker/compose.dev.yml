@@ -4,7 +4,7 @@
 
 services:
   postgres:
-    container_name: react-golang-postgres
+    container_name: ${PROJECT_NAME:-starter-kit}-postgres
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
     ports:
       - "${DB_PORT:-5432}:5432"
@@ -22,7 +22,7 @@ services:
           memory: 256M
 
   backend:
-    container_name: react-golang-backend
+    container_name: ${PROJECT_NAME:-starter-kit}-backend
     build:
       target: development
     working_dir: /app
@@ -53,7 +53,7 @@ services:
           memory: 256M
 
   frontend:
-    container_name: react-golang-frontend
+    container_name: ${PROJECT_NAME:-starter-kit}-frontend
     build:
       context: ../frontend
       dockerfile: ./Dockerfile
@@ -91,7 +91,7 @@ services:
           memory: 512M
 
   dragonfly:
-    container_name: react-golang-dragonfly
+    container_name: ${PROJECT_NAME:-starter-kit}-dragonfly
     ports:
       - "${REDIS_PORT:-6381}:6379"
     command: dragonfly --requirepass "${REDIS_PASSWORD:-}" --maxmemory ${DRAGONFLY_MEMORY:-384mb}

@@ -7,11 +7,13 @@
 .env.*.local
 .env.prod
 .env.production
+.env.staging
 .env.development
 .env.test
 .env.agent
 !.env.example
 !.env.prod.example
+!.env.staging.example
 
 # ===========================================
 # Dependencies

@@ -10,17 +10,15 @@
 services:
   postgres-test:
     image: postgres:17-alpine
-    container_name: react-golang-postgres-test
+    container_name: ${PROJECT_NAME:-starter-kit}-postgres-test
     restart: "no"
     environment:
-      POSTGRES_DB: starter_kit_test
+      POSTGRES_DB: template-test-db
       POSTGRES_USER: testuser
       POSTGRES_PASSWORD: testpass
       POSTGRES_INITDB_ARGS: "--data-checksums"
     ports:
       - "5433:5432"
-    volumes:
-      - ./scripts/test-db-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     tmpfs:
       # Use tmpfs for faster I/O during tests
       - /var/lib/postgresql/data
@@ -37,7 +35,7 @@ services:
       - -c
       - shared_buffers=256MB
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U testuser -d starter_kit_test"]
+      test: ["CMD-SHELL", "pg_isready -U testuser -d template-test-db"]
       interval: 2s
       timeout: 2s
       retries: 10
@@ -47,7 +45,7 @@ services:
 
   dragonfly-test:
     image: docker.dragonflydb.io/dragonflydb/dragonfly:v1.35.1
-    container_name: react-golang-dragonfly-test
+    container_name: ${PROJECT_NAME:-starter-kit}-dragonfly-test
     restart: "no"
     ports:
       - "6382:6379"
@@ -63,7 +61,7 @@ services:
   # LocalStack for S3 mock (optional - comment out if not needed)
   localstack:
     image: localstack/localstack:latest
-    container_name: react-golang-localstack-test
+    container_name: ${PROJECT_NAME:-starter-kit}-localstack-test
     restart: "no"
     ports:
       - "4566:4566"
@@ -82,7 +80,7 @@ services:
   # Mailpit for email capture testing
   mailpit:
     image: axllent/mailpit:latest
-    container_name: react-golang-mailpit-test
+    container_name: ${PROJECT_NAME:-starter-kit}-mailpit-test
     restart: "no"
     ports:
       - "8025:8025"   # Web UI
