@@ -271,6 +271,19 @@ test-clean: ## Clean test artifacts
 format-backend: ## Format backend Go code
 	@cd backend && go fmt ./...
 
+sync-deps: ## Sync all dependencies (npm install + go mod tidy)
+	@echo "Syncing frontend dependencies..."
+	@bash -c 'export NVM_DIR="$$HOME/.nvm"; [ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; cd frontend && npm install'
+	@echo "Syncing backend dependencies..."
+	@cd backend && go mod tidy
+	@echo "Dependencies synced!"
+
+sync-frontend: ## Sync frontend dependencies only
+	@bash -c 'export NVM_DIR="$$HOME/.nvm"; [ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; cd frontend && npm install'
+
+sync-backend: ## Sync backend dependencies only
+	@cd backend && go mod tidy
+
 # ============================================
 # Cleanup
 # ============================================

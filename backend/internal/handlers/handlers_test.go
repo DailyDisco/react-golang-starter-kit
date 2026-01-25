@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"react-golang-starter/internal/auth"
 	"react-golang-starter/internal/models"
@@ -653,5 +654,276 @@ func TestPremiumContentResponse_JSONMarshal(t *testing.T) {
 
 	if decoded.AccessLevel != resp.AccessLevel {
 		t.Errorf("PremiumContentResponse.AccessLevel = %v, want %v", decoded.AccessLevel, resp.AccessLevel)
+	}
+}
+
+// ============ formatBytes Tests ============
+
+func TestFormatBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		bytes    uint64
+		expected string
+	}{
+		{"zero bytes", 0, "0 B"},
+		{"bytes", 512, "512 B"},
+		{"kilobytes", 1024, "1.0 KB"},
+		{"megabytes", 1024 * 1024, "1.0 MB"},
+		{"gigabytes", 1024 * 1024 * 1024, "1.0 GB"},
+		{"terabytes", 1024 * 1024 * 1024 * 1024, "1.0 TB"},
+		{"1.5 KB", 1536, "1.5 KB"},
+		{"2.5 MB", 2621440, "2.5 MB"},
+		{"10 GB", 10737418240, "10.0 GB"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatBytes(tt.bytes)
+			if result != tt.expected {
+				t.Errorf("formatBytes(%d) = %q, want %q", tt.bytes, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFormatBytes_LargeValues(t *testing.T) {
+	// Test petabyte range
+	result := formatBytes(1024 * 1024 * 1024 * 1024 * 1024)
+	if result != "1.0 PB" {
+		t.Errorf("formatBytes(1PB) = %q, want 1.0 PB", result)
+	}
+
+	// Test exabyte range
+	result = formatBytes(1024 * 1024 * 1024 * 1024 * 1024 * 1024)
+	if result != "1.0 EB" {
+		t.Errorf("formatBytes(1EB) = %q, want 1.0 EB", result)
+	}
+}
+
+// ============ formatDuration Tests ============
+
+func TestFormatDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration time.Duration
+		expected string
+	}{
+		{"just seconds", 45 * time.Second, "45s"},
+		{"1 minute", 60 * time.Second, "1m 0s"},
+		{"5 minutes", 5 * time.Minute, "5m 0s"},
+		{"1 hour", 1 * time.Hour, "1h 0m 0s"},
+		{"1 hour 30 minutes", 90 * time.Minute, "1h 30m 0s"},
+		{"1 day", 24 * time.Hour, "1d 0h 0m 0s"},
+		{"1 day 2 hours", 26 * time.Hour, "1d 2h 0m 0s"},
+		{"complex", 25*time.Hour + time.Minute + time.Second, "1d 1h 1m 1s"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatDuration(tt.duration)
+			if result != tt.expected {
+				t.Errorf("formatDuration(%v) = %q, want %q", tt.duration, result, tt.expected)
+			}
+		})
+	}
+}
+
+// ============ getUserCacheKey Tests ============
+
+func TestGetUserCacheKey(t *testing.T) {
+	tests := []struct {
+		userID   uint
+		expected string
+	}{
+		{1, "user:1"},
+		{42, "user:42"},
+		{999999, "user:999999"},
+		{0, "user:0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			result := getUserCacheKey(tt.userID)
+			if result != tt.expected {
+				t.Errorf("getUserCacheKey(%d) = %q, want %q", tt.userID, result, tt.expected)
+			}
+		})
+	}
+}
+
+// ============ getCachedUser Tests ============
+
+func TestGetCachedUser_CacheNotAvailable(t *testing.T) {
+	// When cache is not available, getCachedUser should return nil, false
+	user, found := getCachedUser(context.Background(), 1)
+
+	if found {
+		t.Error("getCachedUser() should return false when cache is not available")
+	}
+
+	if user != nil {
+		t.Error("getCachedUser() should return nil when cache is not available")
+	}
+}
+
+// ============ cacheUser Tests ============
+
+func TestCacheUser_CacheNotAvailable(t *testing.T) {
+	// When cache is not available, cacheUser should return without error
+	userResponse := &models.UserResponse{
+		ID:    1,
+		Name:  "Test",
+		Email: "test@example.com",
+	}
+
+	// This should not panic or error even if cache is not available
+	cacheUser(context.Background(), 1, userResponse)
+}
+
+// ============ invalidateUserCache Tests ============
+
+func TestInvalidateUserCache_CacheNotAvailable(t *testing.T) {
+	// When cache is not available, invalidateUserCache should return without error
+	// This should not panic or error even if cache is not available
+	invalidateUserCache(context.Background(), 1)
+}
+
+// ============ UpdateCurrentUser Tests ============
+
+func TestUpdateCurrentUser_Unauthorized(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPut, "/users/me", nil)
+	w := httptest.NewRecorder()
+
+	handler := UpdateCurrentUser()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("UpdateCurrentUser() without auth status = %v, want %v", w.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestUpdateCurrentUser_InvalidJSON(t *testing.T) {
+	user := &models.User{
+		ID:    1,
+		Name:  "Test User",
+		Email: "test@example.com",
+	}
+
+	req := httptest.NewRequest(http.MethodPut, "/users/me", bytes.NewBufferString("invalid json"))
+	req.Header.Set("Content-Type", "application/json")
+	ctx := context.WithValue(req.Context(), auth.UserContextKey, user)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	handler := UpdateCurrentUser()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("UpdateCurrentUser() with invalid JSON status = %v, want %v", w.Code, http.StatusBadRequest)
+	}
+}
+
+// ============ HealthCheck Tests ============
+// Note: Full HealthCheck and ReadinessCheck tests require database infrastructure.
+// These tests verify the response structure only.
+
+func TestHealthStatus_Structure(t *testing.T) {
+	// Test the HealthStatus response structure
+	status := models.HealthStatus{
+		OverallStatus: "healthy",
+		Timestamp:     "2025-01-01T00:00:00Z",
+		Uptime:        "1h 30m 0s",
+		Version: models.VersionInfo{
+			Version:   "1.0.0",
+			BuildTime: "2025-01-01",
+			GitCommit: "abc123",
+		},
+		Components: []models.ComponentStatus{
+			{Name: "database", Status: "healthy", Message: "Connected"},
+		},
+	}
+
+	if status.OverallStatus != "healthy" {
+		t.Errorf("HealthStatus.OverallStatus = %q, want healthy", status.OverallStatus)
+	}
+
+	if len(status.Components) != 1 {
+		t.Errorf("HealthStatus.Components length = %d, want 1", len(status.Components))
+	}
+}
+
+func TestVersionInfo_Structure(t *testing.T) {
+	info := models.VersionInfo{
+		Version:   "1.0.0",
+		BuildTime: "2025-01-01",
+		GitCommit: "abc123def",
+	}
+
+	if info.Version != "1.0.0" {
+		t.Errorf("VersionInfo.Version = %q, want 1.0.0", info.Version)
+	}
+}
+
+func TestComponentStatus_Structure(t *testing.T) {
+	status := models.ComponentStatus{
+		Name:    "database",
+		Status:  "healthy",
+		Message: "Connected successfully",
+	}
+
+	if status.Name != "database" {
+		t.Errorf("ComponentStatus.Name = %q, want database", status.Name)
+	}
+
+	if status.Status != "healthy" {
+		t.Errorf("ComponentStatus.Status = %q, want healthy", status.Status)
+	}
+}
+
+func TestRuntimeInfo_Structure(t *testing.T) {
+	info := models.RuntimeInfo{
+		Goroutines:  10,
+		MemoryAlloc: "50.0 MB",
+		MemorySys:   "100.0 MB",
+		NumGC:       5,
+		GoVersion:   "go1.25",
+		NumCPU:      8,
+		GOOS:        "linux",
+		GOARCH:      "amd64",
+	}
+
+	if info.Goroutines != 10 {
+		t.Errorf("RuntimeInfo.Goroutines = %d, want 10", info.Goroutines)
+	}
+
+	if info.NumCPU != 8 {
+		t.Errorf("RuntimeInfo.NumCPU = %d, want 8", info.NumCPU)
+	}
+}
+
+// ============ Version Variables Tests ============
+
+func TestVersionVariables(t *testing.T) {
+	// Version variables should have default values
+	if Version == "" {
+		t.Error("Version should not be empty")
+	}
+
+	// BuildTime and GitCommit may be empty if not set during build
+	// but should not cause errors when accessed
+	_ = BuildTime
+	_ = GitCommit
+}
+
+// ============ Cache Key Prefix Tests ============
+
+func TestCacheKeyConstants(t *testing.T) {
+	if userCacheKeyPrefix != "user:" {
+		t.Errorf("userCacheKeyPrefix = %q, want 'user:'", userCacheKeyPrefix)
+	}
+
+	// TTL should be reasonable
+	if userCacheTTL <= 0 {
+		t.Error("userCacheTTL should be positive")
 	}
 }

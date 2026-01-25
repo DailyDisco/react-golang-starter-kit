@@ -14,7 +14,7 @@ Get up and running in under 5 minutes:
 
 ```bash
 # Clone and configure
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+git clone https://github.com/DailyDisco/react-golang-starter-kit.git
 cd react-golang-starter-kit
 cp .env.example .env
 # Edit .env and set JWT_SECRET (required)
@@ -120,6 +120,7 @@ react-golang-starter-kit/
 │   │   ├── models/      # GORM models (users, orgs)
 │   │   ├── observability/ # Prometheus metrics
 │   │   ├── ratelimit/   # Rate limiting logic
+│   │   ├── repository/  # Data access layer
 │   │   ├── services/    # Business logic layer
 │   │   ├── storage/     # File storage (S3/DB)
 │   │   ├── stripe/      # Stripe payments
@@ -142,7 +143,8 @@ react-golang-starter-kit/
 ├── docker/             # Docker compose files
 │   ├── compose.yml     # Base services
 │   ├── compose.dev.yml # Development overrides
-│   ├── compose.prod.yml # Production environment
+│   ├── compose.prod.yml # Production (blue-green)
+│   ├── compose.test.yml # Test environment
 │   └── compose.observability.yml # Monitoring stack
 │
 ├── infra/              # Infrastructure configs
@@ -198,6 +200,23 @@ docker compose -f docker/compose.yml -f docker/compose.prod.yml up -d
 
 **Time:** 30-60 minutes | **Cost:** $5-20/month
 
+### Blue-Green Deployment (Zero Downtime)
+
+The production Docker setup supports blue-green deployments for zero-downtime updates:
+
+```bash
+make prod              # Deploy with zero downtime (swaps blue/green)
+make prod-status       # Check current deployment status
+make rollback          # Rollback to previous environment
+```
+
+**How it works:**
+
+1. New version deploys to inactive environment (blue or green)
+2. Health checks validate the new deployment
+3. Traffic switches to new environment
+4. Previous environment kept for instant rollback
+
 📖 **[Complete Deployment Guide →](docs/DEPLOYMENT.md)**
 
 ---
@@ -223,6 +242,21 @@ go test -cover ./...  # With coverage
 go test -race ./...   # With race detection
 ```
 
+### Integration Tests
+
+Integration tests run against real PostgreSQL using testcontainers-go:
+
+```bash
+# Using Makefile (starts test DB automatically)
+make test-integration
+
+# Or manually with environment variables
+cd backend
+INTEGRATION_TEST=true go test ./internal/services/... -v
+```
+
+**Test coverage includes:** Organization CRUD, session management, settings, usage tracking, 2FA, file storage.
+
 ### CI Pipeline
 
 The GitHub Actions workflow includes:
@@ -233,7 +267,7 @@ The GitHub Actions workflow includes:
 - **E2E Testing** - Playwright tests on Chromium
 - **Migration Validation** - Tests up/down/up cycle on real PostgreSQL
 - **Swagger Validation** - Ensures API docs stay current
-- **Compatibility Matrix** - Node 22 and Go 1.24 verification on master
+- **Compatibility Matrix** - Node 22 and Go 1.25 verification on master
 
 📖 **[Testing Guide →](docs/FRONTEND_GUIDE.md#testing)**
 
@@ -411,6 +445,18 @@ Full monitoring stack with Prometheus and Grafana:
 - **WebSocket Metrics** - Active connections, messages
 - **Business Metrics** - Auth attempts, registrations, subscriptions
 
+**Running the monitoring stack:**
+
+```bash
+make observability-up    # Start Prometheus + Grafana
+make observability-down  # Stop monitoring stack
+```
+
+**Access URLs:**
+
+- Prometheus: [http://localhost:9090](http://localhost:9090)
+- Grafana: [http://localhost:3001](http://localhost:3001) (admin/admin)
+
 ### Background Jobs (River)
 
 PostgreSQL-backed job queue for reliable async processing:
@@ -469,9 +515,30 @@ cp .env.example .env
 - `DB_PASSWORD` - Strong database password
 - `VITE_API_URL` - Frontend API endpoint
 
+### Environment File Variants
+
+| File                   | Purpose              | Use When                |
+| ---------------------- | -------------------- | ----------------------- |
+| `.env.example`         | Development template | Local development       |
+| `.env.prod.example`    | Production template  | Deploying to production |
+| `.env.staging.example` | Staging template     | Pre-production testing  |
+
+```bash
+# Development
+cp .env.example .env
+
+# Production
+cp .env.prod.example .env
+
+# Staging
+cp .env.staging.example .env
+```
+
 ### Optional Features
 
 All optional features (AWS S3, Dragonfly (Redis-compatible), SMTP, payments, AI, analytics) are included in `.env.example` as commented sections. Simply uncomment and configure the features you need.
+
+**AI Integration:** Set `GEMINI_API_KEY` to enable Gemini AI features (chat, streaming, vision, embeddings).
 
 📖 **[Environment Configuration Guide →](.env.example)**
 

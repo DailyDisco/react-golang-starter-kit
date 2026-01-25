@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"react-golang-starter/internal/cache"
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/repository"
 	"time"
 
 	"gorm.io/gorm"
@@ -22,18 +23,45 @@ var (
 
 // SettingsService handles system settings operations
 type SettingsService struct {
-	db *gorm.DB
+	db           *gorm.DB
+	settingRepo  repository.SystemSettingRepository
+	ipBlockRepo  repository.IPBlocklistRepository
+	announceRepo repository.AnnouncementRepository
+	templateRepo repository.EmailTemplateRepository
 }
 
 // NewSettingsService creates a new settings service instance
 func NewSettingsService(db *gorm.DB) *SettingsService {
-	return &SettingsService{db: db}
+	return &SettingsService{
+		db:           db,
+		settingRepo:  repository.NewGormSystemSettingRepository(db),
+		ipBlockRepo:  repository.NewGormIPBlocklistRepository(db),
+		announceRepo: repository.NewGormAnnouncementRepository(db),
+		templateRepo: repository.NewGormEmailTemplateRepository(db),
+	}
+}
+
+// NewSettingsServiceWithRepo creates a settings service with injected repositories for testing.
+func NewSettingsServiceWithRepo(
+	db *gorm.DB,
+	settingRepo repository.SystemSettingRepository,
+	ipBlockRepo repository.IPBlocklistRepository,
+	announceRepo repository.AnnouncementRepository,
+	templateRepo repository.EmailTemplateRepository,
+) *SettingsService {
+	return &SettingsService{
+		db:           db,
+		settingRepo:  settingRepo,
+		ipBlockRepo:  ipBlockRepo,
+		announceRepo: announceRepo,
+		templateRepo: templateRepo,
+	}
 }
 
 // GetAllSettings retrieves all system settings
 func (s *SettingsService) GetAllSettings(ctx context.Context) ([]models.SystemSetting, error) {
-	var settings []models.SystemSetting
-	if err := s.db.WithContext(ctx).Order("category, key").Find(&settings).Error; err != nil {
+	settings, err := s.settingRepo.FindAll(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve settings: %w", err)
 	}
 	return settings, nil
@@ -41,8 +69,8 @@ func (s *SettingsService) GetAllSettings(ctx context.Context) ([]models.SystemSe
 
 // GetSettingsByCategory retrieves settings for a specific category
 func (s *SettingsService) GetSettingsByCategory(ctx context.Context, category string) ([]models.SystemSetting, error) {
-	var settings []models.SystemSetting
-	if err := s.db.WithContext(ctx).Where("category = ?", category).Order("key").Find(&settings).Error; err != nil {
+	settings, err := s.settingRepo.FindByCategory(ctx, category)
+	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve settings for category %s: %w", category, err)
 	}
 	return settings, nil
@@ -50,14 +78,14 @@ func (s *SettingsService) GetSettingsByCategory(ctx context.Context, category st
 
 // GetSetting retrieves a single setting by key
 func (s *SettingsService) GetSetting(ctx context.Context, key string) (*models.SystemSetting, error) {
-	var setting models.SystemSetting
-	if err := s.db.WithContext(ctx).Where("key = ?", key).First(&setting).Error; err != nil {
+	setting, err := s.settingRepo.FindByKey(ctx, key)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrSettingNotFound
 		}
 		return nil, fmt.Errorf("failed to retrieve setting: %w", err)
 	}
-	return &setting, nil
+	return setting, nil
 }
 
 // GetSettingValue retrieves the value of a setting by key and unmarshals it into the provided interface
@@ -74,8 +102,8 @@ func (s *SettingsService) GetSettingValue(ctx context.Context, key string, dest 
 
 // GetSettingsByKeys retrieves multiple settings by keys in a single query
 func (s *SettingsService) GetSettingsByKeys(ctx context.Context, keys []string) (map[string]models.SystemSetting, error) {
-	var settings []models.SystemSetting
-	if err := s.db.WithContext(ctx).Where("key IN ?", keys).Find(&settings).Error; err != nil {
+	settings, err := s.settingRepo.FindByKeys(ctx, keys)
+	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve settings: %w", err)
 	}
 
@@ -95,17 +123,11 @@ func (s *SettingsService) UpdateSetting(ctx context.Context, key string, value i
 	}
 
 	// Update the setting
-	result := s.db.WithContext(ctx).Model(&models.SystemSetting{}).
-		Where("key = ?", key).
-		Updates(map[string]interface{}{
-			"value":      jsonValue,
-			"updated_at": time.Now().Format(time.RFC3339),
-		})
-
-	if result.Error != nil {
-		return fmt.Errorf("failed to update setting: %w", result.Error)
+	rowsAffected, err := s.settingRepo.UpdateByKey(ctx, key, jsonValue, time.Now().Format(time.RFC3339))
+	if err != nil {
+		return fmt.Errorf("failed to update setting: %w", err)
 	}
-	if result.RowsAffected == 0 {
+	if rowsAffected == 0 {
 		return ErrSettingNotFound
 	}
 	return nil
@@ -393,8 +415,8 @@ func (s *SettingsService) UpdateSiteSettings(ctx context.Context, settings *mode
 
 // GetIPBlocklist retrieves all blocked IPs
 func (s *SettingsService) GetIPBlocklist(ctx context.Context) ([]models.IPBlocklist, error) {
-	var blocks []models.IPBlocklist
-	if err := s.db.WithContext(ctx).Where("is_active = ?", true).Order("created_at DESC").Find(&blocks).Error; err != nil {
+	blocks, err := s.ipBlockRepo.FindActive(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve IP blocklist: %w", err)
 	}
 	return blocks, nil
@@ -417,7 +439,7 @@ func (s *SettingsService) BlockIP(ctx context.Context, req *models.CreateIPBlock
 		block.ExpiresAt = &req.ExpiresAt
 	}
 
-	if err := s.db.WithContext(ctx).Create(block).Error; err != nil {
+	if err := s.ipBlockRepo.Create(ctx, block); err != nil {
 		return nil, fmt.Errorf("failed to block IP: %w", err)
 	}
 	return block, nil
@@ -425,17 +447,11 @@ func (s *SettingsService) BlockIP(ctx context.Context, req *models.CreateIPBlock
 
 // UnblockIP removes an IP from the blocklist
 func (s *SettingsService) UnblockIP(ctx context.Context, id uint) error {
-	result := s.db.WithContext(ctx).Model(&models.IPBlocklist{}).
-		Where("id = ?", id).
-		Updates(map[string]interface{}{
-			"is_active":  false,
-			"updated_at": time.Now().Format(time.RFC3339),
-		})
-
-	if result.Error != nil {
-		return fmt.Errorf("failed to unblock IP: %w", result.Error)
+	rowsAffected, err := s.ipBlockRepo.Deactivate(ctx, id, time.Now().Format(time.RFC3339))
+	if err != nil {
+		return fmt.Errorf("failed to unblock IP: %w", err)
 	}
-	if result.RowsAffected == 0 {
+	if rowsAffected == 0 {
 		return ErrIPBlockNotFound
 	}
 	return nil
@@ -443,24 +459,19 @@ func (s *SettingsService) UnblockIP(ctx context.Context, id uint) error {
 
 // IsIPBlocked checks if an IP is blocked
 func (s *SettingsService) IsIPBlocked(ctx context.Context, ip string) (bool, error) {
-	var count int64
-	err := s.db.WithContext(ctx).Model(&models.IPBlocklist{}).
-		Where("is_active = ? AND ip_address = ?", true, ip).
-		Where("expires_at IS NULL OR expires_at > ?", time.Now().Format(time.RFC3339)).
-		Count(&count).Error
-
+	blocked, err := s.ipBlockRepo.IsBlocked(ctx, ip, time.Now().Format(time.RFC3339))
 	if err != nil {
 		return false, fmt.Errorf("failed to check IP blocklist: %w", err)
 	}
-	return count > 0, nil
+	return blocked, nil
 }
 
 // ============ Announcement Banner Operations ============
 
 // GetAnnouncements retrieves all announcements (for admin)
 func (s *SettingsService) GetAnnouncements(ctx context.Context) ([]models.AnnouncementBanner, error) {
-	var announcements []models.AnnouncementBanner
-	if err := s.db.WithContext(ctx).Order("priority DESC, created_at DESC").Find(&announcements).Error; err != nil {
+	announcements, err := s.announceRepo.FindAll(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve announcements: %w", err)
 	}
 	return announcements, nil
@@ -575,8 +586,9 @@ func (s *SettingsService) CreateAnnouncement(ctx context.Context, req *models.Cr
 
 // UpdateAnnouncement updates an existing announcement
 func (s *SettingsService) UpdateAnnouncement(ctx context.Context, id uint, req *models.UpdateAnnouncementRequest) (*models.AnnouncementBanner, error) {
-	var announcement models.AnnouncementBanner
-	if err := s.db.WithContext(ctx).First(&announcement, id).Error; err != nil {
+	// Check if announcement exists
+	_, err := s.announceRepo.FindByID(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrAnnouncementNotFound
 		}
@@ -631,25 +643,26 @@ func (s *SettingsService) UpdateAnnouncement(ctx context.Context, id uint, req *
 		updates["category"] = *req.Category
 	}
 
-	if err := s.db.WithContext(ctx).Model(&announcement).Updates(updates).Error; err != nil {
+	if err := s.announceRepo.Update(ctx, id, updates); err != nil {
 		return nil, fmt.Errorf("failed to update announcement: %w", err)
 	}
 
 	// Reload to get updated values
-	if err := s.db.WithContext(ctx).First(&announcement, id).Error; err != nil {
+	announcement, err := s.announceRepo.FindByID(ctx, id)
+	if err != nil {
 		return nil, fmt.Errorf("failed to reload announcement: %w", err)
 	}
 	cache.InvalidateAnnouncements(ctx)
-	return &announcement, nil
+	return announcement, nil
 }
 
 // DeleteAnnouncement deletes an announcement
 func (s *SettingsService) DeleteAnnouncement(ctx context.Context, id uint) error {
-	result := s.db.WithContext(ctx).Delete(&models.AnnouncementBanner{}, id)
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete announcement: %w", result.Error)
+	rowsAffected, err := s.announceRepo.Delete(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete announcement: %w", err)
 	}
-	if result.RowsAffected == 0 {
+	if rowsAffected == 0 {
 		return ErrAnnouncementNotFound
 	}
 	cache.InvalidateAnnouncements(ctx)
@@ -874,8 +887,8 @@ func (s *SettingsService) MarkAnnouncementEmailSent(ctx context.Context, announc
 
 // GetEmailTemplates retrieves all email templates
 func (s *SettingsService) GetEmailTemplates(ctx context.Context) ([]models.EmailTemplate, error) {
-	var templates []models.EmailTemplate
-	if err := s.db.WithContext(ctx).Order("key").Find(&templates).Error; err != nil {
+	templates, err := s.templateRepo.FindAll(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve email templates: %w", err)
 	}
 	return templates, nil
@@ -883,32 +896,33 @@ func (s *SettingsService) GetEmailTemplates(ctx context.Context) ([]models.Email
 
 // GetEmailTemplate retrieves a single email template by ID
 func (s *SettingsService) GetEmailTemplate(ctx context.Context, id uint) (*models.EmailTemplate, error) {
-	var template models.EmailTemplate
-	if err := s.db.WithContext(ctx).First(&template, id).Error; err != nil {
+	template, err := s.templateRepo.FindByID(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrEmailTemplateNotFound
 		}
 		return nil, fmt.Errorf("failed to retrieve email template: %w", err)
 	}
-	return &template, nil
+	return template, nil
 }
 
 // GetEmailTemplateByKey retrieves a single email template by key
 func (s *SettingsService) GetEmailTemplateByKey(ctx context.Context, key string) (*models.EmailTemplate, error) {
-	var template models.EmailTemplate
-	if err := s.db.WithContext(ctx).Where("key = ?", key).First(&template).Error; err != nil {
+	template, err := s.templateRepo.FindByKey(ctx, key)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrEmailTemplateNotFound
 		}
 		return nil, fmt.Errorf("failed to retrieve email template: %w", err)
 	}
-	return &template, nil
+	return template, nil
 }
 
 // UpdateEmailTemplate updates an email template
 func (s *SettingsService) UpdateEmailTemplate(ctx context.Context, id uint, req *models.UpdateEmailTemplateRequest, updatedBy uint) (*models.EmailTemplate, error) {
-	var template models.EmailTemplate
-	if err := s.db.WithContext(ctx).First(&template, id).Error; err != nil {
+	// Check if template exists
+	template, err := s.templateRepo.FindByID(ctx, id)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrEmailTemplateNotFound
 		}
@@ -933,17 +947,18 @@ func (s *SettingsService) UpdateEmailTemplate(ctx context.Context, id uint, req 
 		updates["is_active"] = *req.IsActive
 	}
 
-	if err := s.db.WithContext(ctx).Model(&template).Updates(updates).Error; err != nil {
+	if err := s.templateRepo.Update(ctx, id, updates); err != nil {
 		return nil, fmt.Errorf("failed to update email template: %w", err)
 	}
 
 	// Reload to get updated values
-	if err := s.db.WithContext(ctx).First(&template, id).Error; err != nil {
+	template, err = s.templateRepo.FindByID(ctx, id)
+	if err != nil {
 		return nil, fmt.Errorf("failed to reload email template: %w", err)
 	}
 
 	// Invalidate cache for this template
 	cache.InvalidateEmailTemplate(ctx, template.Key)
 
-	return &template, nil
+	return template, nil
 }

@@ -4,23 +4,48 @@
 
 Full-stack SaaS starter with React 19 + Go 1.25. Multi-tenant, WebSocket, Stripe billing.
 
-## Skill Auto-Invocation Rules
+## Automatic Skill Invocation (Jarvis Mode)
 
-**IMPORTANT:** When the user's request matches these patterns, invoke the corresponding skill automatically:
+When you express intent, Claude automatically invokes the right skill:
 
-| User Intent | Invoke Skill |
-|-------------|--------------|
-| "Add a feature", "new feature", "implement X feature" | `/scaffold-feature` |
-| "Add a service", "new service", "backend for X" | `/scaffold-service` |
-| "Add migration", "new table", "add column", "change schema" | `/add-migration` |
-| "Sync types", "update types", "types are out of sync" | `/sync-models` |
-| "Review architecture", "review this design" | Load `prompts/stack-review.md` |
-| "Security review", "check for vulnerabilities" | Load `prompts/security-audit.md` |
-| "Is feature complete?", "what am I missing?" | Load `prompts/feature-checklist.md` |
-| "Check my environment", "setup issues", "env not working" | `/env-check` |
-| "Test this endpoint", "debug API", "curl command" | `/debug-api` |
-| "Check types match", "API contract", "Go ↔ TypeScript" | Load `prompts/api-contract-review.md` |
-| "Ready to deploy?", "deployment checklist" | Load `prompts/deployment-checklist.md` |
+| You Say | Claude Does |
+|---------|-------------|
+| "Add a user profile feature" | `/scaffold-feature` → Full backend + frontend |
+| "Create an auth service" | `/scaffold-service` → Go service with tests |
+| "Add a notifications table" | `/add-migration` → SQL migration files |
+| "Types are out of sync" | `/sync-models` → Go → TypeScript sync |
+| "Debug the API" | `/debug-api` → curl commands |
+| "Check my environment" | `/env-check` → Validate setup |
+
+### Global Workflows (Also Auto-Suggested)
+
+| You Say | Claude Does |
+|---------|-------------|
+| "Fix this bug" | `/workflow bugfix` → Debug → Fix → Test |
+| "Review this PR" | `/review-pr` → Security + Performance + Quality |
+| "Prepare release" | `/workflow release` → Changelog → Tag → PR |
+| "Refactor this" | `/workflow refactor` → Plan → Execute → Verify |
+
+### Specialized Agents (Auto-Routed)
+
+When domain expertise is needed, Claude spawns specialists:
+
+| Domain | Agent | Triggers |
+|--------|-------|----------|
+| Database | `@db-specialist` | Schema, migrations, queries |
+| Security | `@security-auditor` | Auth, vulnerabilities, OWASP |
+| Frontend | `@frontend-reviewer` | React, a11y, performance |
+| API | `@api-specialist` | REST design, contracts |
+
+### Analysis Prompts
+
+| You Say | Claude Loads |
+|---------|--------------|
+| "Review architecture" | `prompts/stack-review.md` |
+| "Security review" | `prompts/security-audit.md` |
+| "Is feature complete?" | `prompts/feature-checklist.md` |
+| "Check API contract" | `prompts/api-contract-review.md` |
+| "Ready to deploy?" | `prompts/deployment-checklist.md` |
 
 **After completing scaffolding tasks**, always remind the user of next steps (e.g., "Run `make migrate-up` to apply the migration").
 
@@ -106,8 +131,67 @@ s.db.WithContext(ctx).Where("slug = ?", slug).First(&org)
 ## Testing
 
 - **Frontend**: `npm run test` (Vitest)
-- **Backend**: `go test ./...` or `make test-backend`
+- **Backend Unit**: `go test ./...` or `make test-backend`
+- **Backend Integration**: `INTEGRATION_TEST=true go test ./...`
 - **E2E**: `npm run test:e2e` (Playwright)
+
+### Backend Integration Tests
+
+Integration tests use real PostgreSQL via testcontainers-go or a pre-configured test database. They test database-dependent code paths that unit tests skip.
+
+**Location:** `backend/internal/services/*_integration_test.go`
+
+**Available integration test suites:**
+
+- `org_service_integration_test.go` - Organization CRUD, memberships, invitations
+- `session_service_integration_test.go` - Session management, device tracking
+- `settings_service_integration_test.go` - System settings, batched updates
+- `usage_service_integration_test.go` - Usage tracking, limits, alerts
+- `totp_service_integration_test.go` - 2FA setup and verification
+- `file_service_integration_test.go` - File operations with S3/LocalStack
+
+**Running integration tests:**
+
+```bash
+# Option 1: Start test database container
+docker run -d --name starter-test-db \
+  -e POSTGRES_USER=testuser \
+  -e POSTGRES_PASSWORD=testpass \
+  -e POSTGRES_DB=starter_kit_test \
+  -p 5433:5432 \
+  postgres:16-alpine
+
+# Run integration tests
+cd backend && INTEGRATION_TEST=true go test ./internal/services/... -v
+
+# Option 2: Use custom test database
+TEST_DB_HOST=localhost \
+TEST_DB_PORT=5434 \
+TEST_DB_USER=postgres \
+TEST_DB_PASSWORD=mypass \
+TEST_DB_NAME=test_db \
+INTEGRATION_TEST=true go test ./internal/services/... -v
+```
+
+**Test utilities:** `backend/internal/testutil/`
+
+| File | Purpose |
+| ---- | ------- |
+| `database.go` | Test DB setup, transactions, migrations |
+| `containers.go` | Testcontainers-go for PostgreSQL/Redis |
+| `mocks/repository.go` | Mock repositories for unit tests |
+
+**Test transaction pattern:**
+
+```go
+func testSetup(t *testing.T) (*Service, func()) {
+    testutil.SkipIfNotIntegration(t)
+    db := testutil.SetupTestDB(t)
+    tt := testutil.NewTestTransaction(t, db)
+    svc := NewService(tt.DB)
+    return svc, func() { tt.Rollback() }
+}
+```
 
 ## Commands
 
@@ -378,6 +462,55 @@ Pre-configured MCP servers in `.mcp.json`:
    ```bash
    /add-migration
    ```
+
+---
+
+## Output Styles
+
+Switch interaction modes with `/output-style`:
+
+| Style | Best For |
+|-------|----------|
+| `teaching` | Learning step-by-step with exercises |
+| `executive` | Quick business summaries |
+| `minimal` | Code only, no explanation |
+| `pair-programming` | Collaborative thinking out loud |
+| `debugging` | Systematic hypothesis-driven investigation |
+
+---
+
+## Quick Commands
+
+Lightweight commands (no workflow overhead):
+
+| Command | Purpose |
+|---------|---------|
+| `/explain [target]` | Explain code or architecture |
+| `/quick-fix [issue]` | Simple targeted fixes |
+| `/compare [A] vs [B]` | Compare approaches |
+| `/benchmark [desc]` | Performance comparison |
+
+---
+
+## Advanced Automation Hooks
+
+These global hooks run automatically (enabled in `settings.local.json`):
+
+| Hook | Trigger | Action |
+|------|---------|--------|
+| `skill-suggester` | Every prompt | Suggests relevant skills based on intent |
+| `agent-router` | Every prompt | Routes to specialist agents automatically |
+| `post-edit-dispatch` | File edits | Runs type checks, security scans |
+| `auto-test` | File edits | Finds and suggests relevant tests |
+| `build-test-gate` | Before commit | Parallel validation (types, tests, lint) |
+| `commit-guard` | Before commit | Validates conventional commit format |
+
+### What Happens Automatically
+
+1. **When you describe a task** → Skill suggestions appear
+2. **When you edit code** → Type checks and test suggestions run
+3. **When you commit** → Build, tests, and lint validate in parallel
+4. **When domain expertise needed** → Specialist agents are suggested
 
 ---
 

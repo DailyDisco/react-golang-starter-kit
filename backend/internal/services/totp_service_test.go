@@ -1,6 +1,8 @@
 package services
 
 import (
+	"encoding/json"
+	"os"
 	"testing"
 )
 
@@ -136,5 +138,217 @@ func TestGenerateRandomCode_Uniqueness(t *testing.T) {
 			t.Errorf("generateRandomCode(8) generated duplicate code: %s", code)
 		}
 		codes[code] = true
+	}
+}
+
+// ============ TOTPService Constructor Tests ============
+
+func TestNewTOTPService(t *testing.T) {
+	service := NewTOTPService()
+	if service == nil {
+		t.Fatal("NewTOTPService() returned nil")
+	}
+
+	// Should have an issuer
+	if service.issuer == "" {
+		t.Error("NewTOTPService() should set issuer")
+	}
+
+	// Should have encryption key (32 bytes)
+	if len(service.encryptionKey) != 32 {
+		t.Errorf("NewTOTPService() encryption key length = %d, want 32", len(service.encryptionKey))
+	}
+}
+
+func TestNewTOTPService_DefaultIssuer(t *testing.T) {
+	// Save and clear environment variables
+	oldTOTPIssuer := os.Getenv("TOTP_ISSUER")
+	oldSiteName := os.Getenv("SITE_NAME")
+	os.Setenv("TOTP_ISSUER", "")
+	os.Setenv("SITE_NAME", "")
+	defer func() {
+		os.Setenv("TOTP_ISSUER", oldTOTPIssuer)
+		os.Setenv("SITE_NAME", oldSiteName)
+	}()
+
+	service := NewTOTPService()
+
+	// Should use default issuer "MyApp"
+	if service.issuer != "MyApp" {
+		t.Errorf("NewTOTPService() issuer = %q, want %q", service.issuer, "MyApp")
+	}
+}
+
+// ============ Encryption/Decryption Round-Trip Tests ============
+
+func TestTOTPService_EncryptDecrypt_RoundTrip(t *testing.T) {
+	service := NewTOTPService()
+
+	secrets := []string{
+		"JBSWY3DPEHPK3PXP",           // Typical TOTP secret
+		"GEZDGNBVGY3TQOJQ",           // Another base32 secret
+		"short",                      // Short string
+		"a-very-long-secret-key-123", // Longer string
+	}
+
+	for _, secret := range secrets {
+		t.Run(secret, func(t *testing.T) {
+			encrypted, err := service.encryptSecret(secret)
+			if err != nil {
+				t.Fatalf("encryptSecret() error = %v", err)
+			}
+
+			// Encrypted should be different from original
+			if encrypted == secret {
+				t.Error("encryptSecret() should produce different output")
+			}
+
+			decrypted, err := service.decryptSecret(encrypted)
+			if err != nil {
+				t.Fatalf("decryptSecret() error = %v", err)
+			}
+
+			if decrypted != secret {
+				t.Errorf("decryptSecret() = %q, want %q", decrypted, secret)
+			}
+		})
+	}
+}
+
+func TestTOTPService_DecryptSecret_InvalidData(t *testing.T) {
+	service := NewTOTPService()
+
+	tests := []struct {
+		name      string
+		encrypted string
+	}{
+		{"not base64", "not-valid-base64!!!"},
+		{"too short", "YWJj"}, // "abc" in base64
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := service.decryptSecret(tt.encrypted)
+			if err == nil {
+				t.Error("decryptSecret() should return error for invalid data")
+			}
+		})
+	}
+}
+
+// ============ Backup Code Generation Tests ============
+
+func TestTOTPService_GenerateBackupCodes(t *testing.T) {
+	service := NewTOTPService()
+
+	counts := []int{5, 10, 15}
+
+	for _, count := range counts {
+		t.Run("count_"+string(rune(count+'0')), func(t *testing.T) {
+			codes, hashedCodes, err := service.generateBackupCodes(count)
+			if err != nil {
+				t.Fatalf("generateBackupCodes(%d) error = %v", count, err)
+			}
+
+			if len(codes) != count {
+				t.Errorf("generateBackupCodes(%d) returned %d codes, want %d", count, len(codes), count)
+			}
+
+			if len(hashedCodes) != count {
+				t.Errorf("generateBackupCodes(%d) returned %d hashed codes, want %d", count, len(hashedCodes), count)
+			}
+
+			// Each code should be 8 characters
+			for i, code := range codes {
+				if len(code) != 8 {
+					t.Errorf("codes[%d] length = %d, want 8", i, len(code))
+				}
+			}
+
+			// Each hashed code should be bcrypt hash (starts with $2)
+			for i, hash := range hashedCodes {
+				if len(hash) < 50 || hash[:2] != "$2" {
+					t.Errorf("hashedCodes[%d] doesn't appear to be bcrypt hash", i)
+				}
+			}
+		})
+	}
+}
+
+func TestTOTPService_GenerateBackupCodes_Unique(t *testing.T) {
+	service := NewTOTPService()
+
+	codes, _, err := service.generateBackupCodes(10)
+	if err != nil {
+		t.Fatalf("generateBackupCodes() error = %v", err)
+	}
+
+	seen := make(map[string]bool)
+	for _, code := range codes {
+		if seen[code] {
+			t.Error("generateBackupCodes() generated duplicate codes")
+		}
+		seen[code] = true
+	}
+}
+
+// ============ Backup Code Validation Tests ============
+
+func TestTOTPService_ValidateBackupCode(t *testing.T) {
+	service := NewTOTPService()
+
+	// Generate backup codes
+	codes, hashedCodes, err := service.generateBackupCodes(5)
+	if err != nil {
+		t.Fatalf("generateBackupCodes() error = %v", err)
+	}
+
+	// Convert to JSON for validation
+	hashedJSON, _ := json.Marshal(hashedCodes)
+
+	// Test valid code
+	valid, remaining := service.validateBackupCode(hashedJSON, codes[0])
+	if !valid {
+		t.Error("validateBackupCode() should return true for valid code")
+	}
+	if len(remaining) != 4 {
+		t.Errorf("validateBackupCode() remaining codes = %d, want 4", len(remaining))
+	}
+
+	// Test invalid code
+	valid, remaining = service.validateBackupCode(hashedJSON, "INVALID1")
+	if valid {
+		t.Error("validateBackupCode() should return false for invalid code")
+	}
+	if len(remaining) != 5 {
+		t.Errorf("validateBackupCode() remaining codes = %d, want 5", len(remaining))
+	}
+}
+
+func TestTOTPService_ValidateBackupCode_EmptyHashes(t *testing.T) {
+	service := NewTOTPService()
+
+	emptyJSON := []byte("[]")
+	valid, remaining := service.validateBackupCode(emptyJSON, "ABCD1234")
+
+	if valid {
+		t.Error("validateBackupCode() should return false for empty hashes")
+	}
+	if len(remaining) != 0 {
+		t.Errorf("validateBackupCode() remaining = %d, want 0", len(remaining))
+	}
+}
+
+func TestTOTPService_ValidateBackupCode_InvalidJSON(t *testing.T) {
+	service := NewTOTPService()
+
+	invalidJSON := []byte("not valid json")
+	valid, remaining := service.validateBackupCode(invalidJSON, "ABCD1234")
+
+	if valid {
+		t.Error("validateBackupCode() should return false for invalid JSON")
+	}
+	if remaining != nil {
+		t.Error("validateBackupCode() should return nil remaining for invalid JSON")
 	}
 }

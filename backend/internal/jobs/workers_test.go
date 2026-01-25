@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 )
@@ -296,5 +297,96 @@ func TestWebhookJobsHaveLowerMaxAttempts(t *testing.T) {
 	// Webhooks should have lower retry count to fail fast
 	if opts.MaxAttempts > 5 {
 		t.Errorf("Stripe webhook MaxAttempts = %d, should not exceed 5", opts.MaxAttempts)
+	}
+}
+
+// ============ Enqueue Function Tests ============
+
+func TestEnqueueVerificationEmail_NilInstance(t *testing.T) {
+	oldInstance := instance
+	instance = nil
+	defer func() { instance = oldInstance }()
+
+	ctx := context.Background()
+	err := EnqueueVerificationEmail(ctx, 1, "test@example.com", "Test", "token")
+
+	if err == nil {
+		t.Error("EnqueueVerificationEmail() should return error when instance is nil")
+	}
+	if err.Error() != "job system not available" {
+		t.Errorf("EnqueueVerificationEmail() error = %q, want 'job system not available'", err.Error())
+	}
+}
+
+func TestEnqueuePasswordResetEmail_NilInstance(t *testing.T) {
+	oldInstance := instance
+	instance = nil
+	defer func() { instance = oldInstance }()
+
+	ctx := context.Background()
+	err := EnqueuePasswordResetEmail(ctx, 1, "test@example.com", "Test", "token")
+
+	if err == nil {
+		t.Error("EnqueuePasswordResetEmail() should return error when instance is nil")
+	}
+	if err.Error() != "job system not available" {
+		t.Errorf("EnqueuePasswordResetEmail() error = %q, want 'job system not available'", err.Error())
+	}
+}
+
+func TestEnqueueStripeWebhook_NilInstance(t *testing.T) {
+	oldInstance := instance
+	instance = nil
+	defer func() { instance = oldInstance }()
+
+	ctx := context.Background()
+	err := EnqueueStripeWebhook(ctx, "evt_123", "checkout.session.completed", json.RawMessage(`{}`))
+
+	if err == nil {
+		t.Error("EnqueueStripeWebhook() should return error when instance is nil")
+	}
+	if err.Error() != "job system not available" {
+		t.Errorf("EnqueueStripeWebhook() error = %q, want 'job system not available'", err.Error())
+	}
+}
+
+func TestEnqueueAnnouncementEmail_NilInstance(t *testing.T) {
+	oldInstance := instance
+	instance = nil
+	defer func() { instance = oldInstance }()
+
+	ctx := context.Background()
+	args := SendAnnouncementEmailArgs{
+		AnnouncementID: 1,
+		UserID:         42,
+		UserEmail:      "test@example.com",
+		UserName:       "Test User",
+		Title:          "Test Announcement",
+		Message:        "Test message",
+		Category:       "update",
+	}
+	err := EnqueueAnnouncementEmail(ctx, args)
+
+	if err == nil {
+		t.Error("EnqueueAnnouncementEmail() should return error when instance is nil")
+	}
+	if err.Error() != "job system not available" {
+		t.Errorf("EnqueueAnnouncementEmail() error = %q, want 'job system not available'", err.Error())
+	}
+}
+
+func TestEnqueueAccountLockoutNotification_NilInstance(t *testing.T) {
+	oldInstance := instance
+	instance = nil
+	defer func() { instance = oldInstance }()
+
+	ctx := context.Background()
+	err := EnqueueAccountLockoutNotification(ctx, 1, "test@example.com", "Test", "15 minutes", 5)
+
+	if err == nil {
+		t.Error("EnqueueAccountLockoutNotification() should return error when instance is nil")
+	}
+	if err.Error() != "job system not available" {
+		t.Errorf("EnqueueAccountLockoutNotification() error = %q, want 'job system not available'", err.Error())
 	}
 }

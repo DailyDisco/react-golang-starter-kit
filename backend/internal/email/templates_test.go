@@ -288,3 +288,135 @@ func containsHelper(s, substr string) bool {
 	}
 	return false
 }
+
+// ============ Additional TemplateManager Tests ============
+
+func TestTemplateManager_ListTemplates_NotEmpty(t *testing.T) {
+	tm, err := NewTemplateManager()
+	if err != nil {
+		t.Fatalf("NewTemplateManager() error = %v", err)
+	}
+
+	templates := tm.ListTemplates()
+	if len(templates) == 0 {
+		t.Error("ListTemplates() should return non-empty list")
+	}
+
+	// Check that known templates are in the list
+	found := make(map[string]bool)
+	for _, name := range templates {
+		found[name] = true
+	}
+
+	expectedTemplates := []string{"welcome", "password_reset", "verification"}
+	for _, expected := range expectedTemplates {
+		if !found[expected] {
+			t.Errorf("ListTemplates() missing expected template %q", expected)
+		}
+	}
+}
+
+// ============ Additional Helper Tests ============
+
+func TestGetAppName_EmptyFromName(t *testing.T) {
+	oldConfig := config
+	config = &Config{SMTPFromName: ""} // Empty but config exists
+	defer func() { config = oldConfig }()
+
+	name := getAppName()
+	// Should fall back to default when SMTPFromName is empty
+	if name != "React Go Starter" {
+		t.Errorf("getAppName() = %q, want %q", name, "React Go Starter")
+	}
+}
+
+func TestGetSupportEmail_EmptyFrom(t *testing.T) {
+	oldConfig := config
+	config = &Config{SMTPFrom: ""} // Empty but config exists
+	defer func() { config = oldConfig }()
+
+	email := getSupportEmail()
+	// Should fall back to default when SMTPFrom is empty
+	if email != "support@example.com" {
+		t.Errorf("getSupportEmail() = %q, want %q", email, "support@example.com")
+	}
+}
+
+// ============ Additional generatePlainText Tests ============
+
+func TestGeneratePlainText_UnclosedComment(t *testing.T) {
+	// Test with comment that never closes
+	html := "<p>Text<!-- unclosed comment"
+	text := generatePlainText(html)
+
+	// Should handle gracefully without infinite loop
+	if text == "" {
+		t.Error("generatePlainText() should handle unclosed comments")
+	}
+}
+
+func TestGeneratePlainText_NestedTags(t *testing.T) {
+	html := "<div><p><strong><em>Nested</em></strong></p></div>"
+	text := generatePlainText(html)
+
+	if text != "Nested" {
+		t.Errorf("generatePlainText() = %q, want %q", text, "Nested")
+	}
+}
+
+func TestGeneratePlainText_IncompleteTags(t *testing.T) {
+	// Test with incomplete HTML
+	html := "<p>Start<div>Middle"
+	text := generatePlainText(html)
+
+	// Should extract text even with broken HTML
+	if text != "StartMiddle" {
+		t.Errorf("generatePlainText() = %q, want %q", text, "StartMiddle")
+	}
+}
+
+// ============ TemplateManager Render Tests ============
+
+func TestTemplateManager_Render_AllTemplates(t *testing.T) {
+	tm, err := NewTemplateManager()
+	if err != nil {
+		t.Fatalf("NewTemplateManager() error = %v", err)
+	}
+
+	// Test rendering all templates to ensure they don't error
+	templates := tm.ListTemplates()
+	for _, name := range templates {
+		t.Run(name, func(t *testing.T) {
+			// Provide common data that templates might need
+			data := map[string]interface{}{
+				"Name":           "Test User",
+				"ResetURL":       "https://example.com/reset",
+				"VerifyURL":      "https://example.com/verify",
+				"Code":           "123456",
+				"Device":         "Chrome on Windows",
+				"Location":       "New York, USA",
+				"IP":             "192.168.1.1",
+				"Time":           "Jan 1, 2025 at 10:00 AM",
+				"LockDuration":   "30 minutes",
+				"FailedAttempts": "5",
+			}
+
+			subject, html, text, err := tm.Render(name, data)
+			if err != nil {
+				t.Errorf("Render(%q) error = %v", name, err)
+				return
+			}
+
+			// All templates should produce some output
+			if subject == "" {
+				t.Errorf("Render(%q) returned empty subject", name)
+			}
+			if html == "" {
+				t.Errorf("Render(%q) returned empty HTML body", name)
+			}
+			if text == "" {
+				t.Errorf("Render(%q) returned empty text body", name)
+			}
+		})
+	}
+}

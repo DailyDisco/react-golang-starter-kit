@@ -8,6 +8,12 @@ docker image prune -a
 
 ## Prompts
 
+### PR Prompt
+How should I PR my changes? Give me a logical progression and the exact commands including git checkout git pull etc. Give great commit and PR messages but don't mention that claude was involved. Don't stash anything or delete any files.
+
+### Commit Prompt
+How should I commit my changes? Give me a logical progression and the exact commands including git checkout git pull etc. Give great commit messages but don't mention that claude was involved. Don't stash anything or delete any files.
+
 ### App Review Prompt
 Take a look at my @src/app/  what are 3 things you would fix, what 3 things you would refactor, what 3 things you would take away, what 3 features should I add, what 3 things can I do to more deeply integrate my features? What 5 things out of all those should I do now for the highest return?
 

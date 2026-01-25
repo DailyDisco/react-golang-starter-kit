@@ -1,29 +1,59 @@
 package services
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"react-golang-starter/internal/database"
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/repository"
 	"strings"
 	"time"
 
 	"github.com/mssola/useragent"
 )
 
-// SessionService handles user session operations
-type SessionService struct{}
+// Sentinel errors for session operations
+var (
+	ErrSessionNotFound = errors.New("session not found")
+	ErrSessionExpired  = errors.New("session expired")
+)
 
-// NewSessionService creates a new session service instance
+// SessionService handles user session operations
+type SessionService struct {
+	sessionRepo repository.SessionRepository
+	historyRepo repository.LoginHistoryRepository
+}
+
+// NewSessionService creates a new session service instance using global DB.
+// Deprecated: Use NewSessionServiceWithRepo for better testability.
 func NewSessionService() *SessionService {
-	return &SessionService{}
+	return &SessionService{
+		sessionRepo: repository.NewGormSessionRepository(database.DB),
+		historyRepo: repository.NewGormLoginHistoryRepository(database.DB),
+	}
+}
+
+// NewSessionServiceWithRepo creates a session service with injected repositories.
+// Use this constructor for testing with mock repositories.
+func NewSessionServiceWithRepo(sessionRepo repository.SessionRepository, historyRepo repository.LoginHistoryRepository) *SessionService {
+	return &SessionService{
+		sessionRepo: sessionRepo,
+		historyRepo: historyRepo,
+	}
 }
 
 // CreateSession creates a new user session
 func (s *SessionService) CreateSession(userID uint, refreshToken string, r *http.Request) (*models.UserSession, error) {
+	return s.CreateSessionWithContext(r.Context(), userID, refreshToken, r)
+}
+
+// CreateSessionWithContext creates a new user session with explicit context.
+func (s *SessionService) CreateSessionWithContext(ctx context.Context, userID uint, refreshToken string, r *http.Request) (*models.UserSession, error) {
 	// Hash the refresh token for secure storage
 	tokenHash := hashToken(refreshToken)
 
@@ -40,7 +70,8 @@ func (s *SessionService) CreateSession(userID uint, refreshToken string, r *http
 	locationJSON, _ := json.Marshal(location)
 
 	// Calculate expiration (default 7 days)
-	expiresAt := time.Now().Add(7 * 24 * time.Hour)
+	now := time.Now()
+	expiresAt := now.Add(7 * 24 * time.Hour)
 
 	session := &models.UserSession{
 		UserID:           userID,
@@ -50,12 +81,12 @@ func (s *SessionService) CreateSession(userID uint, refreshToken string, r *http
 		UserAgent:        userAgent,
 		Location:         locationJSON,
 		IsCurrent:        false,
-		LastActiveAt:     time.Now(),
+		LastActiveAt:     now,
 		ExpiresAt:        expiresAt,
-		CreatedAt:        time.Now(),
+		CreatedAt:        now,
 	}
 
-	if err := database.DB.Create(session).Error; err != nil {
+	if err := s.sessionRepo.Create(ctx, session); err != nil {
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
@@ -64,12 +95,15 @@ func (s *SessionService) CreateSession(userID uint, refreshToken string, r *http
 
 // GetUserSessions retrieves all active sessions for a user
 func (s *SessionService) GetUserSessions(userID uint, currentTokenHash string) ([]models.UserSession, error) {
-	var sessions []models.UserSession
+	return s.GetUserSessionsWithContext(context.Background(), userID, currentTokenHash)
+}
+
+// GetUserSessionsWithContext retrieves all active sessions for a user with explicit context.
+func (s *SessionService) GetUserSessionsWithContext(ctx context.Context, userID uint, currentTokenHash string) ([]models.UserSession, error) {
 	now := time.Now()
 
-	if err := database.DB.Where("user_id = ? AND expires_at > ?", userID, now).
-		Order("last_active_at DESC").
-		Find(&sessions).Error; err != nil {
+	sessions, err := s.sessionRepo.FindByUserID(ctx, userID, now)
+	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve sessions: %w", err)
 	}
 
@@ -85,26 +119,29 @@ func (s *SessionService) GetUserSessions(userID uint, currentTokenHash string) (
 
 // RevokeSession revokes a specific session
 func (s *SessionService) RevokeSession(userID, sessionID uint) error {
-	result := database.DB.Where("id = ? AND user_id = ?", sessionID, userID).
-		Delete(&models.UserSession{})
+	return s.RevokeSessionWithContext(context.Background(), userID, sessionID)
+}
 
-	if result.Error != nil {
-		return fmt.Errorf("failed to revoke session: %w", result.Error)
+// RevokeSessionWithContext revokes a specific session with explicit context.
+func (s *SessionService) RevokeSessionWithContext(ctx context.Context, userID, sessionID uint) error {
+	rowsAffected, err := s.sessionRepo.DeleteByID(ctx, sessionID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to revoke session: %w", err)
 	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("session not found")
+	if rowsAffected == 0 {
+		return ErrSessionNotFound
 	}
 	return nil
 }
 
 // RevokeAllSessions revokes all sessions for a user except the current one
 func (s *SessionService) RevokeAllSessions(userID uint, exceptTokenHash string) error {
-	query := database.DB.Where("user_id = ?", userID)
-	if exceptTokenHash != "" {
-		query = query.Where("session_token_hash != ?", exceptTokenHash)
-	}
+	return s.RevokeAllSessionsWithContext(context.Background(), userID, exceptTokenHash)
+}
 
-	if err := query.Delete(&models.UserSession{}).Error; err != nil {
+// RevokeAllSessionsWithContext revokes all sessions for a user with explicit context.
+func (s *SessionService) RevokeAllSessionsWithContext(ctx context.Context, userID uint, exceptTokenHash string) error {
+	if err := s.sessionRepo.DeleteByUserID(ctx, userID, exceptTokenHash); err != nil {
 		return fmt.Errorf("failed to revoke sessions: %w", err)
 	}
 	return nil
@@ -112,36 +149,42 @@ func (s *SessionService) RevokeAllSessions(userID uint, exceptTokenHash string) 
 
 // RevokeSessionByTokenHash revokes a session by its token hash
 func (s *SessionService) RevokeSessionByTokenHash(tokenHash string) error {
-	result := database.DB.Where("session_token_hash = ?", tokenHash).
-		Delete(&models.UserSession{})
+	return s.RevokeSessionByTokenHashWithContext(context.Background(), tokenHash)
+}
 
-	if result.Error != nil {
-		return fmt.Errorf("failed to revoke session: %w", result.Error)
+// RevokeSessionByTokenHashWithContext revokes a session by its token hash with explicit context.
+func (s *SessionService) RevokeSessionByTokenHashWithContext(ctx context.Context, tokenHash string) error {
+	if err := s.sessionRepo.DeleteByTokenHash(ctx, tokenHash); err != nil {
+		return fmt.Errorf("failed to revoke session: %w", err)
 	}
 	return nil
 }
 
 // UpdateLastActive updates the last active timestamp for a session
 func (s *SessionService) UpdateLastActive(tokenHash string) error {
-	result := database.DB.Model(&models.UserSession{}).
-		Where("session_token_hash = ?", tokenHash).
-		Update("last_active_at", time.Now())
+	return s.UpdateLastActiveWithContext(context.Background(), tokenHash)
+}
 
-	if result.Error != nil {
-		return fmt.Errorf("failed to update last active: %w", result.Error)
+// UpdateLastActiveWithContext updates the last active timestamp with explicit context.
+func (s *SessionService) UpdateLastActiveWithContext(ctx context.Context, tokenHash string) error {
+	if err := s.sessionRepo.UpdateLastActive(ctx, tokenHash, time.Now()); err != nil {
+		return fmt.Errorf("failed to update last active: %w", err)
 	}
 	return nil
 }
 
 // CleanupExpiredSessions removes expired sessions
 func (s *SessionService) CleanupExpiredSessions() (int64, error) {
-	now := time.Now()
-	result := database.DB.Where("expires_at < ?", now).Delete(&models.UserSession{})
+	return s.CleanupExpiredSessionsWithContext(context.Background())
+}
 
-	if result.Error != nil {
-		return 0, fmt.Errorf("failed to cleanup sessions: %w", result.Error)
+// CleanupExpiredSessionsWithContext removes expired sessions with explicit context.
+func (s *SessionService) CleanupExpiredSessionsWithContext(ctx context.Context) (int64, error) {
+	count, err := s.sessionRepo.DeleteExpired(ctx, time.Now())
+	if err != nil {
+		return 0, fmt.Errorf("failed to cleanup sessions: %w", err)
 	}
-	return result.RowsAffected, nil
+	return count, nil
 }
 
 // ParseDeviceInfo parses user agent string to extract device information
@@ -196,6 +239,11 @@ func (s *SessionService) GetLocationFromIP(ip string) models.LocationInfo {
 
 // RecordLoginAttempt records a login attempt (success or failure)
 func (s *SessionService) RecordLoginAttempt(userID uint, success bool, failureReason string, authMethod string, r *http.Request, sessionID *uint) error {
+	return s.RecordLoginAttemptWithContext(r.Context(), userID, success, failureReason, authMethod, r, sessionID)
+}
+
+// RecordLoginAttemptWithContext records a login attempt with explicit context.
+func (s *SessionService) RecordLoginAttemptWithContext(ctx context.Context, userID uint, success bool, failureReason string, authMethod string, r *http.Request, sessionID *uint) error {
 	userAgent := r.UserAgent()
 	deviceInfo := s.ParseDeviceInfo(userAgent)
 	deviceInfoJSON, _ := json.Marshal(deviceInfo)
@@ -221,7 +269,7 @@ func (s *SessionService) RecordLoginAttempt(userID uint, success bool, failureRe
 		CreatedAt:     time.Now(),
 	}
 
-	if err := database.DB.Create(record).Error; err != nil {
+	if err := s.historyRepo.Create(ctx, record); err != nil {
 		return fmt.Errorf("failed to record login attempt: %w", err)
 	}
 	return nil
@@ -229,20 +277,20 @@ func (s *SessionService) RecordLoginAttempt(userID uint, success bool, failureRe
 
 // GetLoginHistory retrieves login history for a user
 func (s *SessionService) GetLoginHistory(userID uint, limit, offset int) ([]models.LoginHistory, int64, error) {
-	var history []models.LoginHistory
-	var total int64
+	return s.GetLoginHistoryWithContext(context.Background(), userID, limit, offset)
+}
 
+// GetLoginHistoryWithContext retrieves login history with explicit context.
+func (s *SessionService) GetLoginHistoryWithContext(ctx context.Context, userID uint, limit, offset int) ([]models.LoginHistory, int64, error) {
 	// Get total count
-	if err := database.DB.Model(&models.LoginHistory{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+	total, err := s.historyRepo.CountByUserID(ctx, userID)
+	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count login history: %w", err)
 	}
 
 	// Get paginated results
-	if err := database.DB.Where("user_id = ?", userID).
-		Order("created_at DESC").
-		Limit(limit).
-		Offset(offset).
-		Find(&history).Error; err != nil {
+	history, err := s.historyRepo.FindByUserID(ctx, userID, limit, offset)
+	if err != nil {
 		return nil, 0, fmt.Errorf("failed to retrieve login history: %w", err)
 	}
 

@@ -582,3 +582,342 @@ func TestMemberUpdatePayload_Structure(t *testing.T) {
 		t.Errorf("Role = %q, want 'admin'", payload.Role)
 	}
 }
+
+// ============ SendToUser Tests ============
+
+func TestHub_SendToUser(t *testing.T) {
+	hub := NewHub()
+
+	// Start hub in background
+	ctx, cancel := context.WithCancel(context.Background())
+	go hub.Run(ctx)
+	defer func() {
+		cancel()
+		time.Sleep(10 * time.Millisecond)
+	}()
+
+	// Create and register a client
+	client := &Client{
+		UserID: 1,
+		send:   make(chan Message, 10),
+		hub:    hub,
+	}
+	hub.register <- client
+	time.Sleep(10 * time.Millisecond)
+
+	// Send a message to the user
+	hub.SendToUser(1, MessageTypeNotification, "test payload")
+
+	// Wait for message to be received
+	select {
+	case msg := <-client.send:
+		if msg.Type != MessageTypeNotification {
+			t.Errorf("Message type = %v, want %v", msg.Type, MessageTypeNotification)
+		}
+		if msg.Payload != "test payload" {
+			t.Errorf("Message payload = %v, want 'test payload'", msg.Payload)
+		}
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Timeout waiting for message")
+	}
+}
+
+func TestHub_SendToUser_NotConnected(t *testing.T) {
+	hub := NewHub()
+
+	// Start hub in background
+	ctx, cancel := context.WithCancel(context.Background())
+	go hub.Run(ctx)
+	defer func() {
+		cancel()
+		time.Sleep(10 * time.Millisecond)
+	}()
+
+	// Send to non-existent user (should not panic)
+	hub.SendToUser(999, MessageTypeNotification, "test")
+
+	// Give it time to process (should complete without error)
+	time.Sleep(50 * time.Millisecond)
+}
+
+// ============ Broadcast Tests ============
+
+func TestHub_Broadcast(t *testing.T) {
+	hub := NewHub()
+
+	// Start hub in background
+	ctx, cancel := context.WithCancel(context.Background())
+	go hub.Run(ctx)
+	defer func() {
+		cancel()
+		time.Sleep(10 * time.Millisecond)
+	}()
+
+	// Create and register multiple clients
+	client1 := &Client{UserID: 1, send: make(chan Message, 10), hub: hub}
+	client2 := &Client{UserID: 2, send: make(chan Message, 10), hub: hub}
+	hub.register <- client1
+	hub.register <- client2
+	time.Sleep(10 * time.Millisecond)
+
+	// Broadcast a message
+	hub.Broadcast(MessageTypeBroadcast, "broadcast message")
+
+	// Both clients should receive the message
+	for i, client := range []*Client{client1, client2} {
+		select {
+		case msg := <-client.send:
+			if msg.Type != MessageTypeBroadcast {
+				t.Errorf("Client %d: Message type = %v, want %v", i+1, msg.Type, MessageTypeBroadcast)
+			}
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("Client %d: Timeout waiting for broadcast message", i+1)
+		}
+	}
+}
+
+// ============ SendToUsers Tests ============
+
+func TestHub_SendToUsers(t *testing.T) {
+	hub := NewHub()
+
+	// Start hub in background
+	ctx, cancel := context.WithCancel(context.Background())
+	go hub.Run(ctx)
+	defer func() {
+		cancel()
+		time.Sleep(10 * time.Millisecond)
+	}()
+
+	// Create and register multiple clients
+	client1 := &Client{UserID: 1, send: make(chan Message, 10), hub: hub}
+	client2 := &Client{UserID: 2, send: make(chan Message, 10), hub: hub}
+	client3 := &Client{UserID: 3, send: make(chan Message, 10), hub: hub}
+	hub.register <- client1
+	hub.register <- client2
+	hub.register <- client3
+	time.Sleep(10 * time.Millisecond)
+
+	// Send to specific users (1 and 3, not 2)
+	hub.SendToUsers([]uint{1, 3}, MessageTypeUserUpdate, "selective message")
+
+	// Clients 1 and 3 should receive messages
+	for _, client := range []*Client{client1, client3} {
+		select {
+		case msg := <-client.send:
+			if msg.Type != MessageTypeUserUpdate {
+				t.Errorf("Message type = %v, want %v", msg.Type, MessageTypeUserUpdate)
+			}
+		case <-time.After(100 * time.Millisecond):
+			t.Errorf("Timeout waiting for message for user %d", client.UserID)
+		}
+	}
+
+	// Client 2 should NOT receive a message
+	select {
+	case <-client2.send:
+		t.Error("Client 2 should not have received a message")
+	case <-time.After(50 * time.Millisecond):
+		// Expected: no message
+	}
+}
+
+// ============ BroadcastToOrg Tests ============
+
+func TestHub_BroadcastToOrg(t *testing.T) {
+	hub := NewHub()
+
+	// Start hub in background
+	ctx, cancel := context.WithCancel(context.Background())
+	go hub.Run(ctx)
+	defer func() {
+		cancel()
+		time.Sleep(10 * time.Millisecond)
+	}()
+
+	// Create and register clients
+	client1 := &Client{UserID: 1, OrgIDs: []uint{}, send: make(chan Message, 10), hub: hub}
+	client2 := &Client{UserID: 2, OrgIDs: []uint{}, send: make(chan Message, 10), hub: hub}
+	client3 := &Client{UserID: 3, OrgIDs: []uint{}, send: make(chan Message, 10), hub: hub}
+	hub.register <- client1
+	hub.register <- client2
+	hub.register <- client3
+	time.Sleep(10 * time.Millisecond)
+
+	// Set org memberships: user 1 and 2 in org 100, user 3 in org 200
+	hub.SetUserOrgs(1, []uint{100})
+	hub.SetUserOrgs(2, []uint{100})
+	hub.SetUserOrgs(3, []uint{200})
+
+	// Broadcast to org 100
+	hub.BroadcastToOrg(100, MessageTypeOrgUpdate, OrgUpdatePayload{OrgSlug: "test-org", Event: "settings_changed"})
+
+	// Wait a bit for messages to be sent
+	time.Sleep(50 * time.Millisecond)
+
+	// Clients 1 and 2 should receive the message
+	for _, client := range []*Client{client1, client2} {
+		select {
+		case msg := <-client.send:
+			if msg.Type != MessageTypeOrgUpdate {
+				t.Errorf("User %d: Message type = %v, want %v", client.UserID, msg.Type, MessageTypeOrgUpdate)
+			}
+		default:
+			t.Errorf("User %d should have received org broadcast", client.UserID)
+		}
+	}
+
+	// Client 3 should NOT receive the message
+	select {
+	case <-client3.send:
+		t.Error("User 3 should not have received org 100 broadcast")
+	default:
+		// Expected: no message
+	}
+}
+
+func TestHub_BroadcastToOrg_EmptyOrg(t *testing.T) {
+	hub := NewHub()
+
+	// Start hub in background
+	ctx, cancel := context.WithCancel(context.Background())
+	go hub.Run(ctx)
+	defer func() {
+		cancel()
+		time.Sleep(10 * time.Millisecond)
+	}()
+
+	// Broadcast to non-existent org (should not panic)
+	hub.BroadcastToOrg(999, MessageTypeOrgUpdate, "test")
+
+	// Give it time to process (should complete without error)
+	time.Sleep(50 * time.Millisecond)
+}
+
+// ============ sendMessage Tests ============
+
+func TestHub_SendMessage_BufferFull(t *testing.T) {
+	hub := NewHub()
+
+	// Add a client with a very small buffer
+	hub.mu.Lock()
+	client := &Client{
+		UserID: 1,
+		send:   make(chan Message, 1), // Very small buffer
+		hub:    hub,
+	}
+	hub.clients[1] = client
+	hub.mu.Unlock()
+
+	// Fill the buffer
+	client.send <- Message{Type: MessageTypePing}
+
+	// Send another message directly via sendMessage (buffer full case)
+	hub.sendMessage(Message{
+		Type:   MessageTypeNotification,
+		UserID: 1,
+	})
+
+	// The message should be dropped (not block) - verify by timeout
+	select {
+	case <-time.After(50 * time.Millisecond):
+		// Expected: sendMessage completed without blocking
+	}
+}
+
+func TestHub_SendMessage_BroadcastBufferFull(t *testing.T) {
+	hub := NewHub()
+
+	// Add a client with a very small buffer
+	hub.mu.Lock()
+	client := &Client{
+		UserID: 1,
+		send:   make(chan Message, 1),
+		hub:    hub,
+	}
+	hub.clients[1] = client
+	hub.mu.Unlock()
+
+	// Fill the buffer
+	client.send <- Message{Type: MessageTypePing}
+
+	// Broadcast message (UserID = 0) should also handle full buffer gracefully
+	hub.sendMessage(Message{
+		Type:   MessageTypeBroadcast,
+		UserID: 0, // Broadcast to all
+	})
+
+	// Should complete without blocking
+	time.Sleep(50 * time.Millisecond)
+}
+
+// ============ closeAll Tests ============
+
+func TestHub_CloseAll(t *testing.T) {
+	hub := NewHub()
+
+	// Add clients directly
+	hub.mu.Lock()
+	client1 := &Client{UserID: 1, send: make(chan Message, 10)}
+	client2 := &Client{UserID: 2, send: make(chan Message, 10)}
+	hub.clients[1] = client1
+	hub.clients[2] = client2
+	hub.mu.Unlock()
+
+	// Close all
+	hub.closeAll()
+
+	// Verify clients map is empty
+	hub.mu.RLock()
+	clientCount := len(hub.clients)
+	hub.mu.RUnlock()
+
+	if clientCount != 0 {
+		t.Errorf("clients map should be empty after closeAll, got %d", clientCount)
+	}
+
+	// Verify send channels are closed
+	select {
+	case _, ok := <-client1.send:
+		if ok {
+			t.Error("client1.send should be closed")
+		}
+	default:
+		// Channel is closed and empty
+	}
+}
+
+// ============ Hub Run Context Cancellation Tests ============
+
+func TestHub_Run_ContextCancellation(t *testing.T) {
+	hub := NewHub()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+	go func() {
+		hub.Run(ctx)
+		close(done)
+	}()
+
+	// Register a client
+	client := &Client{UserID: 1, send: make(chan Message, 10), hub: hub}
+	hub.register <- client
+	time.Sleep(10 * time.Millisecond)
+
+	// Cancel context
+	cancel()
+
+	// Wait for hub to stop
+	select {
+	case <-done:
+		// Success
+	case <-time.After(time.Second):
+		t.Error("Hub did not stop after context cancellation")
+	}
+
+	// After shutdown, clients should be cleared
+	if hub.GetConnectedUserCount() != 0 {
+		t.Errorf("Expected 0 connected users after shutdown, got %d", hub.GetConnectedUserCount())
+	}
+}
