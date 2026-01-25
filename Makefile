@@ -56,7 +56,11 @@ help: ## Show this help message
 # Development
 # ============================================
 
-dev: ## Start development environment (auto-seeds on startup)
+dev: sync-frontend ## Start development environment (auto-seeds on startup)
+	@$(DC_DEV) up -d --build
+	@echo "Services starting... Run 'make logs' to watch."
+
+dev-fast: ## Start dev without sync/rebuild checks (fastest, use when nothing changed)
 	@$(DC_DEV) up -d
 	@echo "Services starting... Run 'make logs' to watch."
 

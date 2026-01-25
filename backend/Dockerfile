@@ -14,6 +14,7 @@ ENV GOSUMDB=sum.golang.org
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=amd64
+ENV PATH="/go/bin:${PATH}"
 
 # Set working directory
 WORKDIR /app

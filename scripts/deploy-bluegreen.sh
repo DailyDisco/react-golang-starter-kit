@@ -194,26 +194,19 @@ wait_for_healthy() {
 }
 
 # Deep health check using /health/ready endpoint (verifies DB + cache)
+# Uses docker exec to check health inside container (works without port mapping)
 deep_health_check() {
     local env="$1"
     local container="${CONTAINER_PREFIX}-backend-${env}"
     local retries=$HEALTH_CHECK_RETRIES
 
-    # Get the port the container is listening on
-    local port
-    port=$(docker port "$container" 8080 2>/dev/null | head -1 | cut -d: -f2 || echo "")
-
-    if [ -z "$port" ]; then
-        # Container might be using internal networking, try the standard port
-        port="${BACKEND_PORT:-8080}"
-    fi
-
-    print_info "Running deep health check on port ${port}..."
+    print_info "Running deep health check via container..."
 
     while [ $retries -gt 0 ]; do
         local response
-        response=$(curl -sf --max-time $HEALTH_CHECK_TIMEOUT \
-            "http://localhost:${port}${DEEP_HEALTH_ENDPOINT}" 2>/dev/null || echo "")
+        # Use docker exec to curl from inside the container (works without port mapping)
+        response=$(docker exec "$container" wget -qO- --timeout=$HEALTH_CHECK_TIMEOUT \
+            "http://localhost:8080${DEEP_HEALTH_ENDPOINT}" 2>/dev/null || echo "")
 
         if echo "$response" | grep -q '"status":"healthy"'; then
             print_success "Deep health check passed (DB + cache verified)"
@@ -336,9 +329,41 @@ switch_traffic() {
 
     print_header "Switching traffic to ${target_env}"
 
-    # Gracefully stop current backend (traffic will go to target which has exposed port)
+    # Gracefully stop current backend to release port
     print_info "Gracefully stopping backend-${current_env}..."
     graceful_stop "$current_env"
+
+    # Recreate target container with port mapping
+    # (both envs use expose only in compose to avoid port conflicts during deploy)
+    local container="${CONTAINER_PREFIX}-backend-${target_env}"
+    local port="${BACKEND_PORT:-8080}"
+    print_info "Binding port ${port} to backend-${target_env}..."
+
+    # Create temporary override file to add port mapping
+    local override_file="${PROJECT_DIR}/docker/.compose.port-override.yml"
+    cat > "$override_file" << EOF
+services:
+  backend-${target_env}:
+    ports:
+      - "${port}:8080"
+EOF
+
+    # Stop target (healthy but no port mapping)
+    docker stop "$container" >/dev/null 2>&1 || true
+    docker rm "$container" >/dev/null 2>&1 || true
+
+    # Recreate with port mapping
+    docker compose --env-file "$ENV_FILE" \
+        -f "${PROJECT_DIR}/docker/compose.yml" \
+        -f "${PROJECT_DIR}/docker/compose.prod.yml" \
+        -f "$override_file" \
+        up -d "backend-${target_env}"
+
+    # Clean up override file
+    rm -f "$override_file"
+
+    # Wait for container to be ready
+    sleep 2
 
     print_success "Traffic switched to ${target_env}"
     print_info "Backend available at port ${BACKEND_PORT:-8080}"

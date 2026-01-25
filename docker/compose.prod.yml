@@ -178,8 +178,9 @@ services:
   backend-blue:
     <<: *backend-common
     container_name: ${PROJECT_NAME:-starter-kit}-backend-blue
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
+    # Port mapping added dynamically by deploy script after switch
+    expose:
+      - "8080"
 
   # ============================================
   # Green Environment (Standby)
@@ -187,6 +188,7 @@ services:
   backend-green:
     <<: *backend-common
     container_name: ${PROJECT_NAME:-starter-kit}-backend-green
+    # Port mapping added dynamically by deploy script after blue stops
     expose:
       - "8080"
 
