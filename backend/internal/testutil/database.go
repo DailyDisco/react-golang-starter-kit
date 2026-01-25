@@ -133,6 +133,9 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 			&models.UserDismissedAnnouncement{},
 			&models.EmailTemplate{},
 			&models.DataExport{},
+			&models.UsageEvent{},
+			&models.UsagePeriod{},
+			&models.UsageAlert{},
 		)
 	})
 	if migrateErr != nil {

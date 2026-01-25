@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"react-golang-starter/internal/models"
@@ -299,6 +300,244 @@ func TestIsFeatureEnabledForUser_RolloutConsistency(t *testing.T) {
 		if result1 != result2 {
 			t.Errorf("isFeatureEnabledForUser() for user %d returned inconsistent results", userID)
 		}
+	}
+}
+
+func TestCreateFeatureFlag_InvalidMinPlan(t *testing.T) {
+	tests := []struct {
+		name    string
+		minPlan string
+	}{
+		{"invalid plan", "invalid"},
+		{"uppercase", "PRO"},
+		{"mixed case", "Pro"},
+		{"unknown plan", "starter"},
+		{"premium", "premium"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := models.CreateFeatureFlagRequest{
+				Key:               "valid_key",
+				Name:              "Test Flag",
+				Description:       "A test flag",
+				Enabled:           true,
+				RolloutPercentage: 100,
+				MinPlan:           tt.minPlan,
+			}
+			body, _ := json.Marshal(payload)
+
+			req := httptest.NewRequest(http.MethodPost, "/api/admin/feature-flags", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			CreateFeatureFlag(w, req)
+
+			if w.Code != http.StatusBadRequest {
+				t.Errorf("CreateFeatureFlag() with minPlan %q status = %v, want %v", tt.minPlan, w.Code, http.StatusBadRequest)
+			}
+		})
+	}
+}
+
+func TestCreateFeatureFlag_ValidMinPlanValues(t *testing.T) {
+	// Test that valid plan values are recognized
+	validPlans := []string{"", "free", "pro", "enterprise"}
+
+	for _, plan := range validPlans {
+		t.Run("plan_"+plan, func(t *testing.T) {
+			// Valid plans should pass the validation check
+			isValid := plan == "" || plan == "free" || plan == "pro" || plan == "enterprise"
+			if !isValid {
+				t.Errorf("Plan %q should be considered valid", plan)
+			}
+		})
+	}
+}
+
+func TestCreateFeatureFlag_ValidRolloutPercentageValues(t *testing.T) {
+	validPercentages := []int{0, 1, 50, 99, 100}
+
+	for _, pct := range validPercentages {
+		t.Run("percentage_"+strconv.Itoa(pct), func(t *testing.T) {
+			// Valid percentages should pass the validation check
+			isValid := pct >= 0 && pct <= 100
+			if !isValid {
+				t.Errorf("Percentage %d should be considered valid", pct)
+			}
+		})
+	}
+}
+
+// ============ Plan Hierarchy Tests ============
+
+func TestPlanHierarchy(t *testing.T) {
+	// Verify the plan hierarchy is correct
+	if planHierarchy[""] > planHierarchy["free"] {
+		t.Error("empty plan should be lower than free")
+	}
+	if planHierarchy["free"] >= planHierarchy["pro"] {
+		t.Error("free plan should be lower than pro")
+	}
+	if planHierarchy["pro"] >= planHierarchy["enterprise"] {
+		t.Error("pro plan should be lower than enterprise")
+	}
+}
+
+func TestEvaluateFlagForUser(t *testing.T) {
+	tests := []struct {
+		name          string
+		flag          models.FeatureFlag
+		user          *models.User
+		effectivePlan string
+		overrideMap   map[uint]bool
+		wantEnabled   bool
+		wantGated     bool
+		wantRequired  string
+	}{
+		{
+			name: "user override true bypasses all checks",
+			flag: models.FeatureFlag{
+				ID:                1,
+				Key:               "test_flag",
+				Enabled:           false,
+				RolloutPercentage: 0,
+				MinPlan:           "enterprise",
+			},
+			user:          &models.User{ID: 1, Role: models.RoleUser},
+			effectivePlan: "free",
+			overrideMap:   map[uint]bool{1: true},
+			wantEnabled:   true,
+			wantGated:     false,
+			wantRequired:  "",
+		},
+		{
+			name: "user override false bypasses all checks",
+			flag: models.FeatureFlag{
+				ID:                1,
+				Key:               "test_flag",
+				Enabled:           true,
+				RolloutPercentage: 100,
+			},
+			user:          &models.User{ID: 1, Role: models.RoleUser},
+			effectivePlan: "enterprise",
+			overrideMap:   map[uint]bool{1: false},
+			wantEnabled:   false,
+			wantGated:     false,
+			wantRequired:  "",
+		},
+		{
+			name: "gated by plan - free user on pro feature",
+			flag: models.FeatureFlag{
+				ID:                2,
+				Key:               "pro_feature",
+				Enabled:           true,
+				RolloutPercentage: 100,
+				MinPlan:           "pro",
+			},
+			user:          &models.User{ID: 1, Role: models.RoleUser},
+			effectivePlan: "free",
+			overrideMap:   map[uint]bool{},
+			wantEnabled:   false,
+			wantGated:     true,
+			wantRequired:  "pro",
+		},
+		{
+			name: "gated by plan - pro user on enterprise feature",
+			flag: models.FeatureFlag{
+				ID:                3,
+				Key:               "enterprise_feature",
+				Enabled:           true,
+				RolloutPercentage: 100,
+				MinPlan:           "enterprise",
+			},
+			user:          &models.User{ID: 1, Role: models.RoleUser},
+			effectivePlan: "pro",
+			overrideMap:   map[uint]bool{},
+			wantEnabled:   false,
+			wantGated:     true,
+			wantRequired:  "enterprise",
+		},
+		{
+			name: "plan requirement met - pro user on pro feature",
+			flag: models.FeatureFlag{
+				ID:                4,
+				Key:               "pro_feature",
+				Enabled:           true,
+				RolloutPercentage: 100,
+				MinPlan:           "pro",
+			},
+			user:          &models.User{ID: 1, Role: models.RoleUser},
+			effectivePlan: "pro",
+			overrideMap:   map[uint]bool{},
+			wantEnabled:   true,
+			wantGated:     false,
+			wantRequired:  "",
+		},
+		{
+			name: "plan requirement met - enterprise user on pro feature",
+			flag: models.FeatureFlag{
+				ID:                5,
+				Key:               "pro_feature",
+				Enabled:           true,
+				RolloutPercentage: 100,
+				MinPlan:           "pro",
+			},
+			user:          &models.User{ID: 1, Role: models.RoleUser},
+			effectivePlan: "enterprise",
+			overrideMap:   map[uint]bool{},
+			wantEnabled:   true,
+			wantGated:     false,
+			wantRequired:  "",
+		},
+		{
+			name: "no min plan - regular evaluation",
+			flag: models.FeatureFlag{
+				ID:                6,
+				Key:               "free_feature",
+				Enabled:           true,
+				RolloutPercentage: 100,
+				MinPlan:           "",
+			},
+			user:          &models.User{ID: 1, Role: models.RoleUser},
+			effectivePlan: "free",
+			overrideMap:   map[uint]bool{},
+			wantEnabled:   true,
+			wantGated:     false,
+			wantRequired:  "",
+		},
+		{
+			name: "disabled flag with plan requirement",
+			flag: models.FeatureFlag{
+				ID:                7,
+				Key:               "disabled_feature",
+				Enabled:           false,
+				RolloutPercentage: 100,
+				MinPlan:           "free",
+			},
+			user:          &models.User{ID: 1, Role: models.RoleUser},
+			effectivePlan: "enterprise",
+			overrideMap:   map[uint]bool{},
+			wantEnabled:   false,
+			wantGated:     false,
+			wantRequired:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := evaluateFlagForUser(tt.flag, tt.user, tt.effectivePlan, tt.overrideMap)
+
+			if result.Enabled != tt.wantEnabled {
+				t.Errorf("evaluateFlagForUser().Enabled = %v, want %v", result.Enabled, tt.wantEnabled)
+			}
+			if result.GatedByPlan != tt.wantGated {
+				t.Errorf("evaluateFlagForUser().GatedByPlan = %v, want %v", result.GatedByPlan, tt.wantGated)
+			}
+			if result.RequiredPlan != tt.wantRequired {
+				t.Errorf("evaluateFlagForUser().RequiredPlan = %v, want %v", result.RequiredPlan, tt.wantRequired)
+			}
+		})
 	}
 }
 

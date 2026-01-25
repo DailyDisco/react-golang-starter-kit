@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -370,4 +372,395 @@ func TestGenerateVerificationToken(t *testing.T) {
 	if token1 == token2 {
 		t.Error("GenerateVerificationToken() should generate unique tokens")
 	}
+}
+
+// ============ Cookie Configuration Tests ============
+
+func TestIsSecureCookie(t *testing.T) {
+	tests := []struct {
+		name  string
+		goEnv string
+		want  bool
+	}{
+		{"production should be secure", "production", true},
+		{"prod should be secure", "prod", true},
+		{"development should not be secure", "development", false},
+		{"empty should not be secure", "", false},
+		{"test should not be secure", "test", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.goEnv != "" {
+				t.Setenv("GO_ENV", tt.goEnv)
+			} else {
+				os.Unsetenv("GO_ENV")
+			}
+
+			got := isSecureCookie()
+			if got != tt.want {
+				t.Errorf("isSecureCookie() with GO_ENV=%q = %v, want %v", tt.goEnv, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetCookieSameSite(t *testing.T) {
+	tests := []struct {
+		name   string
+		envVal string
+		want   http.SameSite
+	}{
+		{"strict should return Strict", "strict", http.SameSiteStrictMode},
+		{"STRICT should return Strict", "STRICT", http.SameSiteStrictMode},
+		{"Strict should return Strict", "Strict", http.SameSiteStrictMode},
+		{"lax should return Lax", "lax", http.SameSiteLaxMode},
+		{"empty should return Lax", "", http.SameSiteLaxMode},
+		{"invalid should return Lax", "invalid", http.SameSiteLaxMode},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.envVal != "" {
+				t.Setenv("COOKIE_SAMESITE", tt.envVal)
+			} else {
+				os.Unsetenv("COOKIE_SAMESITE")
+			}
+
+			got := getCookieSameSite()
+			if got != tt.want {
+				t.Errorf("getCookieSameSite() with COOKIE_SAMESITE=%q = %v, want %v", tt.envVal, got, tt.want)
+			}
+		})
+	}
+}
+
+// ============ Cookie Setting Tests ============
+
+func TestSetAuthCookie(t *testing.T) {
+	t.Setenv("GO_ENV", "test")
+	os.Unsetenv("COOKIE_SAMESITE")
+
+	rr := httptest.NewRecorder()
+	SetAuthCookie(rr, "test-token-value")
+
+	cookies := rr.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("expected 1 cookie, got %d", len(cookies))
+	}
+
+	cookie := cookies[0]
+	if cookie.Name != AuthCookieName {
+		t.Errorf("cookie name = %q, want %q", cookie.Name, AuthCookieName)
+	}
+	if cookie.Value != "test-token-value" {
+		t.Errorf("cookie value = %q, want 'test-token-value'", cookie.Value)
+	}
+	if !cookie.HttpOnly {
+		t.Error("cookie should be HttpOnly")
+	}
+	if cookie.Path != "/" {
+		t.Errorf("cookie path = %q, want '/'", cookie.Path)
+	}
+	if cookie.MaxAge <= 0 {
+		t.Error("cookie should have positive MaxAge")
+	}
+}
+
+func TestClearAuthCookie(t *testing.T) {
+	t.Setenv("GO_ENV", "test")
+	os.Unsetenv("COOKIE_SAMESITE")
+
+	rr := httptest.NewRecorder()
+	ClearAuthCookie(rr)
+
+	cookies := rr.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("expected 1 cookie, got %d", len(cookies))
+	}
+
+	cookie := cookies[0]
+	if cookie.Name != AuthCookieName {
+		t.Errorf("cookie name = %q, want %q", cookie.Name, AuthCookieName)
+	}
+	if cookie.Value != "" {
+		t.Errorf("cookie value should be empty, got %q", cookie.Value)
+	}
+	if cookie.MaxAge != -1 {
+		t.Errorf("cookie MaxAge = %d, want -1 (expire immediately)", cookie.MaxAge)
+	}
+}
+
+func TestSetRefreshCookie(t *testing.T) {
+	t.Setenv("GO_ENV", "test")
+	os.Unsetenv("COOKIE_SAMESITE")
+
+	rr := httptest.NewRecorder()
+	SetRefreshCookie(rr, "refresh-token-value")
+
+	cookies := rr.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("expected 1 cookie, got %d", len(cookies))
+	}
+
+	cookie := cookies[0]
+	if cookie.Name != RefreshCookieName {
+		t.Errorf("cookie name = %q, want %q", cookie.Name, RefreshCookieName)
+	}
+	if cookie.Value != "refresh-token-value" {
+		t.Errorf("cookie value = %q, want 'refresh-token-value'", cookie.Value)
+	}
+	if !cookie.HttpOnly {
+		t.Error("cookie should be HttpOnly")
+	}
+	if cookie.Path != "/api/v1/auth" {
+		t.Errorf("cookie path = %q, want '/api/v1/auth'", cookie.Path)
+	}
+}
+
+func TestClearRefreshCookie(t *testing.T) {
+	t.Setenv("GO_ENV", "test")
+	os.Unsetenv("COOKIE_SAMESITE")
+
+	rr := httptest.NewRecorder()
+	ClearRefreshCookie(rr)
+
+	cookies := rr.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("expected 1 cookie, got %d", len(cookies))
+	}
+
+	cookie := cookies[0]
+	if cookie.Name != RefreshCookieName {
+		t.Errorf("cookie name = %q, want %q", cookie.Name, RefreshCookieName)
+	}
+	if cookie.Value != "" {
+		t.Errorf("cookie value should be empty, got %q", cookie.Value)
+	}
+	if cookie.MaxAge != -1 {
+		t.Errorf("cookie MaxAge = %d, want -1 (expire immediately)", cookie.MaxAge)
+	}
+}
+
+// ============ Cookie Extraction Tests ============
+
+func TestExtractTokenFromCookie(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupReq  func() *http.Request
+		wantToken string
+		wantErr   bool
+	}{
+		{
+			"valid cookie",
+			func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/test", nil)
+				req.AddCookie(&http.Cookie{Name: AuthCookieName, Value: "my-token"})
+				return req
+			},
+			"my-token",
+			false,
+		},
+		{
+			"no cookie",
+			func() *http.Request {
+				return httptest.NewRequest(http.MethodGet, "/test", nil)
+			},
+			"",
+			true,
+		},
+		{
+			"empty cookie value",
+			func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/test", nil)
+				req.AddCookie(&http.Cookie{Name: AuthCookieName, Value: ""})
+				return req
+			},
+			"",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := tt.setupReq()
+			token, err := ExtractTokenFromCookie(req)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ExtractTokenFromCookie() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if token != tt.wantToken {
+				t.Errorf("ExtractTokenFromCookie() = %q, want %q", token, tt.wantToken)
+			}
+		})
+	}
+}
+
+func TestExtractRefreshTokenFromCookie(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupReq  func() *http.Request
+		wantToken string
+		wantErr   bool
+	}{
+		{
+			"valid cookie",
+			func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/test", nil)
+				req.AddCookie(&http.Cookie{Name: RefreshCookieName, Value: "refresh-token"})
+				return req
+			},
+			"refresh-token",
+			false,
+		},
+		{
+			"no cookie",
+			func() *http.Request {
+				return httptest.NewRequest(http.MethodGet, "/test", nil)
+			},
+			"",
+			true,
+		},
+		{
+			"empty cookie value",
+			func() *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/test", nil)
+				req.AddCookie(&http.Cookie{Name: RefreshCookieName, Value: ""})
+				return req
+			},
+			"",
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := tt.setupReq()
+			token, err := ExtractRefreshTokenFromCookie(req)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ExtractRefreshTokenFromCookie() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if token != tt.wantToken {
+				t.Errorf("ExtractRefreshTokenFromCookie() = %q, want %q", token, tt.wantToken)
+			}
+		})
+	}
+}
+
+// ============ Impersonation Token Tests ============
+
+func TestGenerateImpersonationToken(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-key-for-testing")
+
+	// targetUser is the user being impersonated
+	targetUser := &models.User{
+		ID:    42,
+		Email: "target@example.com",
+		Role:  models.RoleUser,
+	}
+	// originalUserID is the admin doing the impersonation
+	originalUserID := uint(1)
+
+	token, err := GenerateImpersonationToken(targetUser, originalUserID)
+	if err != nil {
+		t.Fatalf("GenerateImpersonationToken() error = %v", err)
+	}
+
+	if token == "" {
+		t.Error("GenerateImpersonationToken() returned empty token")
+	}
+
+	// Validate the token
+	claims, err := ValidateJWT(token)
+	if err != nil {
+		t.Fatalf("ValidateJWT() error = %v", err)
+	}
+
+	// UserID should be the target user's ID (the one being impersonated)
+	if claims.UserID != targetUser.ID {
+		t.Errorf("claims.UserID = %d, want %d", claims.UserID, targetUser.ID)
+	}
+	// OriginalUserID should be set to the impersonator's ID
+	if claims.OriginalUserID != originalUserID {
+		t.Errorf("claims.OriginalUserID = %d, want %d", claims.OriginalUserID, originalUserID)
+	}
+}
+
+func TestGenerateImpersonationToken_NoSecret(t *testing.T) {
+	originalSecret := os.Getenv("JWT_SECRET")
+	os.Unsetenv("JWT_SECRET")
+	defer func() {
+		if originalSecret != "" {
+			os.Setenv("JWT_SECRET", originalSecret)
+		}
+	}()
+
+	user := &models.User{ID: 1, Email: "admin@example.com", Role: models.RoleAdmin}
+	_, err := GenerateImpersonationToken(user, 42)
+
+	if err == nil {
+		t.Error("GenerateImpersonationToken() should error without JWT_SECRET")
+	}
+}
+
+// ============ Access Token Expiration Tests ============
+
+func TestGetAccessTokenExpirationTime(t *testing.T) {
+	// Clear related env vars
+	os.Unsetenv("ACCESS_TOKEN_EXPIRATION_MINUTES")
+	os.Unsetenv("JWT_EXPIRATION_HOURS")
+
+	// Test default (15 minutes)
+	if got := GetAccessTokenExpirationTime(); got != 15*time.Minute {
+		t.Errorf("GetAccessTokenExpirationTime() default = %v, want 15m", got)
+	}
+
+	// Test custom value
+	t.Setenv("ACCESS_TOKEN_EXPIRATION_MINUTES", "30")
+	if got := GetAccessTokenExpirationTime(); got != 30*time.Minute {
+		t.Errorf("GetAccessTokenExpirationTime() custom = %v, want 30m", got)
+	}
+
+	// Test legacy JWT_EXPIRATION_HOURS fallback
+	os.Unsetenv("ACCESS_TOKEN_EXPIRATION_MINUTES")
+	t.Setenv("JWT_EXPIRATION_HOURS", "2")
+	if got := GetAccessTokenExpirationTime(); got != 2*time.Hour {
+		t.Errorf("GetAccessTokenExpirationTime() legacy = %v, want 2h", got)
+	}
+
+	os.Unsetenv("ACCESS_TOKEN_EXPIRATION_MINUTES")
+	os.Unsetenv("JWT_EXPIRATION_HOURS")
+}
+
+// ============ Refresh Token Expiration Tests ============
+
+func TestGetRefreshTokenExpirationTime(t *testing.T) {
+	// Clear related env vars
+	os.Unsetenv("REFRESH_TOKEN_EXPIRATION_DAYS")
+
+	// Test default (7 days)
+	if got := GetRefreshTokenExpirationTime(); got != 7*24*time.Hour {
+		t.Errorf("GetRefreshTokenExpirationTime() default = %v, want 7 days", got)
+	}
+
+	// Test custom value
+	t.Setenv("REFRESH_TOKEN_EXPIRATION_DAYS", "30")
+	if got := GetRefreshTokenExpirationTime(); got != 30*24*time.Hour {
+		t.Errorf("GetRefreshTokenExpirationTime() custom = %v, want 30 days", got)
+	}
+
+	// Test invalid value (should fallback to default)
+	t.Setenv("REFRESH_TOKEN_EXPIRATION_DAYS", "invalid")
+	if got := GetRefreshTokenExpirationTime(); got != 7*24*time.Hour {
+		t.Errorf("GetRefreshTokenExpirationTime() invalid = %v, want 7 days fallback", got)
+	}
+
+	// Test negative value (should fallback to default)
+	t.Setenv("REFRESH_TOKEN_EXPIRATION_DAYS", "-5")
+	if got := GetRefreshTokenExpirationTime(); got != 7*24*time.Hour {
+		t.Errorf("GetRefreshTokenExpirationTime() negative = %v, want 7 days fallback", got)
+	}
+
+	os.Unsetenv("REFRESH_TOKEN_EXPIRATION_DAYS")
 }

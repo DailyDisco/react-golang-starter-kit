@@ -457,3 +457,83 @@ func TestErrorTypes(t *testing.T) {
 		})
 	}
 }
+
+// ============ Initialize Tests ============
+
+func TestInitialize_Enabled(t *testing.T) {
+	// Reset global state
+	instance = nil
+	config = nil
+
+	cfg := &Config{
+		Enabled:  true,
+		SMTPHost: "localhost",
+		SMTPPort: 587,
+		DevMode:  true,
+	}
+
+	err := Initialize(cfg, nil)
+	if err != nil {
+		t.Errorf("Initialize() error = %v, want nil", err)
+	}
+
+	if instance == nil {
+		t.Fatal("Initialize() did not set instance")
+	}
+
+	// Should use SMTP provider when enabled
+	if !instance.IsAvailable() {
+		t.Error("Initialize() with enabled config should create available provider")
+	}
+
+	// Clean up
+	instance = nil
+	config = nil
+}
+
+// ============ Send With Provider Tests ============
+
+func TestSend_WithProvider(t *testing.T) {
+	// Set up NoOp provider
+	instance = NewNoOpProvider()
+	defer func() { instance = nil }()
+
+	params := SendParams{
+		To:      "test@example.com",
+		Subject: "Test",
+	}
+
+	err := Send(context.Background(), params)
+	if err != nil {
+		t.Errorf("Send() with provider error = %v, want nil", err)
+	}
+}
+
+func TestSendBatch_WithProvider(t *testing.T) {
+	// Set up NoOp provider
+	instance = NewNoOpProvider()
+	defer func() { instance = nil }()
+
+	params := []SendParams{
+		{To: "test1@example.com", Subject: "Test 1"},
+		{To: "test2@example.com", Subject: "Test 2"},
+	}
+
+	err := SendBatch(context.Background(), params)
+	if err != nil {
+		t.Errorf("SendBatch() with provider error = %v, want nil", err)
+	}
+}
+
+func TestClose_WithActiveProvider(t *testing.T) {
+	// Set up a provider and close it
+	instance = NewNoOpProvider()
+
+	err := Close()
+	if err != nil {
+		t.Errorf("Close() error = %v, want nil", err)
+	}
+
+	// Clean up
+	instance = nil
+}

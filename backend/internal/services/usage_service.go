@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"react-golang-starter/internal/models"
+	"react-golang-starter/internal/repository"
 	"react-golang-starter/internal/websocket"
 
 	"github.com/rs/zerolog/log"
@@ -19,6 +20,9 @@ type UsageService struct {
 	hub        *websocket.Hub
 	workQueue  chan *models.UsageEvent
 	workerDone chan struct{}
+	eventRepo  repository.UsageEventRepository
+	periodRepo repository.UsagePeriodRepository
+	alertRepo  repository.UsageAlertRepository
 }
 
 const (
@@ -34,6 +38,33 @@ func NewUsageService(db *gorm.DB) *UsageService {
 		db:         db,
 		workQueue:  make(chan *models.UsageEvent, maxQueueSize),
 		workerDone: make(chan struct{}),
+		eventRepo:  repository.NewGormUsageEventRepository(db),
+		periodRepo: repository.NewGormUsagePeriodRepository(db),
+		alertRepo:  repository.NewGormUsageAlertRepository(db),
+	}
+
+	// Start worker pool for async usage processing
+	for i := 0; i < numWorkers; i++ {
+		go s.worker(i)
+	}
+
+	return s
+}
+
+// NewUsageServiceWithRepo creates a usage service with injected repositories for testing.
+func NewUsageServiceWithRepo(
+	db *gorm.DB,
+	eventRepo repository.UsageEventRepository,
+	periodRepo repository.UsagePeriodRepository,
+	alertRepo repository.UsageAlertRepository,
+) *UsageService {
+	s := &UsageService{
+		db:         db,
+		workQueue:  make(chan *models.UsageEvent, maxQueueSize),
+		workerDone: make(chan struct{}),
+		eventRepo:  eventRepo,
+		periodRepo: periodRepo,
+		alertRepo:  alertRepo,
 	}
 
 	// Start worker pool for async usage processing
@@ -251,7 +282,7 @@ func (s *UsageService) RecordEvent(ctx context.Context, event *models.UsageEvent
 	// Set timestamp
 	event.CreatedAt = time.Now().Format(time.RFC3339)
 
-	if err := s.db.WithContext(ctx).Create(event).Error; err != nil {
+	if err := s.eventRepo.Create(ctx, event); err != nil {
 		return fmt.Errorf("failed to record usage event: %w", err)
 	}
 
@@ -450,15 +481,17 @@ func (s *UsageService) CheckLimits(ctx context.Context, userID *uint, orgID *uin
 // GetUnacknowledgedAlerts returns all unacknowledged alerts for a user or org
 func (s *UsageService) GetUnacknowledgedAlerts(ctx context.Context, userID *uint, orgID *uint) ([]models.UsageAlert, error) {
 	var alerts []models.UsageAlert
-	query := s.db.WithContext(ctx).Where("acknowledged = ?", false)
+	var err error
 
 	if userID != nil {
-		query = query.Where("user_id = ?", *userID)
+		alerts, err = s.alertRepo.FindUnacknowledgedByUser(ctx, *userID)
 	} else if orgID != nil {
-		query = query.Where("organization_id = ?", *orgID)
+		alerts, err = s.alertRepo.FindUnacknowledgedByOrg(ctx, *orgID)
+	} else {
+		return nil, fmt.Errorf("either user_id or organization_id must be provided")
 	}
 
-	if err := query.Order("created_at DESC").Find(&alerts).Error; err != nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get alerts: %w", err)
 	}
 
@@ -468,19 +501,12 @@ func (s *UsageService) GetUnacknowledgedAlerts(ctx context.Context, userID *uint
 // AcknowledgeAlert marks an alert as acknowledged
 func (s *UsageService) AcknowledgeAlert(ctx context.Context, alertID uint, acknowledgedBy uint) error {
 	now := time.Now().Format(time.RFC3339)
-	result := s.db.WithContext(ctx).Model(&models.UsageAlert{}).
-		Where("id = ?", alertID).
-		Updates(map[string]interface{}{
-			"acknowledged":    true,
-			"acknowledged_at": now,
-			"acknowledged_by": acknowledgedBy,
-		})
-
-	if result.Error != nil {
-		return fmt.Errorf("failed to acknowledge alert: %w", result.Error)
+	rowsAffected, err := s.alertRepo.Acknowledge(ctx, alertID, acknowledgedBy, now)
+	if err != nil {
+		return fmt.Errorf("failed to acknowledge alert: %w", err)
 	}
 
-	if result.RowsAffected == 0 {
+	if rowsAffected == 0 {
 		return fmt.Errorf("alert not found: %d", alertID)
 	}
 
@@ -489,6 +515,11 @@ func (s *UsageService) AcknowledgeAlert(ctx context.Context, alertID uint, ackno
 
 // updatePeriodTotals updates the aggregated totals for a usage period
 func (s *UsageService) updatePeriodTotals(ctx context.Context, event *models.UsageEvent) {
+	// Skip if db is not available (unit tests with mock repositories)
+	if s.db == nil {
+		return
+	}
+
 	// Get or create period record
 	var period models.UsagePeriod
 	query := s.db.WithContext(ctx).
@@ -576,17 +607,17 @@ func getCurrentBillingPeriod() (string, string) {
 // GetUsageHistory returns usage history for past periods
 func (s *UsageService) GetUsageHistory(ctx context.Context, userID *uint, orgID *uint, months int) ([]models.UsageSummaryResponse, error) {
 	var periods []models.UsagePeriod
-	query := s.db.WithContext(ctx).Order("period_start DESC").Limit(months)
+	var err error
 
 	if userID != nil {
-		query = query.Where("user_id = ?", *userID)
+		periods, err = s.periodRepo.FindHistoryByUser(ctx, *userID, months)
 	} else if orgID != nil {
-		query = query.Where("organization_id = ?", *orgID)
+		periods, err = s.periodRepo.FindHistoryByOrg(ctx, *orgID, months)
 	} else {
 		return nil, fmt.Errorf("either user_id or organization_id must be provided")
 	}
 
-	if err := query.Find(&periods).Error; err != nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get usage history: %w", err)
 	}
 
