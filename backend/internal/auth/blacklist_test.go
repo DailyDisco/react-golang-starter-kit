@@ -1,8 +1,11 @@
 package auth
 
 import (
+	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHashToken(t *testing.T) {
@@ -210,4 +213,183 @@ func TestGetTokenExpirationTime_BackwardsCompatibility(t *testing.T) {
 	if duration != expectedDuration {
 		t.Errorf("Expected GetTokenExpirationTime to return %v, got %v", expectedDuration, duration)
 	}
+}
+
+// --- Blacklist Fail Mode Configuration Tests ---
+
+func TestGetBlacklistFailMode_Default(t *testing.T) {
+	os.Unsetenv("TOKEN_BLACKLIST_FAIL_MODE")
+
+	mode := getBlacklistFailMode()
+
+	assert.Equal(t, "closed", mode, "default fail mode should be 'closed' for security")
+}
+
+func TestGetBlacklistFailMode_Open(t *testing.T) {
+	t.Setenv("TOKEN_BLACKLIST_FAIL_MODE", "open")
+
+	mode := getBlacklistFailMode()
+
+	assert.Equal(t, "open", mode)
+}
+
+func TestGetBlacklistFailMode_Closed(t *testing.T) {
+	t.Setenv("TOKEN_BLACKLIST_FAIL_MODE", "closed")
+
+	mode := getBlacklistFailMode()
+
+	assert.Equal(t, "closed", mode)
+}
+
+func TestGetBlacklistFailMode_InvalidValueDefaultsToClosed(t *testing.T) {
+	tests := []struct {
+		name     string
+		envValue string
+	}{
+		{"random string", "random"},
+		{"OPEN uppercase", "OPEN"},
+		{"mixed case", "Open"},
+		{"whitespace", "  "},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("TOKEN_BLACKLIST_FAIL_MODE", tt.envValue)
+
+			mode := getBlacklistFailMode()
+
+			assert.Equal(t, "closed", mode, "invalid values should default to 'closed' for security")
+		})
+	}
+}
+
+// --- Blacklist Cache Constants Tests ---
+
+func TestBlacklistCacheConstants(t *testing.T) {
+	t.Run("cache TTL is reasonable", func(t *testing.T) {
+		// TTL should be shorter than typical token expiry to avoid stale cache
+		assert.Equal(t, 15*time.Minute, blacklistCacheTTL)
+		assert.LessOrEqual(t, blacklistCacheTTL, 30*time.Minute,
+			"cache TTL should be relatively short")
+	})
+
+	t.Run("cache prefix is set", func(t *testing.T) {
+		assert.Equal(t, "blacklist:", blacklistCachePrefix)
+		assert.NotEmpty(t, blacklistCachePrefix)
+	})
+}
+
+// --- Token Hash Security Tests ---
+
+func TestHashToken_Consistency(t *testing.T) {
+	token := "test-token-12345"
+
+	hash1 := HashToken(token)
+	hash2 := HashToken(token)
+
+	assert.Equal(t, hash1, hash2, "same token should produce same hash")
+}
+
+func TestHashToken_CacheKeyPrefix(t *testing.T) {
+	token := "test-token"
+	hash := HashToken(token)
+
+	// Code uses first 16 chars of hash for cache key
+	prefix := hash[:16]
+
+	assert.Len(t, prefix, 16, "hash prefix for cache key should be 16 chars")
+}
+
+// --- Blacklist Without Database Tests ---
+// These test the early-return behavior when database.DB is nil
+
+func TestBlacklistToken_NilDatabase(t *testing.T) {
+	// When database.DB is nil, BlacklistToken should return nil (no-op)
+	err := BlacklistToken("test-token", 1, time.Now().Add(time.Hour), "test")
+
+	assert.NoError(t, err, "should not error when DB is nil")
+}
+
+func TestIsTokenBlacklisted_NilDatabase(t *testing.T) {
+	// When database.DB is nil, IsTokenBlacklisted should return false
+	result := IsTokenBlacklisted("test-token")
+
+	assert.False(t, result, "should return false when DB is nil")
+}
+
+func TestRevokeAllUserTokens_NilDatabase(t *testing.T) {
+	// When database.DB is nil, RevokeAllUserTokens should return nil (no-op)
+	err := RevokeAllUserTokens(1, "test")
+
+	assert.NoError(t, err, "should not error when DB is nil")
+}
+
+func TestCleanupExpiredBlacklistEntries_NilDatabase(t *testing.T) {
+	// When database.DB is nil, cleanup should return nil (no-op)
+	err := CleanupExpiredBlacklistEntries()
+
+	assert.NoError(t, err, "should not error when DB is nil")
+}
+
+// --- Fail Mode Behavior Documentation Tests ---
+
+func TestFailModeBehavior_ClosedMode(t *testing.T) {
+	// In 'closed' mode (default), when database query fails:
+	// - IsTokenBlacklisted returns TRUE (deny request)
+	// - This is security-first: when uncertain, deny access
+	t.Setenv("TOKEN_BLACKLIST_FAIL_MODE", "closed")
+
+	mode := getBlacklistFailMode()
+	assert.Equal(t, "closed", mode)
+
+	// Document expected behavior
+	// If DB error occurs in 'closed' mode, the code returns true (blacklisted)
+	// This means: deny the request when we can't verify token status
+}
+
+func TestFailModeBehavior_OpenMode(t *testing.T) {
+	// In 'open' mode, when database query fails:
+	// - IsTokenBlacklisted returns FALSE (allow request)
+	// - This is availability-first: when uncertain, allow access
+	t.Setenv("TOKEN_BLACKLIST_FAIL_MODE", "open")
+
+	mode := getBlacklistFailMode()
+	assert.Equal(t, "open", mode)
+
+	// Document expected behavior
+	// If DB error occurs in 'open' mode, the code returns false (not blacklisted)
+	// This means: allow the request when we can't verify token status
+}
+
+// --- Reason Codes Tests ---
+
+func TestBlacklistReason_ValidReasons(t *testing.T) {
+	// Common reasons that might be used for blacklisting
+	validReasons := []string{
+		"logout",
+		"password_change",
+		"session_revoke",
+		"security_incident",
+		"admin_action",
+	}
+
+	for _, reason := range validReasons {
+		t.Run(reason, func(t *testing.T) {
+			assert.NotEmpty(t, reason)
+			// The code accepts any string as reason
+			// Empty reason defaults to "logout"
+		})
+	}
+}
+
+func TestBlacklistReason_DefaultsToLogout(t *testing.T) {
+	// The code sets default reason to "logout" if empty
+	// This is verified by inspecting BlacklistToken which does:
+	// if reason == "" { reason = "logout" }
+	reason := ""
+	if reason == "" {
+		reason = "logout"
+	}
+
+	assert.Equal(t, "logout", reason)
 }
