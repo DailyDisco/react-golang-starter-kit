@@ -525,7 +525,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner (backend)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: "backend:scan"
           format: "sarif"
@@ -541,7 +541,7 @@ jobs:
           category: "container-backend"
 
       - name: Run Trivy (table output for logs)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: "backend:scan"
           format: "table"
@@ -550,7 +550,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Scan Dockerfile for misconfigurations
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: "config"
           scan-ref: "${{ env.BACKEND_DIR }}"
