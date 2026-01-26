@@ -6,6 +6,25 @@ A modern, production-ready full-stack starter template combining **React 19** (w
 
 ---
 
+## 📋 Quick Reference
+
+| I want to...                    | Command / Link                                        |
+| ------------------------------- | ----------------------------------------------------- |
+| Start development               | `make dev`                                            |
+| Run all tests                   | `make test`                                           |
+| Run frontend tests only         | `cd frontend && npm run test:fast`                    |
+| Run backend tests only          | `cd backend && go test ./...`                         |
+| View logs                       | `make logs`                                           |
+| Reset database                  | `make db-reset`                                       |
+| Check service health            | `make health`                                         |
+| See all commands                | `make help`                                           |
+| Deploy to production            | `make prod`                                           |
+| Start monitoring stack          | `make observability-up`                               |
+
+📖 **[Complete Makefile Reference →](#-makefile-reference)**
+
+---
+
 ## 🚀 Quick Start
 
 Get up and running in under 5 minutes:
@@ -64,10 +83,15 @@ npm run dev
 - ⚡ **Vite 7** - Lightning-fast builds and HMR
 - 🛣️ **TanStack Router** - Type-safe, file-based routing
 - 🔄 **TanStack Query** - Server state management
+- 📊 **TanStack Table** - Powerful data tables with sorting, filtering, pagination
 - 🐻 **Zustand** - Client state management
-- 🎨 **TailwindCSS 4 + ShadCN UI** - Beautiful, accessible components
+- 🎨 **TailwindCSS 4 + ShadCN UI** - 65+ beautiful, accessible components
+- 🎬 **Framer Motion** - Smooth animations and transitions
+- 📈 **Recharts** - Charts and data visualization
+- 🎠 **Embla Carousel** - Touch-friendly carousels
 - 🌐 **i18next** - Multi-language support (EN/ES included)
 - 📡 **WebSocket** - Real-time notifications and data sync
+- 🔔 **Sonner** - Toast notifications with animations
 - 🧪 **Vitest + Playwright** - Unit and E2E testing
 
 ### Backend Stack
@@ -86,11 +110,21 @@ npm run dev
 - 🔄 **Database Migrations** - golang-migrate with CI validation
 - 🤖 **AI Integration** - Gemini with chat, streaming, vision, embeddings
 - 📝 **Structured Logging** - zerolog with JSON output
+- 🚨 **Error Tracking** - Sentry integration with stack traces
+- 🔑 **API Key Management** - Encrypted key storage with CRUD operations
+- 🚩 **Feature Flags** - Runtime toggles with user overrides and plan enforcement
+- 📋 **Audit Logging** - Compliance-ready action tracking
+- 📦 **Data Export** - GDPR-compliant user data export with background jobs
+- 🗑️ **Account Deletion** - Grace period workflow with cancellation
 
 ### Observability & DevOps
 
 - 📊 **Prometheus Metrics** - HTTP, DB, cache, WebSocket, auth metrics
 - 📈 **Grafana Dashboards** - Pre-configured monitoring
+- 🚨 **Sentry** - Error tracking for frontend and backend
+- 📉 **Vercel Analytics** - Frontend performance analytics
+- ⚡ **Web Vitals** - Core Web Vitals monitoring
+- 🎛️ **Feature Flags** - Runtime feature toggles via environment variables
 - 🐳 **Docker Compose** - Development and production ready
 - 📦 **Multi-stage builds** - Optimized Alpine & Distroless images
 - 🔧 **Environment-based config** - Comprehensive .env support
@@ -114,30 +148,36 @@ react-golang-starter-kit/
 │   │   ├── config/      # Configuration management
 │   │   ├── database/    # Database connection & migrations
 │   │   ├── email/       # SMTP email service
-│   │   ├── handlers/    # HTTP request handlers
-│   │   ├── jobs/        # River background jobs
-│   │   ├── middleware/  # Chi middleware
-│   │   ├── models/      # GORM models (users, orgs)
+│   │   ├── handlers/    # HTTP request handlers (14 modules, 100+ endpoints)
+│   │   ├── jobs/        # River background jobs (export, cleanup, retention)
+│   │   ├── middleware/  # Chi middleware (12 middleware implementations)
+│   │   ├── models/      # GORM models (27+ models)
 │   │   ├── observability/ # Prometheus metrics
-│   │   ├── ratelimit/   # Rate limiting logic
-│   │   ├── repository/  # Data access layer
-│   │   ├── services/    # Business logic layer
+│   │   ├── pagination/  # Pagination utilities
+│   │   ├── ratelimit/   # Rate limiting (4 tiers: IP/User/Auth/API)
+│   │   ├── repository/  # Data access layer (interfaces + implementations)
+│   │   ├── response/    # Standardized response helpers
+│   │   ├── sanitize/    # Input sanitization utilities
+│   │   ├── services/    # Business logic layer (9 core services)
 │   │   ├── storage/     # File storage (S3/DB)
 │   │   ├── stripe/      # Stripe payments
+│   │   ├── validation/  # Request validation logic
 │   │   └── websocket/   # Real-time WebSocket hub
 │   ├── docs/            # Swagger documentation
 │   └── scripts/         # Utility scripts
 │
 ├── frontend/            # React application
 │   ├── app/            # Application code
-│   │   ├── components/ # Reusable UI components (50+ ShadCN)
-│   │   ├── hooks/      # Custom React hooks
+│   │   ├── components/ # Reusable UI components (65+ including ShadCN)
+│   │   ├── hooks/      # Custom React hooks (25+ hooks)
+│   │   │   ├── queries/    # TanStack Query hooks
+│   │   │   └── mutations/  # Mutation hooks with cache invalidation
 │   │   ├── i18n/       # Internationalization (EN/ES)
 │   │   ├── layouts/    # Layout components (Admin, Settings, Dashboard)
-│   │   ├── lib/        # Utilities and helpers
+│   │   ├── lib/        # Utilities (query keys, guards, optimistic updates)
 │   │   ├── routes/     # TanStack Router pages (file-based)
 │   │   ├── services/   # API service layer
-│   │   └── stores/     # Zustand state management
+│   │   └── stores/     # Zustand state management (5 stores)
 │   └── public/         # Static assets
 │
 ├── docker/             # Docker compose files
@@ -361,6 +401,166 @@ make vet-backend      # Static analysis (go vet)
 # golangci-lint and govulncheck run in CI
 ```
 
+### Dependency Management
+
+```bash
+make sync-deps        # Sync all dependencies (npm install + go mod tidy)
+make sync-frontend    # Sync frontend dependencies only
+make sync-backend     # Sync backend dependencies only
+```
+
+### Test Coverage
+
+```bash
+make coverage         # Generate all coverage reports
+make coverage-html    # Generate HTML coverage reports
+make coverage-check   # Check coverage meets 70% threshold
+make test-services-up # Start all test services (DB, Redis, LocalStack, Mailpit)
+make test-services-down # Stop all test services
+make test-clean       # Clean test artifacts
+```
+
+### Project Setup
+
+```bash
+make setup            # Initial setup - copy env file
+make configure-features # Interactive feature configuration wizard
+make init             # Initialize a new project from this template
+```
+
+---
+
+## 📜 Makefile Reference
+
+Complete list of available `make` targets organized by category:
+
+#### Dev Environment
+
+| Command          | Description                                      |
+| ---------------- | ------------------------------------------------ |
+| `make dev`       | Start development environment (with auto-seed)   |
+| `make dev-fast`  | Start dev without rebuild (fastest)              |
+| `make dev-fresh` | Start with fresh database                        |
+| `make restart`   | Restart all services                             |
+| `make logs`      | View logs from all services                      |
+| `make tail`      | View last 100 lines of logs                      |
+| `make status`    | Show status of all services                      |
+| `make health`    | Check health of all services                     |
+
+#### Production Deployment
+
+| Command            | Description                        |
+| ------------------ | ---------------------------------- |
+| `make prod`        | Deploy with zero downtime          |
+| `make prod-status` | Show deployment status             |
+| `make rollback`    | Rollback to previous environment   |
+| `make prod-build`  | Build production images            |
+
+#### Database Management
+
+| Command         | Description                     |
+| --------------- | ------------------------------- |
+| `make db-reset` | Reset database (deletes data)   |
+| `make seed`     | Seed with test data             |
+| `make shell-db` | Access PostgreSQL shell         |
+
+#### Test Commands
+
+| Command                     | Description                          |
+| --------------------------- | ------------------------------------ |
+| `make test`                 | Run all tests                        |
+| `make test-backend`         | Run backend tests                    |
+| `make test-frontend`        | Run frontend tests                   |
+| `make test-integration`     | Run integration tests                |
+| `make test-e2e`             | Run Playwright E2E tests             |
+| `make test-services-up`     | Start test services (DB, Redis, etc) |
+| `make test-services-down`   | Stop test services                   |
+| `make coverage`             | Generate all coverage reports        |
+| `make coverage-html`        | Generate HTML coverage reports       |
+| `make coverage-check`       | Check 70% coverage threshold         |
+
+#### Quality & Dependencies
+
+| Command               | Description                  |
+| --------------------- | ---------------------------- |
+| `make format-backend` | Format Go code               |
+| `make sync-deps`      | Sync all dependencies        |
+| `make sync-frontend`  | Sync frontend dependencies   |
+| `make sync-backend`   | Sync backend dependencies    |
+
+#### Monitoring Stack
+
+| Command                   | Description                    |
+| ------------------------- | ------------------------------ |
+| `make observability-up`   | Start Prometheus + Grafana     |
+| `make observability-down` | Stop monitoring stack          |
+| `make grafana-logs`       | View Grafana logs              |
+| `make prometheus-logs`    | View Prometheus logs           |
+
+#### External Deployments
+
+| Command                | Description                   |
+| ---------------------- | ----------------------------- |
+| `make deploy-vercel`   | Deploy frontend to Vercel     |
+| `make deploy-railway`  | Deploy backend to Railway     |
+| `make frontend-build`  | Build frontend for deployment |
+
+#### Setup & Cleanup
+
+| Command                   | Description                        |
+| ------------------------- | ---------------------------------- |
+| `make setup`              | Initial setup (copy env file)      |
+| `make configure-features` | Interactive feature wizard         |
+| `make init`               | Initialize new project             |
+| `make clean`              | Clean containers, volumes, images  |
+| `make down`               | Stop all containers                |
+
+---
+
+## 📁 Scripts Reference
+
+Utility scripts in the `scripts/` folder:
+
+| Script                      | Description                                    |
+| --------------------------- | ---------------------------------------------- |
+| `docker-build.sh`           | Build Docker images (`dev`, `prod`, `clean`)   |
+| `deploy-bluegreen.sh`       | Zero-downtime blue-green deployment            |
+| `deploy-vercel.sh`          | Deploy frontend to Vercel                      |
+| `deploy-railway.sh`         | Deploy backend to Railway                      |
+| `configure-features.sh`     | Interactive feature configuration wizard       |
+| `validate-env-prod.sh`      | Validate production environment variables      |
+| `validate-swagger.sh`       | Validate Swagger/OpenAPI documentation         |
+
+**Usage:**
+
+```bash
+# Build development images
+./scripts/docker-build.sh dev
+
+# Deploy with blue-green strategy
+./scripts/deploy-bluegreen.sh
+
+# Check deployment status
+./scripts/deploy-bluegreen.sh --status
+
+# Rollback deployment
+./scripts/deploy-bluegreen.sh --rollback
+```
+
+---
+
+## 📐 Architecture Decisions
+
+Key architectural decisions are documented in `docs/decisions/` using the MADR format:
+
+| Decision | Summary |
+| -------- | ------- |
+| [ADR-001](docs/decisions/001-database-migrations.md) | Database migrations with golang-migrate |
+| [ADR-002](docs/decisions/002-background-jobs-river.md) | Background jobs with River (PostgreSQL-backed) |
+| [ADR-003](docs/decisions/003-stripe-payments.md) | Stripe payments integration |
+
+📖 **[All Architecture Decisions →](docs/decisions/)**
+
 ---
 
 ## 🔐 Core Features
@@ -461,9 +661,70 @@ make observability-down  # Stop monitoring stack
 
 PostgreSQL-backed job queue for reliable async processing:
 
-- Email sending
-- Webhook processing
-- Configurable workers and retries
+- **Data Export** - GDPR-compliant user data export processing
+- **Email Sending** - Async email delivery with retries
+- **Cleanup Jobs** - Expired sessions, stale data cleanup
+- **Retention Jobs** - Data retention policy enforcement
+- Configurable workers, retries, and scheduling
+
+### API Key Management
+
+Secure API key system for programmatic access:
+
+- **Encrypted Storage** - Keys encrypted at rest with AES-256
+- **Provider Association** - Link keys to external services (e.g., AI providers)
+- **Key Rotation** - Generate new keys without service interruption
+- **Usage Tracking** - Monitor API key usage and last used timestamps
+
+**Key Endpoints:**
+
+- `POST /api/api-keys` - Create new API key
+- `GET /api/api-keys` - List user's API keys
+- `DELETE /api/api-keys/:id` - Revoke API key
+
+### Feature Flags
+
+Runtime feature toggles with granular control:
+
+- **User Overrides** - Enable/disable features per user
+- **Plan Enforcement** - Restrict features to specific subscription plans
+- **Runtime Toggles** - Change features without redeployment
+- **Admin UI** - Manage flags through admin panel
+
+**Key Endpoints:**
+
+- `GET /api/feature-flags` - Get all flags for current user
+- `PUT /api/admin/feature-flags/:key` - Update flag (admin)
+- `POST /api/admin/feature-flags/:key/user-overrides` - Set user override
+
+### Audit Logging
+
+Compliance-ready action tracking:
+
+- **User Actions** - Track login, logout, data changes
+- **Admin Actions** - Log role changes, user management
+- **Data Access** - Record sensitive data access
+- **Filterable** - Query by user, action type, date range
+
+**Key Endpoints:**
+
+- `GET /api/admin/audit-logs` - Query audit logs (admin)
+
+### Data Export & Account Management
+
+GDPR-compliant data handling:
+
+- **Data Export** - Request full data export (processed via background job)
+- **Account Deletion** - Request account deletion with grace period
+- **Cancellation** - Cancel pending deletion requests
+- **Login History** - View complete login history
+
+**Key Endpoints:**
+
+- `POST /api/users/me/export` - Request data export
+- `POST /api/users/me/delete-request` - Request account deletion
+- `DELETE /api/users/me/delete-request` - Cancel deletion request
+- `GET /api/users/me/login-history` - View login history
 
 ### AI Integration (Gemini)
 
@@ -492,9 +753,40 @@ Full-featured Gemini AI integration with multiple capabilities:
 - Input validation with configurable limits
 - User-provided API keys support
 
+### Session Management
+
+Comprehensive session and device tracking:
+
+- **Multi-Device Sessions** - Track active sessions across devices
+- **Device Fingerprinting** - Browser and OS detection via User-Agent
+- **Session Limits** - Configurable max concurrent sessions per user
+- **Session Revocation** - Revoke individual or all sessions
+
+### User Preferences
+
+User-configurable settings with server-side persistence:
+
+- **Theme Preferences** - Light, dark, or system theme
+- **Notification Settings** - Email and push notification preferences
+- **Language Selection** - Preferred UI language
+- **Dashboard Layout** - Customizable widget arrangements
+
 ### File Upload System
 
 Dual-backend storage supporting both AWS S3 and PostgreSQL with automatic fallback, secure uploads, and configurable size limits.
+
+### Rate Limiting
+
+Four-tier protection system with configurable limits:
+
+| Tier | Default Limit | Use Case                    |
+| ---- | ------------- | --------------------------- |
+| IP   | 100 req/min   | Anonymous traffic           |
+| User | 200 req/min   | Authenticated users         |
+| Auth | 10 req/min    | Login/register attempts     |
+| API  | 20 req/min    | AI and expensive operations |
+
+All tiers support burst allowances and custom overrides via environment variables.
 
 📖 **[Complete Features Documentation →](docs/FEATURES.md)** | **[Architecture Decisions →](docs/decisions/)**
 
@@ -536,11 +828,171 @@ cp .env.staging.example .env
 
 ### Optional Features
 
-All optional features (AWS S3, Dragonfly (Redis-compatible), SMTP, payments, AI, analytics) are included in `.env.example` as commented sections. Simply uncomment and configure the features you need.
+All optional features are included in `.env.example` as commented sections. Simply uncomment and configure the features you need:
 
-**AI Integration:** Set `GEMINI_API_KEY` to enable Gemini AI features (chat, streaming, vision, embeddings).
+- **AWS S3** - Cloud file storage
+- **Dragonfly/Redis** - High-performance caching
+- **SMTP** - Email notifications
+- **Stripe** - Payment processing
+- **Gemini AI** - Chat, streaming, vision, embeddings
+- **Sentry** - Error tracking (frontend + backend)
+- **Vercel Analytics** - Frontend performance analytics
+
+### Feature Flags
+
+Runtime feature toggles via environment variables:
+
+```bash
+VITE_FEATURE_NEW_DASHBOARD_LAYOUT=true
+VITE_FEATURE_BETA_ANALYTICS=false
+VITE_FEATURE_ADVANCED_FILE_UPLOAD=true
+VITE_FEATURE_DARK_MODE_TOGGLE=true
+```
+
+### Security Headers
+
+Configurable security headers for production:
+
+- **CSP** - Content Security Policy
+- **HSTS** - HTTP Strict Transport Security
+- **CSRF** - Cross-Site Request Forgery protection
+- **Frame Options** - Clickjacking protection
+
+### Auto-Seeding (Development)
+
+Database automatically seeds with test data on startup in development mode:
+
+```bash
+AUTO_SEED=true              # Enable auto-seeding
+SEED_ADMIN_PASSWORD=admin123!  # Admin user password
+SEED_DEFAULT_PASSWORD=password123!  # Default user password
+```
 
 📖 **[Environment Configuration Guide →](.env.example)**
+
+---
+
+## ❓ FAQ
+
+<details>
+<summary><strong>Can I use MySQL or SQLite instead of PostgreSQL?</strong></summary>
+
+No. PostgreSQL is required because:
+- Migrations use PostgreSQL-specific syntax
+- River (background jobs) requires PostgreSQL
+- GORM configuration is PostgreSQL-optimized
+- Some features use PostgreSQL-specific types (JSONB, arrays)
+
+</details>
+
+<details>
+<summary><strong>How do I add a new language?</strong></summary>
+
+1. Create translation files in `frontend/app/i18n/locales/{lang}/`
+2. Copy structure from `en/` folder
+3. Add language to `frontend/app/i18n/config.ts`
+4. Update the language selector component
+
+📖 See [Frontend Guide](docs/FRONTEND_GUIDE.md#internationalization) for details.
+
+</details>
+
+<details>
+<summary><strong>How do I disable optional features?</strong></summary>
+
+Comment out or remove the relevant environment variables in `.env`:
+- **Stripe**: Remove `STRIPE_*` variables
+- **AI**: Remove `GEMINI_API_KEY`
+- **S3**: Remove `AWS_*` variables (falls back to DB storage)
+- **Email**: Remove `SMTP_*` variables
+- **Sentry**: Remove `SENTRY_DSN`
+
+The application gracefully handles missing optional features.
+
+</details>
+
+<details>
+<summary><strong>How do I change the port numbers?</strong></summary>
+
+Edit `.env`:
+```bash
+API_PORT=8080        # Backend port
+FRONTEND_PORT=5193   # Frontend port (Vite)
+DB_PORT=5432         # PostgreSQL port
+```
+
+</details>
+
+<details>
+<summary><strong>How do I run only the backend or frontend?</strong></summary>
+
+```bash
+# Backend only
+cd backend && go run cmd/main.go
+
+# Frontend only
+cd frontend && npm run dev
+
+# Or with Docker
+docker compose up -d backend postgres
+docker compose up -d frontend
+```
+
+</details>
+
+<details>
+<summary><strong>How do I add a new API endpoint?</strong></summary>
+
+1. Create handler in `backend/internal/handlers/`
+2. Add route in `backend/cmd/main.go`
+3. Create TypeScript types in `frontend/app/types/`
+4. Add API service function in `frontend/app/services/`
+5. Create query/mutation hooks in `frontend/app/hooks/`
+
+📖 See [Backend README](backend/README.md) for patterns.
+
+</details>
+
+---
+
+## 🔄 CI/CD Pipeline
+
+The GitHub Actions workflow provides comprehensive automation:
+
+### Change Detection
+
+Smart detection runs only affected checks:
+- Frontend changes → lint, typecheck, test, E2E
+- Backend changes → vet, test, migration validation
+- Both → full pipeline
+
+### Pipeline Stages
+
+| Stage | Checks | Runs On |
+| ----- | ------ | ------- |
+| Lint | ESLint, Prettier, go vet, golangci-lint | All PRs |
+| Types | TypeScript strict mode | Frontend changes |
+| Test | Vitest (unit), Go tests | All changes |
+| E2E | Playwright on Chromium | Frontend changes |
+| Security | npm audit, govulncheck | All PRs |
+| Migrations | up → down → up validation | Backend changes |
+| Swagger | OpenAPI spec validation | Backend changes |
+
+### Compatibility Matrix
+
+On `master` branch merges:
+- Node.js 22 verification
+- Go 1.25 verification
+- Full E2E test suite
+
+### Running Locally
+
+```bash
+# Run the same checks as CI
+npm run quality          # Frontend lint + format + typecheck
+npm run test:fast        # Frontend unit tests
+cd backend && go vet ./... && go test ./...  # Backend checks
+```
 
 ---
 
@@ -568,11 +1020,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Need Help?
 
-- **Documentation Issues?** Check the [Documentation Hub](docs/README.md)
-- **Troubleshooting?** See [Deployment Guide](docs/DEPLOYMENT.md#troubleshooting-common-issues)
-- **Feature Questions?** Review [Features Documentation](docs/FEATURES.md)
-- **Found a Bug?** Open an issue on GitHub
+### Quick Troubleshooting
+
+| Issue | Solution |
+| ----- | -------- |
+| Port already in use | Change ports in `.env` or stop conflicting services |
+| Database connection failed | Check PostgreSQL is running: `make health` |
+| Docker permission denied | Add user to docker group: `sudo usermod -aG docker $USER` |
+| npm install fails | Clear cache: `rm -rf node_modules && npm install` |
+| Migrations fail | Check DB connection, run `make migrate-down` then `make migrate-up` |
+| JWT errors | Regenerate: `openssl rand -hex 32` and update `.env` |
+
+### Resources
+
+- **Documentation Hub** → [docs/README.md](docs/README.md)
+- **Deployment Issues** → [docs/DEPLOYMENT.md#troubleshooting](docs/DEPLOYMENT.md#troubleshooting-common-issues)
+- **Feature Questions** → [docs/FEATURES.md](docs/FEATURES.md)
+- **Frontend Guide** → [docs/FRONTEND_GUIDE.md](docs/FRONTEND_GUIDE.md)
+- **Backend Guide** → [backend/README.md](backend/README.md)
+- **Found a Bug?** → [Open an issue](https://github.com/DailyDisco/react-golang-starter-kit/issues)
 
 ---
 
-Built with care for rapid full-stack SaaS development.
+Built with ❤️ for rapid full-stack SaaS development.

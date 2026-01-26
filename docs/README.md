@@ -8,10 +8,12 @@ Welcome to the React-Golang Starter Kit documentation! This page provides an ove
 |----------|---------|----------|
 | [Main README](../README.md) | Project overview and quick start | Everyone |
 | [Deployment Guide](DEPLOYMENT.md) | Deploy to Vercel, Railway, VPS, AWS | Everyone |
-| [Features Guide](FEATURES.md) | JWT, RBAC, Rate Limiting, File Upload | Developers |
-| [Frontend Guide](FRONTEND_GUIDE.md) | React, TanStack Router, Testing | Frontend Developers |
+| [Features Guide](FEATURES.md) | JWT, RBAC, Organizations, Observability | Developers |
+| [Frontend Guide](FRONTEND_GUIDE.md) | React, TanStack Router, Frontend Patterns | Frontend Developers |
+| [Backend Guide](BACKEND_GUIDE.md) | Go architecture, services, middleware | Backend Developers |
+| [Testing Guide](TESTING.md) | Unit, integration, E2E testing | Developers |
 | [Docker Setup](DOCKER_SETUP.md) | Docker development and deployment | DevOps, Developers |
-| [Backend README](../backend/README.md) | Go backend architecture | Backend Developers |
+| [Backend README](../backend/README.md) | Go quick start and project structure | Backend Developers |
 | [Development](DEVELOPMENT.md) | History, roadmap, internal notes | Contributors, Maintainers |
 
 ---
@@ -49,20 +51,25 @@ Welcome to the React-Golang Starter Kit documentation! This page provides an ove
 
 ### For Backend Developers
 
-1. **Backend architecture:** [Backend README](../backend/README.md)
+1. **Backend architecture:** [Backend Guide](BACKEND_GUIDE.md)
+   - Layered architecture (handlers → services → repositories)
+   - Service patterns and error handling
+   - Middleware stack
+
+2. **Quick start:** [Backend README](../backend/README.md)
    - Project structure
-   - Database setup
+   - Development setup
    - API endpoints
 
-2. **Authentication & security:** [Features Guide - JWT](FEATURES.md#jwt-authentication--security)
+3. **Testing:** [Testing Guide](TESTING.md#backend-unit-testing)
+   - Unit tests with mocks
+   - Integration tests with real database
+   - Test utilities
+
+4. **Authentication & security:** [Features Guide - JWT](FEATURES.md#jwt-authentication--security)
    - JWT token management
    - Password hashing
    - Security best practices
-
-3. **RBAC system:** [Features Guide - RBAC](FEATURES.md#role-based-access-control-rbac)
-   - User roles and permissions
-   - Protected endpoints
-   - Role management
 
 ---
 
@@ -96,6 +103,27 @@ Welcome to the React-Golang Starter Kit documentation! This page provides an ove
 - CRUD operations
 - Configuration guide
 
+### Multi-Tenancy & Organizations
+
+**[Organizations](FEATURES.md#multi-tenancy-organizations)**
+- Organization CRUD and membership
+- Role hierarchy (Owner, Admin, Member)
+- Invitation system
+- Seat limits and data isolation
+
+### Infrastructure
+
+**[Background Jobs](FEATURES.md#background-jobs)**
+- River job queue (PostgreSQL-backed)
+- Data export, cleanup, retention jobs
+- Job configuration and monitoring
+
+**[Observability](FEATURES.md#observability)**
+- Structured logging (zerolog)
+- Prometheus metrics
+- Health checks
+- Sentry error tracking
+
 ---
 
 ## Development Guides
@@ -120,12 +148,16 @@ Welcome to the React-Golang Starter Kit documentation! This page provides an ove
 
 ### Backend Development
 
+**[Backend Guide](BACKEND_GUIDE.md)**
+- Architecture overview (handlers → services → repositories)
+- Service layer patterns and error handling
+- Repository pattern for testability
+- Middleware stack
+- Database patterns
+
 **[Backend README](../backend/README.md)**
-- Go project structure
-- Database management with GORM
-- API endpoint implementation
-- Adding new features
-- Railway deployment
+- Quick start and project structure
+- Development setup
 
 ---
 
@@ -172,20 +204,27 @@ Welcome to the React-Golang Starter Kit documentation! This page provides an ove
 
 ## Testing
 
+**[Comprehensive Testing Guide](TESTING.md)** - Full testing documentation
+
 ### Frontend Testing
 
-**[Frontend Guide - Testing](FRONTEND_GUIDE.md#testing)**
+**[Testing Guide - Frontend](TESTING.md#frontend-testing)**
 - Vitest configuration
-- Running tests
-- Writing component tests
+- Component testing
+- Hook testing
+- Zustand store testing
+
+**[Frontend Guide - Testing](FRONTEND_GUIDE.md#testing)**
+- Quick test commands
 - Coverage reports
 
 ### Backend Testing
 
-**[Backend README - Testing](../backend/README.md#testing)**
-- Go test commands
-- Test coverage
-- Package-specific tests
+**[Testing Guide - Backend](TESTING.md#backend-unit-testing)**
+- Table-driven tests
+- Mocking with interfaces
+- Integration tests with real database
+- Test utilities and fixtures
 
 ---
 
@@ -330,12 +369,14 @@ chore: upgrade dependencies
 react_golang_starter_kit/
 ├── README.md                    # Main entry point
 ├── backend/
-│   └── README.md               # Backend-specific guide
+│   └── README.md               # Backend quick start
 └── docs/
     ├── README.md               # This file - Documentation hub
+    ├── BACKEND_GUIDE.md        # Backend architecture, services, patterns
+    ├── TESTING.md              # Comprehensive testing guide
     ├── DEPLOYMENT.md           # Deployment guides (Vercel, Railway, VPS)
-    ├── FEATURES.md             # JWT, RBAC, Rate Limiting, Files
-    ├── FRONTEND_GUIDE.md       # React, TanStack Router, Testing
+    ├── FEATURES.md             # JWT, RBAC, Organizations, Observability
+    ├── FRONTEND_GUIDE.md       # React, TanStack Router, Frontend Patterns
     ├── DOCKER_SETUP.md         # Docker development & deployment
     └── DEVELOPMENT.md          # History, roadmap, contributors
 ```

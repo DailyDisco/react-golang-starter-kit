@@ -8,6 +8,9 @@ This document consolidates all feature documentation for the React-Golang Starte
 - [Rate Limiting](#rate-limiting)
 - [Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
 - [File Upload System](#file-upload-system)
+- [Multi-Tenancy (Organizations)](#multi-tenancy-organizations)
+- [Background Jobs](#background-jobs)
+- [Observability](#observability)
 
 ---
 
@@ -319,3 +322,284 @@ window.open(urlData.data, '_blank');
 - Check PostgreSQL connection
 - Verify BYTEA column size limits
 - Monitor database storage space
+
+---
+
+## Multi-Tenancy (Organizations)
+
+### Overview
+
+The organization system provides multi-tenancy support, allowing users to belong to multiple organizations with different roles.
+
+### Organization Model
+
+```
+Organization
+├── id, name, slug (unique URL-friendly identifier)
+├── owner_id (user who created the organization)
+├── seat_limit (max members, null = unlimited)
+├── subscription_id (linked billing)
+└── members[] (OrganizationMember)
+    ├── user_id
+    ├── role (owner, admin, member)
+    └── joined_at
+```
+
+### Organization Roles
+
+| Role | Permissions |
+|------|-------------|
+| **Owner** | Full control, billing, delete org, transfer ownership |
+| **Admin** | Manage members, invite users, manage settings |
+| **Member** | Access org resources, view members |
+
+### API Endpoints
+
+```
+# Organization CRUD
+GET    /api/v1/organizations              # List user's orgs
+POST   /api/v1/organizations              # Create org
+GET    /api/v1/organizations/:slug        # Get org details
+PUT    /api/v1/organizations/:slug        # Update org
+DELETE /api/v1/organizations/:slug        # Delete org (owner only)
+
+# Member Management
+GET    /api/v1/organizations/:slug/members           # List members
+PUT    /api/v1/organizations/:slug/members/:id/role  # Change role
+DELETE /api/v1/organizations/:slug/members/:id       # Remove member
+
+# Invitations
+POST   /api/v1/organizations/:slug/invitations       # Invite user
+GET    /api/v1/organizations/:slug/invitations       # List pending
+DELETE /api/v1/organizations/:slug/invitations/:id   # Cancel invitation
+POST   /api/v1/invitations/:token/accept             # Accept invitation
+```
+
+### Invitation Flow
+
+1. Admin invites user by email
+2. System creates invitation with unique token (expires in 7 days)
+3. User receives email with invitation link
+4. User clicks link → creates account or logs in → accepts invitation
+5. User becomes member of organization
+
+### Data Isolation
+
+Organization data is isolated via `org_id` foreign keys:
+- Each resource query includes `WHERE org_id = ?`
+- Middleware validates user's org membership before allowing access
+- Cross-org access is prevented at the service layer
+
+### Seat Limits
+
+Organizations can have seat limits based on subscription tier:
+- `seat_limit = NULL`: Unlimited members
+- `seat_limit = 5`: Maximum 5 members (invitations fail beyond limit)
+
+---
+
+## Background Jobs
+
+### Overview
+
+Background jobs are powered by [River](https://github.com/riverqueue/river), a PostgreSQL-backed job queue for Go.
+
+### Why River?
+
+- **PostgreSQL-native**: Uses the same database, no Redis needed
+- **Transactional**: Jobs can be enqueued within database transactions
+- **Reliable**: At-least-once delivery with automatic retries
+- **Observable**: Built-in job status tracking and metrics
+
+### Available Jobs
+
+| Job | Purpose |
+|-----|---------|
+| `data_export` | Export user data (GDPR compliance) |
+| `cleanup` | Clean up expired sessions, tokens |
+| `retention` | Apply data retention policies |
+| `email` | Send transactional emails |
+
+### Configuration
+
+```bash
+# Environment variables
+RIVER_WORKERS=5              # Number of worker goroutines
+RIVER_POLL_INTERVAL=1s       # How often to check for jobs
+RIVER_MAX_ATTEMPTS=3         # Retry attempts before marking failed
+```
+
+### Enqueueing Jobs
+
+```go
+// In a handler or service
+import "github.com/riverqueue/river"
+
+// Simple job
+_, err := riverClient.Insert(ctx, workers.DataExportArgs{
+    UserID: userID,
+    Format: "json",
+}, nil)
+
+// Scheduled job (run in 1 hour)
+_, err := riverClient.Insert(ctx, workers.CleanupArgs{}, &river.InsertOpts{
+    ScheduledAt: time.Now().Add(time.Hour),
+})
+
+// With transaction (job only created if transaction commits)
+tx := db.Begin()
+_, err := riverClient.InsertTx(ctx, tx, args, nil)
+tx.Commit()
+```
+
+### Job Status
+
+Jobs progress through these states:
+1. `available` → Ready to be picked up
+2. `running` → Currently executing
+3. `completed` → Successfully finished
+4. `retryable` → Failed, will retry
+5. `discarded` → Failed, max attempts reached
+
+### Monitoring
+
+```sql
+-- View pending jobs
+SELECT * FROM river_job WHERE state = 'available';
+
+-- View failed jobs
+SELECT * FROM river_job WHERE state = 'discarded';
+
+-- Job stats
+SELECT state, COUNT(*) FROM river_job GROUP BY state;
+```
+
+---
+
+## Observability
+
+### Overview
+
+The application includes comprehensive observability features: structured logging, metrics, health checks, and error tracking.
+
+### Structured Logging
+
+Uses [zerolog](https://github.com/rs/zerolog) for JSON-structured logs:
+
+```go
+import "github.com/rs/zerolog/log"
+
+log.Info().
+    Str("user_id", userID).
+    Str("action", "login").
+    Msg("User logged in")
+
+// Output:
+// {"level":"info","user_id":"123","action":"login","message":"User logged in","time":"..."}
+```
+
+**Log Levels:**
+- `debug` - Detailed debugging (development only)
+- `info` - Normal operations
+- `warn` - Potential issues
+- `error` - Errors requiring attention
+
+**Configuration:**
+```bash
+LOG_LEVEL=info        # Minimum level to output
+LOG_FORMAT=json       # json or console
+```
+
+### Prometheus Metrics
+
+Metrics are exposed at `/metrics` in Prometheus format.
+
+**Available Metrics:**
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `http_requests_total` | Counter | Total HTTP requests by method, path, status |
+| `http_request_duration_seconds` | Histogram | Request latency distribution |
+| `db_queries_total` | Counter | Database queries by operation |
+| `db_query_duration_seconds` | Histogram | Query latency |
+| `websocket_connections` | Gauge | Active WebSocket connections |
+| `auth_attempts_total` | Counter | Login attempts by success/failure |
+| `river_jobs_total` | Counter | Background jobs by state |
+
+**Grafana Dashboard:**
+
+Import the provided dashboard from `docker/grafana/dashboards/app-dashboard.json`.
+
+### Health Checks
+
+```
+GET /health          # Basic health (returns 200 OK)
+GET /health/ready    # Readiness (checks DB, Redis connections)
+GET /health/live     # Liveness (always returns 200)
+```
+
+**Readiness Response:**
+```json
+{
+  "status": "healthy",
+  "checks": {
+    "database": "ok",
+    "cache": "ok"
+  },
+  "version": "1.0.0"
+}
+```
+
+### Error Tracking (Sentry)
+
+Sentry integration captures and reports errors.
+
+**Configuration:**
+```bash
+SENTRY_DSN=https://xxx@sentry.io/xxx
+SENTRY_ENVIRONMENT=production
+SENTRY_TRACES_SAMPLE_RATE=0.1    # 10% of requests traced
+```
+
+**Features:**
+- Automatic panic recovery and reporting
+- Request context (user ID, URL, headers)
+- Distributed tracing with correlation IDs
+- Performance monitoring
+
+### Correlation IDs
+
+Every request receives a unique `X-Request-ID` header for tracing:
+
+1. Request arrives → middleware assigns ID
+2. ID propagated through context
+3. All logs include the request ID
+4. Response includes `X-Request-ID` header
+5. Client can use ID for support requests
+
+```go
+// Access in handlers/services
+requestID := middleware.GetReqID(ctx)
+log.Info().Str("request_id", requestID).Msg("Processing request")
+```
+
+### Observability Stack (Docker)
+
+Start the full observability stack:
+
+```bash
+docker compose -f compose.observability.yml up -d
+```
+
+**Services:**
+- **Prometheus** (`:9090`) - Metrics collection
+- **Grafana** (`:3001`) - Dashboards and visualization
+- **Loki** (optional) - Log aggregation
+
+### Best Practices
+
+1. **Always include context** - Add relevant fields to log entries
+2. **Use correlation IDs** - Include request_id in all logs
+3. **Don't log sensitive data** - Mask passwords, tokens, PII
+4. **Monitor error rates** - Alert on sudden increases
+5. **Set up dashboards** - Visualize key metrics

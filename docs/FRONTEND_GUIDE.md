@@ -52,7 +52,7 @@ docker compose up frontend
 ### Core Libraries
 
 - **[Vite](https://vitejs.dev/)** - Lightning-fast development server and build tool
-- **[React 18](https://react.dev/)** - UI library with concurrent features
+- **[React 19](https://react.dev/)** - UI library with concurrent features
 - **[TypeScript](https://www.typescriptlang.org/)** - Type-safe development
 - **[TanStack Router](https://tanstack.com/router)** - Type-safe, file-based routing with data loading
 - **[TanStack Query](https://tanstack.com/query)** - Powerful server state management with caching
@@ -69,6 +69,119 @@ docker compose up frontend
 - **[Vitest](https://vitest.dev/)** - Fast unit testing framework
 - **[React Testing Library](https://testing-library.com/react)** - Component testing utilities
 - **[Happy DOM](https://github.com/capricorn86/happy-dom)** - Lightweight DOM implementation
+
+---
+
+## Frontend Patterns
+
+This section covers key patterns used throughout the frontend codebase.
+
+### Query Keys Factory
+
+All TanStack Query keys are managed through a centralized factory in `app/lib/query-keys.ts`:
+
+```typescript
+import { queryKeys } from '../lib/query-keys';
+
+// Use in queries
+const { data } = useQuery({
+  queryKey: queryKeys.users.detail(userId),
+  queryFn: () => UserService.getById(userId),
+});
+
+// Use in invalidation
+queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+```
+
+**Available key namespaces:** `users`, `auth`, `health`, `featureFlags`, `billing`, `files`, `settings`, `changelog`, `organizations`, `usage`, `auditLogs`, `notifications`
+
+### Optimistic Updates
+
+Use the factory functions in `app/lib/optimistic-mutations.ts` for consistent optimistic update handling:
+
+```typescript
+import { createOptimisticDeleteHandlers } from '../lib/optimistic-mutations';
+
+const deleteHandlers = createOptimisticDeleteHandlers<User, number>({
+  queryClient,
+  listQueryKey: queryKeys.users.lists(),
+  getId: (user) => user.id,
+  detailQueryKey: (id) => queryKeys.users.detail(id),
+  successMessage: "User deleted",
+});
+
+const mutation = useMutation({
+  mutationFn: UserService.deleteUser,
+  ...deleteHandlers,
+});
+```
+
+**Available helpers:**
+- `createOptimisticDeleteHandlers` - For delete operations with rollback
+- `createOptimisticUpdateHandlers` - For update operations with rollback
+
+### Zustand + TanStack Query Integration
+
+**Key principle:** Zustand stores hold UI state, TanStack Query holds server state.
+
+```typescript
+// ❌ Don't store server data in Zustand
+const useUserStore = create(() => ({
+  users: [], // Don't do this
+}));
+
+// ✅ Use Zustand for UI state only
+const useUserStore = create(() => ({
+  selectedUserId: null,
+  filterText: '',
+  isFormOpen: false,
+}));
+
+// ✅ Use TanStack Query for server state
+const { data: users } = useQuery({
+  queryKey: queryKeys.users.lists(),
+  queryFn: UserService.getAll,
+});
+```
+
+**Available stores:** `auth-store`, `user-store`, `org-store`, `file-store`, `notification-store`, `language-store`
+
+### API Client Circuit Breaker
+
+The API client includes a circuit breaker to prevent infinite 401 retry loops:
+
+- After **3 consecutive 401 failures**, stops retrying for **10 seconds**
+- Each browser tab maintains its own circuit breaker state
+- Resets after successful authentication
+
+```typescript
+import { resetAuthCircuitBreaker } from '../services/api/client';
+
+// After successful login
+const onLoginSuccess = () => {
+  resetAuthCircuitBreaker();
+  markAuthenticationComplete(); // 5s grace period
+};
+```
+
+### Auth Store Pattern
+
+The auth store (`app/stores/auth-store.ts`) handles:
+- Session initialization from localStorage
+- Cross-tab synchronization (logout broadcasts to all tabs)
+- Session heartbeat monitoring
+- Validated session tracking (prevents false session-expired modals)
+
+```typescript
+import { useAuthStore } from '../stores/auth-store';
+
+// In components
+const { user, isAuthenticated, isLoading } = useAuthStore();
+
+// For logout
+const { logout } = useAuthStore();
+logout(); // Broadcasts to other tabs
+```
 
 ---
 

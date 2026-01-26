@@ -69,7 +69,7 @@ for HOOK in $EXPORTED_HOOKS; do
     elif [[ "$IS_MUTATION" == true ]]; then
         # Mutation hooks: use{Action}{Entity}
         # Should have action verbs like Create, Update, Delete
-        if [[ ! "$HOOK" =~ ^use(Create|Update|Delete|Remove|Add|Set|Toggle|Mark|Submit|Cancel|Invite|Accept|Reject|Leave) ]]; then
+        if [[ ! "$HOOK" =~ ^use(Create|Update|Delete|Remove|Add|Set|Toggle|Mark|Submit|Cancel|Invite|Accept|Reject|Leave|Enable|Disable|Resend|Revoke|Reset|Confirm|Approve) ]]; then
             warn "Mutation hook '$HOOK' should have an action verb (useCreate{Entity}, useUpdate{Entity}, etc.)"
         fi
     fi

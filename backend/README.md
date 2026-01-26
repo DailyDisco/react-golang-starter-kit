@@ -2,6 +2,11 @@
 
 A modern, production-ready backend built with Go, Chi router, GORM, and PostgreSQL, designed to work seamlessly with a React frontend.
 
+> **📚 For detailed architecture documentation, see:**
+> - [Backend Guide](../docs/BACKEND_GUIDE.md) - Services, repositories, middleware patterns
+> - [Testing Guide](../docs/TESTING.md) - Unit tests, integration tests, test utilities
+> - [Features Guide](../docs/FEATURES.md) - JWT, RBAC, Organizations, Observability
+
 ## 🚀 Quick Start
 
 ```bash

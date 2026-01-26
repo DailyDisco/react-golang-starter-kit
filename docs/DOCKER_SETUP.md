@@ -165,7 +165,7 @@ All services include health checks:
 **Enable BuildKit:**
 ```bash
 # Option 1: Current session
-source .dockerbuildkit.env
+source docker/.dockerbuildkit.env
 
 # Option 2: Permanent (add to ~/.bashrc or ~/.zshrc)
 export DOCKER_BUILDKIT=1
@@ -224,7 +224,7 @@ Excludes:
 echo $DOCKER_BUILDKIT  # Should output: 1
 
 # Enable if not set
-source .dockerbuildkit.env
+source docker/.dockerbuildkit.env
 
 # View build cache usage
 docker buildx du
@@ -386,7 +386,7 @@ docker builder prune -a
 
 ```bash
 # Enable BuildKit
-source .dockerbuildkit.env
+source docker/.dockerbuildkit.env
 
 # Development
 docker compose up --build
