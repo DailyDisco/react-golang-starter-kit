@@ -287,7 +287,6 @@ func TestSessionService_RevokeDuringActiveRequest(t *testing.T) {
 		var wg sync.WaitGroup
 
 		// Goroutine 1: Continuously check session (simulating active use)
-		checksComplete := make(chan bool)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -296,7 +295,6 @@ func TestSessionService_RevokeDuringActiveRequest(t *testing.T) {
 				// Sessions may be 0 or 1 depending on timing - both are valid
 				_ = sessions
 			}
-			checksComplete <- true
 		}()
 
 		// Goroutine 2: Revoke the session
@@ -309,7 +307,6 @@ func TestSessionService_RevokeDuringActiveRequest(t *testing.T) {
 		}()
 
 		wg.Wait()
-		<-checksComplete
 
 		// Main assertion: no panics or races occurred
 	})

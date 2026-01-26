@@ -251,11 +251,79 @@ func (c *Config) Validate() error {
 		errs = append(errs, fmt.Sprintf("invalid log level: %s, must be one of: %v", c.Logging.Level, validLogLevels))
 	}
 
+	// Validate rate limit configuration sanity
+	if c.RateLimit.IPBurstSize > c.RateLimit.IPRequestsPerMinute {
+		errs = append(errs, "RATE_LIMIT_IP_BURST_SIZE should not exceed RATE_LIMIT_IP_PER_MINUTE")
+	}
+	if c.RateLimit.UserBurstSize > c.RateLimit.UserRequestsPerMinute {
+		errs = append(errs, "RATE_LIMIT_USER_BURST_SIZE should not exceed RATE_LIMIT_USER_PER_MINUTE")
+	}
+	if c.RateLimit.AuthBurstSize > c.RateLimit.AuthRequestsPerMinute {
+		errs = append(errs, "RATE_LIMIT_AUTH_BURST_SIZE should not exceed RATE_LIMIT_AUTH_PER_MINUTE")
+	}
+
 	if len(errs) > 0 {
 		return errors.New(strings.Join(errs, "; "))
 	}
 
+	// Log production warnings (non-fatal)
+	if c.IsProduction() {
+		c.logProductionWarnings()
+	}
+
+	// Log optional feature status
+	c.logFeatureStatus()
+
 	return nil
+}
+
+// logProductionWarnings logs warnings for potentially insecure production configurations
+func (c *Config) logProductionWarnings() {
+	// Warn about weak JWT secrets
+	if len(c.JWT.Secret) < 32 {
+		log.Warn().Msg("JWT_SECRET is less than 32 characters - consider using a stronger secret in production")
+	}
+
+	// Warn if debug mode is enabled in production
+	if c.Server.Debug {
+		log.Warn().Msg("DEBUG mode is enabled in production - this may expose sensitive information")
+	}
+
+	// Warn about insecure database SSL mode
+	if c.Database.SSLMode == "disable" {
+		log.Warn().Msg("DB_SSLMODE is 'disable' in production - consider enabling SSL for database connections")
+	}
+
+	// Warn if CORS allows localhost origins
+	for _, origin := range c.CORS.AllowedOrigins {
+		if strings.Contains(origin, "localhost") {
+			log.Warn().Str("origin", origin).Msg("CORS allows localhost origin in production")
+			break
+		}
+	}
+
+	// Warn if rate limiting is disabled
+	if !c.RateLimit.Enabled {
+		log.Warn().Msg("Rate limiting is disabled in production - this may expose the API to abuse")
+	}
+
+	// Check for CSRF_SECRET (commonly needed for CSRF middleware)
+	if os.Getenv("CSRF_SECRET") == "" {
+		log.Warn().Msg("CSRF_SECRET is not set - CSRF middleware may use a default or fail")
+	}
+}
+
+// logFeatureStatus logs which optional features are enabled or disabled
+func (c *Config) logFeatureStatus() {
+	// S3 storage
+	if c.AWS.S3Bucket != "" && c.AWS.AccessKeyID != "" {
+		log.Info().Str("bucket", c.AWS.S3Bucket).Msg("S3 storage enabled")
+	} else {
+		log.Info().Msg("S3 storage disabled - using local/database storage")
+	}
+
+	// Log level
+	log.Info().Str("level", c.Logging.Level).Str("env", c.Server.Env).Msg("Configuration loaded")
 }
 
 // Helper functions for environment variable parsing
