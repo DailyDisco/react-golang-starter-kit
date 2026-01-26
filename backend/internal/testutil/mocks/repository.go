@@ -67,8 +67,8 @@ func (m *MockSessionRepository) Create(ctx context.Context, session *models.User
 
 // FindByUserID returns all sessions for a user that haven't expired.
 func (m *MockSessionRepository) FindByUserID(ctx context.Context, userID uint, now time.Time) ([]models.UserSession, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.FindByUserIDCalls++
 	if m.FindByUserIDErr != nil {
@@ -289,8 +289,8 @@ func (m *MockLoginHistoryRepository) Create(ctx context.Context, record *models.
 
 // FindByUserID returns login history for a user with pagination.
 func (m *MockLoginHistoryRepository) FindByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.LoginHistory, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.FindByUserCalls++
 	if m.FindByUserErr != nil {
@@ -312,8 +312,8 @@ func (m *MockLoginHistoryRepository) FindByUserID(ctx context.Context, userID ui
 
 // CountByUserID returns the total number of login records for a user.
 func (m *MockLoginHistoryRepository) CountByUserID(ctx context.Context, userID uint) (int64, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.CountByUserCalls++
 	if m.CountByUserErr != nil {
