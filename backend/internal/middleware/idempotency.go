@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -168,7 +169,7 @@ func IdempotencyMiddleware(config *IdempotencyConfig) func(http.Handler) http.Ha
 // buildIdempotencyCacheKey creates a cache key for an idempotency entry.
 func buildIdempotencyCacheKey(key string, userID uint, path string) string {
 	// Include user ID to scope keys per user
-	return "idempotency:" + key + ":" + string(rune(userID)) + ":" + path
+	return "idempotency:" + key + ":" + strconv.FormatUint(uint64(userID), 10) + ":" + path
 }
 
 // hashRequest creates a hash of the request body for verification.
