@@ -70,7 +70,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@testing-library/dom": "^10.4.1",
     "@vercel/analytics": "^1.6.1",
-    "@vitejs/plugin-react": "^5.1.2",
+    "@vitejs/plugin-react": "^6.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
