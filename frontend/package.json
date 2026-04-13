@@ -77,7 +77,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.26",
-    "i18next": "^25.7.3",
+    "i18next": "^26.0.4",
     "i18next-browser-languagedetector": "^8.2.0",
     "input-otp": "^1.4.2",
     "isbot": "^5.1.32",
