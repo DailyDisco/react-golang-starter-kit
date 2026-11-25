@@ -83,7 +83,6 @@ __debug_bin*
 # ===========================================
 # Package Manager Files
 # ===========================================
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 

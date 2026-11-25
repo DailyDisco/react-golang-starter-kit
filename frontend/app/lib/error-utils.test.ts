@@ -181,7 +181,7 @@ describe("categorizeError", () => {
     });
 
     it("handles string input", () => {
-      const result = categorizeError("some error string" as unknown);
+      const result = categorizeError("some error string");
 
       expect(result.category).toBe("unknown");
       expect(result.message).toBe("some error string");

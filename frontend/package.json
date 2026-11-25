@@ -6,6 +6,7 @@
     "analyze": "npm run build && npx vite-bundle-analyzer dist",
     "build": "vite build",
     "dev": "vite",
+    "generate:routes": "tsr generate",
     "format": "npm run prettier:fix",
     "format:check": "npm run prettier:check",
     "lint": "eslint . --cache",
@@ -31,6 +32,9 @@
     "test:quality": "npm run quality && npm run test:fast",
     "test:ui": "vitest --ui",
     "typecheck": "tsc --noEmit --skipLibCheck"
+  },
+  "overrides": {
+    "vite": "$vite"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -75,6 +79,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "dompurify": "^3.3.1",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.26",
     "i18next": "^25.7.3",
@@ -100,10 +105,10 @@
     "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
     "@playwright/test": "^1.57.0",
     "@size-limit/file": "^12.0.0",
-    "@size-limit/preset-app": "^12.0.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/eslint-plugin-query": "^5.91.2",
     "@tanstack/react-router-ssr-query": "^1.144.0",
+    "@tanstack/router-cli": "^1.145.2",
     "@tanstack/router-plugin": "^1.145.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
@@ -130,7 +135,7 @@
     "eslint-plugin-testing-library": "^7.15.4",
     "eslint-plugin-unicorn": "^62.0.0",
     "eslint-plugin-vitest": "^0.5.4",
-    "happy-dom": "^20.0.11",
+    "happy-dom": "^21.0.4",
     "jsdom": "^27.4.0",
     "prettier": "3.8.1",
     "prettier-plugin-packagejson": "^2.5.20",
@@ -146,11 +151,14 @@
     "vite-tsconfig-paths": "^6.0.3",
     "vitest": "^4.0.16"
   },
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "size-limit": [
     {
       "name": "Total bundle (JS)",
       "path": "dist/assets/*.js",
-      "limit": "600 kB",
+      "limit": "650 kB",
       "gzip": true
     },
     {

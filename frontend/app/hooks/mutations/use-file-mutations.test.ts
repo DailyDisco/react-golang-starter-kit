@@ -58,7 +58,7 @@ describe("useFileUpload", () => {
     // Mock auth store as authenticated
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: true,
-    } as any);
+    });
   });
 
   it("should upload file successfully", async () => {
@@ -92,7 +92,7 @@ describe("useFileUpload", () => {
     // Mock auth store as not authenticated
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: false,
-    } as any);
+    });
 
     const mockFile = new File(["test"], "test.txt", { type: "text/plain" });
 
@@ -196,7 +196,7 @@ describe("useFileDelete", () => {
     // Mock auth store as authenticated
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: true,
-    } as any);
+    });
   });
 
   it("should delete file successfully", async () => {
@@ -219,7 +219,7 @@ describe("useFileDelete", () => {
     // Mock auth store as not authenticated
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: false,
-    } as any);
+    });
 
     const { result } = renderHook(() => useFileDelete(), {
       wrapper: createWrapper(),
@@ -271,7 +271,7 @@ describe("Mutation hooks mock compatibility", () => {
   beforeEach(() => {
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: true,
-    } as any);
+    });
   });
 
   it("useFileUpload returns expected interface", () => {

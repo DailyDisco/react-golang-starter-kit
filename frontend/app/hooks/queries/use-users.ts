@@ -8,9 +8,8 @@ export const useUsers = () => {
   const filters = useUserStore((state) => state.filters);
 
   return useQuery({
-    // eslint-disable-next-line @tanstack/query/exhaustive-deps -- filters is correctly included via type assertion
     queryKey: queryKeys.users.list(filters as Record<string, unknown>),
-    queryFn: () => UserService.fetchUsers(filters as UserFilters),
+    queryFn: () => UserService.fetchUsers(filters),
     select: (data) => data,
   });
 };

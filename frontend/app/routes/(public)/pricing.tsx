@@ -64,7 +64,7 @@ function PricingPage() {
       currency: "usd",
       interval: "month",
       features: t("plans.enterprise.features", { returnObjects: true }),
-      limitations: t("plans.enterprise.limitations", { returnObjects: true }) as string[],
+      limitations: t("plans.enterprise.limitations", { returnObjects: true }),
     },
   ];
 

@@ -35,7 +35,7 @@ import {
 import { useAuthStore } from "@/stores/auth-store";
 import { useCurrentOrg, useIsOrgAdmin } from "@/stores/org-store";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
 import {
   AlertTriangle,
   Building2,
@@ -438,8 +438,9 @@ function TeamPagePending() {
   );
 }
 
-function TeamPageError({ error, reset }: { error: Error; reset?: () => void }) {
+function TeamPageError({ error, reset }: ErrorComponentProps) {
   const { orgSlug } = Route.useParams();
+  const message = error instanceof Error ? error.message : String(error);
 
   return (
     <div className="space-y-6">
@@ -452,7 +453,7 @@ function TeamPageError({ error, reset }: { error: Error; reset?: () => void }) {
             <div>
               <CardTitle className="text-destructive">Failed to load team</CardTitle>
               <CardDescription className="text-destructive/80">
-                {error.message || "An unexpected error occurred while loading the team."}
+                {message || "An unexpected error occurred while loading the team."}
               </CardDescription>
             </div>
           </div>

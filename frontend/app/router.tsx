@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
-import { createRouter } from "@tanstack/react-router";
+import { createRouter, type ErrorComponentProps } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
 import { queryClient } from "./lib/query-client";
@@ -23,11 +23,11 @@ export function createAppRouter() {
     // Cache preloaded routes for 30 seconds (stale-while-revalidate)
     defaultPreloadStaleTime: 30_000,
     // Add default error boundary and loading components
-    defaultErrorComponent: ({ error }: { error: Error }) => (
+    defaultErrorComponent: ({ error }: ErrorComponentProps) => (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <h2 className="mb-4 text-2xl font-bold text-red-600">Something went wrong!</h2>
-          <p className="text-gray-600">{error.message}</p>
+          <p className="text-gray-600">{error instanceof Error ? error.message : String(error)}</p>
         </div>
       </div>
     ),

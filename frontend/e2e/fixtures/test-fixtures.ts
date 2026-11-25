@@ -105,9 +105,17 @@ export async function waitForApiResponse(page: Page, urlPattern: string | RegExp
 }
 
 export async function clearLocalStorage(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    localStorage.clear();
-    sessionStorage.clear();
+  // Registered as an init script because calling page.evaluate() before any
+  // navigation runs against `about:blank`, where accessing localStorage throws
+  // SecurityError. The script runs on every subsequent navigation, giving
+  // each test a clean storage state without a round-trip.
+  await page.addInitScript(() => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {
+      // Storage access can be denied in non-secure contexts; nothing to clear.
+    }
   });
 }
 

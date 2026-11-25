@@ -46,6 +46,22 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    host: '0.0.0.0',
+    port: 3000,
+    // Mirror the dev-server proxy so `vite preview` (used by CI E2E runs
+    // against the production build) keeps same-origin /api requests working.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/swagger': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './app'),

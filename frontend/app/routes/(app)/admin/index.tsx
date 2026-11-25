@@ -6,7 +6,7 @@ import { AdminLayout } from "@/layouts/AdminLayout";
 import { adminStatsQueryOptions } from "@/lib/route-query-options";
 import { type AdminStats } from "@/services/admin";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
 import {
   Activity,
   AlertTriangle,
@@ -376,8 +376,9 @@ function AdminDashboardPending() {
   );
 }
 
-function AdminDashboardError({ error, reset }: { error: Error; reset?: () => void }) {
+function AdminDashboardError({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation("admin");
+  const message = error instanceof Error ? error.message : String(error);
 
   return (
     <AdminLayout>
@@ -392,7 +393,7 @@ function AdminDashboardError({ error, reset }: { error: Error; reset?: () => voi
                 {t("dashboard.error.title", "Failed to load dashboard")}
               </CardTitle>
               <CardDescription className="text-destructive/80">
-                {error.message || t("dashboard.error.default", "An unexpected error occurred")}
+                {message || t("dashboard.error.default", "An unexpected error occurred")}
               </CardDescription>
             </div>
           </div>

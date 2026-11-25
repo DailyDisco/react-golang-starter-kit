@@ -48,7 +48,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true, data: mockResponse }),
-      } as Response);
+      });
 
       const result = await FileService.uploadFile(mockFile);
 
@@ -72,7 +72,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,
-      } as Response);
+      });
 
       const result = await FileService.uploadFile(mockFile);
 
@@ -85,7 +85,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 413,
-      } as Response);
+      });
       vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("File too large", "FILE_TOO_LARGE", 413));
 
       await expect(FileService.uploadFile(mockFile)).rejects.toThrow("File too large");
@@ -99,7 +99,7 @@ describe("FileService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as unknown as Response);
+      });
 
       await expect(FileService.uploadFile(mockFile)).rejects.toThrow("Invalid response format from server");
     });
@@ -189,7 +189,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true, data: "https://s3.example.com/file.txt" }),
-      } as Response);
+      });
 
       const result = await FileService.getFileUrl(1);
 
@@ -201,7 +201,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => "https://s3.example.com/file.txt",
-      } as Response);
+      });
 
       const result = await FileService.getFileUrl(1);
 
@@ -212,7 +212,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
-      } as Response);
+      });
       vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("File not found", "NOT_FOUND", 404));
 
       await expect(FileService.getFileUrl(999)).rejects.toThrow("File not found");
@@ -224,7 +224,7 @@ describe("FileService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as unknown as Response);
+      });
 
       await expect(FileService.getFileUrl(1)).rejects.toThrow("Invalid response format from server");
     });
@@ -260,7 +260,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true, data: mockStatus }),
-      } as Response);
+      });
 
       const result = await FileService.getStorageStatus();
 
@@ -274,7 +274,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockStatus,
-      } as Response);
+      });
 
       const result = await FileService.getStorageStatus();
 
@@ -285,7 +285,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
-      } as Response);
+      });
       vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Storage unavailable", "STORAGE_ERROR", 500));
 
       await expect(FileService.getStorageStatus()).rejects.toThrow("Storage unavailable");
@@ -297,7 +297,7 @@ describe("FileService", () => {
         json: async () => {
           throw new Error("Invalid JSON");
         },
-      } as unknown as Response);
+      });
 
       await expect(FileService.getStorageStatus()).rejects.toThrow("Invalid response format from server");
     });
@@ -310,7 +310,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         blob: async () => mockBlob,
-      } as Response);
+      });
 
       const result = await FileService.downloadFile(1);
 
@@ -322,7 +322,7 @@ describe("FileService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
-      } as Response);
+      });
       vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("File not found", "NOT_FOUND", 404));
 
       await expect(FileService.downloadFile(999)).rejects.toThrow("File not found");

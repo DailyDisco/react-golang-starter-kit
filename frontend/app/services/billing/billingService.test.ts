@@ -49,7 +49,7 @@ describe("BillingService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockConfig,
-      } as Response);
+      });
 
       const result = await BillingService.getConfig();
 
@@ -61,7 +61,7 @@ describe("BillingService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
-      } as Response);
+      });
       vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Config not found", "NOT_FOUND", 500));
 
       await expect(BillingService.getConfig()).rejects.toThrow("Config not found");
@@ -78,7 +78,7 @@ describe("BillingService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => mockPlans,
-      } as Response);
+      });
 
       const result = await BillingService.getPlans();
 
@@ -90,7 +90,7 @@ describe("BillingService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 503,
-      } as Response);
+      });
 
       const result = await BillingService.getPlans();
 
@@ -101,7 +101,7 @@ describe("BillingService", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
-      } as Response);
+      });
       vi.mocked(parseErrorResponse).mockResolvedValueOnce(new ApiError("Server error", "SERVER_ERROR", 500));
 
       await expect(BillingService.getPlans()).rejects.toThrow("Server error");

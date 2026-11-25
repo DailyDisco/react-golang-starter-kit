@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+// DOMPurify requires a full DOM implementation (jsdom); under happy-dom its
+// isSupported flag is false and sanitize() returns input unchanged.
 import { describe, expect, it } from "vitest";
 
 import {

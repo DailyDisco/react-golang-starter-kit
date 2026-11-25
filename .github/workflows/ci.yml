@@ -65,7 +65,7 @@ jobs:
         working-directory: ${{ env.FRONTEND_DIR }}
 
       - name: Generate TanStack Router routes
-        run: npx tsr generate
+        run: npm run generate:routes
         working-directory: ${{ env.FRONTEND_DIR }}
 
       # Run all checks in parallel using background processes
@@ -221,10 +221,11 @@ jobs:
           name: frontend-build
           path: ${{ env.FRONTEND_DIR }}/dist/
 
-      # Start frontend preview server
+      # Start frontend preview server (vite preview so /api is proxied to the
+      # backend on :8080, matching what the dev server does in local runs)
       - name: Start frontend preview server
         run: |
-          npx serve -s dist -l 3000 &
+          npm run preview -- --port 3000 --strictPort &
           echo $! > /tmp/frontend.pid
           # Wait for frontend to be ready
           for i in {1..15}; do
@@ -274,7 +275,7 @@ jobs:
           cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
 
       - name: Install and test
-        run: npm ci && npx tsr generate && npm run test:coverage
+        run: npm ci && npm run generate:routes && npm run test:coverage
         working-directory: ${{ env.FRONTEND_DIR }}
 
   # ============================================

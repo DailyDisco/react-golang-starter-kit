@@ -117,7 +117,7 @@ export function useMutationFormErrors<T extends FieldValues, TData = unknown, TV
       if (name) {
         const fieldError = form.formState.errors[name as keyof typeof form.formState.errors];
         if (fieldError && (fieldError as { type?: string }).type === "server") {
-          form.clearErrors(name as Path<T>);
+          form.clearErrors(name);
         }
       }
 
