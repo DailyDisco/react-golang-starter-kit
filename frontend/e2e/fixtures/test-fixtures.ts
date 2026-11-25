@@ -25,7 +25,8 @@ export class AuthPage {
   async login(email: string, password: string) {
     await this.page.goto("/login");
     await this.page.getByLabel("Email").fill(email);
-    await this.page.getByLabel("Password").fill(password);
+    // exact: "Show password" toggle buttons also match the substring query
+    await this.page.getByLabel("Password", { exact: true }).fill(password);
     await this.page.getByRole("button", { name: /sign in/i }).click();
   }
 
@@ -62,7 +63,10 @@ export class AuthPage {
   }
 
   async expectError(message?: string | RegExp) {
-    const alert = this.page.getByRole("alert");
+    // Scope to the form's inline Alert (data-slot="alert"). Sonner toasts
+    // render additional live regions whose titles also carry the message,
+    // which would break strict mode.
+    const alert = this.page.locator('[data-slot="alert"]');
     await expect(alert).toBeVisible();
     if (message) {
       await expect(alert).toContainText(message);
@@ -105,9 +109,17 @@ export async function waitForApiResponse(page: Page, urlPattern: string | RegExp
 }
 
 export async function clearLocalStorage(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    localStorage.clear();
-    sessionStorage.clear();
+  // Registered as an init script because calling page.evaluate() before any
+  // navigation runs against `about:blank`, where accessing localStorage throws
+  // SecurityError. The script runs on every subsequent navigation, giving
+  // each test a clean storage state without a round-trip.
+  await page.addInitScript(() => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {
+      // Storage access can be denied in non-secure contexts; nothing to clear.
+    }
   });
 }
 

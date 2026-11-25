@@ -8,11 +8,9 @@ import { expect, test } from "./fixtures/test-fixtures";
  */
 test.describe("Organizations", () => {
   test.describe("Unauthenticated", () => {
-    test("should redirect to login when accessing organizations", async ({ page }) => {
-      await page.goto("/organizations");
-      await expect(page).toHaveURL(/login/);
-    });
-
+    // NOTE: the app has no /organizations list page (orgs live under
+    // /org/$orgSlug/*), so the former "/organizations redirects to login"
+    // test was removed with the page it asserted on.
     test("should redirect to login when accessing org settings", async ({ page }) => {
       await page.goto("/org/test-org/settings");
       await expect(page).toHaveURL(/login/);

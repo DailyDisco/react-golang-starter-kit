@@ -92,7 +92,7 @@ function AdminUsersPage() {
     queryKey: queryKeys.users.list({ page, search }),
     queryFn: async () => {
       const result = await apiClient.get<{ data: UsersResponse }>(`/users?page=${page}&limit=20`);
-      return (result as unknown as { data: UsersResponse }).data || (result as unknown as UsersResponse);
+      return result.data || (result as unknown as UsersResponse);
     },
   });
 

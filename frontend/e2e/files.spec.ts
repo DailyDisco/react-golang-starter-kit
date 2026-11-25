@@ -13,8 +13,11 @@ test.describe("File Management", () => {
     test("should display demo page with file section", async ({ page }) => {
       await page.goto("/demo");
 
+      // The demo is a step-by-step tour; the file section lives in its own step
+      await page.getByRole("button", { name: /file storage/i }).click();
+
       // Check if file upload section exists
-      await expect(page.getByText(/file.*upload|upload.*file/i)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByRole("heading", { name: /upload a file/i })).toBeVisible({ timeout: 10000 });
     });
 
     test.describe("Authenticated", () => {

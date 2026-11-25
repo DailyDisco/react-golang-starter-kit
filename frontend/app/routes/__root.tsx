@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import type { RouterContext } from "@/router";
-import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet, useLocation, type ErrorComponentProps } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 
 import { SessionExpiredModal } from "../components/auth/SessionExpiredModal";
@@ -127,15 +127,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       </main>
     </div>
   ),
-  errorComponent: ({ error, reset }: { error: Error; reset?: () => void }) => (
+  errorComponent: (props: ErrorComponentProps) => (
     <div className="bg-background flex min-h-screen flex-col">
       <header className="bg-card text-card-foreground border-b p-4">
         <h1 className="text-xl font-bold">Application Error</h1>
       </header>
       <main className="flex-1 p-4">
         <ErrorFallback
-          error={error}
-          resetError={reset}
+          error={props.error instanceof Error ? props.error : new Error(String(props.error))}
+          resetError={props.reset}
           showStack={import.meta.env.DEV}
         />
       </main>

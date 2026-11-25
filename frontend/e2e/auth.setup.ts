@@ -27,7 +27,8 @@ setup("authenticate", async ({ page }) => {
 
   // Fill in credentials
   await page.getByLabel("Email").fill(process.env.E2E_TEST_USER);
-  await page.getByLabel("Password").fill(process.env.E2E_TEST_PASSWORD);
+  // exact: the "Show password" toggle button also matches the substring query
+  await page.getByLabel("Password", { exact: true }).fill(process.env.E2E_TEST_PASSWORD);
 
   // Submit the form
   await page.getByRole("button", { name: /sign in/i }).click();

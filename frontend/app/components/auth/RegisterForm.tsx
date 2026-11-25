@@ -12,7 +12,7 @@ import { useRegister } from "../../hooks/mutations/use-auth-mutations";
 import { ApiError } from "../../services/api/client";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { AuthErrorGuidance } from "./AuthErrorGuidance";
@@ -92,7 +92,8 @@ export function RegisterForm() {
     <div className="bg-background flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-center text-2xl">{t("auth:register.title")}</CardTitle>
+          {/* Real heading (not CardTitle's div) so the page has an accessible page title */}
+          <h1 className="text-center text-2xl leading-none font-semibold">{t("auth:register.title")}</h1>
           <CardDescription className="text-center">{t("auth:register.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -105,6 +106,7 @@ export function RegisterForm() {
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-4"
+            noValidate
           >
             {error && (
               <>

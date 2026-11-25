@@ -46,6 +46,22 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    host: '0.0.0.0',
+    port: 3000,
+    // Mirror the dev-server proxy so `vite preview` (used by CI E2E runs
+    // against the production build) keeps same-origin /api requests working.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/swagger': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './app'),
@@ -94,27 +110,9 @@ export default defineConfig({
           router: ['@tanstack/react-router'],
           query: ['@tanstack/react-query'],
 
-          // Radix UI primitives (heavy)
-          'radix-core': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-switch',
-            '@radix-ui/react-checkbox',
-            '@radix-ui/react-label',
-            '@radix-ui/react-slot',
-          ],
-          'radix-extended': [
-            '@radix-ui/react-alert-dialog',
-            '@radix-ui/react-avatar',
-            '@radix-ui/react-progress',
-            '@radix-ui/react-scroll-area',
-            '@radix-ui/react-separator',
-            '@radix-ui/react-slider',
-          ],
+          // Radix UI primitives are left to Rollup's default chunking: forcing them
+          // into radix-core/radix-extended groups produced a cross-chunk circular
+          // import (runtime "ye is not a function" crash on module eval).
 
           // Charts (heavy - ~150KB)
           charts: ['recharts'],

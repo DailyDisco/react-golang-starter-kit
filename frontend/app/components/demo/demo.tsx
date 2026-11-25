@@ -976,7 +976,7 @@ function AIStep({ isAuthenticated }: { isAuthenticated: boolean }) {
       const { AIService } = await import("../../services/ai/aiService");
       const response = await AIService.chat(
         [...chatHistory, { role: "user" as const, content: userMessage }].map((m) => ({
-          role: (m.role === "assistant" ? "model" : m.role) as "user" | "model" | "system" | "assistant",
+          role: m.role === "assistant" ? "model" : m.role,
           content: m.content,
         })),
         { maxTokens: 500 }
