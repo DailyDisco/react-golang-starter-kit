@@ -71,14 +71,18 @@ describe("fetchWithETag", () => {
 
   it("sends If-None-Match when an ETag is cached and stores new ETags", async () => {
     storeETag("key", '"v1"');
-    const fetchMock = vi.fn(async () => mockResponse(200, { ETag: '"v2"' }));
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      void _url;
+      void init;
+      return mockResponse(200, { ETag: '"v2"' });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const res = await fetchWithETag("/api/data", "key");
 
     expect(res.status).toBe(200);
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
-    expect(new Headers(init.headers).get("If-None-Match")).toBe('"v1"');
+    const call = fetchMock.mock.calls[0];
+    expect(new Headers(call[1]?.headers).get("If-None-Match")).toBe('"v1"');
     expect(getStoredETag("key")).toBe('"v2"');
   });
 
