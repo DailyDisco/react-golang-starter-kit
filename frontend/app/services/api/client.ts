@@ -326,7 +326,7 @@ export const authenticatedFetch = async (
     if (isCircuitBreakerOpen()) {
       logger.warn("Circuit breaker open: too many consecutive 401s, skipping retry");
       if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
-        window.dispatchEvent(new CustomEvent("session-expired"));
+        window.dispatchEvent(new CustomEvent("session-expired", { detail: { fromApiRequest: true } }));
       }
       return response;
     }
@@ -395,7 +395,7 @@ export const authenticatedFetch = async (
               incrementCircuitBreaker();
               // Refresh failed - dispatch session-expired and reject all queued requests
               if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
-                window.dispatchEvent(new CustomEvent("session-expired"));
+                window.dispatchEvent(new CustomEvent("session-expired", { detail: { fromApiRequest: true } }));
               }
               // Return original 401 response to all queued requests
               for (const request of queue) {
@@ -408,7 +408,7 @@ export const authenticatedFetch = async (
             incrementCircuitBreaker();
             // Dispatch session-expired event
             if (typeof window !== "undefined" && window.location.pathname !== "/login" && !isInAuthGracePeriod()) {
-              window.dispatchEvent(new CustomEvent("session-expired"));
+              window.dispatchEvent(new CustomEvent("session-expired", { detail: { fromApiRequest: true } }));
             }
             // Return original 401 response to all queued requests
             const queue = [...failedRequestsQueue];
