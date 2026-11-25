@@ -12,6 +12,8 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 
+import { useAuthStore } from "../../stores/auth-store";
+
 /**
  * Modal displayed when user's session expires.
  * Listens for 'session-expired' custom events and shows a friendly message
@@ -24,6 +26,14 @@ export function SessionExpiredModal() {
 
   useEffect(() => {
     const handleSessionExpired = () => {
+      // A 401 from any anonymous request (e.g. the public demo page probing
+      // /api/files) also fires this event. Showing "your session has
+      // expired" to a visitor who never signed in is wrong and it blocks the
+      // page behind a modal - only surface it when this tab actually had a
+      // backend-validated session.
+      if (!useAuthStore.getState().hasValidatedSession) {
+        return;
+      }
       setIsOpen(true);
     };
 
